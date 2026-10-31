@@ -23,3 +23,7 @@ JollyXR/[Rr]ecordings/
 JollyXR/Assets/StreamingAssets/secrets*.json*
 *.apk
 *.aab
+
+# Third-party character source (no license; local-only)
+Meta+Muse+Jolly*
+assets-src/private/
