@@ -7,7 +7,11 @@ using Jolly.Core.Config;
 
 namespace Jolly.Core.Memory
 {
-    /// <summary>One LiveUser model call that folds old items into the rolling summary (architecture §8).</summary>
+    /// <summary>
+    /// One LiveUser model call that folds old items into the rolling summary (architecture §8). Null unless the model
+    /// finished normally with some text: on the headset a 300-token cap ended every call in reasoning
+    /// (<c>finish=Length out=300</c>), and the empty result replaced the summary and dropped the folded items.
+    /// </summary>
     static class Summarizer
     {
         const string Instructions =
@@ -30,12 +34,16 @@ namespace Jolly.Core.Memory
             };
 
             var text = new StringBuilder();
+            var finish = FinishReason.Failed;
             await foreach (var e in model.Stream(request, ct).WithCancellation(ct))
             {
                 if (e.Kind == ModelEventKind.TextDelta)
                     text.Append(e.Text);
+                else if (e.Kind == ModelEventKind.Completed)
+                    finish = e.Result.FinishReason;
             }
-            return Cap(text.ToString().Trim(), limits.SummaryChars);
+            var summary = text.ToString().Trim();
+            return finish == FinishReason.Stop && summary.Length > 0 ? Cap(summary, limits.SummaryChars) : null;
         }
 
         static string Transcript(string previous, IReadOnlyList<ConversationItem> items)
