@@ -51,6 +51,10 @@ Nubi lives in your room. You talk to it, hold up an object, and point at it. Nub
 
 Demo objects are always household items. Nubi is never demoed on medication.
 
+### A day with Nubi
+
+In the morning the TV remote won't do what you expect. You hold it up and ask "what is this, and which button turns it on?": Nubi outlines the remote, names it, and `highlight_part` outlines the power button on the same capture (PlayMode [`CaptureAndIdentify_SegmentsTheStillFrameAndSpeaksTheVisionAnswer`](JollyXR/Assets/Jolly/Tests/PlayMode/E2E/E2ETests.cs) and EditMode [`HighlightPart_UsesTheLastCaptureWithoutANewOne`](JollyXR/Assets/Jolly/Tests/EditMode/Core/Tools/FindAndHighlightToolTests.cs); `highlight_part` passed on the headset in the [`6f0383c` run](docs/perf/selftest-report.md#sam-text-prompt-tools-under-the-self-test-hand-debounce-6f0383c)). Later, "where are my glasses?": `find_object` outlines every match in view and Nubi looks at the nearest one ([`FindObject_OutlinesEveryInstanceAndLooksAtTheNearest`](JollyXR/Assets/Jolly/Tests/EditMode/Core/Tools/FindAndHighlightToolTests.cs); the model chose `find_object` for "where is my mug?" in 3 of 3 [`36778c1` runs](docs/perf/selftest-report.md#local-come-here-guard-and-reply-log-36778c1)). Standing by the sofa, "remember this place as the sofa" saves the spot with a spatial anchor, and "walk to the sofa" sends Nubi back there later ([`RememberPlace_SavesTheUsersFloorPositionWithAnAnchor`](JollyXR/Assets/Jolly/Tests/EditMode/Core/Tools/CharacterToolTests.cs), [`WalkTo_TaughtPlace_StartsMotionAndReturnsAtOnce`](JollyXR/Assets/Jolly/Tests/EditMode/Core/Tools/LocomotionToolTests.cs); EditMode only, not yet tried on a headset). When the Wi-Fi drops in the evening, "are you there?" still gets a spoken, lip-synced answer from a baked offline line ([`Offline_PressPlaysACannedLineWithoutTheCloud`](JollyXR/Assets/Jolly/Tests/PlayMode/E2E/E2ETests.cs); `offline_greeting` passed in 4 of 4 [`3e99cb5` runs](docs/perf/selftest-report.md#cartoon-voice-merged-character-voices-device-regression-fixes-3e99cb5)).
+
 ## Theme fit: Build for Your World
 
 The theme, quoted from the event page:
@@ -69,10 +73,10 @@ We read the rules and the rubric from the event page (`docs/research/hackathon.m
 
 The demo runs as six beats. The full shot list is in [`docs/demo-script.md`](docs/demo-script.md).
 
-1. **"Hi Nubi, come here."** You pinch and hold to talk. A live caption follows your words (with "Nubi", not "newbie"), you hear a short acknowledgement, and the answer starts streaming with lip-sync. Nubi walks around your furniture and stops about 1 m in front of you.
+1. **"Nubi, come here."** You pinch and hold to talk. A live caption follows your words (with "Nubi", not "newbie"), you hear a short acknowledgement, and the answer starts streaming with lip-sync. A local guard starts the walk before the model answers (ADR-0036); Nubi walks around your furniture and stops about 1 m in front of you.
 2. **"What is this, and which button turns it on?"** You hold up the TV remote and point at it. An outline appears on the real remote, the answer is spoken as it streams, then `highlight_part` outlines the power button itself. That is two SAM prompt types on one object: your pointing hand, then a text-prompted part. Tool badges show **SAM 3.1** and **Spark** firing.
 3. **"Follow me." … "Stop."** Nubi follows you across the room and stops at once. "Stop" is matched on the device, before any model call.
-4. **Barge-in.** You pinch in the middle of a long answer. The audio fades out within a 150 ms target (33–55 ms on the headset), and Nubi listens.
+4. **Barge-in.** You pinch in the middle of a long answer. The audio fades out within a 150 ms target (28–55 ms on the headset), and Nubi listens.
 5. **Wi-Fi off.** "Are you there?" Nubi answers with a baked offline line, still lip-synced, and its idle behaviour carries on. Turn Wi-Fi back on and the next turn is online again.
 6. **Cost.** The usage meter in Settings shows what the session cost, checked against [`docs/api-spend.md`](docs/api-spend.md).
 
@@ -165,12 +169,12 @@ graph TD
 - **Runtime NavMesh sized for a living room.** Floor plane outlines are triangulated into mesh colliders, and bounding boxes are baked as Not Walkable (`NavMeshBuilder.BuildNavMeshData`, agent radius 0.15 m). `NavMeshSurface` would use the 0.5 m Humanoid agent, which erases a living room (ADR-0017). Rebuilds are throttled to once per 2 s.
 - **Table-driven conversation state machine.** Three latched flags and per-state watchdogs. It is tested exhaustively, including every barge-in edge.
 - **Safety and robustness.** `CrisisGuard` runs before the model, for every persona, and hands off deterministically. A persona's tool allow-list is enforced when a call executes, not only in the list sent to the model. `StopGuard` stops Nubi locally, and `ComeGuard` starts the walk on a short "come here" before the model (ADR-0036). Retries happen only before the first streamed byte, with full jitter and `Retry-After` capped at 8 s. A five-state connectivity monitor (Online, Degraded, Offline, Unauthorized, BudgetReached) runs a backed-off health probe.
-- **Quality gates** (`tools/ci/test.sh`): `-warnaserror+` on every assembly; no `async void`; no `System.Threading.Tasks.Task` (UniTask everywhere); no `CancellationTokenSource.CancelAfter` (it fires on a thread-pool timer); no debug-capture defines in shipped settings; a content validator for personas, string tables and line clips; line coverage of Core, Net, Providers and Audio at or above 91.6 % (`tools/ci/coverage.sh`). Current: **EditMode 1050/1050, PlayMode 332/332 (with the local Jolly skin present; its one case skips on a clone without it), 92.6 % line coverage of that logic (84.7 % of all runtime code), zero compiler warnings, and an IL2CPP APK that builds.**
-- **A self-checking pipeline on the headset.** `tools/device/selftest.sh` installs the release APK, arms a built-in self-test and runs six scenarios with nobody wearing the headset. Bundled voice clips go through the real microphone pipeline to Muse ASR, Spark (with tools), SAM, Wit and the speaker. It also forces the network off and on, barges in, and samples frame time and render counters. It writes a PASS/DEGRADED/FAIL table and the run's API cost ([`docs/perf/selftest-report.md`](docs/perf/selftest-report.md), ADR-0018). It found bugs that no desk test could, including a health-probe URL that kept the app offline and a vision turn that ended in silence.
+- **Quality gates** (`tools/ci/test.sh`): `-warnaserror+` on every assembly; no `async void`; no `System.Threading.Tasks.Task` (UniTask everywhere); no `CancellationTokenSource.CancelAfter` (it fires on a thread-pool timer); no debug-capture defines in shipped settings; a content validator for personas, string tables and line clips; line coverage of Core, Net, Providers and Audio at or above 91.6 % (`tools/ci/coverage.sh`). Current: **EditMode 1081/1081, PlayMode 379/379 plus one explicit live eval that runs only on request (with the local Jolly skin present; its one case skips on a clone without it), 92.7 % line coverage of that logic (84.6 % of all runtime code), zero compiler warnings, and an IL2CPP APK that builds.**
+- **A self-checking pipeline on the headset.** `tools/device/selftest.sh` installs the release APK, arms a built-in self-test and runs eight scenarios with nobody wearing the headset. Bundled voice clips go through the real microphone pipeline to Muse ASR, Spark (with tools), SAM, Wit and the speaker. It also forces the network off and on, barges in, and samples frame time and render counters. It writes a PASS/DEGRADED/FAIL table and the run's API cost ([`docs/perf/selftest-report.md`](docs/perf/selftest-report.md), ADR-0018). It found bugs that no desk test could, including a health-probe URL that kept the app offline and a vision turn that ended in silence.
 
 ## Performance budget
 
-Targets come from [`docs/definition-of-done.md`](docs/definition-of-done.md) §4–5. Stale-frame, memory and voice-latency rows come from `751acba` (cooled and rebooted headset, 20-turn run; report section "751acba"); the other measured values come from the on-device self-test of the full app on `main` at `3e99cb5` (Quest 3, Horizon OS v209, IL2CPP release build, three runs of the default build plus one of the Jolly build on 2026-11-01; [`docs/perf/selftest-report.md`](docs/perf/selftest-report.md), section "3e99cb5"), in a dim room with no Space Setup and nobody wearing the headset. Rows that name an earlier pass come from that pass's section of the same report; the self-test does not measure them. Rows marked **unmeasured** need the OVR Metrics capture or a development-build Profiler session; the self-test report keeps the full DoD coverage table. Method: [`docs/perf/README.md`](docs/perf/README.md).
+Targets come from [`docs/definition-of-done.md`](docs/definition-of-done.md) §4–5. Stale-frame, memory and voice-latency rows come from `751acba` (cooled and rebooted headset, 20-turn run; report section "751acba"); the other measured values come from the on-device self-test of the full app on `main` at `3e99cb5` (Quest 3, Horizon OS v209, IL2CPP release build, three runs of the default build plus one of the Jolly build on 2026-11-01; [`docs/perf/selftest-report.md`](docs/perf/selftest-report.md), section "3e99cb5"), in a dim room with no Space Setup and nobody wearing the headset. Pinch → silence pools the `751acba`, `f311081` and `36778c1` sections. Rows that name an earlier pass come from that pass's section of the same report; the self-test does not measure them. Rows marked **unmeasured** need the OVR Metrics capture or a development-build Profiler session; the self-test report keeps the full DoD coverage table. Method: [`docs/perf/README.md`](docs/perf/README.md).
 
 | Metric | Target | Measured |
 |---|---|---|
@@ -183,8 +187,8 @@ Targets come from [`docs/definition-of-done.md`](docs/definition-of-done.md) §4
 | CPU main thread, thermal, battery | p95 ≤ 11 ms; 30 min without throttling; ≤ 20 % per 30 min | unmeasured |
 | **PTT release → first answer audio** | p50 ≤ 2.0 s | p50 **1,804 ms**, p90 2,577 ms, max 2,737 ms over **20 consecutive online turns** (greeting, `come_here`, vision, repeated; no wearer, so `selftest.sh --turns 20` stands in for LiveUser). Greetings are the slow ones (p50 2,362 ms, 6 of 7 over 2.0 s); the variance is model time, request → first text p50 1,277 ms, p90 2,068 ms, max 2,445 ms |
 | PTT release → ASR final | p50 ≤ 300 ms | p50 **265 ms**, max 293 ms (20-turn run) |
-| ASR final → first LLM text | p50 ≤ 1.3 s | p50 **0.84 s** (performance pass, n=16) |
-| Pinch → silence | p50 ≤ 150 ms | **33–55 ms** |
+| ASR final → first LLM text | p50 ≤ 1.3 s | p50 **1.28 s**, p90 2.07 s, max 2.45 s (request → first text in the 20-turn run; ASR final → request ≤ 5 ms) |
+| Pinch → silence | p50 ≤ 150 ms | **28–55 ms** |
 | Network loss → offline line | ≤ 2.0 s | offline line captioned **13–27 ms** after the press |
 | `capture_and_identify` → mask visible | p50 ≤ 2.0 s | **614–1,349 ms** (bundled still image; the room was too dark for the live frame) |
 | `capture_and_identify` → answer audio | p50 ≤ 2.5 s | **1,608–2,055 ms** (4 runs); in one run the Spark vision call failed on the network and the scenario FAILed |
@@ -196,7 +200,7 @@ Targets come from [`docs/definition-of-done.md`](docs/definition-of-done.md) §4
 - **`store:false`** on every Responses request.
 - **No contributor models for user data.** This is enforced in code (see [model routing](#how-meta-ai-is-used-beyond-a-basic-integration)).
 - **Camera frames are never written to disk.** They are Device User Data under Meta's [Developer Data Use Policy](https://developers.meta.com/vr/policy/data-use/) and go only to the Meta API. A frame lives in one reused native buffer, is encoded to JPEG in RAM, and is sent only when a vision tool runs. The only files the app writes are the conversation and scene memory, the usage totals and a random install id, all as JSON in app storage. Release builds contain no frame-capture code.
-- **Transcripts and model text are not logged.** Log lines carry event names, ids and timings. Should text logging ever be needed for debugging, the only allowed path is a `[Conditional("JOLLY_DEBUG_LOG")]` extension, which the compiler removes, with its arguments, from builds without that define.
+- **Transcripts and model text are not logged.** Log lines carry event names, ids and timings. The one exception is the adb-armed self-test, which has no person in it: it logs the first 120 characters of each model round (`evt=llm.reply`, ADR-0036). Should text logging ever be needed for debugging, the only allowed path is a `[Conditional("JOLLY_DEBUG_LOG")]` extension, which the compiler removes, with its arguments, from builds without that define.
 - **`safety_identifier`** is a truncated SHA-256 of a random per-install GUID, never a hardware id.
 - **Camera content is treated as data, not instructions.** Labels coming back from vision output are sanitised and placed in a user-role context block that is marked as untrusted.
 - **Clear memory** in Settings deletes every persona's conversation file and the scene file, and erases the spatial anchors of taught places and seen objects from the headset. It waits for a running turn to end, so that turn can't write itself back. A replaced or forgotten place erases its anchor too.
@@ -260,13 +264,13 @@ No test touches the network. Providers are tested against SSE, ASR and SAM respo
 
 ### On-device check
 
-The scripted self-test runs the whole app on the headset without anyone wearing it (about 2 minutes and $0.01–0.02 of API calls per run):
+The scripted self-test runs the whole app on the headset without anyone wearing it (about 2 minutes and $0.02–0.03 of API calls per run):
 
 ```bash
 NUBI_TMPDIR=<short temp dir> tools/device/selftest.sh   # --build to build first; exit 1 on any FAIL
 ```
 
-It prints one row per scenario (offline line, two voice turns, `capture_and_identify`, barge-in, 30 s of idle performance), the compositor's stale-frame share and the run's cost. A dark room or a room without Space Setup shows up as DEGRADED, not FAIL. Only adb can arm it: it starts when `selftest.json` exists in the app's files folder, and the script writes that file. `tools/device/selftest.sh --turns 20` runs 20 consecutive online voice turns instead and prints release → first audio p50/p90/max with the stage breakdown (about $0.085).
+It prints one row per scenario (offline line, two voice turns, `capture_and_identify`, `highlight_part`, `find_object`, barge-in, 30 s of idle performance), the compositor's stale-frame share and the run's cost. A dark room or a room without Space Setup shows up as DEGRADED, not FAIL. Only adb can arm it: it starts when `selftest.json` exists in the app's files folder, and the script writes that file. `tools/device/selftest.sh --turns 20` runs 20 consecutive online voice turns instead and prints release → first audio p50/p90/max with the stage breakdown (about $0.085).
 
 During normal use, latency and readiness come from logfmt log lines:
 
@@ -278,18 +282,21 @@ adb logcat -G 16M && adb logcat -s Unity | grep -E "evt=(loc.ready|turn.latency)
 
 ## Status
 
-As of `main` at `eba1d50` (2026-11-01); the last device runs are of `3e99cb5`.
+As of `main` at `678887c` (2026-11-01); the last device runs are of `36778c1`, and the commits after it change only docs.
 
 | Area | State |
 |---|---|
-| All subsystems (Net, Responses chat, usage meter, ASR, SAM + one-bit decoder, Spark vision, Wit TTS, streaming audio, conversation core, agent loop, tools, memory, offline mode, XR layer, Nubi, presentation, localization) | **Built and tested**: EditMode 1050/1050, PlayMode 332/332 |
+| All subsystems (Net, Responses chat, usage meter, ASR, SAM + one-bit decoder, Spark vision, Wit TTS, streaming audio, conversation core, agent loop, tools, memory, offline mode, XR layer, Nubi, presentation, localization) | **Built and tested**: EditMode 1081/1081, PlayMode 379/379 (one explicit live eval skipped) |
 | Composition root (`JollyBootstrap` → `AppGraph`), four personas, `JollyConfig`, `Lines`/`Personas` tables (en, pl), end-to-end PlayMode tests on the real scene, zero-GC idle gate | **Done** |
-| Full app on Quest 3: voice turns, `capture_and_identify`, barge-in, offline lines, idle performance | **Verified by the on-device self-test** on `3e99cb5` (four runs: offline line, barge-in and idle performance PASS in every run; voice turns PASS, or DEGRADED when first audio took over 2.0 s; `capture_and_identify` DEGRADED on the bundled still because the room was too dark, and FAIL once when the Spark vision call failed on the network) |
-| Walking on a scanned floor, the camera extrinsics marker test (≤ 3 cm at 1 m), mask placement in a lit room, pinch/gaze/palm/poke with a wearer, OVR Metrics and Profiler captures, 20-turn latency run | **Pending** a session with a person in a lit room with Space Setup |
+| Full app on Quest 3: voice turns, `capture_and_identify`, `highlight_part`, `find_object`, barge-in, offline lines, idle performance | **Verified by the on-device self-test.** Latest: three runs of `36778c1` ([`36778c1` runs](docs/perf/selftest-report.md#local-come-here-guard-and-reply-log-36778c1)): the local guard started `come_here` and Nubi arrived in 3 of 3; `find_object` was chosen in 3 of 3; barge-in silence 39–48 ms; release → first audio 1.5–4.7 s. Two runs FAILed on a voice turn (a 4.7 s greeting; a Responses request that timed out twice), one was DEGRADED. Vision used the bundled still because the room was too dark |
+| 20 consecutive voice turns (`selftest.sh --turns 20`, no wearer) | **Done** on `751acba`: release → first audio p50 **1,804 ms**, p90 **2,577 ms**, max 2,737 ms; greeting p50 2,362 ms ([report](docs/perf/selftest-report.md#stale-frames-are-device-state-not-the-build-or-heat-20-turn-latency-751acba)) |
+| Walking on a scanned floor, the camera extrinsics marker test (≤ 3 cm at 1 m), mask placement in a lit room, pinch/gaze/palm/poke with a wearer, OVR Metrics and Profiler captures, 20 turns with a wearer (LiveUser) | **Pending** a session with a person in a lit room with Space Setup |
 
 ## Known limitations
 
 - **Walking is unverified on a real floor.** The test room has no Space Setup. `come_here` now walks on the fallback disc there (ADR-0025), but walking on a scanned floor and to real furniture (`go_to_surface`) is tested only in PlayMode on a simulated room.
+- **"Come here" no longer waits on the model's tool choice, but its reply still does.** Up to `751acba` the model called `come_here` in every device run (7 of 7 in the 20-turn run). In the round 1 runs of `f311081` it answered in words without the tool in 2 of 3, and a text-only eval found `come_here` on 2 of 5 come phrasings at `minimal` effort, before and after rewriting the tool descriptions ([tool-selection eval](docs/perf/tool-selection-eval.md), ADR-0035). `ComeGuard` now starts `come_here` on the device for a short come request ("Nubi, come here", "Hi Nubi, come here", "come closer") before the model call. In the [`36778c1` runs](docs/perf/selftest-report.md#local-come-here-guard-and-reply-log-36778c1) it started the walk about 250 ms after release and Nubi arrived in 3 of 3 (ADR-0036). The spoken reply still comes from the model: first audio took 2.1–2.2 s in two runs (DEGRADED against 2.0 s), and in the third the Responses request timed out twice, so Nubi walked without a reply. Longer requests ("come here and tell me about this remote") still depend on the model's choice.
+- **Greetings are the slowest turn.** A greeting gets a full spoken answer and no tool: release → first audio was 3.0–3.3 s in all three `f311081` runs, 2.4–4.7 s in the `36778c1` runs, and p50 2,362 ms (6 of 7 over 2.0 s) in the 20-turn run. The time is model time (request → first text). The demo therefore opens with "Nubi, come here." and uses a greeting as its warm-up turn.
 - **Without Space Setup, Nubi only knows the floor near you.** The fallback is a 1.5 m disc around the user at the tracking-origin floor height, stretched over to Nubi (up to 4 m); it does not know about a chair inside it. Re-reading planes after Space Setup by restarting the plane and box managers is unverified on the headset.
 - **No perching.** Nubi stops at the edge of the couch or table and faces it; it cannot climb onto furniture (no NavMesh links or climb clips).
 - **Interaction triggers and the pinch are unverified with a wearer.** With nobody wearing the headset, hand tracking produced phantom pinches, so the self-test drives push-to-talk itself.
@@ -338,7 +345,7 @@ Characters are data: a model, a face-preset file and a `CharacterDefinition` ass
 
 ## Design decisions
 
-Twenty-nine ADRs (0001–0026, 0030–0032) record every key choice and its alternatives: [`docs/decisions/`](docs/decisions/README.md). Examples are OpenXR + meta-openxr instead of the Meta XR SDK (0002), Responses API routing (0004), Wit over raw HTTP (0006), a plain composition root (0009), secrets provisioning (0010) the integration deviations (0017) and the device self-test (0018). Review findings are in [`review-log.md`](docs/decisions/review-log.md). API spend is tracked call by call in [`docs/api-spend.md`](docs/api-spend.md), and is about $1.42 of the $140 budget so far.
+Thirty-three ADRs (0001–0026, 0030–0036) record every key choice and its alternatives: [`docs/decisions/`](docs/decisions/README.md). Examples are OpenXR + meta-openxr instead of the Meta XR SDK (0002), Responses API routing (0004), Wit over raw HTTP (0006), a plain composition root (0009), secrets provisioning (0010) the integration deviations (0017) and the device self-test (0018). Review findings are in [`review-log.md`](docs/decisions/review-log.md). API spend is tracked call by call in [`docs/api-spend.md`](docs/api-spend.md), and is at most $1.79 of the $140 budget so far (row sum $1.782).
 
 ## Credits
 
