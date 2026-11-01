@@ -11,6 +11,12 @@ namespace Jolly.Core.Tools
     /// Nubi looks at the one nearest the user.</summary>
     public sealed class FindObjectTool : ITool
     {
+        /// <summary>
+        /// The model added a look_at round after a found result in 2 of 3 device runs (3.0-4.9 s tool → answer,
+        /// selftest-report 36778c1) although Nubi was already looking; the result now says so (ADR-0037).
+        /// </summary>
+        public const string NextStep = "you are already looking at it; answer in words, no other tool is needed";
+
         const string Schema =
             "{\"type\":\"object\",\"properties\":{\"noun_phrase\":{\"type\":\"string\",\"maxLength\":40," +
             "\"description\":\"1-3 word noun phrase, e.g. 'reading glasses'\"}},\"required\":[\"noun_phrase\"],\"additionalProperties\":false}";
@@ -66,7 +72,8 @@ namespace Jolly.Core.Tools
             _character.LookAt(LookTarget.At(nearestWorld));
             var nearest = _scene.AddObject(phrase, nearestWorld, "found on request");
             return ToolResult.Success(new ToolJson().Add("found", objects.Count).Add("nearest_id", nearest.Id)
-                                                    .Add("distance_m", nearestDistance).ToString());
+                                                    .Add("distance_m", nearestDistance).Add("looking", true)
+                                                    .Add("next", NextStep).ToString());
         }
 
         static IReadOnlyList<SegmentedObject> Take(IReadOnlyList<SegmentedObject> objects, int count)

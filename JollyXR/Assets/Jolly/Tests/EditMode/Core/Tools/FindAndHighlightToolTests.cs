@@ -1,5 +1,6 @@
 using System.Linq;
 using Jolly.Contracts;
+using Jolly.Core.Tools;
 using Jolly.Testing.Conversation;
 using NUnit.Framework;
 using UnityEngine;
@@ -59,12 +60,26 @@ namespace Jolly.Tests.EditMode.Core.Tools
         }
 
         [Test]
+        public void FindObject_Found_SaysNubiIsAlreadyLookingSoNoLookAtRoundFollows()
+        {
+            _f.Segmenter.Returns(ScriptedSegmenter.Square(40, 24, 8, id: 1));
+
+            var output = ToolHarness.Output(ToolHarness.Run(_f.Find(), "{\"noun_phrase\":\"mug\"}"));
+
+            Assert.That((bool)output["looking"], Is.True);
+            Assert.That((string)output["next"], Is.EqualTo(FindObjectTool.NextStep));
+            Assert.That(_f.Character.LastLook.Value.Point,
+                Is.EqualTo(_f.Scene.Objects.Single().WorldPosition), "the gaze is on the remembered nearest instance");
+        }
+
+        [Test]
         public void FindObject_NothingFound()
         {
             var result = ToolHarness.Run(_f.Find(), "{\"noun_phrase\":\"keys\"}");
 
             Assert.That(result.OutputJson, Is.EqualTo("{\"found\":0}"));
             Assert.That(_f.Presenter.Shown, Is.Empty);
+            Assert.That(_f.Character.LastLook, Is.Null);
         }
 
         [Test]
