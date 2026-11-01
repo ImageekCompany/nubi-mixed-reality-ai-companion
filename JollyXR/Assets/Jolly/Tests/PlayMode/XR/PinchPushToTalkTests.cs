@@ -1,5 +1,7 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using Jolly.Testing;
 using Jolly.XR.Voice;
 using NUnit.Framework;
 using UnityEngine;
@@ -18,6 +20,7 @@ namespace Jolly.Tests.PlayMode.XR
 
         GameObject _root;
         FakeHandSource _hands;
+        FakeClock _clock;
         StubPreferences _preferences;
         PinchPushToTalk _ptt;
         List<string> _events;
@@ -30,9 +33,10 @@ namespace Jolly.Tests.PlayMode.XR
             head.SetParent(_root.transform);
             head.position = new Vector3(0f, 1.6f, 0f);
             _hands = new FakeHandSource();
+            _clock = new FakeClock();
             _preferences = new StubPreferences();
             _ptt = _root.AddComponent<PinchPushToTalk>();
-            _ptt.Construct(_hands, head, _preferences);
+            _ptt.Construct(_hands, _clock, head, _preferences);
             _events = new List<string>();
             _ptt.Pressed += () => _events.Add("pressed");
             _ptt.Released += () => _events.Add("released");
@@ -83,12 +87,31 @@ namespace Jolly.Tests.PlayMode.XR
         }
 
         [UnityTest]
-        public IEnumerator TrackingLostWhileHeld_Releases()
+        public IEnumerator TrackingDropoutWhileHeld_KeepsHoldingWithinTheGrace()
         {
             _hands.Set(Handedness.Right, HandPoses.Pinch(PalmDown, 0.01f));
             yield return null;
 
             _hands.Lose(Handedness.Right);
+            yield return null;
+            _clock.Advance(TimeSpan.FromSeconds(GatedPinch.DropoutGraceSeconds * 0.5));
+            yield return null;
+            _hands.Set(Handedness.Right, HandPoses.Pinch(PalmDown, 0.01f));
+            yield return null;
+
+            Assert.That(_ptt.IsHeld, Is.True);
+            Assert.That(_events, Is.EqualTo(new[] { "pressed" }));
+        }
+
+        [UnityTest]
+        public IEnumerator TrackingLostWhileHeld_ReleasesAfterTheGrace()
+        {
+            _hands.Set(Handedness.Right, HandPoses.Pinch(PalmDown, 0.01f));
+            yield return null;
+
+            _hands.Lose(Handedness.Right);
+            yield return null;
+            _clock.Advance(TimeSpan.FromSeconds(GatedPinch.DropoutGraceSeconds + 0.05));
             yield return null;
 
             Assert.That(_events, Is.EqualTo(new[] { "pressed", "released" }));

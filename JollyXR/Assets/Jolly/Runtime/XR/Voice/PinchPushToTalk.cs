@@ -27,6 +27,7 @@ namespace Jolly.XR.Voice
         readonly GatedPinch _left = new();
         readonly GatedPinch _right = new();
         IHandSource _hands;
+        IClock _clock;
         Transform _head;
         IUserPreferences _preferences;
 
@@ -34,9 +35,10 @@ namespace Jolly.XR.Voice
         public event Action Pressed;
         public event Action Released;
 
-        public void Construct(IHandSource hands, Transform head, IUserPreferences preferences)
+        public void Construct(IHandSource hands, IClock clock, Transform head, IUserPreferences preferences)
         {
             _hands = hands;
+            _clock = clock;
             _head = head;
             _preferences = preferences;
         }
@@ -78,10 +80,10 @@ namespace Jolly.XR.Voice
                 return false;
             }
             if (!_hands.TryGetHand(side, out var hand))
-                return pinch.Update(null, gateOpen: false);
+                return pinch.Update(null, gateOpen: false, _clock.Now);
 
             var gateOpen = !IsHovering(ray) && !HandGestures.PalmFaces(hand, _head.position, PalmTowardHeadMinCos);
-            return pinch.Update(HandGestures.PinchDistance(hand), gateOpen);
+            return pinch.Update(HandGestures.PinchDistance(hand), gateOpen, _clock.Now);
         }
 
         bool ControllerHeld() => controllerTalk != null && controllerTalk.action != null && controllerTalk.action.IsPressed();
