@@ -26,6 +26,14 @@ Each work package appends bullets under its own heading only (`docs/scope.md` §
 ### WP4
 
 ### WP5
+- `CameraMath` (Core/Spatial): pinhole pixel ↔ world ray with a top-left pixel origin and a Y-up Unity camera pose.
+- Camera capture: `CameraFrameSlot` (one reused native buffer, one outstanding frame, release from any thread), `EditorStillFrameSource` (fixture image with Quest 3 camera FOV, top row first), `MetaPassthroughFrameSource` (left lens, `ConvertAsync` straight to the target size, head pose interpolated at the image's CLOCK_MONOTONIC timestamp × Camera2 lens pose) and `Camera2Extrinsics` (JNI, by `com.meta.extra_metadata.position`, converted by `Camera2LensPose`).
+- `PermissionGate`: one batched request; camera manager enabled whatever the answer and restarted on a later grant; scene managers only with `USE_SCENE`; grants read through the Android API.
+- `PinchPushToTalk` (`IVoiceActivation`): hysteresis pinch per hand, gated at pinch start by XRI hover/UI hover and palm-toward-head, dominant/either hand, controller button; `XrUserPoseProvider` with pointing ray, hand key points and a head-pose history.
+- `FloorNavMeshBuilder` + `NavMeshBaker`: concave floor outlines triangulated to mesh colliders, bounding boxes baked Not Walkable, Nubi-sized agent settings, rebuilds throttled to 2 s; `ArWorldQuery` (depth raycast + NavGeometry colliders, floor-height filter, furniture labels) and `ArSpatialAnchors` (persistent GUID ids).
+- `InteractionSignals`: head-gaze dwell, open palm toward Nubi, XRI poke.
+- `QuestBuild` builds Addressables content before the player; setup enables the Meta bounding-box feature.
+- Fakes: `FakeFrameSource`, `FakeUserPoseProvider`, `FakeWorldQuery`, `FakeSpatialAnchors`, `FakeVoiceActivation`, `FakeInteractionSignals`.
 
 ### WP6
 
