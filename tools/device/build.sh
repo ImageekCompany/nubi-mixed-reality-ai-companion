@@ -12,6 +12,7 @@ PROJECT="$ROOT/JollyXR"
 OUT="${1:-$PROJECT/Builds/Android/Nubi.apk}"
 LOGS="$PROJECT/Logs"
 mkdir -p "$LOGS"
+"$ROOT/tools/ci/restore-samples.sh"
 
 run_unity() {
   local name="$1"; shift
