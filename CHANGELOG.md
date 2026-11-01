@@ -35,6 +35,12 @@ Each work package appends bullets under its own heading only (`docs/scope.md` §
 - `JsonFileSecretsProvider`, `DotEnvSecretsProvider`, install-scoped safety identifier, `LatencyTracker` (`evt=turn.latency`) and `RedactingLog`.
 
 ### WP3
+- `Resampler`: streaming mono rate converter (linear interpolation, 63-tap Blackman-sinc anti-alias when downsampling), split-invariant and allocation-free; also serves WP7's 24 kHz → output-rate path. `Pcm16` float ↔ s16 and RMS.
+- `UnityMicrophoneCapture` + `MicrophoneCaptureSession`: 48 kHz device ring → 24 kHz 80 ms pooled `PcmChunk`s, pumped on the PlayerLoop; a 500 ms stall watchdog restarts the mic (device spike §2.6) and ends the stream after three fruitless restarts (a restart is fruitful only once 500 ms of audio follows it); capture times are rebased across a restart gap; `Stop` flushes, `Dispose` aborts.
+- `ClientWebSocketConnection` (`Jolly.Net.WebSockets`): main-thread-resuming `ClientWebSocket` wrapper behind `IWebSocketConnection`; messages over 1 MB fail as `Protocol`.
+- `MuseRealtimeSpeechToText`: realtime push-to-talk ASR. Connects when `Transcribe` is called, not on first enumeration. Handshake backlog sent at once after the ack, live audio forwarded as it arrives and never more than 5 s ahead, `endStream` in the same continuation as source completion, cumulative partials de-duplicated, exactly one normalised Final, 5 s timeout on `IClock` over connect, handshake and ack, error frames and close codes mapped to `ProviderErrorKind`, usage reserved before connecting and settled with the audio seconds sent.
+- `MuseFileSpeechToText`: `POST /v1/asr/transcribe` fallback (buffered WAV, one Final, 10 s timeout). Both adapters share `AsrSessionStream`.
+- Recorded ASR fixtures (`Tests/Fixtures/asr`), and shared fakes `FakeAudioCapture`, `ScriptedSpeechToText`, `StreamCollector<T>`.
 
 ### WP4
 
