@@ -10,7 +10,6 @@ using Jolly.Net.Retry;
 using Jolly.Providers.MetaApi.Common;
 using Jolly.Providers.MetaApi.Vision;
 using Jolly.Testing;
-using Jolly.Tests.EditMode.Net;
 using Jolly.Tests.EditMode.Vision.Doubles;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;

@@ -6,14 +6,13 @@ using Cysharp.Threading.Tasks.Linq;
 using Jolly.Net.Http;
 using Jolly.Net.Sse;
 
-namespace Jolly.Tests.EditMode.Net
+namespace Jolly.Testing
 {
     /// <summary>
     /// Scripted IHttpTransport: each StreamSse enumeration consumes the next script. Synchronous unless a script hangs,
     /// in which case it completes only when its token is cancelled (as UnityWebRequest abort does).
-    /// It lives in the test assembly because Jolly.Testing may not reference Jolly.Net (asmdef graph).
     /// </summary>
-    sealed class FakeHttpTransport : IHttpTransport
+    public sealed class FakeHttpTransport : IHttpTransport
     {
         delegate UniTask Script(IAsyncWriter<SseEvent> writer, CancellationToken ct);
 
