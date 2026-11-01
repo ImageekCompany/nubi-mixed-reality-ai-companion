@@ -11,7 +11,8 @@ namespace Jolly.App.SelfTest
 {
     /// <summary>
     /// Runs the scenarios in order (cheap and offline first, paid ones after, perf last), logs one
-    /// <c>evt=selftest.result</c> line each and writes the results file. A scenario that throws fails alone.
+    /// <c>evt=selftest.result</c> line each and writes the results file. A scenario that throws fails alone. With
+    /// <see cref="SelfTestOptions.LatencyTurns"/> the list is <see cref="LatencyTurnsScenario"/> and then perf.
     /// </summary>
     public sealed class SelfTestRunner
     {
@@ -48,7 +49,8 @@ namespace Jolly.App.SelfTest
             var f = _graph.Foundation;
             var started = DateTimeOffset.UtcNow.ToString("O");
             var spentBefore = f.Usage.SpentUsd;
-            var results = new List<ScenarioResult>(Scenarios.Length);
+            var scenarios = ScenariosFor(_session.Options);
+            var results = new List<ScenarioResult>(scenarios.Length);
             using var observer = new TurnObserver(f.Events, f.Clock);
             var context = new SelfTestContext(_session, _assets, _graph, observer);
             try
@@ -60,7 +62,7 @@ namespace Jolly.App.SelfTest
                     $"evt=selftest.network reachable={_session.NetworkReachable} probe={initial}");
                 await context.WaitUntil(() => connectivity.State == Connectivity.Online, 20, ct);
                 LogFrames("launch");
-                foreach (var (name, run) in Scenarios)
+                foreach (var (name, run) in scenarios)
                 {
                     // One capture per turn scenario (the Profiler keeps 2,000 frames); perf_idle runs without its overhead.
                     if (name != PerfScenario.Name)
@@ -83,6 +85,18 @@ namespace Jolly.App.SelfTest
             ResultsWriter.Write(_resultsPath, SystemInfo.deviceModel, started, f.Usage.SpentUsd - spentBefore, overall, results);
             f.Log.Write(LogLevel.Info, "selftest",
                 $"evt=selftest.done overall={overall} spent_usd={f.Usage.SpentUsd - spentBefore:0.0000}");
+        }
+
+        static (string Name, Scenario Run)[] ScenariosFor(SelfTestOptions options)
+        {
+            var turns = options.LatencyTurns;
+            if (turns == 0)
+                return Scenarios;
+            return new (string, Scenario)[]
+            {
+                (LatencyTurnsScenario.Name, (c, ct) => LatencyTurnsScenario.Run(c, turns, ct)),
+                (PerfScenario.Name, PerfScenario.Run),
+            };
         }
 
         async UniTask<ScenarioResult> RunOne(string name, Scenario run, SelfTestContext context, CancellationToken ct)

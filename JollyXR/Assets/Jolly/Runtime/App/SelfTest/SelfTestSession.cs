@@ -40,6 +40,7 @@ namespace Jolly.App.SelfTest
             _resultsPath = Path.Combine(dataRoot, ResultsFile);
         }
 
+        public SelfTestOptions Options { get; private set; }
         public bool ForceOffline { get; set; }
         /// <summary>The platform's own reachability check, ignoring <see cref="ForceOffline"/>.</summary>
         public bool NetworkReachable => _realReachability();
@@ -55,8 +56,8 @@ namespace Jolly.App.SelfTest
         /// <summary>Null in normal use. Otherwise rewires <paramref name="edges"/> and returns the armed session.</summary>
         public static SelfTestSession TryStart(Edges edges, SelfTestAssets assets, Foundation foundation, SceneRefs scene)
         {
-            var flag = Path.Combine(edges.Paths.DataRoot, FlagFile);
-            if (!ConsumeFlag(flag) && !HasCommandLineFlag())
+            var flag = ConsumeFlag(Path.Combine(edges.Paths.DataRoot, FlagFile));
+            if (flag == null && !HasCommandLineFlag())
                 return null;
             var log = foundation.Log;
             if (assets == null)
@@ -66,12 +67,14 @@ namespace Jolly.App.SelfTest
             }
             var session = new SelfTestSession(assets, edges.Paths.DataRoot)
             {
+                Options = SelfTestOptions.Parse(flag),
                 Frames = new FrameSpikeLog(log),
                 Profile = TurnProfileCapture.TryArm(edges.Paths.DataRoot),
             };
             if (File.Exists(session._resultsPath))
                 File.Delete(session._resultsPath);
-            log.Write(LogLevel.Info, "selftest", "evt=selftest.armed profile=" + (session.Profile != null));
+            log.Write(LogLevel.Info, "selftest",
+                $"evt=selftest.armed profile={session.Profile != null} turns={session.Options.LatencyTurns}");
             session.Rewire(edges, foundation, scene);
             session.TraceGraphicsStates();
             return session;
@@ -129,12 +132,25 @@ namespace Jolly.App.SelfTest
             edges.WrapMasks = masks => Masks = new MaskObserver(wrapMasks(masks), foundation.Clock);
         }
 
-        static bool ConsumeFlag(string path)
+        /// <summary>
+        /// The flag's contents, or null when there is no flag. Empty when it cannot be read: a file that
+        /// <c>adb shell echo</c> created exists for the app but is not readable by it (only <c>adb push</c>ed ones are).
+        /// </summary>
+        static string ConsumeFlag(string path)
         {
             if (!File.Exists(path))
-                return false;
+                return null;
+            string contents;
+            try
+            {
+                contents = File.ReadAllText(path);
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+                contents = string.Empty;
+            }
             File.Delete(path);
-            return true;
+            return contents;
         }
 
         /// <summary>Not on Android, where Unity fills the command line from the launching intent's <c>unity</c> extra.</summary>

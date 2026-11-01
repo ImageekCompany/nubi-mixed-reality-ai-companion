@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
 # Device self-test: runs the app's built-in SelfTestRunner on a connected Quest with nobody wearing it, then prints
 # a PASS/FAIL table from selftest_results.json. Exits 1 when any scenario FAILs (DEGRADED is reported, exit 0).
-# Usage: tools/device/selftest.sh [--build] [--apk path] [--timeout seconds] [--skip-install] [--profile]
+# Usage: tools/device/selftest.sh [--build] [--apk path] [--timeout seconds] [--skip-install] [--profile] [--turns N]
 #   --profile: development players record each turn scenario to a Profiler log with allocation call stacks, pulled to
 #   artifacts/selftest/selftest_turns_<scenario>.raw for Jolly.Editor.Tools.GcAllocReport (docs/perf/README.md §7).
+#   --turns N: instead of the scenario list, N consecutive online voice turns (greeting, come here, vision, repeated)
+#   and perf_idle; prints release -> first audio p50/p90/max and the stage breakdown. About $0.004 per turn ($0.085 for
+#   20 on 2026-11-01; one turn in three is a vision turn with a SAM call).
 #   ANDROID_SERIAL selects the device (adb). NUBI_PACKAGE=com.nubi.companion. Results go to artifacts/selftest/.
 #   NUBI_TMPDIR: where push-secrets.sh writes its temporary JSON (keep TMPDIR short for Unity builds).
 # Spends real Meta API money (about $0.02-0.04 per run: ~7 short Spark turns, 1 vision call, 3-4 SAM images, ASR);
@@ -13,10 +16,11 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 PKG="${NUBI_PACKAGE:-com.nubi.companion}"
 APK="$ROOT/artifacts/Nubi.apk"
-TIMEOUT=360
+TIMEOUT=
 BUILD=0
 SKIP_INSTALL=0
 PROFILE=0
+TURNS=0
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --build) BUILD=1 ;;
@@ -24,10 +28,15 @@ while [[ $# -gt 0 ]]; do
     --timeout) TIMEOUT="$2"; shift ;;
     --skip-install) SKIP_INSTALL=1 ;;
     --profile) PROFILE=1 ;;
+    --turns) TURNS="$2"; shift ;;
     *) echo "unknown argument $1" >&2; exit 2 ;;
   esac
   shift
 done
+
+[[ "$TURNS" =~ ^[0-9]+$ ]] || { echo "[selftest] --turns takes a count" >&2; exit 2; }
+# 20 turns took 207 s on 2026-11-01; the margin covers slow model rounds and the come-here walk.
+TIMEOUT="${TIMEOUT:-$(( TURNS > 0 ? 120 + 25 * TURNS : 360 ))}"
 
 OUT="$ROOT/artifacts/selftest"
 FILES="/sdcard/Android/data/$PKG/files"
@@ -75,7 +84,11 @@ adb logcat -c
 adb shell am force-stop "$PKG"
 adb shell rm -f "$FILES/selftest_results.json" "$FILES/graphics_states.graphicsstate" "$FILES/selftest_turns_*.raw"
 if [[ $PROFILE -eq 1 ]]; then adb shell touch "$FILES/selftest_profile"; fi
-adb shell "echo '{}' > $FILES/selftest.json"
+# Pushed, not written with adb shell echo: the app cannot read a file the shell created there.
+FLAG="$(mktemp "${NUBI_TMPDIR:-${TMPDIR:-/tmp}}/selftest.XXXXXX")"
+if [[ $TURNS -gt 0 ]]; then echo "{\"turns\":$TURNS}" > "$FLAG"; else echo '{}' > "$FLAG"; fi
+adb push "$FLAG" "$FILES/selftest.json" >/dev/null
+rm -f "$FLAG"
 ACTIVITY="$(adb shell cmd package resolve-activity --brief "$PKG" | tail -n 1 | tr -d '\r')"
 adb shell am start -n "$ACTIVITY" >/dev/null
 echo "[selftest] launched $ACTIVITY; waiting up to ${TIMEOUT}s"
@@ -132,6 +145,14 @@ for s in r["scenarios"]:
     print(f"{s['name']:30} {s['status']:9} {s['durationMs']:>7.0f}  {shown}")
     for note in s["notes"]:
         print(f"{'':41}- {note}")
+for s in r["scenarios"]:
+    m = s["metrics"]
+    if "turns" not in m:
+        continue
+    print(f"\n{s['name']}: {m['turns']} turns, {m['turns_degraded']} degraded; release -> first audio by turn (ms): {m['first_audio_ms_by_turn']}")
+    for stage in ["release_to_first_audio", "release_to_asr_final", "asr_final_to_request", "request_to_first_event",
+                  "first_event_to_first_text", "first_text_to_sentence", "sentence_to_first_audio"]:
+        print(f"  {stage:28} n={m[stage + '_n']:>3} p50={m[stage + '_p50_ms']:>6} p90={m[stage + '_p90_ms']:>6} max={m[stage + '_max_ms']:>6}")
 print(f"\nOVERALL {r['overall']}   Meta spend this run: ${r['spentUsd']:.4f} (log it in docs/api-spend.md)")
 sys.exit(1 if r["overall"] == "FAIL" else 0)
 PY
