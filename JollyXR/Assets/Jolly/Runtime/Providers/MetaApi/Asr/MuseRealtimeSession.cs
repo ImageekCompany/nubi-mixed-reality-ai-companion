@@ -30,7 +30,7 @@ namespace Jolly.Providers.MetaApi.Asr
             _clock = clock;
             _log = log;
             _options = options;
-            _uplink = new MuseAudioUplink(socket, clock, sampleRate, options.MaxAheadSeconds);
+            _uplink = new MuseAudioUplink(socket, clock, sampleRate, options.MaxAheadSeconds, options.MinFrameSeconds);
         }
 
         public double SentSeconds => _uplink.SentSeconds;

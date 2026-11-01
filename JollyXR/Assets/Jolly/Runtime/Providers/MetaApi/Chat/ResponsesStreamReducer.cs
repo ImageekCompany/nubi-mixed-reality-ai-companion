@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 using Jolly.Contracts;
 using Jolly.Net.Sse;
@@ -47,7 +48,7 @@ namespace Jolly.Providers.MetaApi.Chat
             if (sse.EventName != null && !IsHandled(sse.EventName))
                 return;
 
-            var json = Parse(sse.Data);
+            var json = IsEnvelope(sse.EventName) ? ParseEnvelope(sse.Data) : Parse(sse.Data);
             try
             {
                 Reduce(json, sse.EventName, output);
@@ -103,6 +104,57 @@ namespace Jolly.Providers.MetaApi.Chat
                 or "error" => true,
             _ => false,
         };
+
+        /// <summary>Events whose payload is the whole response object, which echoes the instructions, tools and output.</summary>
+        static bool IsEnvelope(string eventName) => eventName is "response.created" or "response.completed"
+            or "response.incomplete" or "response.failed";
+
+        /// <summary>
+        /// Reads only what <see cref="Reduce"/> uses of a response envelope (its type and the response's id, usage,
+        /// incomplete_details and error) and skips the echoed request: the full tree of a 10–20 KB echo was the
+        /// largest allocation of the Responses path in the Quest allocation profiles (ADR-0023).
+        /// </summary>
+        static JObject ParseEnvelope(string data)
+        {
+            try
+            {
+                using var reader = new JsonTextReader(new StringReader(data));
+                if (!reader.Read() || reader.TokenType != JsonToken.StartObject)
+                    throw new JsonReaderException("Expected a JSON object.");
+                var envelope = new JObject();
+                while (reader.Read() && reader.TokenType == JsonToken.PropertyName)
+                {
+                    var name = (string)reader.Value;
+                    reader.Read();
+                    if (name == "response" && reader.TokenType == JsonToken.StartObject)
+                        envelope[name] = ReadResponseFields(reader);
+                    else if (name is "type" or "response")
+                        envelope[name] = JToken.ReadFrom(reader);
+                    else
+                        reader.Skip();
+                }
+                return envelope;
+            }
+            catch (JsonException e)
+            {
+                throw MetaErrors.Protocol("malformed stream event: " + e.Message);
+            }
+        }
+
+        static JObject ReadResponseFields(JsonTextReader reader)
+        {
+            var response = new JObject();
+            while (reader.Read() && reader.TokenType == JsonToken.PropertyName)
+            {
+                var name = (string)reader.Value;
+                reader.Read();
+                if (name is "id" or "usage" or "incomplete_details" or "error")
+                    response[name] = JToken.ReadFrom(reader);
+                else
+                    reader.Skip();
+            }
+            return response;
+        }
 
         void OnItemDone(JObject item, List<ModelEvent> output)
         {

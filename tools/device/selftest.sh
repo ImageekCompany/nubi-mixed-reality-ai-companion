@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # Device self-test: runs the app's built-in SelfTestRunner on a connected Quest with nobody wearing it, then prints
 # a PASS/FAIL table from selftest_results.json. Exits 1 when any scenario FAILs (DEGRADED is reported, exit 0).
-# Usage: tools/device/selftest.sh [--build] [--apk path] [--timeout seconds] [--skip-install]
+# Usage: tools/device/selftest.sh [--build] [--apk path] [--timeout seconds] [--skip-install] [--profile]
+#   --profile: development players record each turn scenario to a Profiler log with allocation call stacks, pulled to
+#   artifacts/selftest/selftest_turns_<scenario>.raw for Jolly.Editor.Tools.GcAllocReport (docs/perf/README.md §7).
 #   ANDROID_SERIAL selects the device (adb). NUBI_PACKAGE=com.nubi.companion. Results go to artifacts/selftest/.
 #   NUBI_TMPDIR: where push-secrets.sh writes its temporary JSON (keep TMPDIR short for Unity builds).
 # Spends real Meta API money (about $0.02-0.04 per run: ~5 short Spark turns, 1 vision call, 1-2 SAM images, ASR);
@@ -14,12 +16,14 @@ APK="$ROOT/artifacts/Nubi.apk"
 TIMEOUT=360
 BUILD=0
 SKIP_INSTALL=0
+PROFILE=0
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --build) BUILD=1 ;;
     --apk) APK="$2"; shift ;;
     --timeout) TIMEOUT="$2"; shift ;;
     --skip-install) SKIP_INSTALL=1 ;;
+    --profile) PROFILE=1 ;;
     *) echo "unknown argument $1" >&2; exit 2 ;;
   esac
   shift
@@ -28,7 +32,7 @@ done
 OUT="$ROOT/artifacts/selftest"
 FILES="/sdcard/Android/data/$PKG/files"
 mkdir -p "$OUT"
-rm -f "$OUT/selftest_results.json" "$OUT/logcat.txt" "$OUT/graphics_states.graphicsstate"
+rm -f "$OUT/selftest_results.json" "$OUT/logcat.txt" "$OUT/graphics_states.graphicsstate" "$OUT"/selftest_turns_*.raw
 
 adb get-state >/dev/null || { echo "[selftest] no device (adb get-state failed)" >&2; exit 2; }
 adb wait-for-device
@@ -69,7 +73,8 @@ adb logcat -G 16M
 adb logcat -c
 
 adb shell am force-stop "$PKG"
-adb shell rm -f "$FILES/selftest_results.json" "$FILES/graphics_states.graphicsstate"
+adb shell rm -f "$FILES/selftest_results.json" "$FILES/graphics_states.graphicsstate" "$FILES/selftest_turns_*.raw"
+if [[ $PROFILE -eq 1 ]]; then adb shell touch "$FILES/selftest_profile"; fi
 adb shell "echo '{}' > $FILES/selftest.json"
 ACTIVITY="$(adb shell cmd package resolve-activity --brief "$PKG" | tail -n 1 | tr -d '\r')"
 adb shell am start -n "$ACTIVITY" >/dev/null
@@ -94,6 +99,11 @@ done
 adb pull "$FILES/selftest_results.json" "$OUT/selftest_results.json" >/dev/null
 # Development players also record the graphics states the run drew (docs/perf/README.md §7).
 adb pull "$FILES/graphics_states.graphicsstate" "$OUT/graphics_states.graphicsstate" >/dev/null 2>&1 || true
+if [[ $PROFILE -eq 1 ]]; then
+  for raw in $(adb shell ls "$FILES" | tr -d '\r' | grep -E '^selftest_turns_.*\.raw$'); do
+    adb pull "$FILES/$raw" "$OUT/$raw" >/dev/null || true
+  done
+fi
 adb logcat -d -v time -s Unity:V > "$OUT/logcat.txt" || true
 grep -E "evt=(selftest|turn.latency)" "$OUT/logcat.txt" > "$OUT/selftest_events.txt" || true
 # Compositor stale frames over the whole run (DoD §4: < 1%); the app cannot see these itself.

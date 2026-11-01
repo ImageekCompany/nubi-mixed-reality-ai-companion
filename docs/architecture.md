@@ -23,7 +23,7 @@ Root: `JollyXR/Assets/Jolly/`. All runtime asmdefs set `autoReferenced: false`. 
 |---|---|---|---|
 | `Jolly.Contracts` | `Runtime/Contracts` | `UniTask` (core only) | Interfaces, DTOs and enums only. No MonoBehaviours and no logic beyond trivial value helpers. Frozen after WP0; changes need an ADR note. |
 | `Jolly.Core` | `Runtime/Core` | Contracts, `UniTask`, `Newtonsoft.Json` (precompiled, `com.unity.nuget.newtonsoft-json` 3.2.2) | State machine, `ConversationController` + `TurnRouter` + `TurnPipeline` + `BargeInCoordinator`, `CompositeVoiceActivation`, agent loop, tool registry, the tools (against interfaces), memories + persistence DTOs, `AtomicFile`, sentence splitter, speech queue, guards (`CrisisGuard`, `StopGuard`), `TranscriptAliases`, persona and locale resolution, usage meter, connectivity logic, idle scheduler, secrets parsing, JPEG encoder, `CameraMath` (`Core/Spatial`). Holds no scene references. |
-| `Jolly.Net` | `Runtime/Net` | Contracts, `UniTask` | `HttpTransport` (UnityWebRequest), `SseDownloadHandler`, `SseLineParser`, `ClientWebSocketConnection` (`System.Net.WebSockets.ClientWebSocket` behind `IWebSocketConnection`), `RetryExecutor` + `RetryPolicy`. |
+| `Jolly.Net` | `Runtime/Net` | Contracts, `UniTask` | `HttpTransport` (UnityWebRequest), `SseDownloadHandler`, `SseLineParser`, `ClientWebSocketConnection` (socket, `SslStream` and our own RFC 6455 upgrade, then `WebSocket.CreateFromStream`, behind `IWebSocketConnection`; ADR-0023), `RetryExecutor` + `RetryPolicy`. |
 | `Jolly.Providers.MetaApi` | `Runtime/Providers/MetaApi` | Contracts, Net, `UniTask`, `Newtonsoft.Json` (**not** Core: vendor adapters do not depend on app logic) | `Common/` (auth header, base URL, HTTP status → `ProviderErrorKind` mapping, `MetaModelResolver`), `ResponsesChatModel`, `SparkObjectIdentifier`, `SamSegmenter` + `SamOutputParser` + `OneBitMaskDecoder` (C# port; SAM License), `MuseRealtimeSpeechToText`, `MetaHealthProbe`. Subfolders `Common/`, `Chat/`, `Vision/`, `Asr/`, `Health/` are owned by separate work packages. |
 | `Jolly.Providers.Wit` | `Runtime/Providers/Wit` | Contracts, Net, `UniTask` | `WitTextToSpeech` (raw `/synthesize`, `audio/raw`). |
 | `Jolly.Audio` | `Runtime/Audio` | Contracts, `UniTask` | `Common/SpscFloatRing`, `UnityMicrophoneCapture`, `Resampler`, `StreamingSpeechOutput` (clip-less AudioSource fed from `OnAudioFilterRead`, see §11 Audio), `AmplitudeLipSyncDriver` (fallback). |
@@ -505,7 +505,7 @@ Psychologist (shown to users as **Listener**; the id stays `psychologist`):
 ### Threading
 - Unity APIs are called on the main thread only.
 - `DownloadHandler.ReceiveData` runs on the main thread.
-- `ClientWebSocket` receive runs on the thread pool. The adapter does `await UniTask.SwitchToMainThread(ct)` before writing to its channel, so every provider stream yields on the main thread (contract rule).
+- WebSocket receive runs on the thread pool. The adapter does `await UniTask.SwitchToMainThread(ct)` before writing to its channel, so every provider stream yields on the main thread (contract rule).
 - Moved to the thread pool with `UniTask.SwitchToThreadPool()`: JPEG encode (`EncodeNativeArrayToJPG` thread safety is **UNVERIFIED**; fall back to the main thread after downscale if it throws), base64, SAM mask decode, large JSON parses.
 - `OnAudioFilterRead` runs on the audio thread. It touches only the SPSC ring and plain fields, with no Unity API calls.
 

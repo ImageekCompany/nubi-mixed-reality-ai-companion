@@ -58,11 +58,21 @@ namespace Jolly.App.SelfTest
                 await context.WaitUntil(() => connectivity.State == Connectivity.Online, 20, ct);
                 LogFrames("launch");
                 foreach (var (name, run) in Scenarios)
+                {
+                    // One capture per turn scenario (the Profiler keeps 2,000 frames); perf_idle runs without its overhead.
+                    if (name != PerfScenario.Name)
+                        _session.Profile?.Begin(name);
                     results.Add(await RunOne(name, run, context, ct));
+                    _session.Profile?.End();
+                }
             }
             catch (OperationCanceledException) when (ct.IsCancellationRequested)
             {
                 return;
+            }
+            finally
+            {
+                _session.Profile?.End();
             }
 
             _session.SaveGraphicsStates(f.Log);

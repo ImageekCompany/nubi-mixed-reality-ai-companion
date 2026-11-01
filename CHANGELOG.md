@@ -147,5 +147,15 @@ Each work package appends bullets under its own heading only (`docs/scope.md` §
 - `ClipPcm` resamples an off-rate clip with the anti-aliased `Resampler` instead of its own linear interpolation.
 - Tests: duplicated fakes merged into `Fakes/Common` (one per port, no aliases); ASR tests use `RecordingUsageMeter`, which rejects a double settle like the real meter; locomotion tests bake with the production `NavMeshBaker`.
 
+### Turn GC and the cold first turn (ADR-0023)
+- `selftest.sh --profile` + `TurnProfileCapture`: development players record each turn scenario to a Profiler log with allocation call stacks; `Jolly.Editor.Tools.GcAllocReport` attributes them in batchmode.
+- `ClientWebSocketConnection` opens socket, TLS and the RFC 6455 upgrade itself (`WebSocketUpgrade`) and wraps the stream with `WebSocket.CreateFromStream`: Mono's `ClientWebSocket` read the 101 head one byte per TLS read at 16 KB of garbage each.
+- ASR audio is sent in frames of at least 240 ms (`MuseAsrOptions.MinFrameSeconds`); the remainder goes out as soon as the capture ends.
+- `SseLineParser` reuses `char[]` buffers and event names, `HttpTransport` reuses its SSE sinks, and `ResponsesStreamReducer` reads only id, usage, incomplete_details and error from the response envelope events.
+- `PcmChunk` and `ClipPcm` use dedicated array pools; the self-test converts its clips at launch.
+- Launch warm-up opens the Wit TTS connection (`GET /voices`, nothing synthesized).
+- Development player, 3 runs each: turn GC p50 14.5 → 3.9 KB/frame, max 38.0 → 6.4 (`barge_in`); first turn release → first audio 2.2–3.8 s → 1.7–1.8 s.
+- EditMode tests: `WebSocketUpgradeTests`, `SseLineParserAllocationTests`, `ResponsesStreamReducerAllocationTests`, packed ASR frames.
+
 ### Release audit
 - `docs/release-checklist.md` walks the definition of done on `main` with evidence and lists the human actions left. README test counts, status line, spend figure and Device User Data note corrected; the DoD secret grep excludes the synthetic keys in `Tests/`, and its perf deviations point at `docs/perf/selftest-report.md`.

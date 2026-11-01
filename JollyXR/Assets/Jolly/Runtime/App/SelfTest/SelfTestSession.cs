@@ -47,6 +47,8 @@ namespace Jolly.App.SelfTest
         public SwitchableCameraSource Camera { get; private set; }
         /// <summary>Started by the bootstrap so the launch is traced too; disposes itself when the app token cancels.</summary>
         public FrameSpikeLog Frames { get; private set; }
+        /// <summary>Null unless a turn profile was requested (<see cref="TurnProfileCapture"/>).</summary>
+        public TurnProfileCapture Profile { get; private set; }
 
         /// <summary>Null in normal use. Otherwise rewires <paramref name="edges"/> and returns the armed session.</summary>
         public static SelfTestSession TryStart(Edges edges, SelfTestAssets assets, Foundation foundation, SceneRefs scene)
@@ -60,10 +62,14 @@ namespace Jolly.App.SelfTest
                 log.Write(LogLevel.Error, "selftest", "evt=selftest.no_assets");
                 return null;
             }
-            var session = new SelfTestSession(assets, edges.Paths.DataRoot) { Frames = new FrameSpikeLog(log) };
+            var session = new SelfTestSession(assets, edges.Paths.DataRoot)
+            {
+                Frames = new FrameSpikeLog(log),
+                Profile = TurnProfileCapture.TryArm(edges.Paths.DataRoot),
+            };
             if (File.Exists(session._resultsPath))
                 File.Delete(session._resultsPath);
-            log.Write(LogLevel.Info, "selftest", "evt=selftest.armed");
+            log.Write(LogLevel.Info, "selftest", "evt=selftest.armed profile=" + (session.Profile != null));
             session.Rewire(edges, foundation, scene);
             session.TraceGraphicsStates();
             return session;
@@ -103,6 +109,8 @@ namespace Jolly.App.SelfTest
             _realReachability = edges.IsNetworkReachable;
             edges.IsNetworkReachable = () => !ForceOffline && _realReachability();
             Microphone = new ClipMicrophone(edges.Microphone, foundation.Clock);
+            foreach (var utterance in new[] { _assets.greeting, _assets.comeHere, _assets.whatIsThis, _assets.longAnswer })
+                Microphone.Prepare(utterance.clip);
             edges.Microphone = Microphone;
             Voice = new ScriptedPushToTalk();
             edges.Voice = Voice;

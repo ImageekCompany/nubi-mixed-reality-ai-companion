@@ -33,8 +33,44 @@ namespace Jolly.Tests.EditMode.Asr
             _log = new RecordingLog();
             _secrets = new InMemorySecrets().With(SecretKeys.MetaApiKey, "KEY");
             _audio = Channel.CreateSingleConsumerUnbounded<PcmChunk>();
-            _stt = new MuseRealtimeSpeechToText(() => _socket, _secrets, _meter, _clock, _log,
-                new MuseAsrOptions("muse-voice-transcribe-1.0"));
+            _stt = Stt(minFrameSeconds: 0);
+        }
+
+        /// <summary>Most tests count frames per 80 ms chunk; the packing has its own tests.</summary>
+        MuseRealtimeSpeechToText Stt(double minFrameSeconds) =>
+            new(() => _socket, _secrets, _meter, _clock, _log,
+                new MuseAsrOptions("muse-voice-transcribe-1.0") { MinFrameSeconds = minFrameSeconds });
+
+        [Test]
+        public void PackedFrames_LiveChunksGoOutThreeAtATime()
+        {
+            _stt = Stt(minFrameSeconds: 0.24);
+            Transcribe();
+            _socket.Push(Ack);
+
+            WriteChunks(2);
+            var afterTwo = _socket.BinaryFrameCount();
+            WriteChunks(4);
+
+            Assert.That(afterTwo, Is.Zero);
+            Assert.That(_socket.BinaryFrameCount(), Is.EqualTo(2));
+            Assert.That(_socket.BinaryBytes(), Is.EqualTo(6 * ChunkBytes));
+        }
+
+        [Test]
+        public void PackedFrames_SourceCompletion_SendsTheRemainderThenEndStreamAtOnce()
+        {
+            _stt = Stt(minFrameSeconds: 0.24);
+            Transcribe();
+            _socket.Push(Ack);
+            WriteChunks(4);
+
+            _audio.Writer.TryComplete();
+
+            Assert.That(_socket.BinaryFrameCount(), Is.EqualTo(2));
+            Assert.That(_socket.BinaryBytes(), Is.EqualTo(4 * ChunkBytes));
+            Assert.That(_socket.Sent.Last().Text, Is.EqualTo(MuseAsrHandshake.EndStream));
+            Assert.That(_clock.PendingDelays, Is.Zero);
         }
 
         [Test]

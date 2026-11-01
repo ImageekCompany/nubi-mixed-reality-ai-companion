@@ -1,5 +1,6 @@
 using System;
 using System.Buffers;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Threading;
 using Cysharp.Threading.Tasks;
@@ -12,11 +13,15 @@ namespace Jolly.Net.Http
     /// <summary>
     /// <see cref="IHttpTransport"/> over UnityWebRequest. Main thread only. Cancellation is observed on the PlayerLoop
     /// (ToUniTask default path, UniTask.Yield without cancelImmediately), so Abort never runs on a foreign thread.
+    /// Response sinks are reused across streams: a fresh SSE parser regrew its line buffer to the 5–10 KB echo events
+    /// of every Responses stream (ADR-0023).
     /// </summary>
     public sealed class HttpTransport : IHttpTransport
     {
         const int StreamBufferBytes = 32 * 1024;
         const string RequestIdHeader = "x-request-id";
+
+        readonly Stack<SseResponseSink> _sinks = new();
 
         public async UniTask<HttpResponse> Send(HttpRequestSpec spec, CancellationToken ct)
         {
@@ -37,11 +42,11 @@ namespace Jolly.Net.Http
         public IUniTaskAsyncEnumerable<SseEvent> StreamSse(HttpRequestSpec spec) =>
             UniTaskAsyncEnumerable.Create<SseEvent>((writer, ct) => Stream(spec, writer, ct));
 
-        static async UniTask Stream(HttpRequestSpec spec, IAsyncWriter<SseEvent> writer, CancellationToken ct)
+        async UniTask Stream(HttpRequestSpec spec, IAsyncWriter<SseEvent> writer, CancellationToken ct)
         {
             ct.ThrowIfCancellationRequested();
             var buffer = ArrayPool<byte>.Shared.Rent(StreamBufferBytes);
-            var sink = new SseResponseSink();
+            var sink = _sinks.Count > 0 ? _sinks.Pop() : new SseResponseSink();
             var handler = new SseDownloadHandler(buffer, sink);
             var request = Create(spec, handler);
             handler.Attach(request);
@@ -66,6 +71,8 @@ namespace Jolly.Net.Http
                 // Dispose aborts an in-flight request and disposes the handler before the buffer goes back to the pool.
                 request.Dispose();
                 ArrayPool<byte>.Shared.Return(buffer);
+                sink.Reset();
+                _sinks.Push(sink);
             }
         }
 

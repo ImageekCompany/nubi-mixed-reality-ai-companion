@@ -20,6 +20,12 @@ namespace Jolly.Providers.MetaApi.Asr
         /// </summary>
         public TimeSpan AckTimeout { get; set; } = TimeSpan.FromSeconds(5);
         public double MaxAheadSeconds { get; set; } = 5.0;
+        /// <summary>
+        /// Audio is sent in frames of at least this long (three 80 ms capture chunks): each send allocates 16 KB in
+        /// Mono's TLS stream (ADR-0023). Partial transcripts arrive up to 160 ms later; the final does not wait. 0 sends
+        /// every chunk as it comes.
+        /// </summary>
+        public double MinFrameSeconds { get; set; } = 0.24;
         /// <summary>Reserved per request before connecting: one minute at $0.18/h.</summary>
         public decimal ReserveUsd { get; set; } = 0.003m;
     }

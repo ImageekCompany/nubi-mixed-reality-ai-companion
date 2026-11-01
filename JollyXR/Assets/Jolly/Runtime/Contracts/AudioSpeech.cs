@@ -14,6 +14,9 @@ namespace Jolly.Contracts
     public sealed class PcmChunk : IDisposable
     {
         static readonly System.Collections.Concurrent.ConcurrentBag<PcmChunk> Pool = new();
+        // Not ArrayPool.Shared: on Quest its Rent kept allocating for Wit, microphone and clip chunks turn after turn
+        // (device allocation profiles, ADR-0023). A dedicated pool keeps up to 50 arrays per size and never trims.
+        static readonly System.Buffers.ArrayPool<short> Buffers = System.Buffers.ArrayPool<short>.Create();
         int _disposed;
         PcmChunk() { }
 
@@ -26,7 +29,7 @@ namespace Jolly.Contracts
         {
             if (!Pool.TryTake(out var c)) c = new PcmChunk();
             c._disposed = 0;
-            c.Buffer = System.Buffers.ArrayPool<short>.Shared.Rent(length);
+            c.Buffer = Buffers.Rent(length);
             c.Length = length; c.SampleRate = sampleRate; c.CaptureTime = captureTime;
             return c;
         }
@@ -34,7 +37,7 @@ namespace Jolly.Contracts
         public void Dispose()
         {
             if (System.Threading.Interlocked.Exchange(ref _disposed, 1) != 0) return;
-            System.Buffers.ArrayPool<short>.Shared.Return(Buffer);
+            Buffers.Return(Buffer);
             Buffer = null; Length = 0;
             Pool.Add(this);
         }

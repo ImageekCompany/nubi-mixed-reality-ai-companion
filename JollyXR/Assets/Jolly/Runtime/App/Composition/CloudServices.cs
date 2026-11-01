@@ -27,6 +27,8 @@ namespace Jolly.App.Composition
         /// <summary>The adapter behind <see cref="SpeechToText"/>, for the launch warm-up only.</summary>
         public MuseRealtimeSpeechToText RealtimeAsr { get; private set; }
         public ITextToSpeech TextToSpeech { get; private set; }
+        /// <summary>The adapter behind <see cref="TextToSpeech"/>, for the launch warm-up only; null when an edge replaces it.</summary>
+        public WitTextToSpeech Wit { get; private set; }
         public ISegmenter Segmenter { get; private set; }
         public IObjectIdentifier Identifier { get; private set; }
 
@@ -50,6 +52,10 @@ namespace Jolly.App.Composition
 
             var asr = new MuseRealtimeSpeechToText(() => edges.WebSockets(MuseAsrErrors.Provider), f.Secrets, f.Usage,
                 f.Clock, f.Log, new MuseAsrOptions(MetaModelResolver.Resolve(ModelRoute.LiveUser, c.asrModel)));
+            var wit = edges.TextToSpeech == null
+                ? new WitTextToSpeech(f.Secrets, f.Clock, TimeSpan.FromSeconds(c.witFirstChunkSeconds),
+                    TimeSpan.FromSeconds(c.witIdleSeconds))
+                : null;
             var services = new CloudServices
             {
                 Connectivity = monitor,
@@ -57,9 +63,8 @@ namespace Jolly.App.Composition
                 BackgroundChat = Chat(c.backgroundFirstEventSeconds, c.backgroundAttempts),
                 RealtimeAsr = asr,
                 SpeechToText = new ReportingSpeechToText(asr, MuseAsrErrors.Provider, monitor),
-                TextToSpeech = new ReportingTextToSpeech(edges.TextToSpeech ?? new WitTextToSpeech(f.Secrets, f.Clock,
-                        TimeSpan.FromSeconds(c.witFirstChunkSeconds), TimeSpan.FromSeconds(c.witIdleSeconds)),
-                    WitProtocol.Provider, monitor),
+                Wit = wit,
+                TextToSpeech = new ReportingTextToSpeech(edges.TextToSpeech ?? wit, WitProtocol.Provider, monitor),
                 Segmenter = new ReportingSegmenter(new SamSegmenter(endpoint, sse, f.Usage, f.Clock, f.Log,
                         new SamOptions(MetaModelResolver.Resolve(ModelRoute.LiveUser, c.samModel), PriceOf(c, c.samModel),
                             TimeSpan.FromSeconds(c.samSeconds), c.samAttempts)),

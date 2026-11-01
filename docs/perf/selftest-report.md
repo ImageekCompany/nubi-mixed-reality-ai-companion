@@ -1,9 +1,41 @@
 # Device self-test report
 
-Latest: 2026-11-01, 08:20–08:47 UTC, the performance and latency pass on `fix/perf-latency` (ADR-0019): two "before" runs of `main` plus the new diagnostics, four "after" runs, release IL2CPP. Earlier: 06:38–06:50 UTC from `fix/integration-review`, 06:00–06:14 UTC from `feat/wp9-integration`.
+Latest: 2026-11-01, 08:37–09:27 UTC, the turn-GC and cold-first-turn pass on `fix/turn-gc` (ADR-0023): three "before" runs of `main`, three "after" runs, development IL2CPP (the only player that reports GC per frame), four allocation-profile runs and one release verification run. Before that: 08:20–08:47 UTC, the performance and latency pass on `fix/perf-latency` (ADR-0019), release IL2CPP. Earlier: 06:38–06:50 UTC from `fix/integration-review`, 06:00–06:14 UTC from `feat/wp9-integration`.
 Device: Quest 3 `2G0YC1ZF7P090N`, Horizon OS v209. Build: `tools/ci/build.sh` (IL2CPP ARM64 release, 58 MB APK).
 Nobody wore the headset. The room was dim (camera mean luma 23–45 of 255) and had no Space Setup. Command: `tools/device/selftest.sh` (headless: `prox_close`, `guardian_pause 1`, 16 MiB logcat buffer; all restored afterwards).
 Raw outputs (`selftest_results.json`, `logcat.txt`, `vrapi.txt`) are under `artifacts/selftest/`, which is git-ignored.
+
+## Turn GC and the cold first turn (fix/turn-gc)
+
+Development IL2CPP players (`NUBI_DEVELOPMENT=1`), `tools/device/selftest.sh`; "before" is `main` `f19b36e` plus the profiling switch (inert without `--profile`). GC is `evt=selftest.frames gc_bytes_per_frame` per turn scenario (`offline_greeting`, `voice_greeting`, `voice_come_here`, `vision_capture_and_identify`, `barge_in`), all threads. Stale frames: VrApi, turns phase (first scenario + 2 s to `perf_idle`) and whole run (includes the ~350 ms launch frame).
+
+| Metric | Target | Before (3 runs) | After (3 runs) |
+|---|---|---|---|
+| GC per frame in turns, p50 / max over 15 scenario windows | ≤ 4 KB | **14.5 / 38.0 KB** | **3.9 / 6.4 KB** |
+| `voice_greeting` | ≤ 4 KB | 13.1, 14.5, 17.0 KB | 3.7, 4.3, 3.3 KB |
+| `voice_come_here` | ≤ 4 KB | 22.0, 21.1, 21.0 KB | 3.9, 4.6, 4.1 KB |
+| `vision_capture_and_identify` | ≤ 4 KB | 14.0, 12.7, 12.9 KB | 3.1, 3.6, 3.3 KB |
+| `barge_in` (two ASR sessions) | ≤ 4 KB | 37.0, 38.0, 36.9 KB | 5.9, 6.4, 6.0 KB |
+| `offline_greeting` | ≤ 4 KB | 4.1, 3.9, 4.0 KB | 3.9, 3.8, 3.5 KB |
+| GC per frame, `perf_idle` | 0 B | 385, 384, 384 B | 378, 386, 386 B |
+| Release → first audio, first turn of the launch | p50 ≤ 2.0 s | 3,764, 2,888, 2,177 ms | 1,845, 1,819, 1,718 ms |
+| Release → first audio, all online turns | p50 ≤ 2.0 s | p50 2,036, max 3,764 (n=12) | p50 1,750, max 2,512 (n=12) |
+| First sentence queued → first audio, first turn | — | 612, 333, 443 ms | 320, 194, 195 ms |
+| First ASR ack of a launch | — | 1,940, 1,537, 1,644 ms | 1,428, 1,330, 1,147 ms |
+| Stale frames, turns / whole run | < 1 % | 0.82 / 1.65, 0.91 / 1.79, 0.69 / 1.78 % | 0.66 / 1.76, 0.82 / 1.50, 0.64 / 1.71 % |
+
+Release verification (IL2CPP release, 09:26 UTC, one run): every scenario passed except `voice_come_here` (DEGRADED, no NavMesh); ASR over the new WebSocket path works under release stripping; release → first audio 2,249 / 2,430 / 1,081 / 1,777 ms (the first two turns had 1.0 s and 0.7 s of model reasoning before the first text, and the greeting called `come_here`), first sentence 221 ms, stale frames 0.92 % in turns, 1.19 % whole run, 72.0 fps idle.
+
+What was found and done (ADR-0023):
+
+- **Measured, not guessed.** `selftest.sh --profile` records each turn scenario to a Profiler log with allocation call stacks; `GcAllocReport` attributes the bytes in batchmode (docs/perf/README.md §7). Its totals match the frame log within 1 %.
+- **72 % of all turn garbage was the ASR WebSocket connect.** Mono's `ClientWebSocket` reads the HTTP 101 head one byte per TLS read, and Mono's TLS stream allocates a fresh 16 KB buffer per read. `ClientWebSocketConnection` now opens socket, TLS and the upgrade itself and hands the stream to `WebSocket.CreateFromStream`.
+- **Every TLS send and receive still costs 16 KB** (Mono's `MobileAuthenticatedStream`). Audio now goes out in ≥ 240 ms frames, a third of the sends; receives are one per server message and stay. This is most of what remains, and why `barge_in`, with two sessions in ~7 s, is still over.
+- **Main-thread allocators fixed:** SSE parser buffers (reused, and kept across streams), the Responses `created`/`completed` echo (only id, usage, incomplete_details and error are read), `ArrayPool.Shared` re-renting on the PCM paths (dedicated pools), and the self-test converting its clips inside each turn (now at launch).
+- **Left as is, third-party:** XRI `CurveVisualController` copies its gradient every frame a ray is visible (~0.3 KB/frame in every turn profile; likely most of the ~380 B/frame of `perf_idle` in development players, which was not profiled), TMP and Input System array growth on new text or bindings.
+- **Cold first turn.** The Wit connection was cold: the first sentence of a launch took 333–612 ms from queued to first audio against 95–208 ms for turns 3–4. A `GET /voices` at launch (synthesizes nothing) brings it to 194–320 ms. The Responses connection was already warm from the launch health probe: request → first event on the first turn was 466–1,345 ms against 513–1,096 ms later, before any change. The 3.1 s first turn of the release audit was mostly model reasoning (first event → first text 1.5 s, 450 output tokens); in the three "before" runs here it was 1.0–1.4 s on the first turn, which no warm-up removes.
+
+Spend: 12 self-test runs (3 before, 1 intermediate, 3 after, 4 profiled, 1 release; app meter $0.149 in total). `api-spend.md` has the row.
 
 ## Performance and latency pass (fix/perf-latency)
 
@@ -35,7 +67,7 @@ What was found and done (ADR-0019):
 - **Vision latency is reasoning time.** On the device the header arrives 1.3–3.1 s after the tool start with 200–500 reasoning tokens at `minimal`, varying run to run. Probes from the dev Mac (`meta-model-api.md` §3, 9 paid calls): `muse-spark-1.2` was slower (2.4–2.7 s), a "reply at once" prompt made the model reason more (2.29 s vs 1.81 s), and image size only moves the 300–400 image tokens of prefill, so 640 px and quality 80 stay. SAM and Spark already start together; the mask is shown 0.7–1.1 s after the tool start. The 2.5 s budget is met in 3 of 4 runs. The remaining lever is starting the vision call at the ASR final for turns that sound like a vision question, before the model calls the tool (ADR-0019 Alternatives).
 - **Prompt caching.** Tool-bearing Responses requests were never cached without a `prompt_cache_key`; every request now sends one derived from the static prefix. Cost per agent call fell by a third; the latency effect is within the noise of these runs.
 - **Bugs found on the way:** every memory summary call ended in reasoning at the 300-token cap and replaced the summary with nothing (now 1,024 tokens, and an unusable result changes nothing); one vision reply ran into the 600-token cap; another was 40 s of reasoning about the missing `capture_and_identify` tool, because persona prompts name tools (the vision prompt now says it has none; verified live).
-- **GC during turns is over budget.** Development players measured 11–42 KB per frame during turns (DoD: ≤ 4 KB) and ~200 B per frame idle. Not addressed in this pass.
+- **GC during turns is over budget.** Development players measured 11–42 KB per frame during turns (DoD: ≤ 4 KB) and ~200 B per frame idle. Not addressed in this pass (see the fix/turn-gc section above).
 
 Spend: 11 self-test runs ($0.243 by the app meter) and 13 probe calls (≈ $0.04); `api-spend.md` has the rows.
 
@@ -97,7 +129,7 @@ The DoD target is < 1 % over 10 minutes of conversation. Turns are just over it,
 - Live passthrough content, mask placement against real geometry and the R1 marker test (`device-spike.md` §5).
 - Walking: the scene has no Space Setup, so no floor NavMesh; `come_here` was checked only for its graceful answer.
 - Hand-tracking pinch, poke and gaze triggers, and whether the phantom pinch appears with a wearer.
-- GC allocation per frame: "GC Allocated In Frame" is recorded only in development players; the release run reports collections (0 in 30 s).
+- GC allocation per frame in release players: "GC Allocated In Frame" is recorded only in development players; the release run reports collections (0 in 30 s). The turn numbers above are from development players.
 - `capture_and_identify` start → mask visible and → answer audio (DoD §5): no event marks either on the device yet. The vision row above is the preamble.
 - DoD §4 rows that need OVR Metrics or the Profiler (CPU main thread p95, `app_rss_MB`, 10-minute stale frames, thermal, battery), and §5's 20 consecutive turns. See the coverage table below.
 
@@ -112,7 +144,7 @@ DoD §4 asks for deviations to be recorded in `docs/perf/report.md`; until the O
 | CPU main thread | p95 ≤ 11 ms | — | **Unmeasured** (Profiler) |
 | Draw calls / SetPass | ≤ 200 / ≤ 60 | 12 / 11 max, idle | Met at idle; turns unmeasured |
 | Triangles | ≤ 300k; Nubi ≤ 30k | 27,178 max; Nubi 25,248 | Met |
-| GC alloc | 0 B/frame idle; ≤ 4 KB/frame in a turn | release: 0 collections in 30 s; development player: ~200 B/frame idle, 11–42 KB/frame in turns | **Not met during turns**; idle met in the release player and in `NoGcAllocInSteadyStateIdle` |
+| GC alloc | 0 B/frame idle; ≤ 4 KB/frame in a turn | release: 0 collections in 30 s; development player (fix/turn-gc, 3 runs): ~385 B/frame idle (XRI ray gradient), turns p50 3.9 KB/frame, max 6.4 (`barge_in`) | **Met at p50; not in `barge_in` (5.9–6.4 KB) and one `voice_come_here` (4.6 KB)**; idle met in the release player and in `NoGcAllocInSteadyStateIdle` |
 | Memory | `app_rss_MB` ≤ 1,500 MB | System Used Memory 531 MB | `app_rss_MB` **unmeasured** |
 | Thermal, battery | 30 min / ≤ 20 % | — | **Unmeasured** |
 | Release → ASR final | p50 ≤ 300 ms | p50 208 ms, max 681 ms (n=16, 4 runs of `fix/perf-latency`) | Met on n=16 |
