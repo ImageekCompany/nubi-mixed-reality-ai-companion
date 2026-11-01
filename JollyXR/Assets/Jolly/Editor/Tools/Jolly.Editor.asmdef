@@ -7,7 +7,9 @@
         "Jolly.Contracts",
         "Jolly.Providers.Wit",
         "UniTask",
-        "UniTask.Linq"
+        "UniTask.Linq",
+        "Unity.Localization",
+        "Unity.Localization.Editor"
     ],
     "includePlatforms": [
         "Editor"
