@@ -18,7 +18,8 @@ namespace Jolly.Audio.Output
             var interleaved = ArrayPool<float>.Shared.Rent(frames * channels);
             try
             {
-                if (!clip.GetData(interleaved, 0))
+                // The rented array may be longer than the clip; Unity warns on every oversized read.
+                if (!clip.GetData(interleaved.AsSpan(0, frames * channels), 0))
                     throw new ArgumentException($"Cannot read samples of clip '{clip.name}'; import it as Decompress On Load.", nameof(clip));
 
                 var length = (int)((long)frames * targetSampleRate / clip.frequency);

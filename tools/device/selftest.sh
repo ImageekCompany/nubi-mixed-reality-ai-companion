@@ -31,6 +31,7 @@ mkdir -p "$OUT"
 rm -f "$OUT/selftest_results.json" "$OUT/logcat.txt"
 
 adb get-state >/dev/null || { echo "[selftest] no device (adb get-state failed)" >&2; exit 2; }
+adb wait-for-device
 
 restore_headset() {
   adb shell am force-stop "$PKG" >/dev/null 2>&1 || true
@@ -48,7 +49,8 @@ if [[ $BUILD -eq 1 ]]; then
 fi
 if [[ $SKIP_INSTALL -eq 0 ]]; then
   [[ -s "$APK" ]] || { echo "[selftest] missing $APK (use --build)" >&2; exit 2; }
-  adb install -r -g "$APK" >/dev/null
+  # The first install right after the adb daemon starts can fail with an empty reason; one retry is enough.
+  adb install -r -g "$APK" >/dev/null || { sleep 2; adb install -r -g "$APK" >/dev/null; }
   echo "[selftest] installed $APK"
 fi
 for p in horizonos.permission.HEADSET_CAMERA android.permission.RECORD_AUDIO com.oculus.permission.USE_SCENE; do
@@ -70,7 +72,7 @@ adb shell am force-stop "$PKG"
 adb shell rm -f "$FILES/selftest_results.json"
 adb shell "echo '{}' > $FILES/selftest.json"
 ACTIVITY="$(adb shell cmd package resolve-activity --brief "$PKG" | tail -n 1 | tr -d '\r')"
-adb shell am start -n "$ACTIVITY" --es selftest 1 >/dev/null
+adb shell am start -n "$ACTIVITY" >/dev/null
 echo "[selftest] launched $ACTIVITY; waiting up to ${TIMEOUT}s"
 
 start=$SECONDS
@@ -92,11 +94,18 @@ done
 adb pull "$FILES/selftest_results.json" "$OUT/selftest_results.json" >/dev/null
 adb logcat -d -v time -s Unity:V > "$OUT/logcat.txt" || true
 grep -E "evt=(selftest|turn.latency)" "$OUT/logcat.txt" > "$OUT/selftest_events.txt" || true
+# Compositor stale frames over the whole run (DoD §4: < 1%); the app cannot see these itself.
+adb logcat -d -v time -s VrApi:I > "$OUT/vrapi.txt" || true
+awk '/FPS=/ { split(substr($0, index($0, "FPS=") + 4), f, "/"); frames += f[1]
+              if (match($0, /Stale=[0-9]+/)) stale += substr($0, RSTART + 6, RLENGTH - 6) }
+     END { if (frames > 0) printf "[selftest] compositor: %d of %d frames stale (%.2f%%, target < 1%%)\n", stale, frames, 100 * stale / frames }' \
+  "$OUT/vrapi.txt"
 
 python3 -I - "$OUT/selftest_results.json" <<'PY'
 import json, sys
 r = json.load(open(sys.argv[1], encoding="utf-8"))
 keys = ["release_to_first_audio_ms", "similarity", "caption_ms", "silence_ms", "avg_fps", "p95_frame_ms",
+        "draw_calls_max", "setpass_calls_max", "triangles_max", "system_memory_mb",
         "gc_alloc_bytes_per_frame", "mean_luma", "frame", "navmesh", "tools"]
 print(f"\nSelf-test on {r['device']} at {r['startedUtc']}")
 print(f"{'scenario':30} {'status':9} {'ms':>7}  key metrics")

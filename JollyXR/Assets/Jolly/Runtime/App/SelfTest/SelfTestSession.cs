@@ -5,21 +5,21 @@ using Cysharp.Threading.Tasks;
 using Jolly.App.Composition;
 using Jolly.Contracts;
 using Jolly.XR.Capture;
-using UnityEngine;
 
 namespace Jolly.App.SelfTest
 {
     /// <summary>
     /// The device self-test (requirements: self-checking pipeline). Compiled into every build but inert unless
-    /// <c>persistentDataPath/selftest.json</c> exists or the launch intent carries the <c>selftest</c> extra. The flag is
-    /// consumed at once, so the next normal launch is a normal app. It replaces only the edges a person would provide
+    /// <c>persistentDataPath/selftest.json</c> exists (or, off-device, the <c>-selftest</c> argument is given). The flag is
+    /// consumed at once, so the next normal launch is a normal app. There is deliberately no intent path on Android: the
+    /// launcher activity is exported, so any app could start a paid, offline-forcing run; only adb can write the flag. It replaces only the edges a person would provide
     /// (voice and the pinch, microphone, a lit room, the network switch); everything between them runs for real.
     /// </summary>
     public sealed class SelfTestSession
     {
         public const string FlagFile = "selftest.json";
         public const string ResultsFile = "selftest_results.json";
-        const string IntentExtra = "selftest";
+        const string CommandLineFlag = "-selftest";
 
         readonly SelfTestAssets _assets;
         readonly string _resultsPath;
@@ -42,7 +42,7 @@ namespace Jolly.App.SelfTest
         public static SelfTestSession TryStart(Edges edges, SelfTestAssets assets, Foundation foundation, SceneRefs scene)
         {
             var flag = Path.Combine(edges.Paths.DataRoot, FlagFile);
-            if (!ConsumeFlag(flag) && !HasIntentExtra())
+            if (!ConsumeFlag(flag) && !HasCommandLineFlag())
                 return null;
             var log = foundation.Log;
             if (assets == null)
@@ -85,15 +85,13 @@ namespace Jolly.App.SelfTest
             return true;
         }
 
-        static bool HasIntentExtra()
+        /// <summary>Not on Android, where Unity fills the command line from the launching intent's <c>unity</c> extra.</summary>
+        static bool HasCommandLineFlag()
         {
 #if UNITY_ANDROID && !UNITY_EDITOR
-            using var player = new AndroidJavaClass("com.unity3d.player.UnityPlayer");
-            using var activity = player.GetStatic<AndroidJavaObject>("currentActivity");
-            using var intent = activity?.Call<AndroidJavaObject>("getIntent");
-            return intent != null && intent.Call<bool>("hasExtra", IntentExtra);
+            return false;
 #else
-            return Array.IndexOf(Environment.GetCommandLineArgs(), "-" + IntentExtra) >= 0;
+            return Array.IndexOf(Environment.GetCommandLineArgs(), CommandLineFlag) >= 0;
 #endif
         }
     }
