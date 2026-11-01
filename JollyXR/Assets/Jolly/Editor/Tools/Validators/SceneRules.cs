@@ -77,10 +77,38 @@ namespace Jolly.Editor.Tools.Validators
                 problems.Add("The XR Origin has no XRInputModalityManager");
                 return;
             }
+            CheckHandVisuals(origin, problems);
             var modes = new SerializedObject(modality);
             var rays = new SerializedObject(pinch);
             CheckHand(modes.FindProperty("m_LeftHand"), rays.FindProperty("leftHandRay"), "left", problems);
             CheckHand(modes.FindProperty("m_RightHand"), rays.FindProperty("rightHandRay"), "right", problems);
+        }
+
+        // The hand visualizer script and the Quest hand meshes come from the XR Hands HandVisualizer sample, which is
+        // restored from the package rather than committed (ADR-0030); without it they load as missing.
+        static void CheckHandVisuals(Component origin, List<string> problems)
+        {
+            Component visualizer = null;
+            foreach (var behaviour in origin.GetComponentsInChildren<MonoBehaviour>(true))
+            {
+                if (behaviour == null)
+                    problems.Add("The XR Origin has a missing script (is the XR Hands HandVisualizer sample restored?)");
+                else if (behaviour.GetType().Name == "HandVisualizer")
+                    visualizer = behaviour;
+            }
+            if (visualizer == null)
+            {
+                problems.Add("The XR Origin has no HandVisualizer");
+                return;
+            }
+            var so = new SerializedObject(visualizer);
+            foreach (var field in new[] { "m_MetaQuestLeftHandMesh", "m_MetaQuestRightHandMesh" })
+            {
+                var hand = so.FindProperty(field).objectReferenceValue as GameObject;
+                var mesh = hand == null ? null : hand.GetComponentInChildren<SkinnedMeshRenderer>(true);
+                if (mesh == null || mesh.sharedMesh == null)
+                    problems.Add("HandVisualizer." + field + " has no hand mesh");
+            }
         }
 
         static void CheckHand(SerializedProperty hand, SerializedProperty ray, string side, List<string> problems)
