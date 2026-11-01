@@ -86,5 +86,23 @@ namespace Jolly.Tests.PlayMode.XR
             frame.Dispose();
             Assert.Throws<ObjectDisposedException>(() => slot.Acquire(16, CancellationToken.None).Forget());
         });
+
+        [UnityTest]
+        public IEnumerator Dispose_WhileAnAcquireWaits_FailsItOnRelease() => UniTask.ToCoroutine(async () =>
+        {
+            var slot = new CameraFrameSlot();
+            await slot.Acquire(16, CancellationToken.None);
+            var frame = slot.Publish(2, 2, K, Pose.identity, 0);
+            var waiting = slot.Acquire(16, CancellationToken.None);
+
+            slot.Dispose();
+            frame.Dispose();
+
+            var thrown = false;
+            try { await waiting; }
+            catch (ObjectDisposedException) { thrown = true; }
+            Assert.That(thrown, Is.True);
+            Assert.That(slot.IsLeased, Is.False);
+        });
     }
 }

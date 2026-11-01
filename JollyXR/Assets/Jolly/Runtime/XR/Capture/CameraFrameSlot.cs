@@ -13,34 +13,36 @@ namespace Jolly.XR.Capture
     /// </summary>
     public sealed class CameraFrameSlot : IDisposable
     {
+        // Lease and dispose bits in one int, changed only by compare-exchange: Dispose (main thread) and a release
+        // (any thread) each see the other's bit, so exactly the later of the two frees the buffer.
+        const int Leased = 1;
+        const int Disposed = 2;
+
         readonly Action<CameraFrame> _release;
         NativeArray<byte> _buffer;
-        int _leased;
-        bool _disposed;
+        int _state;
 
         public CameraFrameSlot() => _release = OnReleased;
 
-        public bool IsLeased => Volatile.Read(ref _leased) != 0;
+        public bool IsLeased => (Volatile.Read(ref _state) & Leased) != 0;
 
         /// <summary>Waits for the previous frame's release, then leases a buffer of at least byteCount bytes.
         /// Follow with Publish, or Abort if the capture fails.</summary>
         public UniTask<NativeArray<byte>> Acquire(int byteCount, CancellationToken ct)
         {
-            if (_disposed)
-                throw new ObjectDisposedException(nameof(CameraFrameSlot));
+            ThrowIfDisposed(Volatile.Read(ref _state));
             return AcquireAsync(byteCount, ct);
         }
 
         async UniTask<NativeArray<byte>> AcquireAsync(int byteCount, CancellationToken ct)
         {
-            while (Interlocked.CompareExchange(ref _leased, 1, 0) != 0)
-                await UniTask.WaitWhile(this, s => s.IsLeased, cancellationToken: ct);
-
-            if (_disposed)
+            int state;
+            while ((state = Interlocked.CompareExchange(ref _state, Leased, 0)) != 0)
             {
-                Volatile.Write(ref _leased, 0);
-                throw new ObjectDisposedException(nameof(CameraFrameSlot));
+                ThrowIfDisposed(state);
+                await UniTask.WaitWhile(this, s => s.IsLeased, cancellationToken: ct);
             }
+
             if (!_buffer.IsCreated || _buffer.Length < byteCount)
             {
                 if (_buffer.IsCreated)
@@ -61,18 +63,32 @@ namespace Jolly.XR.Capture
 
         public void Dispose()
         {
-            if (_disposed)
-                return;
-            _disposed = true;
-            if (!IsLeased)
+            int state;
+            do
+            {
+                state = Volatile.Read(ref _state);
+                if ((state & Disposed) != 0)
+                    return;
+            } while (Interlocked.CompareExchange(ref _state, state | Disposed, state) != state);
+            if ((state & Leased) == 0)
                 FreeBuffer();
         }
 
         void OnReleased(CameraFrame _)
         {
-            Volatile.Write(ref _leased, 0);
-            if (_disposed)
+            int state;
+            do
+            {
+                state = Volatile.Read(ref _state);
+            } while (Interlocked.CompareExchange(ref _state, state & ~Leased, state) != state);
+            if ((state & Disposed) != 0)
                 FreeBuffer();
+        }
+
+        static void ThrowIfDisposed(int state)
+        {
+            if ((state & Disposed) != 0)
+                throw new ObjectDisposedException(nameof(CameraFrameSlot));
         }
 
         void FreeBuffer()
