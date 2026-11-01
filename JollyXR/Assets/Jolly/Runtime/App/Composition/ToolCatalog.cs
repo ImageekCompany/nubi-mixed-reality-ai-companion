@@ -9,11 +9,11 @@ namespace Jolly.App.Composition
     /// <summary>Registers the whole tool catalogue of contracts §4.2 against the real adapters.</summary>
     public static class ToolCatalog
     {
-        public static ToolRegistry Build(Foundation f, CloudServices cloud, XrServices xr, ICharacterController character,
+        public static ToolRegistry Build(Foundation f, JollyConfig config, CloudServices cloud, XrServices xr, ICharacterController character,
                                          ISceneMemory scene, IPersonaProvider personas, ILocalizer localizer,
                                          IMaskPresenter masks, IRoomScan room, out FrameGrabber frames)
         {
-            var vision = new VisionSettings();
+            var vision = new VisionSettings { MinMeanLuma = config.visionMinMeanLuma };
             var locomotion = new LocomotionSettings();
             var projection = new CameraMathProjection();
             frames = new FrameGrabber(xr.Camera, new JpegImageEncoder(), f.Clock, vision);

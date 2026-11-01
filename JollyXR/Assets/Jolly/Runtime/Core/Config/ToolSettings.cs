@@ -32,5 +32,7 @@ namespace Jolly.Core.Config
         public float MaxMaskCoverage { get; set; } = 0.5f;
         public int MaxInstances { get; set; } = 16;
         public int InteriorSamples { get; set; } = 8;
+        /// <summary>A frame darker than this (mean luma 0–255) gets no SAM or Spark call; JollyConfig.visionMinMeanLuma.</summary>
+        public float MinMeanLuma { get; set; } = 25f;
     }
 }

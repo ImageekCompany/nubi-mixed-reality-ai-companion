@@ -85,6 +85,7 @@ MonoBehaviour:
   fallbackFloor: 1
   fallbackFloorRadius: 1.5
   offerRoomScan: 1
+  visionMinMeanLuma: 25
   acknowledgeOnRelease: 1
   headPoseLeadSeconds: 0
   minimumLogLevel: 1

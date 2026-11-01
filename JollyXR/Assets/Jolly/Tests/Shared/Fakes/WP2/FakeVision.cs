@@ -9,11 +9,14 @@ using UnityEngine;
 
 namespace Jolly.Testing.Conversation
 {
-    /// <summary>Camera source handing out one persistent buffer; counts frames handed out and released.</summary>
+    /// <summary>Camera source handing out one persistent buffer, mid-grey unless <see cref="Fill"/> says otherwise;
+    /// counts frames handed out and released.</summary>
     public sealed class FakeCameraFrameSource : ICameraFrameSource
     {
         public const int Size = 64;
         NativeArray<byte> _buffer = new(Size * Size * 4, Allocator.Persistent);
+
+        public FakeCameraFrameSource() => Fill(128);
 
         public CameraAvailability Availability { get; set; } = CameraAvailability.Ready;
         public int Captures { get; private set; }
@@ -30,6 +33,13 @@ namespace Jolly.Testing.Conversation
             Captures++;
             return UniTask.FromResult(new CameraFrame(_buffer, Size, Size, Intrinsics,
                 new Pose(Vector3.zero, Quaternion.identity), 0, _ => Released++));
+        }
+
+        /// <summary>Every pixel of later frames becomes this grey, i.e. this mean luma.</summary>
+        public void Fill(byte grey)
+        {
+            for (var i = 0; i < _buffer.Length; i++)
+                _buffer[i] = grey;
         }
 
         public void Dispose()

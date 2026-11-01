@@ -34,7 +34,7 @@ namespace Jolly.App.Composition
             var timings = new ConversationTimings { AcknowledgeOnRelease = config.acknowledgeOnRelease };
             var conversation = new ConversationMemory(f.Paths.MemoryDirectory, personas, limits, f.Log);
             var scene = new SceneMemory(f.Paths.SceneMemory, xr.Anchors, f.Clock, limits, f.Log);
-            var tools = ToolCatalog.Build(f, cloud, xr, character, scene, personas, localizer, masks, room, out var frames);
+            var tools = ToolCatalog.Build(f, config, cloud, xr, character, scene, personas, localizer, masks, room, out var frames);
             var agent = new AgentLoop(cloud.VoiceChat, tools, conversation, scene, roomContext, personas, localizer, preferences, f.Log,
                 f.Clock, f.Latency, f.Events, new AgentSettings
                 {

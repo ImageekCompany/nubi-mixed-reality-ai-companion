@@ -93,6 +93,40 @@ namespace Jolly.Tests.EditMode.Core.Tools
         }
 
         [Test]
+        public void FindObject_DarkFrame_IsTooDarkWithoutCallingSam()
+        {
+            _f.Camera.Fill(5);
+
+            var result = ToolHarness.Run(_f.Find(), "{\"noun_phrase\":\"keys\"}");
+
+            Assert.That(result.OutputJson, Does.StartWith("{\"error\":\"too_dark\""));
+            Assert.That(_f.Segmenter.Prompts, Is.Empty);
+            Assert.That(_f.Scene.LastCapture, Is.Null);
+            Assert.That(_f.Log.Contains(LogLevel.Info, "evt=vision.too_dark luma=5.0"), Is.True);
+        }
+
+        [Test]
+        public void FindObject_LitFrame_CallsSam()
+        {
+            _f.Camera.Fill(25);
+
+            ToolHarness.Run(_f.Find(), "{\"noun_phrase\":\"keys\"}");
+
+            Assert.That(_f.Segmenter.Prompts.Single().Text, Is.EqualTo("keys"));
+        }
+
+        [Test]
+        public void FindObject_DarkRoomThresholdComesFromSettings()
+        {
+            _f.Settings.MinMeanLuma = 0f;
+            _f.Camera.Fill(5);
+
+            ToolHarness.Run(_f.Find(), "{\"noun_phrase\":\"keys\"}");
+
+            Assert.That(_f.Segmenter.Prompts, Is.Not.Empty);
+        }
+
+        [Test]
         public void HighlightPart_UsesTheLastCaptureWithoutANewOne()
         {
             _f.Scene.LastCapture = _f.PreCapture();

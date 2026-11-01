@@ -77,6 +77,50 @@ namespace Jolly.Tests.EditMode.Core.Tools
         }
 
         [Test]
+        public void DarkFrame_IsTooDarkWithoutCallingSamOrSpark()
+        {
+            var earlier = _f.PreCapture();
+            _f.Scene.LastCapture = earlier;
+            _f.Camera.Fill(24);
+
+            var result = ToolHarness.Run(_f.Capture(), "{\"question\":\"q\"}", ContextWith(null));
+
+            Assert.That(result.Ok, Is.False);
+            Assert.That(result.OutputJson, Does.StartWith("{\"error\":\"too_dark\",\"detail\":"));
+            Assert.That(result.SpokenText, Is.Null, "the model answers in character");
+            Assert.That(_f.Segmenter.Prompts, Is.Empty);
+            Assert.That(_f.Identifier.LastRequest, Is.Null);
+            Assert.That(_f.Scene.LastCapture, Is.SameAs(earlier), "highlight_part never segments a dark frame");
+            Assert.That(_f.Log.Contains(LogLevel.Info, "evt=vision.too_dark luma=24.0"), Is.True);
+        }
+
+        [Test]
+        public void DarkPreCapture_IsTooDarkWithoutASecondCapture()
+        {
+            _f.Camera.Fill(10);
+            var image = _f.PreCapture();
+
+            var result = ToolHarness.Run(_f.Capture(), "{\"question\":\"q\"}", ContextWith(image));
+
+            Assert.That(result.OutputJson, Does.Contain("too_dark"));
+            Assert.That(_f.Camera.Captures, Is.EqualTo(1));
+            Assert.That(_f.Identifier.LastRequest, Is.Null);
+        }
+
+        [Test]
+        public void FrameAtTheThreshold_CallsThrough()
+        {
+            _f.Camera.Fill(25);
+            _f.Segmenter.Returns(ScriptedSegmenter.Square(24, 24, 16));
+
+            var result = ToolHarness.Run(_f.Capture(), "{\"question\":\"q\"}", ContextWith(null));
+
+            Assert.That(result.Ok, Is.True);
+            Assert.That(_f.Segmenter.Prompts, Is.Not.Empty);
+            Assert.That(_f.Identifier.LastRequest, Is.Not.Null);
+        }
+
+        [Test]
         public void Pointing_SendsAPointPromptWithHandJointsAsNegatives()
         {
             _f.User.PointingRay = new Ray(Vector3.zero, Vector3.forward);

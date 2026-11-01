@@ -2,18 +2,18 @@ using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using Jolly.Contracts;
+using Jolly.Core.Imaging;
 using Jolly.Core.Tools;
 
 namespace Jolly.App.SelfTest.Scenarios
 {
     /// <summary>
     /// "What is this and how do I use it?" must run capture_and_identify on the camera frame (SAM mask + Spark answer).
-    /// A frame too dark to show anything (or no camera) switches to the bundled still and marks the result DEGRADED.
+    /// A frame too dark for the tool to look at (or no camera) switches to the bundled still and marks the result DEGRADED.
     /// </summary>
     public static class VisionScenario
     {
         public const string Name = "vision_capture_and_identify";
-        const float MinMeanLuma = 25f;
         const int ProbeSide = 160;
         // The preamble ("Let me check.") plays within ~0.8 s of the tool start; the answer cannot: its header alone took
         // ≥ 1.5 s in every measured call (docs/perf/selftest-report.md). So the first caption after this is the answer.
@@ -23,7 +23,7 @@ namespace Jolly.App.SelfTest.Scenarios
         {
             var camera = c.Session.Camera;
             var luma = await MeanLuma(camera.Live, ct);
-            camera.UseStill = double.IsNaN(luma) || luma < MinMeanLuma;
+            camera.UseStill = double.IsNaN(luma) || c.Graph.Conversation.Frames.IsTooDark(luma);
             try
             {
                 var r = await VoiceTurnScenario.Run(c, Name, c.Assets.whatIsThis, ToolNames.CaptureAndIdentify, ct);
@@ -69,17 +69,7 @@ namespace Jolly.App.SelfTest.Scenarios
                 return double.NaN;
             }
             using (frame)
-            {
-                var pixels = frame.Rgba32;
-                double sum = 0;
-                var count = 0;
-                for (var i = 0; i + 2 < pixels.Length; i += 4)
-                {
-                    sum += 0.299 * pixels[i] + 0.587 * pixels[i + 1] + 0.114 * pixels[i + 2];
-                    count++;
-                }
-                return count == 0 ? double.NaN : sum / count;
-            }
+                return FrameLuma.Mean(frame.Rgba32.AsReadOnlySpan());
         }
     }
 }

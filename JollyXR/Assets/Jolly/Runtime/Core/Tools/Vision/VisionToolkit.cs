@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using Jolly.Contracts;
@@ -14,6 +15,11 @@ namespace Jolly.Core.Tools
     public sealed class VisionToolkit
     {
         static readonly IReadOnlyList<SegmentedObject> NoObjects = Array.Empty<SegmentedObject>();
+
+        /// <summary>Spark on a dim live frame once streamed no answer at all (selftest-report); a frame this dark gets no
+        /// SAM or Spark call and the model asks for light in one sentence (PromptBuilder tool rules, ADR-0039).</summary>
+        public static readonly ToolResult TooDark = ToolResult.Failure("too_dark",
+            "the room is too dark to see; ask them to switch on a light or hold it closer to one");
 
         readonly ISegmenter _segmenter;
         readonly IMaskPresenter _presenter;
@@ -50,6 +56,17 @@ namespace Jolly.Core.Tools
                 Log.Write(LogLevel.Warning, "vision", $"evt=capture.failed kind={e.Kind}");
                 return null;
             }
+        }
+
+        /// <summary>True, and logged, when <paramref name="image"/> is too dark to send to SAM or Spark.</summary>
+        public bool IsTooDark(EncodedImage image)
+        {
+            var luma = Frames.MeanLumaOf(image);
+            if (!Frames.IsTooDark(luma))
+                return false;
+            Log.Write(LogLevel.Info, "vision", string.Format(CultureInfo.InvariantCulture,
+                "evt=vision.too_dark luma={0:F1} min={1:F1}", luma, Settings.MinMeanLuma));
+            return true;
         }
 
         /// <summary>SAM with its own timeout. A failure or timeout reads as "no match"; only the caller's cancel throws.</summary>

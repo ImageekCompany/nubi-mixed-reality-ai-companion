@@ -52,6 +52,8 @@ namespace Jolly.Core.Tools
             var image = preCaptured ? context.Turn.PreCaptured : await _kit.TryCapture(ct);
             if (image == null)
                 return ToolResult.Failure("camera_unavailable");
+            if (_kit.IsTooDark(image))
+                return VisionToolkit.TooDark;
             _scene.LastCapture = image;
 
             var header = new UniTaskCompletionSource<string>();

@@ -2,6 +2,7 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using Jolly.Contracts;
 using Jolly.Core.Config;
+using Jolly.Core.Imaging;
 
 namespace Jolly.Core.Tools
 {
@@ -17,6 +18,7 @@ namespace Jolly.Core.Tools
         readonly VisionSettings _settings;
         EncodedImage _last;
         double _lastAt;
+        double _lastLuma = double.NaN;
 
         public FrameGrabber(ICameraFrameSource source, IImageEncoder encoder, IClock clock, VisionSettings settings)
         {
@@ -36,7 +38,9 @@ namespace Jolly.Core.Tools
             var frame = await _source.Capture(_settings.MaxSide, ct);
             try
             {
+                var luma = FrameLuma.Mean(frame.Rgba32.AsReadOnlySpan());
                 _last = await _encoder.EncodeJpeg(frame, _settings.JpegQuality, ct);
+                _lastLuma = luma;
                 _lastAt = _clock.Now;
                 return _last;
             }
@@ -45,6 +49,13 @@ namespace Jolly.Core.Tools
                 frame.Dispose();
             }
         }
+
+        /// <summary>The mean luma of <paramref name="image"/> when it is the last capture, else NaN.</summary>
+        public double MeanLumaOf(EncodedImage image) =>
+            image != null && ReferenceEquals(image, _last) ? _lastLuma : double.NaN;
+
+        /// <summary>Too dark for SAM or Spark to see anything; NaN (unknown) is not.</summary>
+        public bool IsTooDark(double meanLuma) => meanLuma < _settings.MinMeanLuma;
 
         public bool IsFresh(EncodedImage image) =>
             image != null && ReferenceEquals(image, _last) && _clock.Now - _lastAt <= _settings.PreCaptureMaxAge.TotalSeconds;

@@ -45,6 +45,8 @@ namespace Jolly.Core.Tools
             var image = await _kit.TryCapture(ct);
             if (image == null)
                 return ToolResult.Failure("camera_unavailable");
+            if (_kit.IsTooDark(image))
+                return VisionToolkit.TooDark;
             _scene.LastCapture = image;
 
             var objects = await _kit.Segment(image, SegmentPrompt.ForText(phrase), ct);

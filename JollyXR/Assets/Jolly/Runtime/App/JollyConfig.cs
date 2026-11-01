@@ -90,6 +90,11 @@ namespace Jolly.App
         [Tooltip("Speak the Space Setup offer once per session when the room is not scanned.")]
         public bool offerRoomScan = true;
 
+        [Header("Vision")]
+        [Tooltip("Mean luma (0-255) of the captured frame below which the vision tools skip SAM and Spark and answer " +
+                 "too_dark; the self-test switches to its bundled still below it too.")]
+        public float visionMinMeanLuma = 25f;
+
         [Header("Behaviour")]
         public bool acknowledgeOnRelease = true;
         [Tooltip("Seconds the OpenXR head pose is predicted ahead of LateUpdate (R1 marker test).")]
