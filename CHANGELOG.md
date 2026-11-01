@@ -146,3 +146,6 @@ Each work package appends bullets under its own heading only (`docs/scope.md` §
 - Removed: the never-wired file-ASR fallback (`MuseFileSpeechToText`, `UnityWebRequestAsrFileClient`, `MuseTranscribeRequest`; spike R4 made it unnecessary), the unused `MetaApiEndpoint.Get`, the unused `Unity.AI.Navigation` reference of `Jolly.XR`, and the renders of Meta's Jolly mascot from `docs/research/samples/`.
 - `ClipPcm` resamples an off-rate clip with the anti-aliased `Resampler` instead of its own linear interpolation.
 - Tests: duplicated fakes merged into `Fakes/Common` (one per port, no aliases); ASR tests use `RecordingUsageMeter`, which rejects a double settle like the real meter; locomotion tests bake with the production `NavMeshBaker`.
+
+### Release audit
+- `docs/release-checklist.md` walks the definition of done on `main` with evidence and lists the human actions left. README test counts, status line, spend figure and Device User Data note corrected; the DoD secret grep excludes the synthetic keys in `Tests/`, and its perf deviations point at `docs/perf/selftest-report.md`.

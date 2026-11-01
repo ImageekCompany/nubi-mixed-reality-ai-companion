@@ -162,7 +162,7 @@ graph TD
 - **Runtime NavMesh sized for a living room.** Floor plane outlines are triangulated into mesh colliders, and bounding boxes are baked as Not Walkable (`NavMeshBuilder.BuildNavMeshData`, agent radius 0.15 m). `NavMeshSurface` would use the 0.5 m Humanoid agent, which erases a living room (ADR-0017). Rebuilds are throttled to once per 2 s.
 - **Table-driven conversation state machine.** Three latched flags and per-state watchdogs. It is tested exhaustively, including every barge-in edge.
 - **Safety and robustness.** `CrisisGuard` runs before the model, for every persona, and hands off deterministically. A persona's tool allow-list is enforced when a call executes, not only in the list sent to the model. `StopGuard` stops Nubi locally. Retries happen only before the first streamed byte, with full jitter and `Retry-After` capped at 8 s. A five-state connectivity monitor (Online, Degraded, Offline, Unauthorized, BudgetReached) runs a backed-off health probe.
-- **Quality gates** (`tools/ci/test.sh`): `-warnaserror+` on every assembly; no `async void`; no `System.Threading.Tasks.Task` (UniTask everywhere); no `CancellationTokenSource.CancelAfter` (it fires on a thread-pool timer); no debug-capture defines in shipped settings; a content validator for personas, string tables and line clips. Current: **EditMode 891/891, PlayMode 207/207, zero compiler warnings, and an IL2CPP APK that builds.**
+- **Quality gates** (`tools/ci/test.sh`): `-warnaserror+` on every assembly; no `async void`; no `System.Threading.Tasks.Task` (UniTask everywhere); no `CancellationTokenSource.CancelAfter` (it fires on a thread-pool timer); no debug-capture defines in shipped settings; a content validator for personas, string tables and line clips. Current: **EditMode 904/904, PlayMode 216/216, zero compiler warnings, and an IL2CPP APK that builds.**
 - **A self-checking pipeline on the headset.** `tools/device/selftest.sh` installs the release APK, arms a built-in self-test and runs six scenarios with nobody wearing the headset. Bundled voice clips go through the real microphone pipeline to Muse ASR, Spark (with tools), SAM, Wit and the speaker. It also forces the network off and on, barges in, and samples frame time and render counters. It writes a PASS/DEGRADED/FAIL table and the run's API cost ([`docs/perf/selftest-report.md`](docs/perf/selftest-report.md), ADR-0018). It found bugs that no desk test could, including a health-probe URL that kept the app offline and a vision turn that ended in silence.
 
 ## Performance budget
@@ -192,7 +192,7 @@ Targets come from [`docs/definition-of-done.md`](docs/definition-of-done.md) §4
 - **No secrets in the APK, scene, assets or repo.** Keys live in `.env` in the editor and in `persistentDataPath/secrets.json` on the device, pushed over adb (ADR-0010); keep `.env` at `chmod 600`, and `push-secrets.sh` warns when it is not. `RedactingLog` masks key patterns, in messages and exception text, as a second layer of defence. The Meta ToS forbids sharing an API key, so each user brings their own. A server-side proxy is the production path.
 - **`store:false`** on every Responses request.
 - **No contributor models for user data.** This is enforced in code (see [model routing](#how-meta-ai-is-used-beyond-a-basic-integration)).
-- **Camera frames are never written to disk.** A frame lives in one reused native buffer, is encoded to JPEG in RAM, and is sent only when a vision tool runs. The only files the app writes are the conversation and scene memory, the usage totals and a random install id, all as JSON in app storage. Release builds contain no frame-capture code.
+- **Camera frames are never written to disk.** They are Device User Data under Meta's [Developer Data Use Policy](https://developers.meta.com/vr/policy/data-use/) and go only to the Meta API. A frame lives in one reused native buffer, is encoded to JPEG in RAM, and is sent only when a vision tool runs. The only files the app writes are the conversation and scene memory, the usage totals and a random install id, all as JSON in app storage. Release builds contain no frame-capture code.
 - **Transcripts and model text are not logged.** Log lines carry event names, ids and timings. Should text logging ever be needed for debugging, the only allowed path is a `[Conditional("JOLLY_DEBUG_LOG")]` extension, which the compiler removes, with its arguments, from builds without that define.
 - **`safety_identifier`** is a truncated SHA-256 of a random per-install GUID, never a hardware id.
 - **Camera content is treated as data, not instructions.** Labels coming back from vision output are sanitised and placed in a user-role context block that is marked as untrusted.
@@ -273,11 +273,11 @@ adb logcat -G 16M && adb logcat -s Unity | grep -E "evt=(loc.ready|turn.latency)
 
 ## Status
 
-As of `fix/integration-review` (2026-11-01), merged into `main`.
+As of `main` after `fix/audit` (2026-11-01).
 
 | Area | State |
 |---|---|
-| All subsystems (Net, Responses chat, usage meter, ASR, SAM + one-bit decoder, Spark vision, Wit TTS, streaming audio, conversation core, agent loop, tools, memory, offline mode, XR layer, Nubi, presentation, localization) | **Built and tested**: EditMode 891/891, PlayMode 207/207 |
+| All subsystems (Net, Responses chat, usage meter, ASR, SAM + one-bit decoder, Spark vision, Wit TTS, streaming audio, conversation core, agent loop, tools, memory, offline mode, XR layer, Nubi, presentation, localization) | **Built and tested**: EditMode 904/904, PlayMode 216/216 |
 | Composition root (`JollyBootstrap` → `AppGraph`), four personas, `JollyConfig`, `Lines`/`Personas` tables (en, pl), end-to-end PlayMode tests on the real scene, zero-GC idle gate | **Done** |
 | Full app on Quest 3: voice turns, `capture_and_identify` on the live passthrough frame, barge-in, offline lines, idle performance | **Verified by the on-device self-test** (three runs, every scenario PASS except `come_here`, which is DEGRADED without Space Setup) |
 | Walking on a scanned floor, the camera extrinsics marker test (≤ 3 cm at 1 m), mask placement in a lit room, pinch/gaze/palm/poke with a wearer, OVR Metrics and Profiler captures, 20-turn latency run | **Pending** a session with a person in a lit room with Space Setup |
@@ -321,7 +321,7 @@ The original idea used Meta's Muse mascot, Jolly. We found no licence for that m
 
 ## Design decisions
 
-Twenty-two ADRs record every key choice and its alternatives: [`docs/decisions/`](docs/decisions/README.md). Examples are OpenXR + meta-openxr instead of the Meta XR SDK (0002), Responses API routing (0004), Wit over raw HTTP (0006), a plain composition root (0009), secrets provisioning (0010) the integration deviations (0017) and the device self-test (0018). Review findings are in [`review-log.md`](docs/decisions/review-log.md). API spend is tracked call by call in [`docs/api-spend.md`](docs/api-spend.md), and is under $1 of the $140 budget so far.
+Twenty-two ADRs record every key choice and its alternatives: [`docs/decisions/`](docs/decisions/README.md). Examples are OpenXR + meta-openxr instead of the Meta XR SDK (0002), Responses API routing (0004), Wit over raw HTTP (0006), a plain composition root (0009), secrets provisioning (0010) the integration deviations (0017) and the device self-test (0018). Review findings are in [`review-log.md`](docs/decisions/review-log.md). API spend is tracked call by call in [`docs/api-spend.md`](docs/api-spend.md), and is about $1 of the $140 budget so far.
 
 ## Credits
 

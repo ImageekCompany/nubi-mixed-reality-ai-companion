@@ -48,7 +48,7 @@ Flag provenance:
   - No `#pragma warning disable` without a comment saying why.
 - [ ] No `async void` and no `Task`-returning methods in `Jolly.*`: `grep -rnE "async +void|(^|[^A-Za-z0-9_.])Task(<|[[:space:]])" Assets/Jolly --include=*.cs` is empty (the regex `tools/ci/test.sh` runs; `[^.]Task<` would also match `UniTask<`).
 - [ ] No `FindObjectOfType`/`FindFirstObjectByType`, no `static .* Instance` singletons, and no `Resources.Load` in `Jolly.*`.
-- [ ] No secret material in the repo: `git grep -nE "LLM_[0-9]+_|Bearer [A-Za-z0-9]"` is empty. `.env` and `secrets.json` are untracked. `Meta+Muse+Jolly*` is untracked.
+- [ ] No secret material in the repo: `git grep -nE "LLM_[0-9]+_|Bearer [A-Za-z0-9]" -- ':!JollyXR/Assets/Jolly/Tests'` is empty (the tests use synthetic keys only). `.env` and `secrets.json` are untracked. `Meta+Muse+Jolly*` is untracked.
 - [ ] Release builds contain no `JOLLY_DEBUG_CAPTURE` or `JOLLY_DEBUG_LOG` define (check `PlayerSettings` scripting defines in `build.log`).
 - [ ] The asmdef reference graph matches `architecture.md` §2. A unit test in `Jolly.Tests.EditMode` loads each asmdef JSON and asserts the allowed references.
 - [ ] `unity-architect-reviewer` pass on `Assets/Jolly/Runtime` leaves no open *critical* items.
@@ -93,7 +93,7 @@ Measure with the **OVR Metrics Tool** CSV (`app_rss_MB`, `app_uss_MB`, GPU and C
 | Thermal | 30-min continuous session (a turn every ~30 s plus 5 captures) with no frame-rate drop below 72 caused by throttling, and no thermal warning dialog | OVR Metrics CSV over time |
 | Battery | ≤ 20% drain per 30 min (speculation; record actual) | OVR Metrics / `adb shell dumpsys battery` |
 
-- [ ] All rows met, or the deviation is documented in `docs/perf/report.md` with a mitigation (foveation level, refresh rate, mask overlay cost).
+- [ ] All rows met, or the deviation is documented in `docs/perf/selftest-report.md` with a mitigation (foveation level, refresh rate, mask overlay cost).
 
 ## 5. Latency (on device, Wi-Fi, LiveUser route = `muse-spark-1.3`, 20 consecutive turns)
 

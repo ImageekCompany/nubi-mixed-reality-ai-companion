@@ -28,5 +28,6 @@ Rows before 2026-11-01 02:00 (research phase, `docs/research/*.md`) were not ite
 | 2026-11-01 | perf-latency: 11 device self-test runs (4 development, 2 baseline, 4 after, 1 verification; app meter 0.0211 + 0.0209 + 0.0292 + 0.0242 + 0.0226 + 0.0182 + 0.0166 + 0.0305 + 0.0247 + 0.0226 + 0.0123) | muse-spark-1.3, sam-3.1, muse-voice-transcribe-1.0 (+ Wit, free) | ~70 Spark calls, 10 SAM, ~50 ASR sessions | ~11 images; ~2 min audio | 0.243 |
 | 2026-11-01 | fix/llm-memory: summary diagnosis (old prompt @300 → `incomplete`, 188 reasoning; new prompt @1024 ×2 → completed; final prompt streamed + `prompt_cache_key`, recorded as `responses_summary` fixture) and prompt-cache order A/B (4 calls, all `cached_tokens: 0`); synthetic conversations only | muse-spark-1.3-contributor | 8 | in ~9.8k / out ~1.5k | 0.0013 |
 | 2026-11-01 | fix/audit: 1 device self-test run after the audit fixes (app meter 0.0116) | muse-spark-1.3, sam-3.1, muse-voice-transcribe-1.0 (+ Wit, free) | ~6 Spark calls, 1–2 SAM, ~4 ASR sessions | 1 image; ~10 s audio | 0.012 |
+| 2026-11-01 | release audit: 1 device self-test run on `main` 3f35562 (app meter 0.0120) | muse-spark-1.3, sam-3.1, muse-voice-transcribe-1.0 (+ Wit, free) | ~6 Spark calls, 1 SAM, 4 ASR sessions | 1 image; ~10 s audio | 0.012 |
 
-Running total (est.): **≤ $1.02**
+Running total (est.): **≤ $1.00** (sum of the rows: 0.991)
