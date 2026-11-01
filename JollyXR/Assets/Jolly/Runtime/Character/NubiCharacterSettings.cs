@@ -70,10 +70,20 @@ namespace Jolly.Character
     }
 
     [Serializable]
+    public sealed class ContactShadowSettings
+    {
+        [Tooltip("Lift of the lower foot above its rest height at which the shadow is gone, m. A hop peaks near 0.09.")]
+        public float fadeHeight = 0.3f;
+        [Tooltip("Shadow size at fadeHeight relative to standing: a raised body leaves a smaller contact patch.")]
+        [Range(0f, 1f)] public float scaleAtFadeHeight = 0.6f;
+    }
+
+    [Serializable]
     public sealed class NubiCharacterSettings
     {
         public LocomotionSettings locomotion = new();
         public LookSettings look = new();
         public FaceSettings face = new();
+        public ContactShadowSettings shadow = new();
     }
 }

@@ -103,6 +103,11 @@ MonoBehaviour:
     head: {fileID: 5088263511123701544}
     eyeLeft: {fileID: 3392950928838806050}
     eyeRight: {fileID: 1764446182841397419}
+  _shadowRig:
+    shadow: {fileID: 3661460483952312250}
+    footLeft: {fileID: 2860580923807866449}
+    footRight: {fileID: 4671886358992702834}
+    footRestHeight: 0.06
   _settings:
     locomotion:
       walkSpeed: 0.6
@@ -142,6 +147,9 @@ MonoBehaviour:
       blinkHoldSeconds: 0.03
       blinkOpenSeconds: 0.09
       happyEyesBlinkSuppress: 0.5
+    shadow:
+      fadeHeight: 0.3
+      scaleAtFadeHeight: 0.6
 --- !u!1 &7494739193936473874
 GameObject:
   m_ObjectHideFlags: 0
@@ -320,6 +328,11 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -3644636371929449969, guid: 636a5a7644956419d8e0b373d5bd178c, type: 3}
   m_PrefabInstance: {fileID: 6131427639495428772}
   m_PrefabAsset: {fileID: 0}
+--- !u!4 &2860580923807866449 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -962108123270572811, guid: 636a5a7644956419d8e0b373d5bd178c, type: 3}
+  m_PrefabInstance: {fileID: 6131427639495428772}
+  m_PrefabAsset: {fileID: 0}
 --- !u!137 &2984828755443286049 stripped
 SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: -253599043350787451, guid: 636a5a7644956419d8e0b373d5bd178c, type: 3}
@@ -328,6 +341,11 @@ SkinnedMeshRenderer:
 --- !u!4 &3392950928838806050 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -432035401152610170, guid: 636a5a7644956419d8e0b373d5bd178c, type: 3}
+  m_PrefabInstance: {fileID: 6131427639495428772}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &4671886358992702834 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 1568074107933935574, guid: 636a5a7644956419d8e0b373d5bd178c, type: 3}
   m_PrefabInstance: {fileID: 6131427639495428772}
   m_PrefabAsset: {fileID: 0}
 --- !u!4 &5088263511123701544 stripped

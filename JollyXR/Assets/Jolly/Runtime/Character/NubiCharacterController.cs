@@ -10,7 +10,8 @@ namespace Jolly.Character
     /// <summary>
     /// Nubi's <see cref="ICharacterController"/>: a thin MonoBehaviour shell that orders the plain-C# parts per frame.
     /// Update: locomotion → body yaw → Animator parameters. The Animator then evaluates, and LateUpdate layers the
-    /// look-at on the animated bones and writes the face (clip preset/mood → lip-sync → blink).
+    /// look-at on the animated bones, writes the face (clip preset/mood → lip-sync → blink) and shapes the contact
+    /// shadow from the animated feet.
     /// Inert until <see cref="Construct"/> is called by the composition root.
     /// </summary>
     [DisallowMultipleComponent]
@@ -24,6 +25,7 @@ namespace Jolly.Character
         [SerializeField] SkinnedMeshRenderer _faceMesh;
         [SerializeField] TextAsset _facePresets;
         [SerializeField] NubiRigBones _bones = new();
+        [SerializeField] ContactShadowRig _shadowRig = new();
         [SerializeField] NubiCharacterSettings _settings = new();
 
         IUserPoseProvider _user;
@@ -38,6 +40,7 @@ namespace Jolly.Character
         BlinkScheduler _blink;
         FaceMixer _mixer;
         FaceRenderer _faceRenderer;
+        ContactShadow _shadow;
         LookTarget _lookTarget = LookTarget.User;
         Mood _mood;
         ConversationState _conversation;
@@ -50,6 +53,7 @@ namespace Jolly.Character
         public NubiCharacterSettings Settings => _settings;
         public Animator Animator => _animator;
         public SkinnedMeshRenderer FaceMesh => _faceMesh;
+        public ContactShadowRig ShadowRig => _shadowRig;
 
         public void Construct(IUserPoseProvider user, ILipSyncDriver lipSync, IClock clock, IRandom random)
         {
@@ -60,7 +64,8 @@ namespace Jolly.Character
             _clock = clock ?? throw new ArgumentNullException(nameof(clock));
             if (random == null)
                 throw new ArgumentNullException(nameof(random));
-            if (_animator == null || _agent == null || _faceMesh == null || _facePresets == null || !_bones.IsComplete)
+            if (_animator == null || _agent == null || _faceMesh == null || _facePresets == null || !_bones.IsComplete
+                || !_shadowRig.IsComplete)
                 throw new InvalidOperationException("Nubi prefab references are not bound; rebuild it with Jolly/Character/Rebuild Nubi Assets.");
 
             var presets = FacePresetTable.Parse(_facePresets.text);
@@ -72,6 +77,7 @@ namespace Jolly.Character
             _blink = new BlinkScheduler(random, _settings.face);
             _mixer = new FaceMixer(_settings.face);
             _faceRenderer = new FaceRenderer(_faceMesh);
+            _shadow = new ContactShadow(_shadowRig, transform, _settings.shadow);
             _locomotion = new AgentLocomotion(_agent, clock, _settings.locomotion);
         }
 
@@ -133,6 +139,7 @@ namespace Jolly.Character
             _mouth.Step(_lipSync.Current, dt);
             _mixer.Mix(_expression.Select(_speed), MoodFace.For(_mood), _mouth, _blink.Tick(dt), dt);
             _faceRenderer.Write(_mixer.Output);
+            _shadow.Update();
         }
 
         void OnDestroy()
