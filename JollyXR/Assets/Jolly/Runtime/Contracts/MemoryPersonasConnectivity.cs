@@ -70,7 +70,6 @@ namespace Jolly.Contracts
         public VoiceSpec Voice { get; set; }                   // resolved for the current locale
         public IReadOnlyList<string> AllowedTools { get; set; }
         public bool PersistMemory { get; set; }
-        public bool CrisisHandoff { get; set; }
         public Mood DefaultMood { get; set; }
     }
 

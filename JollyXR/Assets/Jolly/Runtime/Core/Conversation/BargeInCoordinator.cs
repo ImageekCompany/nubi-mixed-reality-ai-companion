@@ -23,6 +23,8 @@ namespace Jolly.Core.Conversation
             _latency = latency;
         }
 
+        public bool IsPlaying => _output.IsPlaying;
+
         /// <summary>A user pinch during a busy turn.</summary>
         public void BargeIn(CancellationTokenSource turnCts, int turnId)
         {

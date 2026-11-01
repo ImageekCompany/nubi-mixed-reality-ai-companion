@@ -30,7 +30,7 @@ namespace Jolly.Core.Conversation
             return true;
         }
 
-        public bool NeedsCrisisHandoff(string transcript, PersonaProfile persona) =>
-            persona != null && persona.CrisisHandoff && _crisis.Matches(transcript);
+        /// <summary>Every persona: the hand-off must never depend on which mode the person happens to be in.</summary>
+        public bool NeedsCrisisHandoff(string transcript) => _crisis.Matches(transcript);
     }
 }

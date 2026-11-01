@@ -78,7 +78,6 @@ namespace Jolly.Core.Personas
             Voice = VoiceFor(d),
             AllowedTools = d.AllowedTools,
             PersistMemory = d.PersistMemory,
-            CrisisHandoff = d.CrisisHandoff,
             DefaultMood = d.DefaultMood,
         };
 

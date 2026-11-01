@@ -1,3 +1,4 @@
+using System.IO;
 using System.Linq;
 using Cysharp.Threading.Tasks;
 using Jolly.Contracts;
@@ -117,6 +118,36 @@ namespace Jolly.Tests.EditMode.Core.Conversation
 
             Assert.That(_f.Offline.Categories, Is.EqualTo(new[] { LineCategory.Error }));
             Assert.That(_f.StatePath(), Is.EqualTo("Listening>Thinking>Speaking>Thinking>Speaking>Idle"));
+        }
+
+        [Test]
+        public void ClearMemoryWhileIdle_ClearsBothStoresAtOnce()
+        {
+            _f.Memory.CommitTurn(new[] { ConversationItem.User("hi"), ConversationItem.Assistant("hello") });
+            Jolly.Tests.EditMode.Core.Sync.Run(_f.Memory.Save(default));
+
+            _f.Controller.ClearMemory();
+
+            Assert.That(_f.Memory.Recent, Is.Empty);
+            Assert.That(File.Exists(Path.Combine(_f.Directory, "conversation.companion.json")), Is.False);
+            Assert.That(_f.Log.Contains(LogLevel.Info, "evt=memory.cleared"), Is.True);
+        }
+
+        [Test]
+        public void ClearMemoryDuringATurn_WaitsForItSoItsCommitIsNotWrittenBack()
+        {
+            _f.Agent.Say("Sure.").Hold();
+            _f.Talk("remember my keys");
+
+            _f.Controller.ClearMemory();
+            Assert.That(_f.Log.Contains(LogLevel.Info, "evt=memory.cleared"), Is.False);
+            _f.Memory.CommitTurn(new[] { ConversationItem.User("remember my keys"), ConversationItem.Assistant("Sure.") });
+            _f.Agent.Release();
+            _f.Queue.Drain();
+
+            Assert.That(_f.State, Is.EqualTo(ConversationState.Idle));
+            Assert.That(_f.Memory.Recent, Is.Empty);
+            Assert.That(File.Exists(Path.Combine(_f.Directory, "conversation.companion.json")), Is.False);
         }
 
         [Test]

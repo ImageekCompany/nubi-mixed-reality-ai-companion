@@ -73,6 +73,14 @@ namespace Jolly.Core.Conversation
             await Save(ct);
         }
 
+        /// <summary>Empties both stores and deletes their files (usage is kept, architecture §8).</summary>
+        public void Clear()
+        {
+            _conversation.Clear();
+            _scene.Clear();
+            _log.Write(LogLevel.Info, "memory", "evt=memory.cleared");
+        }
+
         /// <summary>Also called by the composition root on pause and focus loss.</summary>
         public async UniTask Save(CancellationToken ct)
         {

@@ -232,6 +232,21 @@ namespace Jolly.Tests.EditMode.Core.Memory
         }
 
         [Test]
+        public void Clear_DeletesEveryPersonasFile_SoNoneIsCarriedBackOnASwitch()
+        {
+            var memory = Create();
+            memory.CommitTurn(Turn(1));
+            Sync.Run(memory.Save(None));
+            File.WriteAllText(Path.Combine(_dir, "conversation.mentor.json"), "{}");
+            File.WriteAllText(Path.Combine(_dir, "scene.json"), "{}");
+
+            memory.Clear();
+
+            Assert.That(Directory.GetFiles(_dir, "conversation.*"), Is.Empty);
+            Assert.That(File.Exists(Path.Combine(_dir, "scene.json")), Is.True, "the scene store clears its own file");
+        }
+
+        [Test]
         public void Load_CorruptFile_StartsEmptyAndWarns()
         {
             File.WriteAllText(Path.Combine(_dir, "conversation.companion.json"), "{ not json");

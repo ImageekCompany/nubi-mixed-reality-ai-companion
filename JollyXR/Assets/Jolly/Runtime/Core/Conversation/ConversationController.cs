@@ -9,8 +9,9 @@ namespace Jolly.Core.Conversation
     /// <summary>
     /// The thin conversation loop (architecture §3, §5.2, §6): maps PTT presses to routed turns, barges in on a busy turn,
     /// owns <c>sessionCts</c> (renewed on a persona switch or locale change) and <c>turnCts</c> (cancelled when its turn
-    /// ends), runs the state watchdogs, keeps memory after each turn, applies a pending persona switch once the
-    /// conversation is Idle with no turn running, and gives the persona's safety notice at startup. Main thread only.
+    /// ends), runs the state watchdogs, keeps memory after each turn, applies a pending memory clear or persona switch
+    /// once the conversation is Idle with no turn running, and gives the persona's safety notice at startup. Main thread
+    /// only.
     /// </summary>
     public sealed class ConversationController : IDisposable
     {
@@ -31,6 +32,7 @@ namespace Jolly.Core.Conversation
         int _turnId;
         bool _turnRunning;
         bool _switching;
+        bool _clearPending;
         bool _disposed;
 
         public ConversationController(IVoiceActivation voice, TurnRouter router, TurnPipeline pipeline,
@@ -63,7 +65,7 @@ namespace Jolly.Core.Conversation
                 _machine.Changed += OnStateChanged;
                 _personas.Requested += OnSwitchRequested;
                 _localizer.Changed += OnLocaleChanged;
-                if (!TryApplySwitch())
+                if (!TryApplyPending())
                     Announce(null, _personas.SafetyNotice);
                 var stopped = new UniTaskCompletionSource();
                 using (appCt.Register(() => stopped.TrySetResult()))
@@ -80,6 +82,16 @@ namespace Jolly.Core.Conversation
 
         /// <summary>Cancels the running turn and silences it (watchdogs; the composition root on teardown).</summary>
         public void Interrupt() => _bargeIn.Interrupt(_turnCts);
+
+        /// <summary>
+        /// Settings' Clear memory. Deferred like a persona switch: a running turn would commit itself into the emptied
+        /// store and the keeper would write it back to disk.
+        /// </summary>
+        public void ClearMemory()
+        {
+            _clearPending = true;
+            TryApplyPending();
+        }
 
         public void Dispose()
         {
@@ -104,6 +116,8 @@ namespace Jolly.Core.Conversation
                 return;
             if (state != ConversationState.Idle)
                 _bargeIn.BargeIn(_turnCts, _turnId);
+            else if (_bargeIn.IsPlaying)
+                _bargeIn.Interrupt(_turnCts); // an interaction line plays outside any turn and would be transcribed
 
             var route = _router.Route(_pipeline.CanListen);
             var cts = NewTurn();
@@ -136,7 +150,7 @@ namespace Jolly.Core.Conversation
         {
             _watchdog.Enter(to);
             if (to == ConversationState.Idle)
-                TryApplySwitch();
+                TryApplyPending();
         }
 
         void OnWatchdog(ConversationState state)
@@ -204,20 +218,35 @@ namespace Jolly.Core.Conversation
             if (turnId != _turnId || _disposed)
                 return;
             _turnRunning = false;
-            if (!TryApplySwitch())
+            if (!TryApplyPending())
                 await _memory.AfterTurn(_sessionCts.Token);
         }
 
-        void OnSwitchRequested() => TryApplySwitch();
+        void OnSwitchRequested() => TryApplyPending();
 
-        bool TryApplySwitch()
+        /// <summary>True when it cleared memory or started a switch, either of which replaces the keeper's save.</summary>
+        bool TryApplyPending()
         {
-            if (_disposed || _switching || _turnRunning || _sessionCts == null || _personas.PendingId == null
-                || _machine.State != ConversationState.Idle)
+            if (!CanApplyPending)
                 return false;
+            var cleared = TryApplyClear();
+            if (_personas.PendingId == null)
+                return cleared;
             ApplySwitch().Forget();
             return true;
         }
+
+        bool TryApplyClear()
+        {
+            if (!_clearPending || !CanApplyPending)
+                return false;
+            _clearPending = false;
+            _memory.Clear();
+            return true;
+        }
+
+        bool CanApplyPending => !_disposed && !_switching && !_turnRunning && _sessionCts != null
+                                && _machine.State == ConversationState.Idle;
 
         async UniTaskVoid ApplySwitch()
         {
@@ -244,6 +273,8 @@ namespace Jolly.Core.Conversation
             }
             if (applied && !_disposed && _machine.State == ConversationState.Idle)
                 Announce(_personas.Greeting, _personas.SafetyNotice);
+            else
+                TryApplyClear();
         }
 
         void Announce(string greeting, string notice)

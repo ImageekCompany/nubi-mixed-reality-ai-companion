@@ -25,6 +25,7 @@ MonoBehaviour:
   - come_here
   - stop
   - play_gesture
+  - set_persona
   persistMemory: 0
   crisisHandoff: 1
   defaultMood: 0
