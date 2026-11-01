@@ -16,7 +16,8 @@ namespace Jolly.Core.Tools
 
         public PlayGestureTool(ICharacterController character) => _character = character;
 
-        public ToolDefinition Definition { get; } = new(ToolNames.PlayGesture, "Play an expressive body gesture.",
+        public ToolDefinition Definition { get; } = new(ToolNames.PlayGesture,
+            "Play an expressive body gesture when it fits, e.g. wave hello or nod.",
             Schema, TimeSpan.FromSeconds(4), ToolConcurrency.Parallel);
 
         public async UniTask<ToolResult> Execute(IToolArguments args, ToolContext context, CancellationToken ct)

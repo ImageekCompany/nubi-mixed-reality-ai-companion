@@ -36,7 +36,9 @@ namespace Jolly.Core.Tools
         }
 
         public ToolDefinition Definition { get; } = new(ToolNames.CaptureAndIdentify,
-            "Look through the headset camera at what the user is showing or pointing at, highlight it, and answer the question about it.",
+            "Look through the headset camera at what the user is showing or pointing at, highlight it, " +
+            "and answer the question about it. Use it whenever the user asks what something is, how to use it, " +
+            "or says 'look at this'.",
             Schema, TimeSpan.FromSeconds(12), ToolConcurrency.Exclusive);
 
         public async UniTask<ToolResult> Execute(IToolArguments args, ToolContext context, CancellationToken ct)

@@ -6,7 +6,8 @@ namespace Jolly.Core.Config
         public int RecentItems { get; set; } = 16;
         public int RecentChars { get; set; } = 6000;
         public int SummaryChars { get; set; } = 1200;
-        public int SummaryOutputTokens { get; set; } = 300;
+        /// <summary>Includes reasoning: live at minimal effort a summary used 160-220 reasoning + 120-140 text tokens.</summary>
+        public int SummaryOutputTokens { get; set; } = 1024;
         public int SceneObjects { get; set; } = 64;
         public int Places { get; set; } = 32;
         public int ObjectSummaryChars { get; set; } = 140;

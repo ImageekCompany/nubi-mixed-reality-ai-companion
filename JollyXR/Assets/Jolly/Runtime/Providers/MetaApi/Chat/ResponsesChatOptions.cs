@@ -10,8 +10,11 @@ namespace Jolly.Providers.MetaApi.Chat
     /// </summary>
     public sealed class ResponsesChatOptions
     {
+        public const string VoiceCacheKey = "jolly-voice";
+        public const string BackgroundCacheKey = "jolly-memory";
+
         public ResponsesChatOptions(string liveUserModel, string syntheticModel, TimeSpan firstEventTimeout,
-                                    TimeSpan idleTimeout, int maxAttempts, decimal reservationUsd)
+                                    TimeSpan idleTimeout, int maxAttempts, decimal reservationUsd, string promptCacheKey)
         {
             LiveUserModel = liveUserModel;
             SyntheticModel = syntheticModel;
@@ -19,15 +22,18 @@ namespace Jolly.Providers.MetaApi.Chat
             IdleTimeout = idleTimeout;
             RetryPolicy = new RetryPolicy(maxAttempts);
             ReservationUsd = reservationUsd;
+            PromptCacheKey = promptCacheKey;
         }
 
         /// <summary>6 s first event × 2 attempts (≤ 13 s with backoff, under the 20 s Thinking watchdog).</summary>
         public static ResponsesChatOptions VoiceTurn(string liveUserModel, string syntheticModel, decimal reservationUsd) =>
-            new(liveUserModel, syntheticModel, TimeSpan.FromSeconds(6), TimeSpan.FromSeconds(10), 2, reservationUsd);
+            new(liveUserModel, syntheticModel, TimeSpan.FromSeconds(6), TimeSpan.FromSeconds(10), 2, reservationUsd,
+                VoiceCacheKey);
 
         /// <summary>10 s first event × 3 attempts.</summary>
         public static ResponsesChatOptions Background(string liveUserModel, string syntheticModel, decimal reservationUsd) =>
-            new(liveUserModel, syntheticModel, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), 3, reservationUsd);
+            new(liveUserModel, syntheticModel, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), 3, reservationUsd,
+                BackgroundCacheKey);
 
         public string LiveUserModel { get; }
         public string SyntheticModel { get; }
@@ -36,6 +42,11 @@ namespace Jolly.Providers.MetaApi.Chat
         public RetryPolicy RetryPolicy { get; }
         /// <summary>Reserved in IApiUsageMeter before each request and settled with the actual usage.</summary>
         public decimal ReservationUsd { get; }
+        /// <summary>
+        /// prompt_cache_key: routes requests that share a prefix to the same backend. One per use case, never per user or
+        /// session ([docs:prompt-caching]); null omits it.
+        /// </summary>
+        public string PromptCacheKey { get; }
 
         public string ModelFor(ModelRoute route) => route == ModelRoute.LiveUser ? LiveUserModel : SyntheticModel;
     }

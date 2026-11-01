@@ -29,7 +29,11 @@ namespace Jolly.Providers.MetaApi.Chat
         readonly StringBuilder _sb = new(8 * 1024);
         int _inputChars;
 
-        public ResponsesRequestBody Write(ModelRequest request, string model)
+        /// <summary>
+        /// Fields are written in prompt order (instructions, tools, input) with nothing per-request ahead of the input, so
+        /// two requests that share a prompt prefix also share a body prefix (architecture §7).
+        /// </summary>
+        public ResponsesRequestBody Write(ModelRequest request, string model, string promptCacheKey = null)
         {
             _sb.Clear();
             _inputChars = 0;
@@ -42,13 +46,15 @@ namespace Jolly.Providers.MetaApi.Chat
                 w.WriteValue(true);
                 w.WritePropertyName("store");
                 w.WriteValue(false);
+                if (promptCacheKey != null)
+                    WriteString(w, "prompt_cache_key", promptCacheKey);
                 if (request.Instructions != null)
                 {
                     w.WritePropertyName("instructions");
                     w.WriteValue(Count(request.Instructions));
                 }
-                WriteInput(w, request);
                 WriteTools(w, request);
+                WriteInput(w, request);
                 w.WritePropertyName("parallel_tool_calls");
                 w.WriteValue(true);
                 w.WritePropertyName("reasoning");

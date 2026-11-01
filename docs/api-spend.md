@@ -24,4 +24,6 @@ Rows before 2026-11-01 02:00 (research phase, `docs/research/*.md`) were not ite
 | 2026-11-01 | integration fix pass: self-test voice clips re-synthesised (4× Wit `/synthesize`) | Wit.ai (not Meta API budget) | 4 | ~140 chars | 0.00 |
 | 2026-11-01 | integration fix pass: device self-test, 3 paid runs on `fix/integration-review` (app meter: 0.0232 + 0.0243 + 0.0260) | muse-spark-1.3, sam-3.1, muse-voice-transcribe-1.0 (+ Wit, free) | ~24 Spark calls, 3 SAM, 15 ASR sessions | in ~40k / out ~4k; 3 images; ~35 s audio | 0.0735 |
 
+| 2026-11-01 | fix/llm-memory: summary diagnosis (old prompt @300 → `incomplete`, 188 reasoning; new prompt @1024 ×2 → completed; final prompt streamed + `prompt_cache_key`, recorded as `responses_summary` fixture) and prompt-cache order A/B (4 calls, all `cached_tokens: 0`); synthetic conversations only | muse-spark-1.3-contributor | 8 | in ~9.8k / out ~1.5k | 0.0013 |
+
 Running total (est.): **≤ $0.70**

@@ -82,6 +82,8 @@ Implication: for a target of under 2 s to first audio, use `reasoning_effort:"mi
 - Roles: `developer` (preferred) and `system` (accepted, same precedence), plus `user`, `assistant` and `tool` [docs:protocols/chat-completions].
 - Chat Completions does **not** carry reasoning across turns. Responses API (`previous_response_id`) does. The docs recommend Responses for agent loops [docs:tool-calling].
 - Prompt caching works automatically. The second tool turn showed `cached_tokens: 625` of 772 (live). `prompt_cache_key` is available [docs:protocols/chat-completions].
+- Caching is prefix-based on tokens: no breakpoints and no key needed, everything after the first differing token is recomputed, and it is independent of `store` [docs:prompt-caching]. `prompt_cache_key` only routes requests that share a prefix to the same backend (one key per use case, not per user). `prompt_cache_retention: "24h"` is a Responses-only hint. Live 2026-11-01: `prompt_cache_key` accepted (200, echoed). Four non-streaming two-turn calls on a ~1.75k-token synthetic prompt without a key all reported `cached_tokens: 0`, even for the shared instructions + tools prefix, so whether a call hits the cache is not deterministic (ADR-0019).
+- Summaries: at `minimal` effort a 300-token cap ended `incomplete` with 188 reasoning tokens. With a terse-notes prompt the calls used 150–220 reasoning + 120–140 text tokens (ADR-0019).
 - Non-streaming requests can 504 (`gateway_timeout`). Streaming is exempt once the first event arrives [docs:error-handling].
 - `safety_identifier` (≤64 chars, a hashed user id) is recommended [docs:protocols/chat-completions].
 

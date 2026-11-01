@@ -28,6 +28,23 @@ namespace Jolly.Tests.EditMode.Chat
             Assert.That((string)body["instructions"], Is.EqualTo("Be Nubi."));
             Assert.That((string)body["safety_identifier"], Is.EqualTo("abc"));
             Assert.That(body["tools"], Is.Null);
+            Assert.That(body["prompt_cache_key"], Is.Null);
+        }
+
+        [Test]
+        public void Write_PerSessionFieldsComeBeforeTheInput()
+        {
+            var tool = new ToolDefinition("walk_to", "Walk somewhere.", WalkSchema, TimeSpan.FromSeconds(3), ToolConcurrency.Locomotion);
+            var request = new ModelRequest
+            {
+                Instructions = "Be Nubi.", Input = new[] { ConversationItem.User("go") }, Tools = new[] { tool },
+            };
+
+            var names = JObject.Parse(new ResponsesRequestWriter().Write(request, Model, "jolly-voice").Json)
+                               .Properties().Select(p => p.Name).ToList();
+
+            Assert.That(names.Take(7),
+                Is.EqualTo(new[] { "model", "stream", "store", "prompt_cache_key", "instructions", "tools", "input" }));
         }
 
         [TestCase(ReasoningEffort.Minimal, "minimal")]

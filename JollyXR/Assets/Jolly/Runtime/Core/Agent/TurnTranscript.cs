@@ -15,12 +15,17 @@ namespace Jolly.Core.Agent
 
         public TurnTranscript(string userText) => _user = ConversationItem.User(userText);
 
+        /// <summary>
+        /// Recent items, then the context block, then this turn. The context block changes every turn (scene ages such as
+        /// "2 min ago"), so it sits after the history: the prompt-cache prefix then covers instructions, tools and every
+        /// earlier turn (prefix caching, [docs:prompt-caching]).
+        /// </summary>
         public List<ConversationItem> Input(ConversationItem context, IReadOnlyList<ConversationItem> recent)
         {
             var input = new List<ConversationItem>(recent.Count + _rounds.Count + 2);
+            input.AddRange(recent);
             if (context != null)
                 input.Add(context);
-            input.AddRange(recent);
             input.Add(_user);
             input.AddRange(_rounds);
             return input;

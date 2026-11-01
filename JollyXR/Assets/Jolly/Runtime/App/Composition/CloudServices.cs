@@ -40,17 +40,18 @@ namespace Jolly.App.Composition
             var sse = new MetaSseClient(edges.Http, new RetryExecutor(f.Clock, f.Random, f.Log), f.Clock);
             var liveModel = MetaModelResolver.Resolve(ModelRoute.LiveUser, c.chatModel);
             var syntheticModel = MetaModelResolver.Resolve(ModelRoute.Synthetic, c.syntheticChatModel);
-            IChatModel Chat(float firstEventSeconds, int attempts) => new ReportingChatModel(
+            IChatModel Chat(float firstEventSeconds, int attempts, string cacheKey) => new ReportingChatModel(
                 new ResponsesChatModel(endpoint, sse, f.Usage, new ResponsesChatOptions(liveModel, syntheticModel,
                     TimeSpan.FromSeconds(firstEventSeconds), TimeSpan.FromSeconds(c.llmIdleSeconds), attempts,
-                    (decimal)c.chatReservationUsd), f.Log),
+                    (decimal)c.chatReservationUsd, cacheKey), f.Log),
                 MetaErrors.Provider, monitor);
 
             var services = new CloudServices
             {
                 Connectivity = monitor,
-                VoiceChat = Chat(c.voiceFirstEventSeconds, c.voiceAttempts),
-                BackgroundChat = Chat(c.backgroundFirstEventSeconds, c.backgroundAttempts),
+                VoiceChat = Chat(c.voiceFirstEventSeconds, c.voiceAttempts, ResponsesChatOptions.VoiceCacheKey),
+                BackgroundChat = Chat(c.backgroundFirstEventSeconds, c.backgroundAttempts,
+                    ResponsesChatOptions.BackgroundCacheKey),
                 SpeechToText = new ReportingSpeechToText(new MuseRealtimeSpeechToText(
                         () => edges.WebSockets(MuseAsrErrors.Provider), f.Secrets, f.Usage, f.Clock, f.Log,
                         new MuseAsrOptions(MetaModelResolver.Resolve(ModelRoute.LiveUser, c.asrModel))),

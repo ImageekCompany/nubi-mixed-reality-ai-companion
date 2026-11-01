@@ -45,7 +45,7 @@ namespace Jolly.Providers.MetaApi.Chat
             ct.ThrowIfCancellationRequested();
 
             var model = MetaModelResolver.Resolve(request.Route, _options.ModelFor(request.Route));
-            var body = _writer.Write(request, model);
+            var body = _writer.Write(request, model, _options.PromptCacheKey);
             var http = _endpoint.PostStreaming("/responses", body.Json);
             if (!_meter.TryReserve(_options.ReservationUsd, out var reservation))
                 throw new ProviderException(MetaErrors.Provider, ProviderErrorKind.BudgetExceeded, "Usage cap reached.");
