@@ -3,6 +3,7 @@ using System.Globalization;
 using System.IO;
 using System.Text;
 using Jolly.Contracts;
+using Jolly.Providers.MetaApi.Common;
 using Newtonsoft.Json;
 
 namespace Jolly.Providers.MetaApi.Chat
@@ -92,8 +93,7 @@ namespace Jolly.Providers.MetaApi.Chat
                     break;
                 case ItemKind.UserImage:
                     _inputChars += ImageInputChars;
-                    WriteMessage(w, "user", "input_image", "image_url",
-                        "data:" + item.Image.MimeType + ";base64," + Convert.ToBase64String(item.Image.Bytes));
+                    WriteMessage(w, "user", "input_image", "image_url", ImageDataUrl.Of(item.Image));
                     break;
                 case ItemKind.AssistantText:
                     WriteMessage(w, "assistant", "output_text", "text", Count(item.Text));

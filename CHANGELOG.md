@@ -43,6 +43,13 @@ Each work package appends bullets under its own heading only (`docs/scope.md` §
 - Recorded ASR fixtures (`Tests/Fixtures/asr`), and shared fakes `FakeAudioCapture`, `ScriptedSpeechToText`, `StreamCollector<T>`.
 
 ### WP4
+- `OneBitMaskDecoder`: C# port of the SAM 3.1 `one_bit` mask codec (SAM License, `LICENSE-SAM.txt` beside it), bit-exact against the live pen and mug masks.
+- `SamOutputParser` (box/mask grammar, inclusive boxes, multi-object, empty output) and `SamPromptFormatter` (concept, point with hand negatives, box; `w`/`h` from the encoded image).
+- `SamSegmenter : ISegmenter` streamed through WP1's `MetaSseClient`: returns at `output_text.done` (~150 ms before `response.completed`), usage reservation per image settled as billed unless the server rejected the request with a 4xx, `one_bit` + confidence, masks decoded on the thread pool; an unusable model noun phrase is a no-match.
+- `SparkObjectIdentifier : IObjectIdentifier` over `IChatModel`: streamed `LABEL|NOUN_PHRASE` header then speakable answer deltas, per-install `safety_identifier`, 8 s timeout on WP1's `StreamTimeout`, early stop disposes the model stream.
+- `ImageDataUrl` moved to MetaApi `Common`, shared by the chat request writer and SAM.
+- `JpegImageEncoder : IImageEncoder` (Core/Imaging): thread-pool JPEG encode with the top-row-first → bottom-up flip ImageConversion needs.
+- R6 harness `tools/vision-eval/vision_eval.py` and report skeleton `docs/perf/vision-eval.md` (live run pending real room frames).
 
 ### WP5
 
