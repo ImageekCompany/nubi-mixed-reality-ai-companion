@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using Jolly.Contracts;
+using Jolly.Providers.MetaApi.Common;
 using Jolly.Net.WebSockets;
 
 namespace Jolly.Providers.MetaApi.Asr
@@ -40,8 +41,9 @@ namespace Jolly.Providers.MetaApi.Asr
         async UniTask RunAsync(IUniTaskAsyncEnumerable<PcmChunk> audio, SttOptions options, string key,
                                ChannelWriter<TranscriptEvent> events, CancellationToken ct)
         {
-            var handshake = MuseAsrHandshake.Build(key, _options.Model, options);
-            var billing = AsrBilling.Reserve(_meter, _options.Model, _options.ReserveUsd);
+            var model = MetaModelResolver.Resolve(ModelRoute.LiveUser, _options.Model);
+            var handshake = MuseAsrHandshake.Build(key, model, options);
+            var billing = AsrBilling.Reserve(_meter, model, _options.ReserveUsd);
 
             using var socket = _connect();
             var session = new MuseRealtimeSession(socket, _clock, _log, _options, options.SampleRate);

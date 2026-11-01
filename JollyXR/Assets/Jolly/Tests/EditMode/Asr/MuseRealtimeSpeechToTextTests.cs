@@ -282,6 +282,18 @@ namespace Jolly.Tests.EditMode.Asr
         }
 
         [Test]
+        public void ContributorModel_FailsBadRequestWithoutConnecting()
+        {
+            _stt = new MuseRealtimeSpeechToText(() => _socket, _secrets, _meter, _clock, _log, new MuseAsrOptions("asr-contributor"));
+
+            var events = Transcribe();
+
+            Assert.That(Kind(events), Is.EqualTo(ProviderErrorKind.BadRequest));
+            Assert.That(_socket.ConnectedUri, Is.Null);
+            Assert.That(_meter.OpenReservations, Is.Zero);
+        }
+
+        [Test]
         public void BudgetRefused_FailsBudgetExceededWithoutConnecting()
         {
             _meter.RefuseReservations = true;

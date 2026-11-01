@@ -3,6 +3,7 @@ using System.Buffers;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using Jolly.Contracts;
+using Jolly.Providers.MetaApi.Common;
 
 namespace Jolly.Providers.MetaApi.Asr
 {
@@ -37,10 +38,11 @@ namespace Jolly.Providers.MetaApi.Asr
         async UniTask RunAsync(IUniTaskAsyncEnumerable<PcmChunk> audio, SttOptions options, string key,
                                ChannelWriter<TranscriptEvent> events, CancellationToken ct)
         {
+            var model = MetaModelResolver.Resolve(ModelRoute.LiveUser, _options.Model);
             var (wav, seconds) = await RecordWavAsync(audio, options.SampleRate, ct);
             var boundary = "jolly" + Guid.NewGuid().ToString("N");
-            var body = MuseTranscribeRequest.BuildBody(wav, _options.Model, options, boundary);
-            var billing = AsrBilling.Reserve(_meter, _options.Model, _options.ReserveUsd);
+            var body = MuseTranscribeRequest.BuildBody(wav, model, options, boundary);
+            var billing = AsrBilling.Reserve(_meter, model, _options.ReserveUsd);
             try
             {
                 var json = await PostWithTimeoutAsync(body, MuseTranscribeRequest.ContentType(boundary), key, ct);
