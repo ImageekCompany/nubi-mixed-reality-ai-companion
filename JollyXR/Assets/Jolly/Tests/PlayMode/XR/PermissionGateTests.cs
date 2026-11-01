@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
@@ -17,12 +18,15 @@ namespace Jolly.Tests.PlayMode.XR
             public readonly HashSet<string> Granted = new();
             public readonly HashSet<string> GrantOnRequest = new();
             public readonly List<string> Requested = new();
+            public Exception RequestFailure;
 
             public bool IsGranted(string permission) => Granted.Contains(permission);
 
             public UniTask Request(IReadOnlyList<string> permissions, CancellationToken ct)
             {
                 Requested.AddRange(permissions);
+                if (RequestFailure != null)
+                    return UniTask.FromException(RequestFailure);
                 foreach (var p in permissions)
                 {
                     if (GrantOnRequest.Contains(p))
@@ -79,6 +83,34 @@ namespace Jolly.Tests.PlayMode.XR
 
             Assert.That(_camera.enabled, Is.True);
             Assert.That(_gate.CameraGranted, Is.False);
+        });
+
+        [UnityTest]
+        public IEnumerator Run_RequestThrows_StillEnablesTheCameraManagerAndRethrows() => UniTask.ToCoroutine(async () =>
+        {
+            _permissions.RequestFailure = new InvalidOperationException("dialog failed");
+
+            var thrown = false;
+            try { await _gate.Run(CancellationToken.None); }
+            catch (InvalidOperationException) { thrown = true; }
+
+            Assert.That(thrown, Is.True);
+            Assert.That(_camera.enabled, Is.True, "a failed dialog must not leave the user in a black room");
+        });
+
+        [UnityTest]
+        public IEnumerator Run_Cancelled_DoesNotEnableTheCameraManager() => UniTask.ToCoroutine(async () =>
+        {
+            using var cts = new CancellationTokenSource();
+            cts.Cancel();
+            _permissions.RequestFailure = new OperationCanceledException(cts.Token);
+
+            var thrown = false;
+            try { await _gate.Run(cts.Token); }
+            catch (OperationCanceledException) { thrown = true; }
+
+            Assert.That(thrown, Is.True);
+            Assert.That(_camera.enabled, Is.False);
         });
 
         [UnityTest]

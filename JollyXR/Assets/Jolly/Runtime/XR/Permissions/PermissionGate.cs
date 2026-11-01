@@ -9,8 +9,8 @@ namespace Jolly.XR.Permissions
     /// <summary>
     /// Owns the runtime permission flow (ADR-0003, xr-stack.md §2.3). The scene ships with the camera manager and the
     /// scene-data managers disabled.
-    /// - The camera manager is enabled once the request returns, whatever the answer: its Start() creates the
-    ///   passthrough layer and latches the camera permission, so a denied camera still gets passthrough.
+    /// - The camera manager is enabled once the request returns, whatever the answer and even if it throws: its Start()
+    ///   creates the passthrough layer and latches the camera permission, so a denied camera still gets passthrough.
     /// - A camera grant that arrives later (Settings, focus regained) toggles the manager to re-run Start().
     /// - Scene managers start only with USE_SCENE, otherwise their subsystems latch permission errors.
     /// Permission state is read with the Android API: ARCameraManager.permissionGranted reports false while frames
@@ -46,9 +46,20 @@ namespace Jolly.XR.Permissions
                 if (!_permissions.IsGranted(permission))
                     _missing.Add(permission);
             }
-            if (_missing.Count > 0)
-                await _permissions.Request(_missing, ct);
+            try
+            {
+                if (_missing.Count > 0)
+                    await _permissions.Request(_missing, ct);
+            }
+            finally
+            {
+                if (!ct.IsCancellationRequested)
+                    StartManagers();
+            }
+        }
 
+        void StartManagers()
+        {
             _requested = true;
             if (_cameraManager != null)
                 _cameraManager.enabled = true;
