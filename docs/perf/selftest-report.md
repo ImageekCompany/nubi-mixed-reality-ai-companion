@@ -378,30 +378,30 @@ The DoD target is < 1 % over 10 minutes of conversation. Turns are just over it,
 - Walking: the scene has no Space Setup, so no floor NavMesh; `come_here` was checked only for its graceful answer.
 - Hand-tracking pinch, poke and gaze triggers, and whether the phantom pinch appears with a wearer.
 - GC allocation per frame in release players: "GC Allocated In Frame" is recorded only in development players; the release run reports collections (0 in 30 s). The turn numbers above are from development players.
-- `capture_and_identify` start → mask visible and → answer audio (DoD §5): no event marks either on the device yet. The vision row above is the preamble.
-- DoD §4 rows that need OVR Metrics or the Profiler (CPU main thread p95, `app_rss_MB`, 10-minute stale frames, thermal, battery), and §5's 20 consecutive turns. See the coverage table below.
+- `capture_and_identify` start → mask visible and → answer audio (DoD §5) come from `evt=vision.timing` and the self-test's `tool_to_mask_ms` / `tool_to_answer_audio_ms`; all of them on the bundled still image, not a live frame of a lit room.
+- DoD §4 rows that need OVR Metrics or the Profiler (CPU main thread p95, `app_rss_MB`, 10-minute stale frames, thermal, battery), and §5's 20 consecutive turns with a wearer (the no-wearer run is in the `751acba` section). See the coverage table below.
 
 ## DoD §4–§5 coverage
 
-DoD §4 asks for deviations to be recorded in `docs/perf/report.md`; until the OVR Metrics capture and a development-build Profiler session exist, this table is that record. **Unmeasured** means no number exists anywhere yet.
+DoD §4 asks for deviations to be recorded in `docs/perf/report.md`; until a 10-minute OVR Metrics capture and a development-build Profiler session exist, this table is that record. Each row names the section its numbers come from. **Unmeasured** means no number exists anywhere yet.
 
 | DoD row | Target | Measured (release player, runs above) | Status |
 |---|---|---|---|
 | Frame rate | ≥ 72 fps | 72.0 fps idle, p95 13.9 ms | Met at idle |
-| Stale frames | < 1 % over 10 min | turns 0.55–0.99 % (4 runs), idle ≤ 0.22 %, a ~320 ms frame at launch (camera start) | Met during turns on ~1 min samples; 10 min unmeasured |
+| Stale frames | < 1 % over 10 min | After a reboot (`751acba`): turns 0.49–0.60 %, idle 0.23–0.32 %, whole run 0.93 % (20 turns, 242 s) and 1.77 % (default run, 106 s). Without one (`36778c1`, 1 h 14 min uptime): whole run 2.06–2.68 %. Launch: the compositor loses ~36 frames around scene start; worst app frame 274–290 ms (`f311081`, `751acba`, `36778c1`) | Met in turns and idle on a freshly rebooted headset (≤ 4 min samples); not at launch; 10 min unmeasured |
 | CPU main thread | p95 ≤ 11 ms | — | **Unmeasured** (Profiler) |
-| Draw calls / SetPass | ≤ 200 / ≤ 60 | 12 / 11 max, idle | Met at idle; turns unmeasured |
-| Triangles | ≤ 300k; Nubi ≤ 30k | 27,178 max; Nubi 25,248 | Met |
+| Draw calls / SetPass | ≤ 200 / ≤ 60 | 17 / 15 max, idle (`3e99cb5`, `751acba`) | Met at idle; turns unmeasured |
+| Triangles | ≤ 300k; Nubi ≤ 30k | 33,744 max, idle (`3e99cb5`); Nubi 25,248 | Met |
 | GC alloc | 0 B/frame idle; ≤ 4 KB/frame in a turn | release: 0 collections in 30 s; development player (fix/turn-gc, 3 runs): ~385 B/frame idle (XRI ray gradient), turns p50 3.9 KB/frame, max 6.4 (`barge_in`) | **Met at p50; not in `barge_in` (5.9–6.4 KB) and one `voice_come_here` (4.6 KB)**; idle met in the release player and in `NoGcAllocInSteadyStateIdle` |
-| Memory | `app_rss_MB` ≤ 1,500 MB | System Used Memory 531 MB | `app_rss_MB` **unmeasured** |
+| Memory | `app_rss_MB` ≤ 1,500 MB | `app_rss_MB` peak 642–643 MB (OVR Metrics, `751acba`); system used memory 556–559 MB idle (`36778c1`) | Met |
 | Thermal, battery | 30 min / ≤ 20 % | — | **Unmeasured** |
-| Release → ASR final | p50 ≤ 300 ms | p50 208 ms, max 681 ms (n=16, 4 runs of `fix/perf-latency`) | Met on n=16 |
-| ASR final → first text | p50 ≤ 1,300 ms | p50 840 ms, max 2,250 ms (n=16) | Met on n=16 |
-| **Release → first answer audio** | **p50 ≤ 2,000 ms** | p50 1,443 ms, max 2,872 ms (n=16) | Met on n=16, not 20 |
-| Pinch → silence | p50 ≤ 150 ms | 28–54 ms | Met |
-| Tool start → mask visible | p50 ≤ 2,000 ms | 722–1,127 ms (`evt=vision.timing`, 4 runs) | Met |
-| Tool start → answer audio | p50 ≤ 2,500 ms | 1,555–3,389 ms, p50 2,243 (4 runs, live dim frames) | Met at p50; 1 of 4 over (model reasoning time) |
-| Network loss → offline line | ≤ 2,000 ms | Offline in < 1 s, caption 14–27 ms after the press | Met |
+| Release → ASR final | p50 ≤ 300 ms | p50 265 ms, p90 278 ms, max 293 ms (n=20, `751acba`) | Met on n=20 |
+| ASR final → first text | p50 ≤ 1,300 ms | request → first text p50 1,277 ms, p90 2,068 ms, max 2,445 ms; ASR final → request ≤ 5 ms (n=20, `751acba`) | Met at p50 on n=20; p90 over |
+| **Release → first answer audio** | **p50 ≤ 2,000 ms** | p50 1,804 ms, p90 2,577 ms, max 2,737 ms (n=20 consecutive, `751acba`, no wearer); greetings p50 2,362 ms, 6 of 7 over | Met at p50 on n=20 without a wearer; p90 over |
+| Pinch → silence | p50 ≤ 150 ms | 28–55 ms (`751acba`, `f311081`, `36778c1`) | Met |
+| Tool start → mask visible | p50 ≤ 2,000 ms | 614–1,349 ms (`evt=vision.timing`, 4 runs of `3e99cb5`); `highlight_part` part mask 514 ms (`6f0383c`) | Met |
+| Tool start → answer audio | p50 ≤ 2,500 ms | `capture_and_identify` 1,608–2,055 ms (4 runs of `3e99cb5`, bundled still); `highlight_part` 1,332 ms (`6f0383c`); `find_object` 3.0–4.9 s when the model adds a `look_at` round (`36778c1`) | Met for `capture_and_identify` and `highlight_part`; `find_object` over when it takes a second round |
+| Network loss → offline line | ≤ 2,000 ms | Offline in < 1 s, caption 13–28 ms after the press (`3e99cb5`, `6f0383c`) | Met |
 
 ## How to run
 
