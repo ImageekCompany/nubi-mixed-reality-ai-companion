@@ -1,6 +1,6 @@
 # 0036. A local `come_here` guard for short come requests; self-test runs log each model reply
 
-- Status: accepted
+- Status: accepted; "the turn still goes to the model" superseded by [ADR-0037](0037-guard-walk-skips-the-model-and-find-object-gaze.md)
 - Date: 2026-11-01
 
 ## Context
