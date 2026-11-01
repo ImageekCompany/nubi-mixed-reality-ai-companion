@@ -4,7 +4,10 @@ using UnityEngine;
 
 namespace Jolly.Localization
 {
-    /// <summary>Locale code → ASR bias, TTS voice and reply language (architecture §10, ADR-0014).</summary>
+    /// <summary>
+    /// Locale code → ASR bias, whether Wit can speak it, and reply language (architecture §10, ADR-0014). The voice itself
+    /// belongs to the character (<c>VoiceProfile</c>, ADR-0031).
+    /// </summary>
     [CreateAssetMenu(menuName = "Jolly/Locale Voice Map", fileName = "LocaleVoiceMap")]
     public sealed class LocaleVoiceMapAsset : ScriptableObject
     {
@@ -16,11 +19,6 @@ namespace Jolly.Localization
             public string replyLanguageName = "English";
             [Tooltip("False: captions and baked lines only (no Wit voice for this locale).")]
             public bool ttsAvailable = true;
-            public string ttsVoiceId = "Charlie";
-            [Tooltip("Empty = provider default.")]
-            public string ttsStyle = "";
-            [Range(50, 200)] public int ttsSpeed = 100;
-            [Range(25, 200)] public int ttsPitch = 100;
         }
 
         [SerializeField] Entry[] _entries = { new() };
@@ -38,13 +36,6 @@ namespace Jolly.Localization
                 AsrLanguageBias = entry.asrLanguageBias,
                 ReplyLanguageName = entry.replyLanguageName,
                 TtsAvailable = entry.ttsAvailable,
-                TtsVoice = new VoiceSpec
-                {
-                    VoiceId = entry.ttsVoiceId,
-                    Style = string.IsNullOrEmpty(entry.ttsStyle) ? null : entry.ttsStyle,
-                    Speed = entry.ttsSpeed,
-                    Pitch = entry.ttsPitch,
-                },
             };
         }
 

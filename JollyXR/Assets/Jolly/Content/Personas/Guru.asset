@@ -14,12 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Jolly.App::Jolly.App.PersonaProfileAsset
   id: guru
   hasSafetyNotice: 0
-  voices:
-  - languageTag: en
-    voiceId: Charlie
-    style: 
-    speed: 90
-    pitch: 92
+  voiceStyle: 
+  voiceSpeedPercent: 90
+  voicePitchPercent: 92
   allowedTools: []
   persistMemory: 1
   crisisHandoff: 0

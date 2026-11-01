@@ -91,7 +91,6 @@ namespace Jolly.Contracts
     {
         public string LanguageTag { get; set; }        // "en", "pl"
         public string AsrLanguageBias { get; set; }    // "English", "Polish"
-        public VoiceSpec TtsVoice { get; set; }
         public bool TtsAvailable { get; set; }         // false: captions + baked lines only
         public string ReplyLanguageName { get; set; }  // used in the instruction "Reply in {0}."
     }

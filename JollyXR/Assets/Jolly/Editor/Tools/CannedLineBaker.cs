@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using Cysharp.Threading.Tasks;
+using Jolly.App;
 using Jolly.Contracts;
 using Jolly.Core.Speech;
 using Jolly.Providers.Wit;
@@ -13,7 +14,9 @@ namespace Jolly.Editor.Tools
 {
     /// <summary>
     /// Bakes <see cref="CannedLineCatalog.English"/> through the runtime <see cref="WitTextToSpeech"/> client into
-    /// 24 kHz mono WAVs (ADR-0006), so offline lines sound like live speech. Existing files are kept unless forced.
+    /// 24 kHz mono WAVs (ADR-0006) in the character's English voice from <see cref="JollyConfig.characterVoice"/>
+    /// (ADR-0031), so offline lines sound like live speech. Rebake with -jollyForce after changing that voice:
+    /// existing files are kept unless forced.
     /// The Wit client token comes from WIT_AI_CLIENT_TOKEN, else from the .env at JOLLY_DOTENV or the repo root.
     /// Batch: <c>Unity -batchmode -projectPath JollyXR -executeMethod Jolly.Editor.Tools.CannedLineBaker.BakeBatch [-jollyForce]</c>
     /// (without -quit: it exits itself once the requests finish).
@@ -21,7 +24,7 @@ namespace Jolly.Editor.Tools
     public static class CannedLineBaker
     {
         const string OutputFolder = "Assets/Jolly/Content/Audio/Lines/en";
-        static readonly VoiceSpec Voice = new() { VoiceId = "Charlie" };
+        const string ConfigPath = "Assets/Jolly/Content/Config/JollyConfig.asset";
 
         [MenuItem("Jolly/Bake English Canned Lines")]
         static void BakeFromMenu() => Bake(force: false, exitWhenDone: false).Forget();
@@ -33,7 +36,16 @@ namespace Jolly.Editor.Tools
             var failures = 0;
             try
             {
+                var config = AssetDatabase.LoadAssetAtPath<JollyConfig>(ConfigPath);
+                var characterVoice = config != null ? config.CharacterVoice : null;
+                if (characterVoice == null)
+                    throw new InvalidOperationException($"{ConfigPath} has no characterVoice");
+                var voice = characterVoice.VoiceFor("en");
+                Debug.Log($"evt=bake.voice voice={voice.VoiceId} style={voice.Style} speed={voice.Speed} pitch={voice.Pitch} " +
+                          $"sfx={voice.SfxCharacter}/{voice.SfxEnvironment}");
                 var tts = new WitTextToSpeech(new DotEnvSecrets(), new EditorClock());
+                // In batchmode the first request (cold TLS while the editor is still busy) overran the 3 s first-chunk window.
+                await tts.WarmUp(CancellationToken.None);
                 Directory.CreateDirectory(OutputFolder);
                 foreach (var line in CannedLineCatalog.English)
                 {
@@ -42,7 +54,7 @@ namespace Jolly.Editor.Tools
                         continue;
                     try
                     {
-                        var samples = await Collect(tts.Synthesize(line.Text, Voice, CancellationToken.None));
+                        var samples = await Collect(tts.Synthesize(line.Text, voice, CancellationToken.None));
                         WriteWav(path, samples, tts.SampleRate);
                         Debug.Log($"evt=bake.line key={line.Key} seconds={samples.Count / (float)tts.SampleRate:0.00}");
                     }

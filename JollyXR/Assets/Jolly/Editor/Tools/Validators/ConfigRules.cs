@@ -28,11 +28,13 @@ namespace Jolly.Editor.Tools.Validators
             if (config.hardCapUsd <= 0 || config.hardCapUsd > 140)
                 problems.Add("JollyConfig.hardCapUsd must be within the project's $140 budget");
             var so = new SerializedObject(config);
-            foreach (var field in new[] { "localeVoices", "editorCameraStill" })
+            foreach (var field in new[] { "localeVoices", "characterVoice", "editorCameraStill" })
             {
                 if (so.FindProperty(field).objectReferenceValue == null)
                     problems.Add($"JollyConfig.{field} is not set");
             }
+            if (config.CharacterVoice != null && string.IsNullOrWhiteSpace(config.CharacterVoice.VoiceFor("en").VoiceId))
+                problems.Add("JollyConfig.characterVoice has no English Wit voice");
             CheckLineClips(config.lineClips, problems);
         }
 

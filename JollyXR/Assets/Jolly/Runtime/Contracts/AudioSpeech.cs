@@ -85,12 +85,25 @@ namespace Jolly.Contracts
         IUniTaskAsyncEnumerable<TranscriptEvent> Transcribe(IUniTaskAsyncEnumerable<PcmChunk> audio, SttOptions options, CancellationToken ct);
     }
 
+    /// <summary>One resolved Wit voice. Defaults are Wit's own; the character's voice comes from <see cref="ICharacterVoice"/>.</summary>
     public sealed class VoiceSpec
     {
+        public const int MinSpeed = 50, MaxSpeed = 200, MinPitch = 25, MaxPitch = 200;
+
         public string VoiceId { get; set; } = "Charlie";  // Wit voice name
         public string Style { get; set; }                  // null = provider default
         public int Speed { get; set; } = 100;              // Wit 50..200
         public int Pitch { get; set; } = 100;              // Wit 25..200
+        public string SfxCharacter { get; set; }           // SSML <sfx character>, e.g. "chipmunk"; null = none
+        public string SfxEnvironment { get; set; }         // SSML <sfx environment>, e.g. "room"; null = none
+
+        public VoiceSpec Copy() => (VoiceSpec)MemberwiseClone();
+    }
+
+    /// <summary>The voice a character speaks with, per language tag ("en", "pl"). Never null; a fresh spec per call.</summary>
+    public interface ICharacterVoice
+    {
+        VoiceSpec VoiceFor(string languageTag);
     }
 
     public interface ITextToSpeech

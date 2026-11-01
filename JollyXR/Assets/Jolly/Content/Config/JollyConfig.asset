@@ -62,6 +62,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 35b52b9c6049649cfa897f00c97d8d17, type: 2}
   - {fileID: 11400000, guid: 7c38c06b6baac445ca690e42b3783790, type: 2}
   localeVoices: {fileID: 11400000, guid: 295b676912e5242eea0947dcfd953595, type: 2}
+  characterVoice: {fileID: 11400000, guid: 402eaf332caa49ba951a4cbbce3462a4, type: 2}
   lineClips: {fileID: 11400000, guid: 6a01e4385f9c84c99b1a14cb3e359cb2, type: 2}
   preloadTables:
   - UI

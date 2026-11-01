@@ -14,8 +14,8 @@ namespace Jolly.Core.Personas
         public string SystemPromptKey { get; set; }
         public string SafetyNoticeKey { get; set; }
         public string GreetingKey { get; set; }
-        /// <summary>Per language tag ("en"); a locale without an entry uses <see cref="LocaleVoiceProfile.TtsVoice"/>.</summary>
-        public IReadOnlyDictionary<string, VoiceSpec> Voices { get; set; }
+        /// <summary>Applied to the character's voice for the current locale; null speaks it unchanged.</summary>
+        public VoiceDelivery Delivery { get; set; }
         /// <summary>Null offers every registered tool.</summary>
         public IReadOnlyList<string> AllowedTools { get; set; }
         public bool PersistMemory { get; set; } = true;

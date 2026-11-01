@@ -62,7 +62,8 @@ namespace Jolly.App.Composition
             var d = _disposables;
             Localizer = d.Add(new UnityLocalizer(config.localeVoices, config.preloadTables, f.Log));
             await Localizer.Initialize(appCt);
-            Personas = d.Add(new PersonaRepository(PersonaDefinitions(config), config.defaultPersonaId, Localizer));
+            Personas = d.Add(new PersonaRepository(PersonaDefinitions(config), config.defaultPersonaId, Localizer,
+                config.CharacterVoice));
             scene.settings.Construct(Localizer, Personas, f.Usage, new PlayerPrefsPreferencesStore(), f.Clock);
             Preferences = scene.settings;
 
