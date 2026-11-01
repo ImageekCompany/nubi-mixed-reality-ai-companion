@@ -8,12 +8,15 @@ namespace Jolly.Core.Tools
 {
     /// <summary>
     /// Remembers "here" as a named place: the user's head projected to Nubi's floor, facing the user's heading, anchored
-    /// when the platform persists anchors (contracts §4.2).
+    /// when the platform persists anchors (contracts §4.2). The anchor save gets less than the tool's timeout, so a slow
+    /// one still leaves time to remember the place unanchored.
     /// </summary>
     public sealed class RememberPlaceTool : ITool
     {
         const string Schema =
             "{\"type\":\"object\",\"properties\":{\"name\":{\"type\":\"string\",\"maxLength\":32}},\"required\":[\"name\"],\"additionalProperties\":false}";
+
+        static readonly TimeSpan AnchorTimeout = TimeSpan.FromSeconds(3);
 
         readonly ISceneMemory _scene;
         readonly ISpatialAnchors _anchors;
@@ -46,13 +49,20 @@ namespace Jolly.Core.Tools
             var pose = new Pose(position, heading.sqrMagnitude < 1e-4f ? Quaternion.identity : Quaternion.LookRotation(heading));
 
             string anchorId = null;
-            try
+            using (var scope = new TimeoutScope(_clock, AnchorTimeout, ct))
             {
-                anchorId = await _anchors.CreateAndSave(pose, ct);
-            }
-            catch (Exception e) when (e is not OperationCanceledException)
-            {
-                _log.Write(LogLevel.Warning, "tools", "evt=anchor.save_failed", e);
+                try
+                {
+                    anchorId = await _anchors.CreateAndSave(pose, scope.Token);
+                }
+                catch (OperationCanceledException) when (scope.TimedOut && !ct.IsCancellationRequested)
+                {
+                    _log.Write(LogLevel.Warning, "tools", "evt=anchor.save_timeout");
+                }
+                catch (Exception e) when (e is not OperationCanceledException)
+                {
+                    _log.Write(LogLevel.Warning, "tools", "evt=anchor.save_failed", e);
+                }
             }
 
             _scene.RememberPlace(new PlaceRecord { Name = name, Pose = pose, AnchorId = anchorId, CreatedAt = _clock.UtcNow });

@@ -6,16 +6,22 @@ using UnityEngine;
 
 namespace Jolly.Testing.Conversation
 {
-    /// <summary>In-memory anchors. <see cref="Supported"/> false mimics a platform without persistence (returns null ids).</summary>
+    /// <summary>
+    /// In-memory anchors. <see cref="Supported"/> false mimics a platform without persistence (returns null ids);
+    /// <see cref="Hang"/> makes saves wait for their token.
+    /// </summary>
     public sealed class FakeSpatialAnchors : ISpatialAnchors
     {
         readonly Dictionary<string, Pose> _anchors = new();
         int _next;
 
         public bool Supported { get; set; } = true;
+        public bool Hang { get; set; }
 
         public UniTask<string> CreateAndSave(Pose pose, CancellationToken ct)
         {
+            if (Hang)
+                return UniTask.Never<string>(ct);
             if (!Supported)
                 return UniTask.FromResult<string>(null);
             var id = "anchor-" + ++_next;

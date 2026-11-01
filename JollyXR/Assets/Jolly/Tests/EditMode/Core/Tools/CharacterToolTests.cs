@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Threading;
+using Cysharp.Threading.Tasks;
 using Jolly.Contracts;
 using Jolly.Core.Config;
 using Jolly.Core.Memory;
@@ -122,6 +123,36 @@ namespace Jolly.Tests.EditMode.Core.Tools
 
             Assert.That((bool)ToolHarness.Output(result)["anchored"], Is.False);
             Assert.That(_scene.TryGetPlace("desk", out _), Is.True);
+        }
+
+        [Test]
+        public void RememberPlace_AnchorSaveSlowerThanItsTimeout_RemembersThePlaceUnanchoredInsideTheToolTimeout()
+        {
+            _anchors.Hang = true;
+            var tool = new RememberPlaceTool(_scene, _anchors, _user, _character, _clock, _log);
+            var run = ToolHarness.Start(tool, "{\"name\":\"desk\"}").Preserve();
+
+            _clock.Advance(TimeSpan.FromSeconds(3));
+
+            Assert.That(run.Status, Is.EqualTo(UniTaskStatus.Succeeded));
+            Assert.That((bool)ToolHarness.Output(run.GetAwaiter().GetResult())["anchored"], Is.False);
+            Assert.That(_scene.TryGetPlace("desk", out var place), Is.True);
+            Assert.That(place.AnchorId, Is.Null);
+            Assert.That(tool.Definition.Timeout, Is.GreaterThan(TimeSpan.FromSeconds(3)));
+        }
+
+        [Test]
+        public void RememberPlace_TurnCancelledDuringTheAnchorSave_RemembersNothing()
+        {
+            _anchors.Hang = true;
+            using var cts = new CancellationTokenSource();
+            var tool = new RememberPlaceTool(_scene, _anchors, _user, _character, _clock, _log);
+            var run = ToolHarness.Start(tool, "{\"name\":\"desk\"}", ct: cts.Token).Preserve();
+
+            cts.Cancel();
+
+            Assert.That(run.Status, Is.EqualTo(UniTaskStatus.Canceled));
+            Assert.That(_scene.TryGetPlace("desk", out _), Is.False);
         }
 
         [Test]
