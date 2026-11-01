@@ -29,7 +29,7 @@ Rows before 2026-11-01 02:00 (research phase, `docs/research/*.md`) were not ite
 | 2026-11-01 | fix/llm-memory: summary diagnosis (old prompt @300 → `incomplete`, 188 reasoning; new prompt @1024 ×2 → completed; final prompt streamed + `prompt_cache_key`, recorded as `responses_summary` fixture) and prompt-cache order A/B (4 calls, all `cached_tokens: 0`); synthetic conversations only | muse-spark-1.3-contributor | 8 | in ~9.8k / out ~1.5k | 0.0013 |
 | 2026-11-01 | fix/audit: 1 device self-test run after the audit fixes (app meter 0.0116) | muse-spark-1.3, sam-3.1, muse-voice-transcribe-1.0 (+ Wit, free) | ~6 Spark calls, 1–2 SAM, ~4 ASR sessions | 1 image; ~10 s audio | 0.012 |
 | 2026-11-01 | release audit: 1 device self-test run on `main` 3f35562 (app meter 0.0120) | muse-spark-1.3, sam-3.1, muse-voice-transcribe-1.0 (+ Wit, free) | ~6 Spark calls, 1 SAM, 4 ASR sessions | 1 image; ~10 s audio | 0.012 |
-
 | 2026-11-01 | fix/turn-gc: 12 device self-test runs (3 before, 1 intermediate, 3 after, 4 with allocation profiles, 1 release; app meter 0.0127 + 0.0137 + 0.0119 + 0.0129 + 0.0115 + 0.0122 + 0.0129 + 0.0129 + 0.0117 + 0.0114 + 0.0098 + 0.0149). Keep-alive and WebSocket-upgrade probes from the dev Mac were unauthenticated (401/400, no session started) | muse-spark-1.3, sam-3.1, muse-voice-transcribe-1.0 (+ Wit, free) | ~75 Spark calls, 12 SAM, ~60 ASR sessions | ~12 images; ~2.5 min audio | 0.149 |
+| 2026-11-01 | release check of `main` dd14847 after the turn-gc and coverage-gate merges: 3 device self-test runs, release IL2CPP (app meter 0.0127 + 0.0128 + 0.0126) | muse-spark-1.3, sam-3.1, muse-voice-transcribe-1.0 (+ Wit, free) | ~20 Spark calls, 3 SAM, ~15 ASR sessions | 3 images; ~35 s audio | 0.038 |
 
-Running total (est.): **≤ $1.15** (sum of the rows: 1.140)
+Running total (est.): **≤ $1.18** (sum of the rows: 1.178)

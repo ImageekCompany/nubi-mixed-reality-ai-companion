@@ -1,9 +1,40 @@
 # Device self-test report
 
-Latest: 2026-11-01, 08:37–09:27 UTC, the turn-GC and cold-first-turn pass on `fix/turn-gc` (ADR-0023): three "before" runs of `main`, three "after" runs, development IL2CPP (the only player that reports GC per frame), four allocation-profile runs and one release verification run. Before that: 08:20–08:47 UTC, the performance and latency pass on `fix/perf-latency` (ADR-0019), release IL2CPP. Earlier: 06:38–06:50 UTC from `fix/integration-review`, 06:00–06:14 UTC from `feat/wp9-integration`.
+Latest: 2026-11-01, 09:39–09:45 UTC, three release runs of `main` `dd14847` after the turn-gc and coverage-gate merges (section below). Before that: 08:37–09:27 UTC, the turn-GC and cold-first-turn pass on `fix/turn-gc` (ADR-0023): three "before" runs of `main`, three "after" runs, development IL2CPP (the only player that reports GC per frame), four allocation-profile runs and one release verification run. Before that: 08:20–08:47 UTC, the performance and latency pass on `fix/perf-latency` (ADR-0019), release IL2CPP. Earlier: 06:38–06:50 UTC from `fix/integration-review`, 06:00–06:14 UTC from `feat/wp9-integration`.
 Device: Quest 3 `2G0YC1ZF7P090N`, Horizon OS v209. Build: `tools/ci/build.sh` (IL2CPP ARM64 release, 58 MB APK).
 Nobody wore the headset. The room was dim (camera mean luma 23–45 of 255) and had no Space Setup. Command: `tools/device/selftest.sh` (headless: `prox_close`, `guardian_pause 1`, 16 MiB logcat buffer; all restored afterwards).
 Raw outputs (`selftest_results.json`, `logcat.txt`, `vrapi.txt`) are under `artifacts/selftest/`, which is git-ignored.
+
+## Release runs of main after the merges (dd14847)
+
+`tools/device/build.sh` (IL2CPP ARM64 release, 58 MB, `QuestBuild` 0 errors / 2 warnings), installed APK verified by SHA-256, `push-secrets.sh`, then `tools/device/selftest.sh` three times (09:39, 09:41, 09:43 UTC). `guardian_pause` read back as 0 afterwards. Release players do not log GC per frame (`gc_bytes_per_frame=NaN`); the turn GC numbers stay those of the development runs below.
+
+| Scenario | Run 1 | Run 2 | Run 3 |
+|---|---|---|---|
+| `offline_greeting` | PASS, caption 41 ms | PASS, 27 ms | PASS, 41 ms |
+| `voice_greeting` | PASS, 2,126 ms | PASS, 2,166 ms (called `come_here`) | PASS, 2,876 ms (called `come_here`) |
+| `voice_come_here` | **FAIL**: two Responses timeouts, no reply | DEGRADED (no NavMesh), 1,360 ms | DEGRADED (no NavMesh), 2,194 ms, similarity 0.857 |
+| `vision_capture_and_identify` | PASS, live frame; tool → answer audio 2,458 ms, mask 930 ms | PASS; 1,959 ms, mask 653 ms | PASS, but the vision call timed out (`tools=capture_and_identify:failed`); tool → answer audio 8,332 ms, mask 598 ms |
+| `barge_in` | PASS, silence 40 ms | PASS, 55 ms | PASS, 41 ms |
+| `perf_idle` | PASS, 72.0 fps, p95 13.9 ms, 22 draw / 13 SetPass, 35,194 tris, 521 MB | PASS, 72.0 fps, 13 / 11, 27,380 tris, 511 MB | PASS, 72.0 fps, 13 / 11, 27,252 tris, 513 MB |
+| Overall, spend | FAIL, $0.0127 | DEGRADED, $0.0128 | DEGRADED, $0.0126 |
+
+| Metric | Target | These runs | fix/turn-gc (for comparison) |
+|---|---|---|---|
+| Release → first audio, all online turns | p50 ≤ 2.0 s | p50 **1,833**, max 2,876 ms (n=11; 1,083–2,876) | p50 1,750, max 2,512 (n=12, development) |
+| Release → first audio, first turn of the launch | p50 ≤ 2.0 s | **2,126, 2,166, 2,876 ms** | 1,718–1,845 (development); 2,249 (one release run) |
+| First sentence queued → first audio, first turn | — | 472, 166, 543 ms (later turns 99–278) | 194–320 (development); 221 (release) |
+| Tool start → answer audio | p50 ≤ 2.5 s | 2,458, 1,959, 8,332 ms (p50 2,458) | — |
+| Stale frames, turns / idle / whole run | < 1 % | 0.61 / 0.04 / 0.98, 0.69 / 0.18 / 1.59, 0.75 / 0.09 / 1.66 % | turns 0.64–0.82 % |
+| Stale frames, launch (first scenario + 2 s) | — | 42, 68, 76 frames (worst frame 332–342 ms, camera start) | 33–78 frames |
+| GC per frame in turns | ≤ 4 KB | not logged in release players | p50 3.9, max 6.4 KB |
+
+Findings (no code changed):
+
+- **Meta Responses timeouts.** Three calls got no first SSE event within 6 s (`evt=net.retry … kind=Timeout status=0`, then `llm.failed … no first stream event after 6 s`): both attempts of the `voice_come_here` agent call in run 1 (09:40:15 → 09:40:27 UTC), which made that scenario FAIL, and the vision call in run 3 (09:43:51 → 09:43:59 UTC). No response ids were returned. No earlier run in this report logged one. speculation: server-side latency, since the other ~20 Spark calls in these runs had their first event 0.5–1.2 s after the request.
+- **The self-test passes a vision turn whose tool failed.** Run 3 reports `vision_capture_and_identify` PASS with `tools=capture_and_identify:failed` and an 8.3 s answer.
+- **The first turn of a launch is over 2.0 s in all three runs.** Request → first event took 830–1,163 ms and first event → first text 539–1,040 ms. In runs 1 and 3, first sentence queued → audio was 472 and 543 ms, the cold-Wit range from before ADR-0023, although `evt=warmup.tts status=200` (589–635 ms) ran at every launch. Later turns took 99–278 ms.
+- The greeting called `come_here` in runs 2 and 3, as in the fix/turn-gc release run.
 
 ## Turn GC and the cold first turn (fix/turn-gc)
 
