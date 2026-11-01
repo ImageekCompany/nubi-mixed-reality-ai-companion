@@ -1,0 +1,47 @@
+event: response.created
+data: {"response":{"background":false,"created_at":1793495748.0,"error":null,"id":"resp_6ae692c4bf49e67ae98f4c5e","incomplete_details":null,"instructions":"You are Nubi, a friendly mixed-reality companion. Be brief.","max_output_tokens":1024,"model":"muse-spark-1.3-contributor","object":"response","output":[],"parallel_tool_calls":true,"reasoning":{"effort":"minimal"},"service_tier":"auto","status":"in_progress","store":false,"temperature":1.0,"tool_choice":"auto","tools":[{"description":"Walk Nubi to a named place.","name":"walk_to","parameters":{"additionalProperties":false,"properties":{"place":{"maxLength":64,"type":"string"}},"required":["place"],"type":"object"},"type":"function"}],"top_logprobs":0,"top_p":1.0,"truncation":"disabled"},"sequence_number":0,"type":"response.created"}
+
+event: response.in_progress
+data: {"response":{"background":false,"created_at":1793495748.0,"error":null,"id":"resp_6ae692c4bf49e67ae98f4c5e","incomplete_details":null,"instructions":"You are Nubi, a friendly mixed-reality companion. Be brief.","max_output_tokens":1024,"model":"muse-spark-1.3-contributor","object":"response","output":[],"parallel_tool_calls":true,"reasoning":{"effort":"minimal"},"service_tier":"auto","status":"in_progress","store":false,"temperature":1.0,"tool_choice":"auto","tools":[{"description":"Walk Nubi to a named place.","name":"walk_to","parameters":{"additionalProperties":false,"properties":{"place":{"maxLength":64,"type":"string"}},"required":["place"],"type":"object"},"type":"function"}],"top_logprobs":0,"top_p":1.0,"truncation":"disabled"},"sequence_number":1,"type":"response.in_progress"}
+
+event: response.output_item.added
+data: {"item":{"id":"rs_6ae692c4bf49e67ae98f4c5e:rs_01a194ad500d77819e51f0828cbd193b","status":"in_progress","summary":[],"type":"reasoning"},"output_index":0,"sequence_number":2,"type":"response.output_item.added"}
+
+event: response.output_item.done
+data: {"item":{"encrypted_content":"Q-PaDgHMwdcBTfQU56gkfoT8fik7l651Jaet-4JfFA4zIO3rlTvQr4U4hiEqtRcnDGcShxFwkv59OM9n2dhivf6hBE2YgScQurlaYiXK2JV22m15TA3-a8UNnzOr8Yn4qQtUVerieAQPZCR5biJs8bCaBKUa0eh57CH-Fb8hcsnSOaOJTJSOm-mrwM3hBPEWNg3dBDGoa0dSnBSCQXz2OIt0zvekNKGw9pRglkKheKhNHUAmsQcqGaKfZuQ8qJYBbXVfI5vtdMAIHExtuE7mg8ZWfgenJYp45dPMOfr4qpEk4hzlSGuRrBIefUPMqYCViJakHrmZJTmTE3VExqcYtJQA_WYIdYQj2XrQNbJXYc9AdyE3L3ZoA9tmoqJZLH8y-A35PnnTPwdGhA1RJJ5MGRqjWaq0Yyq5YUlgtsBNnFYhkBxuDgBpt1jJ9-uE7_1cDWFKuGD0nXXp_pnEY3umvHzhI3bucD0eOx-MBF3nJRvt4yrewIRBECEKDncdVICscVbjzLlWbIvrfsskJ1cpcwseOaUNIP93S50qDMN7gP1pBObZ7ad0efFc-F1qwNUvWWcWkPmgTfZH8ZlvKw6THtCA-y8xpyWA4ngkga1-DGqkA4iXuSUaTMYIHxlOqoNxW1bC4dVblDsIa3kyX_TeOrI02lvD-Oqzvx4c_-CP9bKYsEYFr9Z-Ogr8wO_1ewX5AXlA8z4_7oH-NjaCU--Tmomk2TQMFZeFft2gFXhxsqxxWT5-flCdOJPLu0XrBWhE1kIgVA-MmHDgEZi5Qn4xtiUUn-24TKW4gjWvVhUHhUTc43zX4pBfsJ6LiPsjIQV7OoDZVwwM7vcIuQV6ycZp5luwuRQABLHs_JhjvWKDKd-_BSDjVREKW6jp6j-rh2KdmFq5F1TKWBLS7KSC9AAh9uv9Y7lNETsI_5imw9m3YDuSFkZEN97Nkwir2M6powIXUA3f7oON3GMYbY8R2zWTIsYS0Bqy_tx-nWC6JFxCOiDAa_GGS-odOOgIaj2sKhkzYhUiH8FcQYaozP9p8YwYTix1aMfOPLXeIOqR-XTRy1UlveYjLLZIS0XOaxIQHEtB4ABY-qH3jwRbp7HjcYSxQ_nxiuOs_3KybOhN0b2dc_bjcb7JOOrmxERdT2sTVdd44AqO7eWdWhLWxIPS8Jg-K7M2SFTakEbiLrbN5ugVzGW5l1oJLnGdH4WNo-JV0kiiE1LrE11bB32aV3GH2vayEZ4A1bDcazyuk13g-o2w4kkflsc3_riNUFUPx-t1s_spOdfkR4TZiXcfI9HXG5kZ_C59iidmpIUBNu_m6xv6YxGU57jQQ0PMhi49w8xKG7GO0MRvepMgB2bk0A7XykV9BoauM74cJKPKXLSCiaq4CZ12XqAt1pDxj50WeTuqNuU7UfGtrxZQ5nCU6tCqqg","id":"rs_6ae692c4bf49e67ae98f4c5e:rs_01a194ad500d77819e51f0828cbd193b","status":"completed","summary":[],"type":"reasoning"},"output_index":0,"sequence_number":3,"type":"response.output_item.done"}
+
+event: response.output_item.added
+data: {"item":{"content":[],"id":"rs_01a194ad508977ac87450eed2d3cdad3","phase":"commentary","role":"assistant","status":"in_progress","type":"message"},"output_index":1,"sequence_number":4,"type":"response.output_item.added"}
+
+event: response.content_part.added
+data: {"content_index":0,"item_id":"rs_01a194ad508977ac87450eed2d3cdad3","output_index":1,"part":{"annotations":[],"logprobs":[],"text":"","type":"output_text"},"sequence_number":5,"type":"response.content_part.added"}
+
+event: response.output_text.delta
+data: {"content_index":0,"delta":"On my way to the sofa.","item_id":"rs_01a194ad508977ac87450eed2d3cdad3","logprobs":[],"output_index":1,"sequence_number":6,"type":"response.output_text.delta"}
+
+event: response.output_text.done
+data: {"content_index":0,"item_id":"rs_01a194ad508977ac87450eed2d3cdad3","logprobs":[],"output_index":1,"sequence_number":7,"text":"On my way to the sofa.","type":"response.output_text.done"}
+
+event: response.content_part.done
+data: {"content_index":0,"item_id":"rs_01a194ad508977ac87450eed2d3cdad3","output_index":1,"part":{"annotations":[],"logprobs":[],"text":"On my way to the sofa.","type":"output_text"},"sequence_number":8,"type":"response.content_part.done"}
+
+event: response.output_item.done
+data: {"item":{"content":[{"annotations":[],"logprobs":[],"text":"On my way to the sofa.","type":"output_text"}],"id":"rs_01a194ad508977ac87450eed2d3cdad3","phase":"commentary","role":"assistant","status":"completed","type":"message"},"output_index":1,"sequence_number":9,"type":"response.output_item.done"}
+
+event: response.output_item.added
+data: {"item":{"arguments":"","call_id":"call_01a194ad50eb757280800296fbf06a9a","id":"fc_01a194ad50eb757280800296fbf06a9a","name":"walk_to","status":"in_progress","type":"function_call"},"output_index":2,"sequence_number":10,"type":"response.output_item.added"}
+
+event: response.function_call_arguments.delta
+data: {"delta":"{\"place\":\"sofa\"}","item_id":"fc_01a194ad50eb757280800296fbf06a9a","output_index":2,"sequence_number":11,"type":"response.function_call_arguments.delta"}
+
+event: response.function_call_arguments.done
+data: {"arguments":"{\"place\":\"sofa\"}","item_id":"fc_01a194ad50eb757280800296fbf06a9a","name":"walk_to","output_index":2,"sequence_number":12,"type":"response.function_call_arguments.done"}
+
+event: response.output_item.done
+data: {"item":{"arguments":"{\"place\":\"sofa\"}","call_id":"call_01a194ad50eb757280800296fbf06a9a","id":"fc_01a194ad50eb757280800296fbf06a9a","name":"walk_to","status":"completed","type":"function_call"},"output_index":2,"sequence_number":13,"type":"response.output_item.done"}
+
+event: response.completed
+data: {"response":{"background":false,"completed_at":1793495749.0,"created_at":1793495748.0,"error":null,"id":"resp_6ae692c4bf49e67ae98f4c5e","incomplete_details":null,"instructions":"You are Nubi, a friendly mixed-reality companion. Be brief.","max_output_tokens":1024,"model":"muse-spark-1.3-contributor","object":"response","output":[{"encrypted_content":"Q-PaDgHg3diyhuJ89Hxg8fiwGtWZeBOvgzrQPlllDj_q1pLBxhj_G5fxSPfnEgdEVcwyIIfPpgjUqjjUCz0e1juGULXcvURXwij-VFJa1zyYz9yKzHz3aLhi1yc4QfNs-hlrozvS34m1Z4Wq_gafj4UW8mYeXrOBUoRbyPrxWZP6dtgjDCk1q2del-bJ_kT9lWRmiDk-abcsIs6kACuNJ15WO2NAi9PwZ8At-17hfqYaFSXCClelCimlHxx5EpuN4i2A8frxaTZVNDagU8xKdqBaRFC3vLtTxCeFmNKxTyfUDkYBz7USXZeIm-bpVZUCUqEUITwm7gwSWVtY6UlKH6W_cWyzLgaVxs5vv7PbwAiAPf0NHOZrhzFhw-CvQQJcNBIVdabQO6VRLiWbh4O0zXrLP76Z-y_NQIaO9wtlDcVhcX0wKn3jEEhdQRos1wW18cHBu1Q5pohuCjCGcecQNw3h1KcFwJhIAmwQcSNWDKS7_FEo0Fk4iJALCz3r6HLaKEIZmaVt-E5vw4k4of-Ovb7tP4-ztPGumRalpfJW3-gCrBtOF6_HNNqtCTRREBkYOP62DQl11S-VJsrGkqnsS-dSwzLRIL89FfOFR1NFNlzlBJcQQGUcD7ofuyBYa5xBZ4AmHV71C9u3LpdnFcbJPtooDSZ2DN_QW7QoTT1j4tg1AZfaBYnd77HIMoL9C4bhcOkSNeSuzntj8aLz4QHKoI7_DwfPavtBiPd2pvIpSUapgFdgK7r_sMJ1A_18V4vT9_XKNuOX4nUTcAI8RSwYBivkXJ1bHjpo9YENAGsIQvdQHNRO_YKo5KOajNEDArMZh8D5iu3uf-bxN9cMmhX_IyCllJV9TqYvvDXamXLQBxZxHuL0QfLM5CgxSBobjS5yyLyRiEUI5ou6aYVU_aKlb217X1zkgosecDJb2FGCaUFb0dhZXuNtyJyGHbpOp09Q1dIu73Ay2lIVz6MXYZE1dCmvUjHYYQan7enepaaABE4YiiZs_JJr2JBwp_tabeAf99PKwK2j2s3RXaZrPpSZUPfCkZJWcXehi6IqLd0DLWRxC24ll3aCJCB7ZBvnowW8v1Q74YB_s7s8-uvjmUzSDrdkMufcCsFrCdNHMPjdo1PYAgoP4bNn1UAXuKo2TK-udhH-d4aYNTBSjoxyDu6RDJ4DGrk15S8HSJezsCmXv1iAnuOylHTdI0mKNkYI0JA8IhJI0k0Pw-EjtW6gA7GMCOT1wIVAYHk1fmWAOIb-WqlnjGwljgAfdwK948-guXxQYWzpYx71C55pVCey6ts8juRSnnhvmBQANGBtmkDm6UdHQVVrJd5fuDBpNR8AQ-PYP3lNwr7vNFChDA7Ovg2_uJowV-uIzUcsm9KtZShBSUrnOwinc1yqbUZpd_KmJBzBCfLA23j-GKpr7qpbuQ","id":"rs_6ae692c4bf49e67ae98f4c5e:rs_01a194ad500d77819e51f0828cbd193b","status":"completed","summary":[],"type":"reasoning"},{"content":[{"annotations":[],"logprobs":[],"text":"On my way to the sofa.","type":"output_text"}],"id":"rs_01a194ad508977ac87450eed2d3cdad3","phase":"commentary","role":"assistant","status":"completed","type":"message"},{"arguments":"{\"place\":\"sofa\"}","call_id":"call_01a194ad50eb757280800296fbf06a9a","id":"fc_01a194ad50eb757280800296fbf06a9a","name":"walk_to","status":"completed","type":"function_call"}],"parallel_tool_calls":true,"reasoning":{"effort":"minimal"},"service_tier":"auto","status":"completed","store":false,"temperature":1.0,"tool_choice":"auto","tools":[{"description":"Walk Nubi to a named place.","name":"walk_to","parameters":{"additionalProperties":false,"properties":{"place":{"maxLength":64,"type":"string"}},"required":["place"],"type":"object"},"type":"function"}],"top_logprobs":0,"top_p":1.0,"truncation":"disabled","usage":{"input_tokens":556,"input_tokens_details":{"cached_tokens":0},"output_tokens":83,"output_tokens_details":{"reasoning_tokens":17},"total_tokens":639}},"sequence_number":14,"type":"response.completed"}
+
+data: [DONE]
+
