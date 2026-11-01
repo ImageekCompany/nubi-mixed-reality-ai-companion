@@ -1,6 +1,7 @@
 using System;
 using Jolly.Contracts;
 using Jolly.XR.Hands;
+using Jolly.XR.Interaction;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.XR.Hands;
@@ -18,8 +19,6 @@ namespace Jolly.XR.Voice
     [DisallowMultipleComponent]
     public sealed class ControllerPushToTalk : MonoBehaviour, IVoiceActivation
     {
-        static readonly string[] TouchLayouts = { "OculusTouchController", "QuestTouchPlusController", "QuestProTouchController" };
-
         InputAction _left;
         InputAction _right;
         IHandSource _hands;
@@ -33,8 +32,8 @@ namespace Jolly.XR.Voice
 
         void Awake()
         {
-            _left = TalkAction("Talk Left", "{LeftHand}");
-            _right = TalkAction("Talk Right", "{RightHand}");
+            _left = TouchBindings.Button("Talk Left", "{LeftHand}", "primaryButton");
+            _right = TouchBindings.Button("Talk Right", "{RightHand}", "primaryButton");
         }
 
         void OnEnable()
@@ -70,14 +69,6 @@ namespace Jolly.XR.Voice
                 Pressed?.Invoke();
             else
                 Released?.Invoke();
-        }
-
-        static InputAction TalkAction(string name, string hand)
-        {
-            var action = new InputAction(name, InputActionType.Button);
-            foreach (var layout in TouchLayouts)
-                action.AddBinding("<" + layout + ">" + hand + "/primaryButton");
-            return action;
         }
     }
 }
