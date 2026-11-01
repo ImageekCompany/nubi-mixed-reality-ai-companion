@@ -117,3 +117,11 @@ Each work package appends bullets under its own heading only (`docs/scope.md` §
 - An empty vision answer speaks the hold-closer line instead of ending the turn silently; the ASR stream reports success at its first item; "Nobi" is aliased to "Nubi".
 - Self-test: adb-only trigger (no intent extra), render counters and a 71.5 fps floor in `perf_idle`, Wit-synthesised voice clips, compositor stale-frame share in `selftest.sh`, install retry. Release players no longer capture stack traces for Info logs, and canned clips no longer warn.
 - README, demo script, THIRD_PARTY and the self-test report updated from three device runs (release → first audio p50 1.57 s over 9 turns, barge-in silence 28–54 ms, 72.0 fps idle, 12 draw calls).
+
+### Performance and latency (fix/perf-latency)
+- Self-test frame diagnostics: `evt=frame.spike` for every main-thread frame over 28 ms, a per-phase `evt=selftest.frames` window (GC bytes per frame in development players), `evt=vision.timing` (header, answer text and mask from the tool start) and the `tool_to_answer_audio_ms` metric.
+- Pipelines warmed at boot from a `GraphicsStateCollection` recorded by a development-player self-test (`GraphicsWarmup`, `GraphicsStateImport`, docs/perf/README.md §7).
+- Launch warm-up: one discarded camera capture (Camera2 lens pose, CPU-image conversion, JPEG encoder) and one ASR connection without a handshake (not billed).
+- Every Responses request carries a `prompt_cache_key` (hash of model, instructions and tool names): tool-bearing requests were never cached without one.
+- Vision output cap 600 → 1,024 tokens (a device call ended `finish=Length`); summary output cap 300 → 1,024, and a summary call that ends without text no longer replaces the summary.
+
