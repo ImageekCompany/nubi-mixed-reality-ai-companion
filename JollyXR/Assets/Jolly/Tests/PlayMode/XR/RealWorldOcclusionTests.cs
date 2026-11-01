@@ -16,7 +16,8 @@ namespace Jolly.Tests.PlayMode.XR
 {
     /// <summary>
     /// The occlusion components as Main.unity wires them, with no XR loader: no occlusion subsystem, so no depth frame
-    /// ever arrives, which is the Editor, Link without depth and a denied USE_SCENE alike.
+    /// arrives unless a test feeds one through <see cref="RealWorldOcclusion.NotifyDepthFrame"/>. Without one this is
+    /// the Editor, Link without depth and a denied USE_SCENE alike.
     /// </summary>
     public sealed class RealWorldOcclusionTests
     {
@@ -60,6 +61,8 @@ namespace Jolly.Tests.PlayMode.XR
         [TearDown]
         public void TearDown()
         {
+            // The mode setter flips global keywords that outlive the component.
+            _shaderOcclusion.occlusionShaderMode = AROcclusionShaderMode.None;
             Object.Destroy(_xr);
             Object.Destroy(_camera);
             Object.Destroy(_box);
@@ -142,6 +145,59 @@ namespace Jolly.Tests.PlayMode.XR
             {
                 Object.Destroy(couch);
             }
+        }
+
+        [UnityTest]
+        public IEnumerator DepthFrames_SwitchToShaderOcclusion_AndHideTheBoxes(
+            [Values(true, false)] bool softEdges)
+        {
+            _occlusion.Construct(_clock, _log, new OcclusionSettings { softEdges = softEdges });
+
+            _occlusion.NotifyDepthFrame();
+            yield return null;
+
+            Assert.That(_occlusion.Mode, Is.EqualTo(OcclusionMode.EnvironmentDepth));
+            Assert.That(_shaderOcclusion.enabled, Is.True);
+            Assert.That(_shaderOcclusion.occlusionShaderMode, Is.EqualTo(softEdges
+                ? AROcclusionShaderMode.SoftOcclusion
+                : AROcclusionShaderMode.HardOcclusion));
+            Assert.That(Occluder.enabled, Is.False, "the sources are exclusive");
+            Assert.That(_log.Contains(LogLevel.Info, "evt=occlusion.mode mode=depth"), Is.True);
+        }
+
+        [UnityTest]
+        public IEnumerator StaleDepth_FallsBackToTheBoxes_AndFreshDepthTakesOver()
+        {
+            var settings = new OcclusionSettings();
+            _occlusion.Construct(_clock, _log, settings);
+            _occlusion.NotifyDepthFrame();
+            yield return null;
+
+            _clock.Advance(TimeSpan.FromSeconds(settings.depthStaleSeconds + 0.1));
+            yield return null;
+
+            Assert.That(_occlusion.Mode, Is.EqualTo(OcclusionMode.SceneMeshes));
+            Assert.That(_shaderOcclusion.enabled, Is.False);
+            Assert.That(Occluder.enabled, Is.True);
+
+            _occlusion.NotifyDepthFrame();
+            yield return null;
+
+            Assert.That(_occlusion.Mode, Is.EqualTo(OcclusionMode.EnvironmentDepth));
+            Assert.That(_shaderOcclusion.enabled, Is.True);
+            Assert.That(Occluder.enabled, Is.False);
+        }
+
+        [UnityTest]
+        public IEnumerator SceneMeshesPreference_IgnoresDepthFrames()
+        {
+            _occlusion.Construct(_clock, _log, new OcclusionSettings { preference = OcclusionPreference.SceneMeshes });
+
+            _occlusion.NotifyDepthFrame();
+            yield return null;
+
+            Assert.That(_occlusion.Mode, Is.EqualTo(OcclusionMode.SceneMeshes));
+            Assert.That(_shaderOcclusion.enabled, Is.False);
         }
 
         [Test]

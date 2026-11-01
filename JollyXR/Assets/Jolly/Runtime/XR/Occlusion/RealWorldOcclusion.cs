@@ -2,7 +2,6 @@ using System;
 using Jolly.Contracts;
 using UnityEngine;
 using UnityEngine.XR.ARFoundation;
-using UnityEngine.XR.ARSubsystems;
 
 namespace Jolly.XR.Occlusion
 {
@@ -58,7 +57,6 @@ namespace Jolly.XR.Occlusion
             if (!IsConstructed)
                 return;
             SubscribeOnceStarted();
-            StopUnsupportedDepth();
             Apply(Select());
         }
 
@@ -88,18 +86,12 @@ namespace Jolly.XR.Occlusion
         void OnDepthFrame(AROcclusionFrameEventArgs args)
         {
             if (args.TryGetPoses(out _))
-                _lastDepthFrame = _clock.Now;
+                NotifyDepthFrame();
         }
 
-        // Quest 2 and non-Meta runtimes have no environment depth; a started manager would only log errors.
-        void StopUnsupportedDepth()
-        {
-            if (!occlusionManager.enabled
-                || occlusionManager.descriptor?.environmentDepthImageSupported != Supported.Unsupported)
-                return;
-            occlusionManager.enabled = false;
-            _log.Write(LogLevel.Info, "xr", "evt=occlusion.depth_unsupported");
-        }
+        /// <summary>Records a depth frame with poses at the current clock time. Public for tests, which have no
+        /// occlusion provider.</summary>
+        public void NotifyDepthFrame() => _lastDepthFrame = _clock.Now;
 
         void Apply(OcclusionMode mode)
         {
