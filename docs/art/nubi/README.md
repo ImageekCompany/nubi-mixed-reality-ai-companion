@@ -147,9 +147,11 @@ Animation principles in `clips.py`:
   - Enable **Bake Axis Conversion**. Otherwise the `Nubi_Rig` child keeps a −90° X rotation that
     the Root bone compensates (visually correct either way).
   - Set **Loop Time** on Idle, Walk, Hop, Talk, Listen, Think and Sad.
-  - **Not done yet:** the current `Nubi.fbx.meta` still has `bakeAxisConversion: 0` and
-    `clipAnimations: []`, so the loops would play once and freeze. Set these in an
-    `AssetPostprocessor` (`OnPreprocessModel` / `OnPreprocessAnimation`) so they live in code.
+  - All of the above is set in code by `NubiModelPostprocessor` (`Runtime/Character/Authoring`). Loop
+    Time comes from `loopingClips` in `Nubi_FacePresets.json`, which this build writes from `clips.py`.
+  - After a Blender rebuild, regenerate the derived assets (materials, `Nubi.controller`, `Nubi.prefab`):
+    `Unity -batchmode -quit -projectPath JollyXR -executeMethod Jolly.Character.Authoring.NubiPrefabBuilder.Build`
+    or the menu **Jolly → Character → Rebuild Nubi Assets**.
 - **Face presets (required for emotion clips to read):** load `Nubi_FacePresets.json`. When a clip
   starts, crossfade its preset weights in over ~0.15 s (×100 for `SetBlendShapeWeight`). Hold them
   for one-shots and fade them out when the clip ends. Lip-sync visemes and blinks are added on top
