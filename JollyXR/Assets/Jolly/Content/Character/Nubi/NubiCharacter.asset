@@ -15,6 +15,19 @@ MonoBehaviour:
   id: nubi
   displayName: Nubi
   nameKey: 
+  aliases:
+  - newbie
+  - noobie
+  - nubie
+  - newby
+  - nobi
+  lineClips:
+  - languageTag: en
+    clips:
+    - {fileID: 8300000, guid: 548f13a5aed8b4c6486252e387816cc1, type: 3}
+    - {fileID: 8300000, guid: f3f3b050f805047a08dcd2e961427b5c, type: 3}
+    - {fileID: 8300000, guid: 1320cbe80402242c38049b26b89ea9b0, type: 3}
+    - {fileID: 8300000, guid: 8a7edc41d372244dfabcbd460669f543, type: 3}
   model: {fileID: 919132149155446097, guid: 636a5a7644956419d8e0b373d5bd178c, type: 3}
   animatorController: {fileID: 9100000, guid: 6c51f746d6aff4681a611776dca8c69e, type: 2}
   avatar: {fileID: 0}

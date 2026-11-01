@@ -36,7 +36,7 @@ namespace Jolly.Core.Tools
         }
 
         public ToolDefinition Definition { get; } = new(ToolNames.WalkTo,
-            "Walk Nubi to a named place the user taught, a seen object (its id like obj_3 or its label like 'mug') " +
+            "Walk to a named place the user taught, a seen object (its id like obj_3 or its label like 'mug') " +
             "or a furniture type (table, couch, bed, storage, screen).",
             Schema, TimeSpan.FromSeconds(3), ToolConcurrency.Locomotion);
 

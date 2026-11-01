@@ -13,7 +13,7 @@ namespace Jolly.Core.Memory
         // Terse notes with a word cap: asked for "under 1,200 characters" of prose, Spark copied the previous summary
         // verbatim and hit the token cap mid-sentence on every call (live 2026-11-01, docs/api-spend.md).
         const string Instructions =
-            "Update the long-term memory notes of Nubi, a small companion character, about one user. " +
+            "Update the long-term memory notes of a small companion character about one user. " +
             "Merge the previous notes and the conversation into terse notes in short sentences. " +
             "Keep lasting facts about the user, people they mention, their preferences, plans, home and open topics; " +
             "drop small talk, jokes and tool details. Refer to objects by their label, never by ids such as obj_3. " +
@@ -64,8 +64,8 @@ namespace Jolly.Core.Memory
                 switch (item.Kind)
                 {
                     case ItemKind.UserText: sb.Append("User: ").Append(item.Text).Append('\n'); break;
-                    case ItemKind.AssistantText: sb.Append("Nubi: ").Append(item.Text).Append('\n'); break;
-                    case ItemKind.ToolCall: sb.Append("Nubi used ").Append(item.ToolName).Append(' ').Append(item.Json); break;
+                    case ItemKind.AssistantText: sb.Append("Companion: ").Append(item.Text).Append('\n'); break;
+                    case ItemKind.ToolCall: sb.Append("Companion used ").Append(item.ToolName).Append(' ').Append(item.Json); break;
                     case ItemKind.ToolResult: sb.Append(" -> ").Append(item.Json).Append('\n'); break;
                 }
             }

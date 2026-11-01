@@ -9,15 +9,18 @@ namespace Jolly.Tests.EditMode.Core.Conversation
 {
     public sealed class GuardTests
     {
+        static readonly TranscriptAliases Nubi =
+            TranscriptAliases.ForName("Nubi", new[] { "newbie", "noobie", "nubie", "newby", "nobi" });
+
         [TestCase("Hi newbie, come here.", "Hi Nubi, come here.")]
         [TestCase("Nobi, come here.", "Nubi, come here.")]
         [TestCase("NOOBIE stop", "Nubi stop")]
         [TestCase("newbies are welcome", "newbies are welcome")]
         [TestCase("hey nubie! and newby?", "hey Nubi! and Nubi?")]
         [TestCase("", "")]
-        public void TranscriptAliases_Default_RewritesWholeWordsCaseInsensitively(string heard, string expected)
+        public void TranscriptAliases_ForName_RewritesWholeWordsCaseInsensitively(string heard, string expected)
         {
-            Assert.That(TranscriptAliases.Default.Apply(heard), Is.EqualTo(expected));
+            Assert.That(Nubi.Apply(heard), Is.EqualTo(expected));
         }
 
         [Test]
@@ -25,7 +28,28 @@ namespace Jolly.Tests.EditMode.Core.Conversation
         {
             const string text = "what is this remote";
 
-            Assert.That(TranscriptAliases.Default.Apply(text), Is.SameAs(text));
+            Assert.That(Nubi.Apply(text), Is.SameAs(text));
+        }
+
+        [Test]
+        public void TranscriptAliases_ForName_RewritesOnlyThatCharactersAliases()
+        {
+            // Arrange
+            var jolly = TranscriptAliases.ForName("Jolly", new[] { "Jolie", " jollie ", "", null, "JOLLY" });
+
+            // Act
+            var text = jolly.Apply("Jolie, come here. jollie? jolly! newbie");
+
+            // Assert
+            Assert.That(text, Is.EqualTo("Jolly, come here. Jolly? jolly! newbie"));
+        }
+
+        [Test]
+        public void TranscriptAliases_ForName_NoAliases_KeepsTheTranscript()
+        {
+            const string text = "Hi newbie";
+
+            Assert.That(TranscriptAliases.ForName("Kiwi", null).Apply(text), Is.SameAs(text));
         }
 
         [Test]

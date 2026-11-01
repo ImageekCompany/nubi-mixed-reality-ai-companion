@@ -37,7 +37,7 @@ namespace Jolly.Core.Tools
         }
 
         public ToolDefinition Definition { get; } = new(ToolNames.RememberPlace,
-            "Remember a location under a name, e.g. 'sofa', so Nubi can walk there later.",
+            "Remember a location under a name, e.g. 'sofa', so you can walk there later.",
             Schema, TimeSpan.FromSeconds(5), ToolConcurrency.Parallel);
 
         public async UniTask<ToolResult> Execute(IToolArguments args, ToolContext context, CancellationToken ct)

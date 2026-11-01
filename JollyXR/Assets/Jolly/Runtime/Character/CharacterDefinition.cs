@@ -15,9 +15,19 @@ namespace Jolly.Character
         [Header("Identity")]
         [Tooltip("Selection key for persistentDataPath/character.txt and build.sh --character: a-z, 0-9, '-' and '_'.")]
         public string id = "";
+        [Tooltip("The name the character calls itself: persona prompts, greetings and canned lines say it where their " +
+                 "text has {name}.")]
         public string displayName = "";
-        [Tooltip("UI string-table key of the name. Not read at runtime yet: persona prompts and canned lines still say Nubi.")]
+        [Tooltip("Optional UI string-table key of the name in other languages; empty or missing uses the display name.")]
         public string nameKey = "";
+        [Tooltip("Words live ASR hears instead of the name, rewritten to the name before captions and the model " +
+                 "(whole word, any case).")]
+        public string[] aliases = Array.Empty<string>();
+
+        [Header("Voice")]
+        [Tooltip("Baked canned lines in this character's voice, per language. Lines that say the name play only these " +
+                 "(Jolly/Character/Bake Named Lines For Selected Definition); other lines fall back to JollyConfig.lineClips.")]
+        public LineClipSet[] lineClips = Array.Empty<LineClipSet>();
 
         [Header("Model")]
         [Tooltip("FBX or prefab instantiated under the character root: Generic rig, bones kept as GameObjects.")]

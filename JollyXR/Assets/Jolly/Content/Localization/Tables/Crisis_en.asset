@@ -27,7 +27,7 @@ MonoBehaviour:
     m_Metadata:
       m_Items: []
   - m_Id: 565174272
-    m_Localized: nubi|please|now|ok|okay|hey|there|right|just|it|that
+    m_Localized: '{name}|please|now|ok|okay|hey|there|right|just|it|that'
     m_Metadata:
       m_Items: []
   references:

@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using Cysharp.Threading.Tasks;
+using Jolly.Character;
 using Jolly.Contracts;
+using Jolly.Core.Personas;
 using Jolly.Core.Speech;
 using Jolly.Providers.Wit;
 using UnityEditor;
@@ -14,30 +16,96 @@ namespace Jolly.Editor.Tools
     /// <summary>
     /// Bakes <see cref="CannedLineCatalog.English"/> through the runtime <see cref="WitTextToSpeech"/> client into
     /// 24 kHz mono WAVs (ADR-0006), so offline lines sound like live speech. Existing files are kept unless forced.
+    /// Lines without a name go to the shared library folder. Lines that say the name are baked per character with its
+    /// display name into <c>Lines/en/</c> next to its definition, and assigned to its <c>lineClips</c>.
     /// The Wit client token comes from WIT_AI_CLIENT_TOKEN, else from the .env at JOLLY_DOTENV or the repo root.
-    /// Batch: <c>Unity -batchmode -projectPath JollyXR -executeMethod Jolly.Editor.Tools.CannedLineBaker.BakeBatch [-jollyForce]</c>
-    /// (without -quit: it exits itself once the requests finish).
+    /// Batch (without -quit: it exits itself once the requests finish):
+    /// <c>Unity -batchmode -projectPath JollyXR -executeMethod Jolly.Editor.Tools.CannedLineBaker.BakeBatch [-jollyForce]</c>
+    /// and <c>… -executeMethod Jolly.Editor.Tools.CannedLineBaker.BakeCharacterBatch -jollyCharacter Assets/…/X.asset [-jollyForce]</c>.
     /// </summary>
     public static class CannedLineBaker
     {
         const string OutputFolder = "Assets/Jolly/Content/Audio/Lines/en";
+        const string Language = "en";
         static readonly VoiceSpec Voice = new() { VoiceId = "Charlie" };
 
         [MenuItem("Jolly/Bake English Canned Lines")]
         static void BakeFromMenu() => Bake(force: false, exitWhenDone: false).Forget();
 
-        public static void BakeBatch() => Bake(Array.IndexOf(Environment.GetCommandLineArgs(), "-jollyForce") >= 0, true).Forget();
+        [MenuItem("Jolly/Character/Bake Named Lines For Selected Definition")]
+        static void BakeCharacterFromMenu()
+        {
+            if (Selection.activeObject is not CharacterDefinition definition)
+            {
+                Debug.LogError("[CannedLineBaker] Select a CharacterDefinition asset first.");
+                return;
+            }
+            BakeCharacter(definition, force: false, exitWhenDone: false).Forget();
+        }
+
+        public static void BakeBatch() => Bake(Forced(), true).Forget();
+
+        public static void BakeCharacterBatch()
+        {
+            var args = Environment.GetCommandLineArgs();
+            var at = Array.IndexOf(args, "-jollyCharacter");
+            var definition = at >= 0 && at + 1 < args.Length
+                ? AssetDatabase.LoadAssetAtPath<CharacterDefinition>(args[at + 1])
+                : null;
+            if (definition == null)
+            {
+                Debug.LogError("[CannedLineBaker] -jollyCharacter needs the asset path of a CharacterDefinition.");
+                EditorApplication.Exit(2);
+                return;
+            }
+            BakeCharacter(definition, Forced(), true).Forget();
+        }
+
+        static bool Forced() => Array.IndexOf(Environment.GetCommandLineArgs(), "-jollyForce") >= 0;
 
         static async UniTaskVoid Bake(bool force, bool exitWhenDone)
+        {
+            var lines = new List<(string Key, string Text)>();
+            foreach (var line in CannedLineCatalog.English)
+            {
+                if (!line.SaysName)
+                    lines.Add((line.Key, line.Text));
+            }
+            Finish(await BakeLines(lines, OutputFolder, force), exitWhenDone);
+        }
+
+        static async UniTaskVoid BakeCharacter(CharacterDefinition definition, bool force, bool exitWhenDone)
+        {
+            var folder = Path.GetDirectoryName(AssetDatabase.GetAssetPath(definition))?.Replace('\\', '/') + "/Lines/" + Language;
+            var lines = new List<(string Key, string Text)>();
+            foreach (var line in CannedLineCatalog.English)
+            {
+                if (line.SaysName)
+                    lines.Add((line.Key, CharacterNamedLocalizer.Fill(line.Text, definition.displayName)));
+            }
+            var failures = await BakeLines(lines, folder, force);
+            try
+            {
+                Assign(definition, folder, lines);
+            }
+            catch (Exception e)
+            {
+                failures++;
+                Debug.LogException(e);
+            }
+            Finish(failures, exitWhenDone);
+        }
+
+        static async UniTask<int> BakeLines(List<(string Key, string Text)> lines, string folder, bool force)
         {
             var failures = 0;
             try
             {
                 var tts = new WitTextToSpeech(new DotEnvSecrets(), new EditorClock());
-                Directory.CreateDirectory(OutputFolder);
-                foreach (var line in CannedLineCatalog.English)
+                Directory.CreateDirectory(folder);
+                foreach (var line in lines)
                 {
-                    var path = $"{OutputFolder}/{line.Key}.wav";
+                    var path = $"{folder}/{line.Key}.wav";
                     if (!force && File.Exists(path))
                         continue;
                     try
@@ -53,14 +121,37 @@ namespace Jolly.Editor.Tools
                     }
                 }
                 AssetDatabase.Refresh();
-                ConfigureImporters();
+                ConfigureImporters(folder, lines);
             }
             catch (Exception e)
             {
                 failures++;
                 Debug.LogException(e);
             }
+            return failures;
+        }
 
+        /// <summary>Points the definition's English clip set at the baked files and keeps its other languages.</summary>
+        static void Assign(CharacterDefinition definition, string folder, List<(string Key, string Text)> lines)
+        {
+            var clips = new List<AudioClip>();
+            foreach (var line in lines)
+            {
+                var clip = AssetDatabase.LoadAssetAtPath<AudioClip>($"{folder}/{line.Key}.wav");
+                if (clip != null)
+                    clips.Add(clip);
+            }
+            var sets = new List<LineClipSet>(definition.lineClips ?? Array.Empty<LineClipSet>());
+            sets.RemoveAll(set => set == null || string.Equals(set.languageTag, Language, StringComparison.OrdinalIgnoreCase));
+            sets.Add(new LineClipSet { languageTag = Language, clips = clips.ToArray() });
+            definition.lineClips = sets.ToArray();
+            EditorUtility.SetDirty(definition);
+            AssetDatabase.SaveAssets();
+            Debug.Log($"evt=bake.assigned definition={definition.id} clips={clips.Count}");
+        }
+
+        static void Finish(int failures, bool exitWhenDone)
+        {
             Debug.Log($"evt=bake.done failures={failures}");
             if (exitWhenDone)
                 EditorApplication.Exit(failures == 0 ? 0 : 1);
@@ -106,11 +197,11 @@ namespace Jolly.Editor.Tools
         /// Decompress On Load keeps AudioClip.GetData working, which ClipPcm needs for the speech ring. Normalize stays
         /// off so offline lines keep live Wit loudness (ADR-0006); AudioImporter has no public property for it.
         /// </summary>
-        static void ConfigureImporters()
+        static void ConfigureImporters(string folder, List<(string Key, string Text)> lines)
         {
-            foreach (var line in CannedLineCatalog.English)
+            foreach (var line in lines)
             {
-                if (AssetImporter.GetAtPath($"{OutputFolder}/{line.Key}.wav") is not AudioImporter importer)
+                if (AssetImporter.GetAtPath($"{folder}/{line.Key}.wav") is not AudioImporter importer)
                     continue;
                 var settings = importer.defaultSampleSettings;
                 settings.loadType = AudioClipLoadType.DecompressOnLoad;

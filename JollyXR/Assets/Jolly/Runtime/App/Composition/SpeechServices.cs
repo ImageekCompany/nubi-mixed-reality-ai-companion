@@ -1,7 +1,9 @@
 using Jolly.Audio.Capture;
 using Jolly.Audio.LipSync;
+using Jolly.Character;
 using Jolly.Contracts;
 using Jolly.Core.Offline;
+using Jolly.Core.Personas;
 using Jolly.Core.Speech;
 using Jolly.Integrations.ULipSync;
 
@@ -10,6 +12,7 @@ namespace Jolly.App.Composition
     /// <summary>
     /// Voice in and out (architecture §5.1, §11 Audio output): the microphone, the clip-less streaming output on Nubi, the
     /// lip-sync driver reading what is played, the TTS sentence queue and the canned lines with their offline responder.
+    /// Canned lines are the character's: its name in the text, and its own clips for the lines that say it.
     /// </summary>
     public sealed class SpeechServices
     {
@@ -21,15 +24,16 @@ namespace Jolly.App.Composition
         public ICannedLines Lines { get; private set; }
         public OfflineResponder Offline { get; private set; }
 
-        public static SpeechServices Build(Foundation f, JollyConfig config, SceneRefs scene, Edges edges, ITextToSpeech tts,
-                                           ILocalizer localizer, IUserPreferences preferences,
-                                           DisposableStack disposables)
+        public static SpeechServices Build(Foundation f, JollyConfig config, CharacterDefinition character, SceneRefs scene,
+                                           Edges edges, ITextToSpeech tts, CharacterNamedLocalizer text,
+                                           IUserPreferences preferences, DisposableStack disposables)
         {
             ISpeechOutput output = edges.SpeechOutput ?? scene.speechOutput;
             ILipSyncDriver lipSync = scene.lipSync != null && scene.lipSync.profile != null
                 ? disposables.Add(new ULipSyncDriver(scene.lipSync, f.Clock))
                 : new AmplitudeLipSyncDriver(scene.speechOutput.Level, f.Clock);
-            var lines = new CannedLines(CannedLineCatalog.English, localizer, config.lineClips, f.Random);
+            var clips = new CharacterLineClips(new LineClipIndex(character.lineClips), config.lineClips, CannedLineCatalog.English);
+            var lines = new CannedLines(CannedLineCatalog.English, text, clips, f.Random);
             return new SpeechServices
             {
                 Microphone = disposables.Add(new UnityMicrophoneCapture(edges.Microphone, f.Clock, f.Log)),

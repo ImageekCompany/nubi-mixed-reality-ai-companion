@@ -21,7 +21,7 @@ namespace Jolly.Core.Tools
         {
             _personas = personas;
             Definition = new ToolDefinition(ToolNames.SetPersona,
-                "Switch Nubi's personality when the user asks for another mode.",
+                "Switch your personality when the user asks for another mode.",
                 SchemaFor(personas.AvailableIds), TimeSpan.FromSeconds(1), ToolConcurrency.Exclusive);
         }
 

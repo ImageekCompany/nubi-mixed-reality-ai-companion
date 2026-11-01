@@ -33,19 +33,36 @@ namespace Jolly.Editor.Tools.Validators
                 if (so.FindProperty(field).objectReferenceValue == null)
                     problems.Add($"JollyConfig.{field} is not set");
             }
-            CheckLineClips(config.lineClips, problems);
+            CheckLineClips(config, problems);
         }
 
-        static void CheckLineClips(LineClipLibrary clips, List<string> problems)
+        /// <summary>
+        /// Lines without a name come from the shared library; lines that say the name come from the character, so the
+        /// default character must have every one of them and the shared library none (it would be the wrong voice).
+        /// </summary>
+        static void CheckLineClips(JollyConfig config, List<string> problems)
         {
+            var clips = config.lineClips;
             if (clips == null)
             {
                 problems.Add("JollyConfig.lineClips is not set");
                 return;
             }
+            var character = config.defaultCharacter != null ? new LineClipIndex(config.defaultCharacter.lineClips) : null;
             foreach (var entry in CannedLineCatalog.English)
             {
-                if (!clips.TryGet("en", entry.Key, out var clip))
+                if (entry.SaysName)
+                {
+                    if (clips.TryGet("en", entry.Key, out _))
+                        problems.Add($"JollyConfig.lineClips has '{entry.Key}', which says a name; it belongs in the character's lineClips");
+                    if (character == null)
+                        continue;
+                    if (!character.TryGet("en", entry.Key, out var own))
+                        problems.Add($"default character has no baked en clip for canned line '{entry.Key}'");
+                    else
+                        CheckReadable(own, problems);
+                }
+                else if (!clips.TryGet("en", entry.Key, out var clip))
                     problems.Add($"no baked en clip for canned line '{entry.Key}'");
                 else
                     CheckReadable(clip, problems);

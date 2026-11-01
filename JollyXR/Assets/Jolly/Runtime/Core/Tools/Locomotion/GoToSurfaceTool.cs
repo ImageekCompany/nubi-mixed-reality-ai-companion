@@ -35,7 +35,7 @@ namespace Jolly.Core.Tools
         }
 
         public ToolDefinition Definition { get; } = new(ToolNames.GoToSurface,
-            "Walk Nubi to a piece of the user's real furniture from the room scan, e.g. the couch or the table, " +
+            "Walk to a piece of the user's real furniture from the room scan, e.g. the couch or the table, " +
             "and stop beside it facing it.",
             Schema, TimeSpan.FromSeconds(3), ToolConcurrency.Locomotion);
 

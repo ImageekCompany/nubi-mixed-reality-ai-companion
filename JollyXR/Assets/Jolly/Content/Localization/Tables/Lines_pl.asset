@@ -19,7 +19,7 @@ MonoBehaviour:
     m_Items: []
   m_TableData:
   - m_Id: 154132480
-    m_Localized: "Cze\u015B\u0107! Jestem Nubi. Mi\u0142o ci\u0119 widzie\u0107."
+    m_Localized: "Cze\u015B\u0107! Jestem {name}. Mi\u0142o ci\u0119 widzie\u0107."
     m_Metadata:
       m_Items: []
   - m_Id: 154132481
@@ -35,15 +35,15 @@ MonoBehaviour:
     m_Metadata:
       m_Items: []
   - m_Id: 154132484
-    m_Localized: "Jestem Nubi, tw\xF3j ma\u0142y pomocnik. Poka\u017C mi co\u015B, a powiem ci, co to jest."
+    m_Localized: "Jestem {name}, tw\xF3j ma\u0142y pomocnik. Poka\u017C mi co\u015B, a powiem ci, co to jest."
     m_Metadata:
       m_Items: []
   - m_Id: 154132485
-    m_Localized: "Jestem Nubi! Umiem rozmawia\u0107, szuka\u0107 twoich rzeczy i dotrzymywa\u0107 ci towarzystwa."
+    m_Localized: "Jestem {name}! Umiem rozmawia\u0107, szuka\u0107 twoich rzeczy i dotrzymywa\u0107 ci towarzystwa."
     m_Metadata:
       m_Items: []
   - m_Id: 154132486
-    m_Localized: "Nazywam si\u0119 Nubi. Z\u0142\u0105cz palce, zapytaj o cokolwiek, potem pu\u015B\u0107."
+    m_Localized: "Nazywam si\u0119 {name}. Z\u0142\u0105cz palce, zapytaj o cokolwiek, potem pu\u015B\u0107."
     m_Metadata:
       m_Items: []
   - m_Id: 154132487

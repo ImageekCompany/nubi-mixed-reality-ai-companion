@@ -22,7 +22,7 @@ namespace Jolly.Core.Tools
         }
 
         public ToolDefinition Definition { get; } = new(ToolNames.RequestRoomScan,
-            "Open the headset's Space Setup so the user can scan the room; afterwards Nubi can walk around the room and " +
+            "Open the headset's Space Setup so the user can scan the room; afterwards you can walk around the room and " +
             "to the furniture. Call it only after the user agrees to scan. The app pauses until they finish.",
             ToolSchemas.Empty, TimeSpan.FromSeconds(2), ToolConcurrency.Exclusive);
 

@@ -34,7 +34,7 @@ namespace Jolly.Core.Tools
         }
 
         public ToolDefinition Definition { get; } = new(ToolNames.LookAt,
-            "Turn Nubi's head and eyes toward the user, the object the user is pointing at, a seen object, or a piece " +
+            "Turn your head and eyes toward the user, the object the user is pointing at, a seen object, or a piece " +
             "of furniture from the room scan. Use it when you talk about something in the room.",
             Schema, TimeSpan.FromSeconds(1), ToolConcurrency.Parallel);
 

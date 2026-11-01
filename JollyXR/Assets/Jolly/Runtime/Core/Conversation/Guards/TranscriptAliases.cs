@@ -5,17 +5,26 @@ using System.Text;
 namespace Jolly.Core.Conversation
 {
     /// <summary>
-    /// Rewrites known ASR mishearings before captions and the model. Whole-word, case-insensitive.
-    /// Live ASR heard "Hi Nubi" as "Hi newbie" and "Nubi, come here" as "Nobi, come here" (2026-11-01).
+    /// Rewrites known ASR mishearings before captions and the model. Whole-word, case-insensitive. Each character lists
+    /// the words heard instead of its name (<c>CharacterDefinition.aliases</c>): live ASR heard "Hi Nubi" as
+    /// "Hi newbie" and "Nubi, come here" as "Nobi, come here" (2026-11-01).
     /// </summary>
     public sealed class TranscriptAliases
     {
-        public static readonly TranscriptAliases Default = new(new Dictionary<string, string>
-        {
-            ["newbie"] = "Nubi", ["noobie"] = "Nubi", ["nubie"] = "Nubi", ["newby"] = "Nubi", ["nobi"] = "Nubi",
-        });
-
         readonly Dictionary<string, string> _aliases;
+
+        /// <summary>Every alias rewritten to <paramref name="name"/>; blank aliases and the name itself are skipped.</summary>
+        public static TranscriptAliases ForName(string name, IEnumerable<string> aliases)
+        {
+            var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var alias in aliases ?? Array.Empty<string>())
+            {
+                var heard = alias?.Trim();
+                if (!string.IsNullOrEmpty(heard) && !string.Equals(heard, name, StringComparison.OrdinalIgnoreCase))
+                    map[heard] = name;
+            }
+            return new TranscriptAliases(map);
+        }
 
         public TranscriptAliases(IReadOnlyDictionary<string, string> aliases)
         {

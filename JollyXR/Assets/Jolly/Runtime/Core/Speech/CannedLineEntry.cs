@@ -1,4 +1,5 @@
 using Jolly.Contracts;
+using Jolly.Core.Personas;
 using UnityEngine;
 
 namespace Jolly.Core.Speech
@@ -10,6 +11,8 @@ namespace Jolly.Core.Speech
         public string Key { get; }
         public LineCategory Category { get; }
         public string Text { get; }
+        /// <summary>The text names the character, so its baked clip belongs to one character (<see cref="CharacterLineClips"/>).</summary>
+        public bool SaysName => CharacterNamedLocalizer.SaysName(Text);
     }
 
     /// <summary>Baked clip per language and line key (the <c>LineClips</c> asset table at runtime).</summary>

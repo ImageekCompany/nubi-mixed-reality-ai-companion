@@ -27,7 +27,7 @@ MonoBehaviour:
     m_Metadata:
       m_Items: []
   - m_Id: 565174272
-    m_Localized: "nubi|prosz\u0119|teraz|tam|tu|no|hej|ok|okej"
+    m_Localized: "{name}|prosz\u0119|teraz|tam|tu|no|hej|ok|okej"
     m_Metadata:
       m_Items: []
   references:

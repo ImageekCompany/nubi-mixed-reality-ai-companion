@@ -60,7 +60,10 @@ face mapping; fill in:
 | Field | What |
 |---|---|
 | `id` | Selection key: `a-z`, `0-9`, `-`, `_` (e.g. `jolly`) |
-| `displayName` | Shown in logs; `nameKey` is the UI table key for it (stored, not read yet) |
+| `displayName` | The name the character calls itself. Persona prompts, greetings, canned lines and stop fillers say it wherever their text has `{name}` |
+| `nameKey` | Optional `UI` table key of the name in other locales; empty or missing in a locale uses `displayName` |
+| `aliases` | Words live ASR hears instead of the name (e.g. `Jolie`, `Jollie`); rewritten to `displayName` before captions and the model |
+| `lineClips` | Baked canned lines in this character's voice, per language. Filled by step 4b |
 | `model` | The FBX |
 | `animatorController` | Filled by step 4 |
 | `avatar` | Leave empty to keep the import's avatar |
@@ -90,6 +93,21 @@ Select the definition, then **Jolly ▸ Character ▸ Build Animator For Selecte
 carry the canonical names, so gestures, conversation poses and face presets work unchanged. Re-run it after changing
 clips, `bones.upperBody` or `tuning.locomotion.hopAbove`.
 
+### 4b. Bake its named lines
+
+Canned lines whose text says `{name}` (`greeting_01`, `whoami_01..03`) are baked per character, because the clip speaks
+the name. Select the definition, then **Jolly ▸ Character ▸ Bake Named Lines For Selected Definition**, or in batch
+(Wit is free; the client token comes from `WIT_AI_CLIENT_TOKEN` or the repo `.env`, and is never logged):
+
+```sh
+Unity -batchmode -projectPath JollyXR -executeMethod Jolly.Editor.Tools.CannedLineBaker.BakeCharacterBatch \
+      -jollyCharacter Assets/Jolly/Local/Characters/Jolly/JollyCharacter.asset   # [-jollyForce]; exits by itself
+```
+
+It writes `Lines/en/<key>.wav` next to the definition and assigns them to `lineClips`. A named line without a clip is
+shown as a caption only; it never plays the shared clip, which says another name. Every other line plays the shared
+`JollyConfig.lineClips` unless the character has its own.
+
 Nubi's assets are rebuilt with **Jolly ▸ Character ▸ Rebuild Nubi Assets** (or
 `-executeMethod Jolly.Editor.Character.NubiPrefabBuilder.Build`); it keeps every value in `NubiCharacter.asset`.
 
@@ -106,7 +124,8 @@ present here".
 
 ## 6. Select it
 
-First match wins; an unknown, unusable or unbindable choice is logged and the next one is tried, ending at Nubi:
+The first that binds wins; an unknown, unusable or unbindable choice is logged and the next one is tried, ending at
+Nubi (a choice that already failed to bind is not tried again):
 
 1. `persistentDataPath/character.txt` with the id.
    - Quest: `echo jolly > character.txt && adb push character.txt /sdcard/Android/data/com.nubi.companion/files/` then
@@ -125,8 +144,8 @@ Logcat tags (`character`): `evt=character.selected id=…`, `evt=character.unkno
 
 ## Known limits
 
-- Persona prompts, canned lines (baked audio) and transcript aliases still say "Nubi": a swapped-in character
-  introduces itself as Nubi. `nameKey` is stored for when those become name-templated.
+- The name is fixed at launch, like the character; a locale change re-reads `nameKey`. Tool descriptions and the
+  memory summariser never name the character.
 - The voice belongs to the persona and locale (`LocaleVoiceMap`), not to the character.
 - The swap happens once at launch, before the graph is built; there is no live switch.
 - The shell (`Nubi.prefab`) keeps Nubi's agent, collider, interactable, voice and shadow objects and only resizes them;

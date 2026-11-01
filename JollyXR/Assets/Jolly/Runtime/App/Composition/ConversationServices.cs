@@ -25,7 +25,7 @@ namespace Jolly.App.Composition
 
         public static ConversationServices Build(Foundation f, JollyConfig config, CloudServices cloud, XrServices xr,
                                                  SpeechServices speech, PersonaRepository personas, ILocalizer localizer,
-                                                 IUserPreferences preferences, ICharacterController character,
+                                                 TranscriptAliases aliases, IUserPreferences preferences, ICharacterController character,
                                                  IVoiceActivation voice, IMaskPresenter masks, IRoomScan room,
                                                  RoomContext roomContext, DisposableStack disposables)
         {
@@ -37,7 +37,7 @@ namespace Jolly.App.Composition
             var agent = new AgentLoop(cloud.VoiceChat, tools, conversation, scene, roomContext, personas, localizer, preferences, f.Log,
                 f.Clock, f.Latency, f.Events, new AgentSettings { SafetyIdentifier = f.SafetyIdentifier });
 
-            var listener = new TurnListener(speech.Microphone, cloud.SpeechToText, frames, TranscriptAliases.Default,
+            var listener = new TurnListener(speech.Microphone, cloud.SpeechToText, frames, aliases,
                 localizer, f.Events, f.Latency, f.Log, timings);
             var guards = new TurnGuards(new StopGuard(localizer), new CrisisGuard(localizer), character);
             var turnSpeech = disposables.Add(new TurnSpeech(speech.Queue, speech.Splitter, speech.Output, f.Machine,

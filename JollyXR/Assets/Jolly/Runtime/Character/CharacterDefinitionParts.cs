@@ -75,4 +75,12 @@ namespace Jolly.Character
         public string name = "";
         public AnimationClip clip;
     }
+
+    /// <summary>Baked canned-line clips of one language, each named after its line key (e.g. greeting_01).</summary>
+    [Serializable]
+    public sealed class LineClipSet
+    {
+        public string languageTag = "en";
+        public AudioClip[] clips = Array.Empty<AudioClip>();
+    }
 }

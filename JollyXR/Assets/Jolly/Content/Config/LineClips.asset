@@ -15,13 +15,9 @@ MonoBehaviour:
   languages:
   - languageTag: en
     clips:
-    - {fileID: 8300000, guid: 548f13a5aed8b4c6486252e387816cc1, type: 3}
     - {fileID: 8300000, guid: 1996c33ff43be4f10b20f7e001708682, type: 3}
     - {fileID: 8300000, guid: aabb8e991998e425fb77eeb61c7facc8, type: 3}
     - {fileID: 8300000, guid: 598a24da4315845a98bf29c68c30c89d, type: 3}
-    - {fileID: 8300000, guid: f3f3b050f805047a08dcd2e961427b5c, type: 3}
-    - {fileID: 8300000, guid: 1320cbe80402242c38049b26b89ea9b0, type: 3}
-    - {fileID: 8300000, guid: 8a7edc41d372244dfabcbd460669f543, type: 3}
     - {fileID: 8300000, guid: 235cf4ff9ad4e40f5b19fa0e3d9cabdd, type: 3}
     - {fileID: 8300000, guid: 35f78976d62464beb8c03f251ea70c96, type: 3}
     - {fileID: 8300000, guid: cfef205d931f942e684c2c74d61cc276, type: 3}

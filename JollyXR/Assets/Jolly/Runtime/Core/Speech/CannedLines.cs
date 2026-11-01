@@ -1,12 +1,14 @@
 using System.Collections.Generic;
 using Jolly.Contracts;
+using Jolly.Core.Personas;
 
 namespace Jolly.Core.Speech
 {
     /// <summary>
     /// Picks a random line of a category, never one of the category's last five picks (when the category has more
     /// lines than that; otherwise everything but the most recent ones). Text comes from the <see cref="Table"/> string
-    /// table, falling back to the English catalog text; the clip comes from <see cref="ILineClipSource"/>.
+    /// table, falling back to the English catalog text, with the character's name filled in; the clip comes from
+    /// <see cref="ILineClipSource"/>.
     /// </summary>
     public sealed class CannedLines : ICannedLines
     {
@@ -16,11 +18,12 @@ namespace Jolly.Core.Speech
         readonly Dictionary<LineCategory, List<CannedLineEntry>> _byCategory = new();
         readonly Dictionary<LineCategory, List<CannedLineEntry>> _recent = new();
         readonly List<CannedLineEntry> _candidates = new();
-        readonly ILocalizer _localizer;
+        readonly CharacterNamedLocalizer _localizer;
         readonly ILineClipSource _clips;
         readonly IRandom _random;
 
-        public CannedLines(IReadOnlyList<CannedLineEntry> catalog, ILocalizer localizer, ILineClipSource clips, IRandom random)
+        public CannedLines(IReadOnlyList<CannedLineEntry> catalog, CharacterNamedLocalizer localizer, ILineClipSource clips,
+                           IRandom random)
         {
             _localizer = localizer;
             _clips = clips;
@@ -64,7 +67,7 @@ namespace Jolly.Core.Speech
         {
             var text = _localizer.Get(Table, entry.Key);
             if (string.IsNullOrEmpty(text) || text == entry.Key)
-                text = entry.Text;
+                text = _localizer.Fill(entry.Text);
             _clips.TryGet(_localizer.LanguageTag, entry.Key, out var clip);
             return new CannedLine(entry.Key, text, clip);
         }

@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using Jolly.App.Adapters;
+using Jolly.Character;
 using Jolly.Contracts;
 using Jolly.Core.Config;
 using Jolly.Core.Conversation;
@@ -31,6 +32,8 @@ namespace Jolly.App.Composition
 
         public Foundation Foundation { get; }
         public UnityLocalizer Localizer { get; private set; }
+        /// <summary><see cref="Localizer"/> with the selected character's name filled in; what everything else reads.</summary>
+        public CharacterNamedLocalizer Text { get; private set; }
         public PersonaRepository Personas { get; private set; }
         public IUserPreferences Preferences { get; private set; }
         public CloudServices Cloud { get; private set; }
@@ -65,15 +68,17 @@ namespace Jolly.App.Composition
             var d = _disposables;
             Localizer = d.Add(new UnityLocalizer(config.localeVoices, config.preloadTables, f.Log));
             await Localizer.Initialize(appCt);
-            Personas = d.Add(new PersonaRepository(PersonaDefinitions(config), config.defaultPersonaId, Localizer));
-            scene.settings.Construct(Localizer, Personas, f.Usage, new PlayerPrefsPreferencesStore(), f.Clock);
+            var character = scene.nubi.Definition != null ? scene.nubi.Definition : config.defaultCharacter;
+            Text = new CharacterNamedLocalizer(Localizer, NameOf(character), character.nameKey);
+            Personas = d.Add(new PersonaRepository(PersonaDefinitions(config), config.defaultPersonaId, Text));
+            scene.settings.Construct(Text, Personas, f.Usage, new PlayerPrefsPreferencesStore(), f.Clock);
             Preferences = scene.settings;
 
             Cloud = CloudServices.Build(f, config, edges, d);
             Xr = XrServices.Build(f, config, scene, edges.WrapCamera, d);
             scene.pushToTalk.Construct(Xr.Hands, f.Clock, scene.head, Preferences);
             scene.controllerPushToTalk.Construct(Xr.Hands);
-            Speech = SpeechServices.Build(f, config, scene, edges, Cloud.TextToSpeech, Localizer, Preferences, d);
+            Speech = SpeechServices.Build(f, config, character, scene, edges, Cloud.TextToSpeech, Text, Preferences, d);
             scene.nubi.Construct(Xr.User, Speech.LipSync, f.Clock, f.Random);
             BindViews(scene);
 
@@ -81,10 +86,11 @@ namespace Jolly.App.Composition
             Room = new RoomScanMonitor(Xr.SceneData, Xr.User, scene.nubi, f.Clock, f.Log, roomSettings,
                 InteractionLinePlayer.CanSpeak(f.Machine, Speech.Output));
             var voice = edges.Voice ?? d.Add(new CompositeVoiceActivation(scene.pushToTalk, scene.controllerPushToTalk));
-            Conversation = ConversationServices.Build(f, config, Cloud, Xr, Speech, Personas, Localizer, Preferences,
-                scene.nubi, voice, scene.maskOverlay, Room, new RoomContext(Room, Xr.World, Xr.User, roomSettings), d);
+            Conversation = ConversationServices.Build(f, config, Cloud, Xr, Speech, Personas, Text,
+                TranscriptAliases.ForName(Text.Name, character.aliases), Preferences, scene.nubi, voice,
+                scene.maskOverlay, Room, new RoomContext(Room, Xr.World, Xr.User, roomSettings), d);
             d.Add(new StatusRelay(Cloud.Connectivity, scene.permissions, scene.status));
-            d.Add(new SettingsRouter(scene.settings, Personas, Localizer, Conversation.Controller, f.Log, appCt));
+            d.Add(new SettingsRouter(scene.settings, Personas, Text, Conversation.Controller, f.Log, appCt));
             var offline = Speech.Offline;
             offline.CaptionStarted += f.Events.RaiseCaptionStarted;
             d.Add(new Subscription(() => offline.CaptionStarted -= f.Events.RaiseCaptionStarted));
@@ -96,10 +102,10 @@ namespace Jolly.App.Composition
         {
             var f = Foundation;
             scene.captions.Construct(f.Events, Preferences, f.Clock);
-            scene.toolBadges.Construct(f.Events, Localizer, f.Clock);
-            scene.latencyHud.Construct(f.Events, f.Latency, Localizer);
+            scene.toolBadges.Construct(f.Events, Text, f.Clock);
+            scene.latencyHud.Construct(f.Events, f.Latency, Text);
             scene.maskOverlay.Construct(f.Clock, f.Events);
-            scene.status.Construct(Localizer);
+            scene.status.Construct(Text);
         }
 
         void BindInteractions(SceneRefs scene, CancellationToken appCt)
@@ -165,6 +171,10 @@ namespace Jolly.App.Composition
             FallbackRadius = config.fallbackFloorRadius,
             OfferScan = config.offerRoomScan && edges.OfferRoomScan,
         };
+
+        /// <summary>The display name, else the id, so a definition with no name still names itself.</summary>
+        static string NameOf(CharacterDefinition character) =>
+            string.IsNullOrWhiteSpace(character.displayName) ? character.id : character.displayName;
 
         static PersonaDefinition[] PersonaDefinitions(JollyConfig config)
         {

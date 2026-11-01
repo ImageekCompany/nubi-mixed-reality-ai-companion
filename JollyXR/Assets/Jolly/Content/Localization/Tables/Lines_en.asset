@@ -19,7 +19,7 @@ MonoBehaviour:
     m_Items: []
   m_TableData:
   - m_Id: 154132480
-    m_Localized: Hi! I'm Nubi. It's lovely to see you.
+    m_Localized: 'Hi! I''m {name}. It''s lovely to see you.'
     m_Metadata:
       m_Items: []
   - m_Id: 154132481
@@ -35,15 +35,15 @@ MonoBehaviour:
     m_Metadata:
       m_Items: []
   - m_Id: 154132484
-    m_Localized: I'm Nubi, your little helper. Show me something and I'll tell you what it is.
+    m_Localized: 'I''m {name}, your little helper. Show me something and I''ll tell you what it is.'
     m_Metadata:
       m_Items: []
   - m_Id: 154132485
-    m_Localized: I'm Nubi! I can chat, find your things, and keep you company.
+    m_Localized: 'I''m {name}! I can chat, find your things, and keep you company.'
     m_Metadata:
       m_Items: []
   - m_Id: 154132486
-    m_Localized: My name is Nubi. Hold a pinch, ask me anything, then let go.
+    m_Localized: 'My name is {name}. Hold a pinch, ask me anything, then let go.'
     m_Metadata:
       m_Items: []
   - m_Id: 154132487

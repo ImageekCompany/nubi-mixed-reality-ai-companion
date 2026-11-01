@@ -4,21 +4,22 @@ using Jolly.Contracts;
 namespace Jolly.Core.Speech
 {
     /// <summary>
-    /// The canned lines (requirement 23) with their English source text. <c>CannedLineBaker</c> bakes each into
-    /// <c>Content/Audio/Lines/en/{key}.wav</c>; the keys are the <c>Lines</c> and <c>LineClips</c> table keys.
+    /// The canned lines (requirement 23) with their English source text; <c>{name}</c> is the character's name
+    /// (<see cref="Personas.CharacterNamedLocalizer"/>). <c>CannedLineBaker</c> bakes the lines without a name into
+    /// <c>Content/Audio/Lines/en/{key}.wav</c> and those with one per character; the keys are the <c>Lines</c> table keys.
     /// </summary>
     public static class CannedLineCatalog
     {
         public static readonly IReadOnlyList<CannedLineEntry> English = new[]
         {
-            new CannedLineEntry("greeting_01", LineCategory.Greeting, "Hi! I'm Nubi. It's lovely to see you."),
+            new CannedLineEntry("greeting_01", LineCategory.Greeting, "Hi! I'm {name}. It's lovely to see you."),
             new CannedLineEntry("greeting_02", LineCategory.Greeting, "Hello again! How are you today?"),
             new CannedLineEntry("greeting_03", LineCategory.Greeting, "Oh, hello! I was hoping you'd stop by."),
             new CannedLineEntry("greeting_04", LineCategory.Greeting, "Good to see you! Pinch your fingers when you want to talk."),
 
-            new CannedLineEntry("whoami_01", LineCategory.WhoAmI, "I'm Nubi, your little helper. Show me something and I'll tell you what it is."),
-            new CannedLineEntry("whoami_02", LineCategory.WhoAmI, "I'm Nubi! I can chat, find your things, and keep you company."),
-            new CannedLineEntry("whoami_03", LineCategory.WhoAmI, "My name is Nubi. Hold a pinch, ask me anything, then let go."),
+            new CannedLineEntry("whoami_01", LineCategory.WhoAmI, "I'm {name}, your little helper. Show me something and I'll tell you what it is."),
+            new CannedLineEntry("whoami_02", LineCategory.WhoAmI, "I'm {name}! I can chat, find your things, and keep you company."),
+            new CannedLineEntry("whoami_03", LineCategory.WhoAmI, "My name is {name}. Hold a pinch, ask me anything, then let go."),
 
             new CannedLineEntry("ack_01", LineCategory.Acknowledge, "Hmm!"),
             new CannedLineEntry("ack_02", LineCategory.Acknowledge, "Let me see."),
