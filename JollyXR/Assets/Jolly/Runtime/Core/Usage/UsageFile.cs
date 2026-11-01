@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using Jolly.Core.Diagnostics;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -44,9 +45,8 @@ namespace Jolly.Core.Usage
 
         public static void Save(string path, decimal spentUsd, Dictionary<string, UsageTotals> models)
         {
-            Directory.CreateDirectory(Path.GetDirectoryName(path));
-            var tmp = path + ".tmp";
-            using (var writer = new JsonTextWriter(new StreamWriter(tmp)) { Culture = CultureInfo.InvariantCulture })
+            var text = new StringWriter(CultureInfo.InvariantCulture);
+            using (var writer = new JsonTextWriter(text) { Culture = CultureInfo.InvariantCulture })
             {
                 writer.WriteStartObject();
                 writer.WritePropertyName("version");
@@ -63,11 +63,7 @@ namespace Jolly.Core.Usage
                 writer.WriteEndObject();
                 writer.WriteEndObject();
             }
-            // Same protocol as Core/Diagnostics AtomicFile (WP2): File.Replace throws on a missing destination.
-            if (File.Exists(path))
-                File.Replace(tmp, path, null);
-            else
-                File.Move(tmp, path);
+            AtomicFile.WriteAllText(path, text.ToString());
         }
 
         // JToken casts of a well-formed document with the wrong shape throw the BCL exceptions, not JsonException.
