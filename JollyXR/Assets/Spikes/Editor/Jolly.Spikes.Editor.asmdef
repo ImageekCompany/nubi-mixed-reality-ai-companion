@@ -1,0 +1,21 @@
+{
+    "name": "Jolly.Spikes.Editor",
+    "rootNamespace": "Jolly.Spikes.Editor",
+    "references": [
+        "Jolly.Spikes",
+        "Unity.XR.ARFoundation",
+        "Unity.XR.CoreUtils",
+        "Unity.InputSystem"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
