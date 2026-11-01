@@ -1,0 +1,19 @@
+{
+    "name": "Jolly.Providers.Wit",
+    "rootNamespace": "Jolly.Providers.Wit",
+    "references": [
+        "Jolly.Contracts",
+        "Jolly.Net",
+        "UniTask",
+        "UniTask.Linq"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

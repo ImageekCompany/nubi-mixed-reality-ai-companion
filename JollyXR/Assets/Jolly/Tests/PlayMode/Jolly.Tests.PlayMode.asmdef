@@ -1,0 +1,45 @@
+{
+    "name": "Jolly.Tests.PlayMode",
+    "rootNamespace": "Jolly.Tests.PlayMode",
+    "references": [
+        "Jolly.Contracts",
+        "Jolly.Core",
+        "Jolly.Net",
+        "Jolly.Providers.MetaApi",
+        "Jolly.Providers.Wit",
+        "Jolly.Audio",
+        "Jolly.Testing",
+        "UniTask",
+        "UniTask.Linq",
+        "UnityEngine.TestRunner",
+        "Jolly.App",
+        "Jolly.Character",
+        "Jolly.Presentation",
+        "Jolly.XR",
+        "Unity.XR.ARFoundation",
+        "Unity.XR.ARSubsystems",
+        "Unity.XR.CoreUtils",
+        "Unity.XR.Hands",
+        "Unity.XR.Interaction.Toolkit",
+        "Unity.InputSystem",
+        "Unity.AI.Navigation",
+        "Unity.Localization",
+        "Unity.TextMeshPro",
+        "UnityEngine.UI",
+        "Unity.Animation.Rigging"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "nunit.framework.dll",
+        "Newtonsoft.Json.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "UNITY_INCLUDE_TESTS"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

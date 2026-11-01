@@ -1,0 +1,3 @@
+<linker>
+    <!-- Types of Jolly.Integrations.ULipSync reached only by reflection (ADR-0015). -->
+</linker>

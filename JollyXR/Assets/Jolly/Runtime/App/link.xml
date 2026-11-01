@@ -1,0 +1,3 @@
+<linker>
+    <!-- Types of Jolly.App reached only by reflection (ADR-0015). -->
+</linker>

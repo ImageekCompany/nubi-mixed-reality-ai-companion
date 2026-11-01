@@ -1,0 +1,33 @@
+{
+    "name": "Jolly.Tests.EditMode",
+    "rootNamespace": "Jolly.Tests.EditMode",
+    "references": [
+        "Jolly.Contracts",
+        "Jolly.Core",
+        "Jolly.Net",
+        "Jolly.Providers.MetaApi",
+        "Jolly.Providers.Wit",
+        "Jolly.Audio",
+        "Jolly.Testing",
+        "UniTask",
+        "UniTask.Linq",
+        "UnityEngine.TestRunner",
+        "UnityEditor.TestRunner"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "nunit.framework.dll",
+        "Newtonsoft.Json.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "UNITY_INCLUDE_TESTS"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

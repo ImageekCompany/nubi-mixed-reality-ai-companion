@@ -1,0 +1,17 @@
+{
+    "name": "Jolly.Integrations.ULipSync",
+    "rootNamespace": "Jolly.Integrations.ULipSync",
+    "references": [
+        "Jolly.Contracts",
+        "uLipSync.Runtime"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

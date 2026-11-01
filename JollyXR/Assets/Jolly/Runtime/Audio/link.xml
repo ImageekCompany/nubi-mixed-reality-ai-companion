@@ -1,0 +1,3 @@
+<linker>
+    <!-- Types of Jolly.Audio reached only by reflection (ADR-0015). -->
+</linker>

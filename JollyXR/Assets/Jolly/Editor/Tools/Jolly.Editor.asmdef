@@ -1,0 +1,23 @@
+{
+    "name": "Jolly.Editor",
+    "rootNamespace": "Jolly.Editor",
+    "references": [
+        "Jolly.App",
+        "Jolly.Core",
+        "Jolly.Contracts",
+        "Jolly.Providers.Wit",
+        "UniTask",
+        "UniTask.Linq"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

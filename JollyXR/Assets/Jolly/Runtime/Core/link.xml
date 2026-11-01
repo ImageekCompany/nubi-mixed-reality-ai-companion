@@ -1,0 +1,3 @@
+<linker>
+    <!-- Types of Jolly.Core reached only by reflection (ADR-0015). -->
+</linker>

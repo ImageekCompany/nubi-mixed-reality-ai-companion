@@ -1,0 +1,21 @@
+{
+    "name": "Jolly.Presentation",
+    "rootNamespace": "Jolly.Presentation",
+    "references": [
+        "Jolly.Contracts",
+        "UniTask",
+        "UniTask.Linq",
+        "Unity.TextMeshPro",
+        "UnityEngine.UI",
+        "Unity.Localization"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
