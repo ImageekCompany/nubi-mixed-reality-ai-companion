@@ -49,7 +49,11 @@ namespace Jolly.Providers.MetaApi.Common
             }
             catch (OperationCanceledException) when (_timeout.HasFired && !_ct.IsCancellationRequested)
             {
-                throw MetaErrors.Timeout(_started ? "no stream event" : "no first stream event", _window);
+                throw _started
+                    ? MetaErrors.Timeout("no stream event", _window)
+                    : MetaErrors.Timeout("no first stream event", _window, TimeToFirstByte is { } b
+                        ? $"first byte at {(int)b.TotalMilliseconds} ms"
+                        : "no byte");
             }
             catch (HttpFailureException e)
             {

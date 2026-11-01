@@ -112,8 +112,23 @@ namespace Jolly.Tests.EditMode.Chat
             Assert.That(_transport.Tokens.All(t => t.IsCancellationRequested), Is.True);
             Assert.That(_meter.Estimates.Select(e => e.InputTokens), Is.EqualTo(new[] { InputTokens(), InputTokens() }));
             Assert.That(_meter.OpenReservations, Is.Zero);
-            Assert.That(_log.Contains(LogLevel.Info, "evt=llm.hedge status=both_timeout elapsed_ms=4000"), Is.True);
+            Assert.That(_log.Contains(LogLevel.Info, "evt=llm.hedge status=both_timeout elapsed_ms=4000 " +
+                                                     "original=\"no first stream event after 4 s; no byte\" " +
+                                                     "hedge=\"no first stream event after 1.5 s; no byte\""), Is.True);
             Assert.That(_clock.PendingDelays, Is.Zero);
+        }
+
+        [Test]
+        public void HedgeSendsAByteButNoEvent_BothTimeoutSaysWhichLegGotAByte()
+        {
+            _transport.Hang().ByteThenHang();
+            var run = Run(CancellationToken.None);
+
+            _clock.Advance(TimeSpan.FromSeconds(4));
+
+            Assert.That(Failure(run).Kind, Is.EqualTo(ProviderErrorKind.Timeout));
+            Assert.That(_log.Contains(LogLevel.Info, "original=\"no first stream event after 4 s; no byte\" " +
+                                                     "hedge=\"no first stream event after 1.5 s; first byte at 0 ms\""), Is.True);
         }
 
         [Test]

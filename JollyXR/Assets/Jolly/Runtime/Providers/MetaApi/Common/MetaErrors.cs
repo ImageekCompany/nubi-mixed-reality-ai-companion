@@ -23,8 +23,8 @@ namespace Jolly.Providers.MetaApi.Common
         public static ProviderException FromStreamError(string code, string message, string requestId) =>
             new(Provider, KindOf(code), $"stream error {code ?? "unknown"}: {message}", requestId: requestId);
 
-        public static ProviderException Timeout(string what, TimeSpan after) =>
-            new(Provider, ProviderErrorKind.Timeout, $"{what} after {after.TotalSeconds:0.#} s");
+        public static ProviderException Timeout(string what, TimeSpan after, string detail = null) =>
+            new(Provider, ProviderErrorKind.Timeout, $"{what} after {after.TotalSeconds:0.#} s" + (detail == null ? "" : "; " + detail));
 
         public static ProviderException Protocol(string message) => new(Provider, ProviderErrorKind.Protocol, message);
 

@@ -61,6 +61,13 @@ namespace Jolly.Testing
 
         public FakeHttpTransport Hang() => Enqueue((_, ct) => UniTask.Never(ct));
 
+        /// <summary>Sends a byte that completes no event (a partial line), then hangs.</summary>
+        public FakeHttpTransport ByteThenHang() => Enqueue((w, ct) =>
+        {
+            (w as FirstByteWriter)?.Byte();
+            return UniTask.Never(ct);
+        });
+
         public UniTask<HttpResponse> Send(HttpRequestSpec request, CancellationToken ct) =>
             throw new NotSupportedException("Scripted streams only.");
 
@@ -93,10 +100,15 @@ namespace Jolly.Testing
 
             public UniTask YieldAsync(SseEvent value)
             {
+                Byte();
+                return _inner.YieldAsync(value);
+            }
+
+            public void Byte()
+            {
                 var firstByte = _firstByte;
                 _firstByte = null;
                 firstByte?.Invoke();
-                return _inner.YieldAsync(value);
             }
         }
 

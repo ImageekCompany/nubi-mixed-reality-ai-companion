@@ -54,6 +54,7 @@ namespace Jolly.Providers.MetaApi.Chat
             readonly TimeSpan _firstEventTimeout;
             readonly CancellationToken _ct;
             readonly CancellationTokenSource[] _legs = new CancellationTokenSource[2];
+            readonly string[] _failures = new string[2];
             readonly UniTaskCompletionSource<(HedgeLeg, MetaSseStream)> _result = new();
             CancellationTokenSource _timer;
             double _sentAt;
@@ -151,6 +152,7 @@ namespace Jolly.Providers.MetaApi.Chat
             void OnFailed(HedgeLeg leg, Exception e)
             {
                 _lastFailure = e;
+                _failures[(int)leg] = Describe(e);
                 if (e is not ProviderException { Kind: ProviderErrorKind.Timeout })
                     _allTimedOut = false;
                 if (_decided)
@@ -164,7 +166,8 @@ namespace Jolly.Providers.MetaApi.Chat
                 _decided = true;
                 StopTimer();
                 if (_hedged && !_ct.IsCancellationRequested)
-                    Log(_allTimedOut ? "both_timeout" : "both_failed", null);
+                    Log(_allTimedOut ? "both_timeout" : "both_failed",
+                        $"original=\"{_failures[(int)HedgeLeg.Original]}\" hedge=\"{_failures[(int)HedgeLeg.Hedge]}\"");
                 _result.TrySetException(_lastFailure);
             }
 
@@ -206,6 +209,14 @@ namespace Jolly.Providers.MetaApi.Chat
                 log.Write(LogLevel.Info, Category, $"evt=llm.hedge status={status} elapsed_ms={elapsedMs}" +
                                                    (extra == null ? "" : " " + extra));
             }
+
+            /// <summary>A timeout's own text says whether any byte arrived; other failures may quote the body, so only the kind.</summary>
+            static string Describe(Exception e) => e switch
+            {
+                ProviderException { Kind: ProviderErrorKind.Timeout } p => p.Message,
+                ProviderException p => p.Kind.ToString(),
+                _ => e.GetType().Name,
+            };
 
             static HedgeLeg Other(HedgeLeg leg) => leg == HedgeLeg.Original ? HedgeLeg.Hedge : HedgeLeg.Original;
         }
