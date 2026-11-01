@@ -110,6 +110,17 @@ namespace Jolly.Tests.EditMode.Net
         }
 
         [Test]
+        public void Feed_SurrogatePairStraddlingTheDecodeSliceBeforeAFullSlice_DecodesCorrectly()
+        {
+            // 3 of the emoji's 4 bytes end the first 4096-byte slice; the next slice decodes to 4097 chars.
+            var data = new string('a', 4096 - "data: ".Length - 3) + "😀" + new string('b', 4095);
+
+            var events = Parse("data: " + data + "\n\n");
+
+            Assert.That(events.Single().Data, Is.EqualTo(data));
+        }
+
+        [Test]
         public void Complete_FlushesAPendingEventWhenTheStreamEndsWithoutABlankLine()
         {
             var parser = new SseLineParser();

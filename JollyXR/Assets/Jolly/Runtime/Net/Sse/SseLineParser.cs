@@ -13,7 +13,8 @@ namespace Jolly.Net.Sse
         const int DecodeChunk = 4096;
 
         readonly Decoder _decoder = new UTF8Encoding(false).GetDecoder();
-        readonly char[] _chars = new char[DecodeChunk];
+        // Not DecodeChunk: bytes the decoder carried over from the previous slice can add a char.
+        readonly char[] _chars = new char[Encoding.UTF8.GetMaxCharCount(DecodeChunk)];
         readonly StringBuilder _line = new(256);
         readonly StringBuilder _data = new(1024);
         string _eventName;
