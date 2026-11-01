@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Jolly.Audio.Capture;
 using Jolly.Contracts;
 using UnityEngine;
@@ -16,6 +17,7 @@ namespace Jolly.App.SelfTest
 
         readonly IMicrophoneDevice _real;
         readonly IClock _clock;
+        readonly Dictionary<AudioClip, float[]> _converted = new();
         float[] _clip;
         int _clipRate;
         float[] _ring;
@@ -30,14 +32,28 @@ namespace Jolly.App.SelfTest
             _clock = clock;
         }
 
+        /// <summary>
+        /// Converts <paramref name="clip"/> to mono samples now. The session prepares its clips at launch: converting at
+        /// <see cref="Arm"/> allocated ~0.5 MB inside every scripted turn and counted against its GC budget (ADR-0023).
+        /// </summary>
+        public void Prepare(AudioClip clip)
+        {
+            if (clip == null || _converted.ContainsKey(clip))
+                return;
+            var interleaved = new float[clip.samples * clip.channels];
+            clip.GetData(interleaved, 0);
+            var mono = new float[clip.samples];
+            for (var i = 0; i < mono.Length; i++)
+                mono[i] = interleaved[i * clip.channels];
+            _converted[clip] = mono;
+            _ring ??= new float[clip.frequency * RingSeconds];
+        }
+
         /// <summary>Mono samples of a Decompress On Load clip; heard from the next <see cref="Start"/>.</summary>
         public void Arm(AudioClip clip)
         {
-            var interleaved = new float[clip.samples * clip.channels];
-            clip.GetData(interleaved, 0);
-            _clip = new float[clip.samples];
-            for (var i = 0; i < _clip.Length; i++)
-                _clip[i] = interleaved[i * clip.channels];
+            Prepare(clip);
+            _clip = _converted[clip];
             _clipRate = clip.frequency;
             _armed = true;
         }
@@ -70,7 +86,8 @@ namespace Jolly.App.SelfTest
                 return _real.Start();
             _armed = false;
             _playing = true;
-            _ring = new float[_clipRate * RingSeconds];
+            if (_ring == null || _ring.Length != _clipRate * RingSeconds)
+                _ring = new float[_clipRate * RingSeconds];
             _startedAt = _clock.Now;
             _filled = 0;
             return true;
