@@ -36,6 +36,7 @@
 | [0035](0035-positive-movement-and-find-tool-descriptions.md) | Positive `come_here` / `find_object` triggers and a live tool-selection eval; `come_here` still missed 3 of 5 at `minimal` | accepted |
 | [0036](0036-local-come-here-guard.md) | A local `ComeGuard` starts `come_here` on a short come request before the model; self-test runs log each model reply (`evt=llm.reply`) | accepted; the model round after a guard walk superseded by 0037 |
 | [0037](0037-guard-walk-skips-the-model-and-find-object-gaze.md) | A guard walk answers with a canned ComingOver line and no model round; `find_object` results say Nubi is already looking | accepted |
+| [0038](0038-hedged-first-event.md) | A voice request with no first event after 2.5 s is hedged with an identical second request; the sequential voice retry is dropped | accepted |
 
 Numbers 0027–0029 are unused and were not reserved on a dropped branch: no commit on any branch (`git log --all`) adds or mentions an ADR with those numbers.
 
