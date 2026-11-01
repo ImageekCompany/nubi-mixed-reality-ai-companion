@@ -84,6 +84,10 @@ namespace Jolly.Tests.EditMode.Vision
         [TestCase("<0f>0<|box;x1=0;y1=0;x2=9;y2=9;w=10;h=10|><|mask;x=0;y=0;data=10,10,!abc", TestName = "unterminated mask")]
         [TestCase("0<|box;x1=0;y1=0;x2=9;y2=9;w=10;h=10|><|mask;x=0;y=0;data=10,10,!abc|>", TestName = "missing frame marker")]
         [TestCase("<0f>x<|box;x1=0;y1=0;x2=9;y2=9;w=10;h=10|><|mask;x=0;y=0;data=10,10,!abc|>", TestName = "non-numeric id")]
+        [TestCase("<0f>0<|box;x1=0;y1=0;x2=2147483647;y2=9;w=10;h=10|><|mask;x=0;y=0;data=10,2147483647,!abc|>", TestName = "x2 past frame width")]
+        [TestCase("<0f>0<|box;x1=0;y1=0;x2=9;y2=10;w=10;h=10|><|mask;x=0;y=0;data=11,10,!abc|>", TestName = "y2 past frame height")]
+        [TestCase("<0f>0<|box;x1=0;y1=0;x2=9;y2=9|><|mask;x=0;y=0;data=10,10,!abc|>", TestName = "missing frame size")]
+        [TestCase("<0f>0<|box;x1=0;y1=0;x2=9;y2=9;w=10;h=10;c=high|><|mask;x=0;y=0;data=10,10,!abc|>", TestName = "non-numeric confidence")]
         public void Parse_MalformedOutput_ThrowsFormatException(string text)
         {
             Assert.Throws<FormatException>(() => SamOutputParser.Parse(text));

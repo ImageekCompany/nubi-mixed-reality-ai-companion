@@ -75,7 +75,7 @@ namespace Jolly.Providers.MetaApi.Vision
 
         static RectInt ReadBox(string s, int start, int end, out float confidence)
         {
-            int x1 = -1, y1 = -1, x2 = -1, y2 = -1;
+            int x1 = -1, y1 = -1, x2 = -1, y2 = -1, w = 0, h = 0;
             confidence = float.NaN;
             for (var next = start; next < end;)
             {
@@ -93,11 +93,13 @@ namespace Jolly.Providers.MetaApi.Vision
                 else if (key.SequenceEqual("y1".AsSpan())) y1 = ParseInt(value);
                 else if (key.SequenceEqual("x2".AsSpan())) x2 = ParseInt(value);
                 else if (key.SequenceEqual("y2".AsSpan())) y2 = ParseInt(value);
-                else if (key.SequenceEqual("c".AsSpan()))
-                    confidence = float.Parse(value, NumberStyles.Float, CultureInfo.InvariantCulture);
+                else if (key.SequenceEqual("w".AsSpan())) w = ParseInt(value);
+                else if (key.SequenceEqual("h".AsSpan())) h = ParseInt(value);
+                else if (key.SequenceEqual("c".AsSpan()) && !float.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out confidence))
+                    throw Malformed(s, start, "box confidence is not a number");
             }
-            if (x1 < 0 || y1 < 0 || x2 < x1 || y2 < y1)
-                throw Malformed(s, start, "box needs 0 <= x1 <= x2 and 0 <= y1 <= y2");
+            if (x1 < 0 || y1 < 0 || x2 < x1 || y2 < y1 || x2 >= w || y2 >= h)
+                throw Malformed(s, start, "box needs 0 <= x1 <= x2 < w and 0 <= y1 <= y2 < h");
             return new RectInt(x1, y1, x2 - x1 + 1, y2 - y1 + 1);
         }
 

@@ -18,11 +18,13 @@ namespace Jolly.Providers.MetaApi.Vision
         const int ContextCount = 1 << 12;
         const int Increment = 14;
         const int CountLimit = 4096;
+        // Bounds the scratch rent and keeps every index computation inside int; device frames are at most 1280 px.
+        const int MaxSide = 4096;
 
         public static BitMask Decode(ReadOnlySpan<char> payload, int width, int height)
         {
-            if (width <= 0 || height <= 0)
-                throw new FormatException($"SAM mask size must be positive, got {width}x{height}.");
+            if (width <= 0 || height <= 0 || width > MaxSide || height > MaxSide)
+                throw new FormatException($"SAM mask size must be 1..{MaxSide} per side, got {width}x{height}.");
 
             var packedLength = SamBase85.DecodedLength(payload);
             var paddedWidth = width + 2 * Padding;

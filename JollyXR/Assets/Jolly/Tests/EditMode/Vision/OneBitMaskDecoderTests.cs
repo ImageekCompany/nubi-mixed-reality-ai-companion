@@ -104,6 +104,14 @@ namespace Jolly.Tests.EditMode.Vision
             Assert.Throws<FormatException>(() => OneBitMaskDecoder.Decode("!!!!#".AsSpan(), 0, 3));
         }
 
+        [TestCase(4097, 1)]
+        [TestCase(1, 4097)]
+        [TestCase(int.MaxValue, int.MaxValue)]
+        public void Decode_SizeBeyondAnyCameraFrame_ThrowsBeforeAllocating(int width, int height)
+        {
+            Assert.Throws<FormatException>(() => OneBitMaskDecoder.Decode("!!!!#".AsSpan(), width, height));
+        }
+
         static (int width, int height, string payload) Payload(string fixture)
         {
             var match = MaskData.Match(VisionFixtures.SamOutputText(fixture));
