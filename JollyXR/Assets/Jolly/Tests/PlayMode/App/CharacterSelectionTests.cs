@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Jolly.App;
 using Jolly.Character;
 using Jolly.Contracts;
@@ -14,6 +15,7 @@ namespace Jolly.Tests.PlayMode.App
         TextAsset _presets;
         CharacterDefinition _nubi;
         CharacterDefinition _jolly;
+        CharacterDefinition _kiwi;
         CharacterDefinition[] _available;
         RecordingLog _log;
 
@@ -25,7 +27,8 @@ namespace Jolly.Tests.PlayMode.App
             _presets = new TextAsset("{\"presets\":[]}");
             _nubi = Definition("nubi");
             _jolly = Definition("jolly");
-            _available = new[] { _nubi, _jolly };
+            _kiwi = Definition("kiwi");
+            _available = new[] { _nubi, _jolly, _kiwi };
             _log = new RecordingLog();
         }
 
@@ -37,6 +40,7 @@ namespace Jolly.Tests.PlayMode.App
             Object.Destroy(_presets);
             Object.Destroy(_nubi);
             Object.Destroy(_jolly);
+            Object.Destroy(_kiwi);
         }
 
         CharacterDefinition Definition(string id)
@@ -95,6 +99,62 @@ namespace Jolly.Tests.PlayMode.App
             // Assert
             Assert.That(chosen, Is.EqualTo(_nubi));
             Assert.That(_log.Contains(LogLevel.Warning, "evt=character.unusable source=override id=jolly"), Is.True);
+        }
+    
+        [Test]
+        public void Bind_OverrideFailsToBind_TriesTheBakedIdBeforeTheFallback()
+        {
+            // Arrange
+            var attempts = new List<string>();
+            CharacterSelection.Binder bind = (CharacterDefinition d, out string error) =>
+            {
+                attempts.Add(d.id);
+                error = d == _jolly ? "no face mesh" : null;
+                return d != _jolly;
+            };
+
+            // Act
+            var bound = CharacterSelection.Bind(_available, _nubi, "jolly", "kiwi", bind, _log);
+
+            // Assert
+            Assert.That(bound, Is.EqualTo(_kiwi));
+            Assert.That(attempts, Is.EqualTo(new[] { "jolly", "kiwi" }));
+            Assert.That(_log.Contains(LogLevel.Warning, "evt=character.bind_failed id=jolly"), Is.True);
+            Assert.That(_log.Contains(LogLevel.Info, "evt=character.selected id=kiwi"), Is.True);
+        }
+
+        [Test]
+        public void Bind_EveryRequestFailsToBind_BindsTheFallbackAndNeverRetriesAFailure()
+        {
+            // Arrange
+            var attempts = new List<string>();
+            CharacterSelection.Binder bind = (CharacterDefinition d, out string error) =>
+            {
+                attempts.Add(d.id);
+                error = "broken";
+                return d == _nubi;
+            };
+
+            // Act
+            var bound = CharacterSelection.Bind(_available, _nubi, "jolly", "jolly", bind, _log);
+
+            // Assert
+            Assert.That(bound, Is.EqualTo(_nubi));
+            Assert.That(attempts, Is.EqualTo(new[] { "jolly", "nubi" }));
+        }
+
+        [Test]
+        public void Bind_NothingBinds_ReturnsNull()
+        {
+            CharacterSelection.Binder bind = (CharacterDefinition _, out string error) =>
+            {
+                error = "broken";
+                return false;
+            };
+
+            var bound = CharacterSelection.Bind(_available, _nubi, null, "kiwi", bind, _log);
+
+            Assert.That(bound, Is.Null);
         }
     }
 }

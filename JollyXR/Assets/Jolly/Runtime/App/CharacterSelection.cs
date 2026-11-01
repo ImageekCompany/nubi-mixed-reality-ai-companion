@@ -8,14 +8,16 @@ using Jolly.Contracts;
 namespace Jolly.App
 {
     /// <summary>
-    /// Picks the character before the graph is built (ADR-0026). The first usable of: the id in
+    /// Picks the character before the graph is built (ADR-0026). The first that binds of: the id in
     /// <c>persistentDataPath/character.txt</c>, the id build.sh baked in, then <see cref="JollyConfig.defaultCharacter"/>.
-    /// An unknown or unusable id is logged and skipped; when nothing binds, the prefab keeps the Nubi it ships with.
-    /// Never throws: a bad local file must not stop the app.
+    /// An unknown, unusable or unbindable id is logged and skipped; when nothing binds, the prefab keeps the Nubi it ships
+    /// with. Never throws: a bad local file must not stop the app.
     /// </summary>
     public static class CharacterSelection
     {
         const string Category = "character";
+
+        public delegate bool Binder(CharacterDefinition definition, out string error);
 
         public static void Apply(NubiCharacterController character, JollyConfig config, CharacterChoice choice,
                                  AppPaths paths, ILog log)
@@ -24,18 +26,10 @@ namespace Jolly.App
                 return;
             try
             {
-                var available = Available(config, choice);
-                var chosen = Resolve(available, config.defaultCharacter, ReadOverride(paths.CharacterOverride, log),
-                                     choice?.bakedId, log);
-                if (chosen == null)
-                {
+                var bound = Bind(Available(config, choice), config.defaultCharacter,
+                                 ReadOverride(paths.CharacterOverride, log), choice?.bakedId, character.TryUse, log);
+                if (bound == null && config.defaultCharacter == null)
                     log.Write(LogLevel.Warning, Category, "evt=character.no_default keeps=" + Id(character.Definition));
-                    return;
-                }
-                if (Use(character, chosen, log))
-                    return;
-                if (chosen != config.defaultCharacter && config.defaultCharacter != null)
-                    Use(character, config.defaultCharacter, log);
             }
             catch (Exception e)
             {
@@ -43,34 +37,68 @@ namespace Jolly.App
             }
         }
 
+        /// <summary>
+        /// Binds the first usable requested id, then <paramref name="fallback"/>, skipping any that failed to bind already.
+        /// Returns the bound definition, or null when none binds.
+        /// </summary>
+        public static CharacterDefinition Bind(IReadOnlyList<CharacterDefinition> available, CharacterDefinition fallback,
+                                               string overrideId, string bakedId, Binder bind, ILog log)
+        {
+            var failed = new List<CharacterDefinition>();
+            foreach (var (source, id) in Requests(overrideId, bakedId))
+            {
+                var definition = Usable(available, source, id, log);
+                if (definition != null && !failed.Contains(definition))
+                {
+                    if (TryBind(definition, bind, log))
+                        return definition;
+                    failed.Add(definition);
+                }
+            }
+            return fallback != null && !failed.Contains(fallback) && TryBind(fallback, bind, log) ? fallback : null;
+        }
+
         /// <summary>The first usable of the requested ids, else <paramref name="fallback"/> (which may be null).</summary>
         public static CharacterDefinition Resolve(IReadOnlyList<CharacterDefinition> available, CharacterDefinition fallback,
                                                   string overrideId, string bakedId, ILog log)
         {
-            foreach (var (source, id) in new[] { ("override", overrideId), ("build", bakedId) })
+            foreach (var (source, id) in Requests(overrideId, bakedId))
             {
-                if (string.IsNullOrWhiteSpace(id))
-                    continue;
-                var definition = Find(available, id.Trim());
-                if (definition == null)
-                {
-                    log.Write(LogLevel.Warning, Category, $"evt=character.unknown source={source} id={id.Trim()}");
-                    continue;
-                }
-                if (!definition.IsUsable(out var reason))
-                {
-                    log.Write(LogLevel.Warning, Category,
-                              $"evt=character.unusable source={source} id={definition.id} reason=\"{reason}\"");
-                    continue;
-                }
-                return definition;
+                var definition = Usable(available, source, id, log);
+                if (definition != null)
+                    return definition;
             }
             return fallback;
         }
 
-        static bool Use(NubiCharacterController character, CharacterDefinition definition, ILog log)
+        static IEnumerable<(string Source, string Id)> Requests(string overrideId, string bakedId)
         {
-            if (character.TryUse(definition, out var error))
+            if (!string.IsNullOrWhiteSpace(overrideId))
+                yield return ("override", overrideId.Trim());
+            if (!string.IsNullOrWhiteSpace(bakedId))
+                yield return ("build", bakedId.Trim());
+        }
+
+        static CharacterDefinition Usable(IReadOnlyList<CharacterDefinition> available, string source, string id, ILog log)
+        {
+            var definition = Find(available, id);
+            if (definition == null)
+            {
+                log.Write(LogLevel.Warning, Category, $"evt=character.unknown source={source} id={id}");
+                return null;
+            }
+            if (!definition.IsUsable(out var reason))
+            {
+                log.Write(LogLevel.Warning, Category,
+                          $"evt=character.unusable source={source} id={definition.id} reason=\"{reason}\"");
+                return null;
+            }
+            return definition;
+        }
+
+        static bool TryBind(CharacterDefinition definition, Binder bind, ILog log)
+        {
+            if (bind(definition, out var error))
             {
                 log.Write(LogLevel.Info, Category, $"evt=character.selected id={definition.id}");
                 return true;
