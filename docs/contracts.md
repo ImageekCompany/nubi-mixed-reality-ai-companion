@@ -373,7 +373,7 @@ namespace Jolly.Contracts
     {
         void Register(ITool tool);                                     // throws on a duplicate name
         bool TryGet(string name, out ITool tool);
-        /// <summary>Filtered by persona.AllowedTools; in seated mode walk_to and follow_user are removed (come_here stays).</summary>
+        /// <summary>Filtered by persona.AllowedTools; in seated mode walk_to, go_to_surface and follow_user are removed (come_here stays).</summary>
         IReadOnlyList<ToolDefinition> DefinitionsFor(PersonaProfile persona, IUserPreferences preferences);
         /// <summary>Validates against the tool's schema subset. On failure, error is a model-facing message.</summary>
         bool TryValidate(string name, string argumentsJson, out IToolArguments args, out string error);
@@ -397,10 +397,10 @@ Wire format is the Responses flat function tool: `{"type":"function","name":…,
 
 | name | description (model-facing) | parameters | timeout | concurrency | result `output` JSON |
 |---|---|---|---|---|---|
-| `walk_to` | Walk Nubi to a named place the user taught, a furniture type (table, couch, bed, storage, screen) or a seen object id. | `{"type":"object","properties":{"place":{"type":"string","maxLength":64,"description":"Place name, furniture type, or object id like obj_3"}},"required":["place"],"additionalProperties":false}` | 3 s | Locomotion | `{"status":"walking"\|"unreachable","place":"sofa","eta_s":4}`; error `unknown_place`. Returns once a path exists; arrival is not awaited (motion runs on the controller's `commandCts`). |
+| `walk_to` | Walk Nubi to a named place the user taught, a seen object (its id like obj_3 or its label like 'mug') or a furniture type (table, couch, bed, storage, screen). | `{"type":"object","properties":{"place":{"type":"string","maxLength":64,"description":"Taught place name, seen object id or label (obj_3, mug), or furniture type"}},"required":["place"],"additionalProperties":false}` | 3 s | Locomotion | `{"status":"walking"\|"unreachable","place":"sofa","eta_s":4}`; error `unknown_place`. Returns once a path exists; arrival is not awaited (motion runs on the controller's `commandCts`). |
 | `follow_user` | Start following the user around at a comfortable distance until told to stop or sent elsewhere. | `{"type":"object","properties":{},"additionalProperties":false}` | 1 s | Locomotion | `{"status":"following"}` (returns immediately; the mode persists) |
 | `come_here` | Walk to the user and face them. | `{"type":"object","properties":{},"additionalProperties":false}` | 3 s | Locomotion | `{"status":"walking"\|"unreachable","eta_s":3}` (returns once a path exists) |
-| `look_at` | Turn Nubi's head and eyes toward the user, the object the user is pointing at, or a seen object id. | `{"type":"object","properties":{"target":{"type":"string","maxLength":32,"description":"'user', 'pointed', or an object id like obj_3"}},"required":["target"],"additionalProperties":false}` | 1 s | Parallel | `{"status":"looking","target":"obj_3"}`; error `no_pointing`, `unknown_object` |
+| `look_at` | Turn Nubi's head and eyes toward the user, the object the user is pointing at, a seen object, or a piece of furniture from the room scan. Use it when you talk about something in the room. | `{"type":"object","properties":{"target":{"type":"string","maxLength":40,"description":"'user', 'pointed', a seen object id or label (obj_3, mug), or furniture type"}},"required":["target"],"additionalProperties":false}` | 1 s | Parallel | `{"status":"looking","target":"obj_3"}`; error `no_pointing`, `unknown_object` |
 | `capture_and_identify` | Look through the headset camera at what the user is showing or pointing at, highlight it, and answer the question about it. Use it whenever the user asks what something is, how to use it, or says 'look at this'. | `{"type":"object","properties":{"question":{"type":"string","maxLength":200,"description":"The user's question about the object"},"object_hint":{"type":"string","maxLength":40,"description":"Optional short noun phrase if known, e.g. 'remote'"}},"required":["question"],"additionalProperties":false}` | 12 s (inner: SAM 5 s, vision 8 s) | Exclusive | `{"object_id":"obj_4","label":"TV remote","answer":"…","masked":true}`, `EndsTurn=true`, `SpokenText=null` (the answer was streamed through `ToolContext.Speech`); errors `camera_unavailable`, `no_object`, `vision_timeout` (with the canned "hold it closer" line spoken), `timeout` |
 | `find_object` (*should*) | Find and highlight every visible instance of something the user is looking for, e.g. 'glasses' or 'keys'. | `{"type":"object","properties":{"noun_phrase":{"type":"string","maxLength":40,"description":"1-3 word noun phrase, e.g. 'reading glasses'"}},"required":["noun_phrase"],"additionalProperties":false}` | 8 s (SAM 5 s) | Exclusive | `{"found":2,"nearest_id":"obj_7","distance_m":1.8}` or `{"found":0}`. SAM text prompt on a fresh capture; Nubi looks at the nearest instance. |
 | `highlight_part` (*should*) | Highlight a part of an object seen this session, e.g. 'handle' of obj_3. Use it when the user asks which part or button to use. | `{"type":"object","properties":{"object_id":{"type":"string","maxLength":16},"part":{"type":"string","maxLength":40,"description":"part noun phrase, e.g. 'mug handle'"}},"required":["part"],"additionalProperties":false}` | 6 s (SAM 5 s) | Exclusive | `{"status":"highlighted","part":"mug handle"}` or error `no_match`, `no_frame`. SAM text prompt on the last capture kept in RAM (part phrases verified live: "mug handle" → one box, c≈0.97). Nubi looks at it. |
@@ -408,6 +408,8 @@ Wire format is the Responses flat function tool: `{"type":"function","name":…,
 | `stop` | Stop walking, following and talking immediately. | `{"type":"object","properties":{},"additionalProperties":false}` | 1 s | Parallel | `{"status":"stopped"}` (`EndsTurn=true`). Usually pre-empted by the local `StopGuard` (§9), which halts locomotion on the final transcript before any model call. |
 | `play_gesture` | Play an expressive body gesture when it fits, e.g. wave hello or nod. | `{"type":"object","properties":{"name":{"type":"string","enum":["wave","nod","shake_head","shrug","point","happy_bounce","think"]}},"required":["name"],"additionalProperties":false}` | 4 s | Parallel | `{"status":"played"}` |
 | `set_persona` (*should*) | Switch Nubi's personality when the user asks for another mode. | `{"type":"object","properties":{"id":{"type":"string","enum":["companion","mentor","guru"]}},"required":["id"],"additionalProperties":false}` | 1 s | Exclusive | `{"status":"switching","id":"guru"}`, `EndsTurn=true`. The tool only calls `IPersonaProvider.RequestSwitch(id)`; the controller applies it once the turn is Idle and the new persona greets in its own voice. The enum is generated from `IPersonaProvider.AvailableIds` minus `psychologist`, which can only be chosen in Settings. |
+| `go_to_surface` (ADR-0024) | Walk Nubi to a piece of the user's real furniture from the room scan, e.g. the couch or the table, and stop beside it facing it. | `{"type":"object","properties":{"label":{"type":"string","enum":["couch","table","desk","bed","chair","storage","screen"],"description":"Furniture from the room scan"}},"required":["label"],"additionalProperties":false}` | 3 s | Locomotion | `{"status":"walking"\|"unreachable","label":"table","eta_s":3}` (`desk` is reported as `table`); errors `room_not_scanned`, `no_surface`. Withheld in seated mode. |
+| `request_room_scan` (ADR-0024) | Open the headset's Space Setup so the user can scan the room; afterwards Nubi can walk around the room and to the furniture. Call it only after the user agrees to scan. The app pauses until they finish. | `{"type":"object","properties":{},"additionalProperties":false}` | 2 s | Exclusive | `{"status":"opening"}`, `EndsTurn=true`, `SpokenText` = the `room.scan_opening` line; Space Setup opens once Nubi is idle and silent. Error `scan_unavailable` off Meta's runtime. |
 
 Locomotion tools never await arrival under `turnCts`: a barge-in cancels the turn, not the walk (`ICharacterController.MoveTo`, §7). Results are fast, so a locomotion call never holds the next model round or an `EndsTurn` round.
 
@@ -725,16 +727,55 @@ namespace Jolly.Contracts
         void GetHandKeyPoints(List<Vector3> into);
     }
 
+    /// <summary>Where Nubi can walk: nowhere yet, the fallback disc around the user (no Space Setup, ADR-0024), or the
+    /// scanned floor.</summary>
+    public enum WalkableArea { None, Fallback, Scanned }
+
+    /// <summary>A labelled Space Setup surface in world space: a bounding box, or a horizontal plane such as a table top
+    /// or a couch seat. Pose.position is the centre; its yaw orients Size.x and Size.z.</summary>
+    public readonly struct SceneSurface
+    {
+        public SceneSurface(string label, Pose pose, Vector3 size);
+        public string Label { get; }   // couch, table, bed, chair, storage, screen, lamp, plant
+        public Pose Pose { get; }
+        public Vector3 Size { get; }   // full extents in the surface's own axes; y = 0 for a plane
+        public float Top { get; }
+    }
+
     public interface IWorldQuery
     {
-        bool HasWalkableArea { get; }
+        WalkableArea WalkableArea { get; }
         /// <summary>ARRaycastManager.Raycast(ray, hits, TrackableType.Depth) (meta-openxr supports only Depth), then
         /// Physics.Raycast against plane/box colliders on the NavGeometry layer; nearest hit wins. False before USE_SCENE is granted.</summary>
         bool TryRaycast(Ray ray, float maxDistance, out Vector3 hit);
         /// <summary>NavMesh.SamplePosition, keeping only hits within 0.1 m of the floor plane height (never a furniture top).</summary>
         bool TrySampleWalkable(Vector3 near, float radius, out Vector3 point);   // NavMesh.SamplePosition
-        /// <summary>label: AR plane/box classification, case-insensitive ("table", "couch", "bed", "storage", "screen").</summary>
-        bool TryFindLabeledSurface(string label, Vector3 near, out Vector3 point);
+        /// <summary>Clears `into` and adds every labelled plane and bounding box. Empty before USE_SCENE or Space Setup.</summary>
+        void GetSurfaces(List<SceneSurface> into);
+    }
+
+    public enum RoomScanStatus { Pending, Scanned, Unscanned, NoPermission }
+
+    /// <summary>The room-scan flow (ADR-0024): whether Space Setup data exists, and a way to open Space Setup.</summary>
+    public interface IRoomScan
+    {
+        RoomScanStatus Status { get; }
+        bool CanRequestScan { get; }   // false off Meta's runtime (Editor, Link)
+        /// <summary>Queues Space Setup; it opens once Nubi is idle and silent. The app pauses while the user scans.</summary>
+        bool RequestScan();
+    }
+
+    /// <summary>The XR side of the room-scan flow, driven by Core's RoomScanMonitor.</summary>
+    public interface ISceneData
+    {
+        bool PermissionGranted { get; }
+        bool HasScannedFloor { get; }
+        bool CanRequestCapture { get; }
+        bool TryRequestCapture();          // MetaOpenXRSessionSubsystem.TryRequestSceneCapture
+        void Requery();                    // restart the plane and bounding-box managers
+        /// <summary>Outline (x/z offsets around center) baked at the tracking-origin floor height; false if refused.</summary>
+        bool SetFallbackFloor(Vector3 center, IReadOnlyList<Vector2> outline);
+        void ClearFallbackFloor();
     }
 
     /// <summary>Raw interaction detections from the XR layer (WP5); InteractionTriggers (WP10) rate-limits them into canned lines.
@@ -925,7 +966,7 @@ namespace Jolly.Contracts
         UniTask<bool> Ping(CancellationToken ct);
     }
 
-    public enum LineCategory { Greeting, WhoAmI, Acknowledge, Offline, Error, BudgetReached, Idle, SafetyNotice, CrisisHandoff, Unknown }
+    public enum LineCategory { Greeting, WhoAmI, Acknowledge, Offline, Error, BudgetReached, Idle, SafetyNotice, CrisisHandoff, Unknown, RoomScanOffer }
 
     public sealed class CannedLine
     {

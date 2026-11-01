@@ -24,5 +24,6 @@
 | [0020](0020-summary-budget-and-prompt-cache-order.md) | Summary token budget, truncation-safe summaries and a cache-stable prompt order | accepted |
 | [0021](0021-controller-push-to-talk.md) | Controller push-to-talk: hold A or X, bound by device layout | accepted |
 | [0022](0022-audit-fixes-anchors-selftest-memory-spikes.md) | Audit fixes: anchor erase, self-test memory, spike assemblies, log redaction | accepted |
+| [0024](0024-mr-room-awareness.md) | Room awareness: Space Setup offer, fallback floor, real furniture | accepted |
 
 Review findings and their accept/reject decisions: [review-log.md](review-log.md).
