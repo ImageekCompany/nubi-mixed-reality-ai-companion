@@ -2,6 +2,7 @@ using System.Linq;
 using Cysharp.Threading.Tasks;
 using Jolly.Contracts;
 using Jolly.Core.Conversation;
+using Jolly.Core.Speech;
 using Jolly.Testing.Conversation;
 using NUnit.Framework;
 
@@ -149,8 +150,15 @@ namespace Jolly.Tests.EditMode.Core.Conversation
             _f.Talk("cześć");
 
             Assert.That(_f.Queue.Enqueued, Is.Empty);
-            Assert.That(_f.Captions, Is.EqualTo(new[] { "Cześć.", "Jak się masz?" }));
             Assert.That(_f.Stt.LastOptions.LanguageBias, Is.EqualTo("Polish"));
+            Assert.That(_f.Captions, Is.EqualTo(new[] { "Cześć." }), "one caption at a time");
+            Assert.That(_f.State, Is.EqualTo(ConversationState.Speaking));
+
+            _f.Advance(CaptionTiming.HoldFor("Cześć.").TotalSeconds);
+            Assert.That(_f.Captions, Is.EqualTo(new[] { "Cześć.", "Jak się masz?" }));
+            Assert.That(_f.State, Is.EqualTo(ConversationState.Speaking), "the last caption is still being read");
+
+            _f.Advance(CaptionTiming.HoldFor("Jak się masz?").TotalSeconds);
             Assert.That(_f.State, Is.EqualTo(ConversationState.Idle));
         }
 

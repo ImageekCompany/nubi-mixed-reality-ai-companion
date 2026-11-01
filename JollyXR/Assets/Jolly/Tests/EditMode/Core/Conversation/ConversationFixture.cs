@@ -72,7 +72,7 @@ namespace Jolly.Tests.EditMode.Core.Conversation
             var frames = new FrameGrabber(Camera, new FakeImageEncoder(), Clock, new VisionSettings());
             var listener = new TurnListener(Mic, Stt, frames, TranscriptAliases.Default, Localizer, Events, latency, Log, Timings);
             var guards = new TurnGuards(new StopGuard(Localizer), new CrisisGuard(Localizer), Character);
-            var speech = new TurnSpeech(Queue, new FakeSentenceSplitter(), Output, Machine, Events, latency);
+            var speech = new TurnSpeech(Queue, new FakeSentenceSplitter(), Output, Machine, Events, latency, Clock);
             var pipeline = new TurnPipeline(listener, guards, speech, Agent, Offline, Personas, Machine, Events, latency,
                 Localizer, Log, Timings);
             var switcher = new PersonaSwitcher(Personas, Personas, Memory, Character, Log);

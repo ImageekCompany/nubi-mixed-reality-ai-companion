@@ -37,7 +37,7 @@ namespace Jolly.App.Composition
                 localizer, f.Events, f.Latency, f.Log, timings);
             var guards = new TurnGuards(new StopGuard(localizer), new CrisisGuard(localizer), character);
             var turnSpeech = disposables.Add(new TurnSpeech(speech.Queue, speech.Splitter, speech.Output, f.Machine,
-                f.Events, f.Latency));
+                f.Events, f.Latency, f.Clock));
             var pipeline = new TurnPipeline(listener, guards, turnSpeech, agent, speech.Offline, personas, f.Machine,
                 f.Events, f.Latency, localizer, f.Log, timings);
             var keeper = new MemoryKeeper(conversation, scene, cloud.BackgroundChat, personas, f.Log);

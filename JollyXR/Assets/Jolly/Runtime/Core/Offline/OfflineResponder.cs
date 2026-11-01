@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using Jolly.Contracts;
+using Jolly.Core.Speech;
 
 namespace Jolly.Core.Offline
 {
@@ -14,9 +15,6 @@ namespace Jolly.Core.Offline
     public sealed class OfflineResponder : IOfflineResponder, IDisposable
     {
         const string LogCategory = "offline";
-        const double CaptionSecondsPerChar = 0.06;
-        const double MinCaptionSeconds = 1.5;
-        const double MaxCaptionSeconds = 6;
 
         readonly ICannedLines _lines;
         readonly ISpeechOutput _speech;
@@ -52,7 +50,7 @@ namespace Jolly.Core.Offline
             if (line.Clip == null)
             {
                 CaptionStarted?.Invoke(utteranceId, line.Text);
-                await _clock.Delay(CaptionHold(line.Text), ct);
+                await _clock.Delay(CaptionTiming.HoldFor(line.Text), ct);
                 return;
             }
 
@@ -103,8 +101,5 @@ namespace Jolly.Core.Offline
             _pendingCaption = null;
             CaptionStarted?.Invoke(utteranceId, text);
         }
-
-        static TimeSpan CaptionHold(string text) =>
-            TimeSpan.FromSeconds(Math.Clamp(text.Length * CaptionSecondsPerChar, MinCaptionSeconds, MaxCaptionSeconds));
     }
 }
