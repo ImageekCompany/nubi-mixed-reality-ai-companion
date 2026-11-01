@@ -63,6 +63,13 @@ Each work package appends bullets under its own heading only (`docs/scope.md` §
 - Review fixes: Camera2 lens pose no longer disposes the Unity-owned activity (it always fell back on device) and is read on first capture; a held pinch survives tracking dropouts up to 200 ms; race-free `CameraFrameSlot` dispose; camera manager enabled even if the permission request throws; cancellation-safe anchors; planes that lose the Floor label leave the NavMesh; controller-aim pointing fallback and a head-pose prediction lead for R1.
 
 ### WP6
+- Blender pipeline: byte-identical `Nubi.fbx` rebuilds with no absolute build paths; `Shrug` and `Stretch` clips for the remaining gesture ids; face-preset JSON in a JsonUtility shape with the looping-clip list.
+- `NubiModelPostprocessor`: Generic rig, baked axis conversion, bone objects kept, Loop Time from the Blender build.
+- `NubiCharacterController : ICharacterController`: NavMesh moves (arrive / unreachable / superseded / timed out; the `WhenArrived` token never stops a walk), follow band, body-first look-at with eyes within ±16°/±8°, gesture clips plus a scripted LookAround, mood and clip face presets, smoothed lip-sync, random and double blinks.
+- Generated `Nubi.prefab`, `Nubi.controller` (Locomotion blend tree with playback rate clamped to 0.7–1.5×, upper-body Conversation and Gesture layers), rim/fresnel `NubiSkin` shader and an analytic blob contact shadow that darkens passthrough.
+- `ULipSyncDriver : ILipSyncDriver` with silence detection.
+- PlayMode tests for locomotion, gestures, Animator parameters, face (tone-driven mouth), import settings and shader compilation.
+- Review fixes: look-at restarts from the animated pose each frame (no spin while culled offscreen); full pitch reach with the eyes clamped; a superseded move's awaiter can issue the next command; catch-up uses floor distance; gestures cancel on destroy; overlapping LookAround sweeps.
 
 ### WP7
 - `WitTextToSpeech`: raw Wit `/synthesize` (`audio/raw`, 24 kHz s16le) over `UnityWebRequest` with a pooled 32 KB `DownloadHandlerScript` buffer; `WitPcmChunker` carries odd bytes across HTTP chunks; 3 s first-chunk and 3 s inter-chunk timeouts on `IClock` (`PcmStreamTimeout`), surfaced as `ProviderException(Timeout)`; HTTP status mapping; English only (`Supports`).

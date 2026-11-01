@@ -435,6 +435,41 @@ def surprised(f):
     return s
 
 
+def shrug(f):
+    s = PoseSpec()
+    # Shoulders up, forearms out with open mittens, head tilts: "no idea". The "shoulders" are the whole
+    # chest, so the lift is a Spine stretch plus a small hip rise; feet stay planted.
+    k = track(f, [(0, 0.0), (5, -0.2), (12, 1.08), (15, 1.0), (30, 1.0), (40, 0.0)])
+    s.loc["Hips"] = (0.0, 0.0, track(f, [(0, 0.0), (5, -0.006), (12, 0.006), (30, 0.006), (40, 0.0)]))
+    s.scl["Spine"] = squash(-0.04 * k)
+    s.rot["Chest"] = (-2.0 * k, 0.0, 0.0)
+    head = [(0, ZERO), (6, (2.0, 0.0, 0.0)), (14, (-4.0, 10.0, 6.0)), (30, (-4.0, 10.0, 6.0)), (40, ZERO)]
+    s.rot["Head"] = track(f, head, lag=2)
+    for side, lag in (("L", 0.0), ("R", 1.0)):
+        a = track(f, [(0, 0.0), (5, -0.2), (12, 1.08), (15, 1.0), (30, 1.0), (40, 0.0)], lag)
+        arms(s, side, upper=(-12.0 * a, -34.0 * a, 0.0), lower=(-52.0 * a, 0.0, 18.0 * a),
+             hand=(10.0 * a, 0.0, 0.0))
+    sprout_follow(s, f, lambda x: scale(track(x, head), -1.2))
+    return s
+
+
+def stretch(f):
+    s = PoseSpec()
+    # Idle wake-up: crouch, reach both mittens up and back, hold with a wobble, settle.
+    reach = track(f, [(0, 0.0), (8, -0.25), (22, 1.05), (26, 1.0), (44, 1.0), (58, 0.0), (60, 0.0)])
+    wobble = wave(f / 60.0, 1.0, 0.0, 3) * max(0.0, min(1.0, reach)) if 22 <= f <= 44 else 0.0
+    s.loc["Hips"] = (0.0, 0.0, 0.012 * reach)
+    s.scl["Spine"] = squash(-0.06 * max(0.0, reach))
+    s.rot["Spine"] = (-3.0 * reach, 0.0, 2.0 * wobble)
+    s.rot["Chest"] = (-4.0 * reach, 0.0, 3.0 * wobble)
+    s.rot["Head"] = (-12.0 * track(f, [(0, 0.0), (10, -0.2), (24, 1.0), (44, 1.0), (60, 0.0)], 2.0), 0.0, 4.0 * wobble)
+    for side, lag in (("L", 0.0), ("R", 1.5)):
+        a = track(f, [(0, 0.0), (8, 0.0), (22, 1.05), (26, 1.0), (44, 1.0), (58, 0.0), (60, 0.0)], lag)  # no wind-up: it would drive the arms into the belly
+        arms(s, side, upper=(-26.0 * a, -96.0 * a, 0.0), lower=(-12.0 * a, 0.0, 0.0), hand=(-10.0 * a, 0.0, 0.0))
+    sprout_follow(s, f, lambda x: (14.0 * track(x, [(0, 0.0), (8, -0.25), (22, 1.05), (44, 1.0), (60, 0.0)]), 0.0, 0.0))
+    return s
+
+
 CLIPS = (
     Clip("Idle", 100, True, idle),
     Clip("Walk", WALK_LENGTH, True, walk),
@@ -449,4 +484,6 @@ CLIPS = (
     Clip("ShakeHead", 36, False, shake_head),
     Clip("Sad", 90, True, sad),
     Clip("Surprised", 40, False, surprised),
+    Clip("Shrug", 40, False, shrug),
+    Clip("Stretch", 60, False, stretch),
 )

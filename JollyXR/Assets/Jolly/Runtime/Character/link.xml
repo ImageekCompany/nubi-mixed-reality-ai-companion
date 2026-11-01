@@ -1,3 +1,9 @@
 <linker>
     <!-- Types of Jolly.Character reached only by reflection (ADR-0015). -->
+    <assembly fullname="Jolly.Character">
+        <!-- Nubi_FacePresets.json is read with JsonUtility, which sets these fields by name. -->
+        <type fullname="Jolly.Character.FacePresetFile" preserve="fields" />
+        <type fullname="Jolly.Character.FacePresetEntry" preserve="fields" />
+        <type fullname="Jolly.Character.FaceWeightEntry" preserve="fields" />
+    </assembly>
 </linker>

@@ -1,44 +1,163 @@
 {
   "weightScale": "0..1 (multiply by 100 for SkinnedMeshRenderer.SetBlendShapeWeight)",
-  "presets": {
-    "Idle": {},
-    "Walk": {
-      "Smile": 0.3
+  "loopingClips": [
+    "Idle",
+    "Walk",
+    "Hop",
+    "Talk",
+    "Listen",
+    "Think",
+    "Sad"
+  ],
+  "presets": [
+    {
+      "clip": "Idle",
+      "weights": []
     },
-    "Hop": {
-      "Smile": 0.6
+    {
+      "clip": "Walk",
+      "weights": [
+        {
+          "shape": "Smile",
+          "weight": 0.3
+        }
+      ]
     },
-    "Talk": {},
-    "Listen": {
-      "Smile": 0.35
+    {
+      "clip": "Hop",
+      "weights": [
+        {
+          "shape": "Smile",
+          "weight": 0.6
+        }
+      ]
     },
-    "Think": {
-      "U": 0.6
+    {
+      "clip": "Talk",
+      "weights": []
     },
-    "Wave": {
-      "Smile": 0.8
+    {
+      "clip": "Listen",
+      "weights": [
+        {
+          "shape": "Smile",
+          "weight": 0.35
+        }
+      ]
     },
-    "Point": {
-      "Smile": 0.3,
-      "Wide_Eyes": 0.3
+    {
+      "clip": "Think",
+      "weights": [
+        {
+          "shape": "U",
+          "weight": 0.6
+        }
+      ]
     },
-    "Happy": {
-      "Smile": 1.0,
-      "Happy_Eyes": 1.0
+    {
+      "clip": "Wave",
+      "weights": [
+        {
+          "shape": "Smile",
+          "weight": 0.8
+        }
+      ]
     },
-    "Nod": {
-      "Smile": 0.45
+    {
+      "clip": "Point",
+      "weights": [
+        {
+          "shape": "Smile",
+          "weight": 0.3
+        },
+        {
+          "shape": "Wide_Eyes",
+          "weight": 0.3
+        }
+      ]
     },
-    "ShakeHead": {
-      "Frown": 0.5
+    {
+      "clip": "Happy",
+      "weights": [
+        {
+          "shape": "Smile",
+          "weight": 1.0
+        },
+        {
+          "shape": "Happy_Eyes",
+          "weight": 1.0
+        }
+      ]
     },
-    "Sad": {
-      "Frown": 1.0,
-      "Sad_Eyes": 1.0
+    {
+      "clip": "Nod",
+      "weights": [
+        {
+          "shape": "Smile",
+          "weight": 0.45
+        }
+      ]
     },
-    "Surprised": {
-      "O": 1.0,
-      "Wide_Eyes": 1.0
+    {
+      "clip": "ShakeHead",
+      "weights": [
+        {
+          "shape": "Frown",
+          "weight": 0.5
+        }
+      ]
+    },
+    {
+      "clip": "Sad",
+      "weights": [
+        {
+          "shape": "Frown",
+          "weight": 1.0
+        },
+        {
+          "shape": "Sad_Eyes",
+          "weight": 1.0
+        }
+      ]
+    },
+    {
+      "clip": "Surprised",
+      "weights": [
+        {
+          "shape": "O",
+          "weight": 1.0
+        },
+        {
+          "shape": "Wide_Eyes",
+          "weight": 1.0
+        }
+      ]
+    },
+    {
+      "clip": "Shrug",
+      "weights": [
+        {
+          "shape": "Smile",
+          "weight": 0.25
+        },
+        {
+          "shape": "Wide_Eyes",
+          "weight": 0.35
+        }
+      ]
+    },
+    {
+      "clip": "Stretch",
+      "weights": [
+        {
+          "shape": "O",
+          "weight": 0.7
+        },
+        {
+          "shape": "Happy_Eyes",
+          "weight": 1.0
+        }
+      ]
     }
-  }
+  ]
 }
