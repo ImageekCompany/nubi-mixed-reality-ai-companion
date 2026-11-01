@@ -30,6 +30,9 @@ namespace Jolly.Testing.Conversation
             Add(new AgentEvent(AgentEventKind.ToolCompleted, toolName: name, callId: callId,
                 toolResult: ok ? ToolResult.Success("{}") : ToolResult.Failure("failed")));
 
+        /// <summary>The model has not answered yet: the real loop's hold-line signal.</summary>
+        public ScriptedAgentLoop Delayed() => Add(new AgentEvent(AgentEventKind.Delayed));
+
         public ScriptedAgentLoop Fail(ProviderErrorKind kind = ProviderErrorKind.Server) =>
             Add(new AgentEvent(AgentEventKind.Failed, error: new ProviderException("chat", kind, "scripted")));
 

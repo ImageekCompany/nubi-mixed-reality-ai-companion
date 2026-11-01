@@ -93,7 +93,9 @@ namespace Jolly.Contracts
         public EncodedImage PreCaptured { get; set; }
     }
 
-    public enum AgentEventKind { SpeechDelta, ToolStarted, ToolCompleted, Completed, Failed }
+    /// <summary>Delayed: a model round has sent no first event yet within <c>AgentSettings.HoldLineAfter</c> (a slow
+    /// server or a first-event timeout and retry); the pipeline fills the silence with a hold line. Carries no data.</summary>
+    public enum AgentEventKind { SpeechDelta, ToolStarted, ToolCompleted, Completed, Failed, Delayed }
 
     public readonly struct AgentEvent
     {

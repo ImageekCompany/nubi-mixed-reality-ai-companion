@@ -409,7 +409,8 @@ Verified live on 2026-11-01 (`api-spend.md`).
   - `Exclusive`: waits for the round's other non-Locomotion calls only. Live, the model sent `walk_to` + `capture_and_identify` in one turn (`meta-model-api.md` §2); the photo must not wait for the walk
 - Each call has its own timeout from `ToolDefinition.Timeout`.
 - Arguments are validated against our schema subset before execution, because `strict` is not enforced server-side. Invalid arguments return `{"error":"invalid_arguments","detail":…}` to the model.
-- **Voice-turn retry budget.** On the live voice path the LLM first-event timeout is 6 s with at most 2 attempts (≤ 13 s with backoff), below the 20 s Thinking watchdog. Background calls (summarisation) keep 10 s × 3.
+- **Voice-turn retry budget.** On the live voice path the LLM first-event timeout is 4 s with at most 2 attempts (≤ 8.5 s with backoff), below the 20 s Thinking watchdog. Request → first event took 0.3–1.4 s in 52 device turns; the 6 s used before left 12 s of silence when both attempts stalled (device, 2026-11-01). Background calls (summarisation) keep 10 s × 3.
+- **Hold line.** A round whose model has sent no first event after 2 s raises `AgentEventKind.Delayed`, and the pipeline plays a canned Acknowledge line ("One moment."); once more 4 s later while the retry runs. If the retry fails too, the Error line follows ("Sorry, I got a bit muddled there…"). `JollyConfig.holdLineSeconds` / `holdLineRepeatSeconds`.
 - **Memory commit.** Items are buffered per turn and committed once (`CommitTurn`). On cancel, unanswered calls get `{"error":"interrupted"}` outputs: live, an orphan `function_call` returns 400 "No tool output found for function call" (2026-11-01). Cross-turn replay of `function_call` + output **without** its reasoning item was verified live the same day (200, coherent answer).
 - The loop allows at most 4 model rounds per turn; after that it produces "I got a bit tangled, could you say that again?".
 - `tool_choice` accepts only `"auto"` (live). The text-only path is normal.
@@ -484,7 +485,8 @@ Psychologist (shown to users as **Listener**; the id stays `psychologist`):
 
 | Stage | Timeout |
 |---|---|
-| LLM first event | 6 s live voice turn (2 attempts), 10 s background |
+| LLM first event | 4 s live voice turn (2 attempts), 10 s background |
+| Hold line (no first event yet) | 2 s, again 4 s later |
 | LLM inter-event idle | 10 s |
 | SAM total | 5 s |
 | Vision total | 8 s (then the "hold it closer" line) |

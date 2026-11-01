@@ -1,3 +1,4 @@
+using System;
 using Jolly.Contracts;
 using Jolly.Core.Agent;
 using Jolly.Core.Config;
@@ -35,7 +36,12 @@ namespace Jolly.App.Composition
             var scene = new SceneMemory(f.Paths.SceneMemory, xr.Anchors, f.Clock, limits, f.Log);
             var tools = ToolCatalog.Build(f, cloud, xr, character, scene, personas, localizer, masks, room, out var frames);
             var agent = new AgentLoop(cloud.VoiceChat, tools, conversation, scene, roomContext, personas, localizer, preferences, f.Log,
-                f.Clock, f.Latency, f.Events, new AgentSettings { SafetyIdentifier = f.SafetyIdentifier });
+                f.Clock, f.Latency, f.Events, new AgentSettings
+                {
+                    SafetyIdentifier = f.SafetyIdentifier,
+                    HoldLineAfter = TimeSpan.FromSeconds(config.holdLineSeconds),
+                    HoldLineRepeat = TimeSpan.FromSeconds(config.holdLineRepeatSeconds),
+                });
 
             var listener = new TurnListener(speech.Microphone, cloud.SpeechToText, frames, aliases,
                 localizer, f.Events, f.Latency, f.Log, timings);

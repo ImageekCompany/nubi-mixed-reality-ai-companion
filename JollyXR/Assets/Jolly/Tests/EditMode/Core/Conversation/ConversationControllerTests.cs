@@ -143,6 +143,32 @@ namespace Jolly.Tests.EditMode.Core.Conversation
         }
 
         [Test]
+        public void ModelLate_PlaysAHoldLineAndThenTheReply()
+        {
+            _f.Agent.Delayed().Say("Here I am.");
+
+            _f.Talk();
+            _f.Queue.PlayNext();
+            _f.Queue.Drain();
+
+            Assert.That(_f.Offline.Categories, Is.EqualTo(new[] { LineCategory.Acknowledge }));
+            Assert.That(_f.Queue.Enqueued.Select(e => e.sentence), Is.EqualTo(new[] { "Here I am." }));
+            Assert.That(_f.State, Is.EqualTo(ConversationState.Idle));
+        }
+
+        [Test]
+        public void ModelLateAndRetryFails_HoldLinesThenTheErrorLine()
+        {
+            _f.Agent.Delayed().Delayed().Fail(ProviderErrorKind.Timeout);
+
+            _f.Talk();
+
+            Assert.That(_f.Offline.Categories,
+                Is.EqualTo(new[] { LineCategory.Acknowledge, LineCategory.Acknowledge, LineCategory.Error }));
+            Assert.That(_f.State, Is.EqualTo(ConversationState.Idle));
+        }
+
+        [Test]
         public void ClearMemoryWhileIdle_ClearsBothStoresAtOnce()
         {
             _f.Memory.CommitTurn(new[] { ConversationItem.User("hi"), ConversationItem.Assistant("hello") });

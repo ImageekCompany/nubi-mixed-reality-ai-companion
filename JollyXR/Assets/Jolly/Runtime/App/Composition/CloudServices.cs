@@ -19,7 +19,7 @@ namespace Jolly.App.Composition
     public sealed class CloudServices
     {
         public ConnectivityMonitor Connectivity { get; private set; }
-        /// <summary>Voice turns and vision: 6 s first event, 2 attempts (architecture §7 voice-turn budget).</summary>
+        /// <summary>Voice turns and vision: 4 s first event, 2 attempts (architecture §7 voice-turn budget).</summary>
         public IChatModel VoiceChat { get; private set; }
         /// <summary>Summarisation: 10 s first event, 3 attempts.</summary>
         public IChatModel BackgroundChat { get; private set; }

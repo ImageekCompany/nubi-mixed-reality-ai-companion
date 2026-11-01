@@ -43,8 +43,10 @@ MonoBehaviour:
     outputPerMillion: 0
     perImage: 0
     perAudioHour: 0.18
-  voiceFirstEventSeconds: 6
+  voiceFirstEventSeconds: 4
   voiceAttempts: 2
+  holdLineSeconds: 2
+  holdLineRepeatSeconds: 4
   backgroundFirstEventSeconds: 10
   backgroundAttempts: 3
   llmIdleSeconds: 10

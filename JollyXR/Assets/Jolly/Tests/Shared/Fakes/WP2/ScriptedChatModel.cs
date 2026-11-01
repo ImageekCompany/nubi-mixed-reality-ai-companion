@@ -48,6 +48,7 @@ namespace Jolly.Testing.Conversation
             readonly System.Text.StringBuilder _text = new();
             int _calls;
             FinishReason? _finish;
+            bool _lateStart;
 
             public bool Started { get; private set; }
             public bool Finished { get; private set; }
@@ -71,6 +72,13 @@ namespace Jolly.Testing.Conversation
             public Round Gate()
             {
                 _steps.Add((w, ct) => _gate.Task.AttachExternalCancellation(ct));
+                return this;
+            }
+
+            /// <summary>Holds back even the Started event until <see cref="Release"/>: a server slow to answer at all.</summary>
+            public Round DelayStart()
+            {
+                _lateStart = true;
                 return this;
             }
 
@@ -99,6 +107,8 @@ namespace Jolly.Testing.Conversation
             internal async UniTask Play(IAsyncWriter<ModelEvent> writer, CancellationToken ct)
             {
                 Started = true;
+                if (_lateStart)
+                    await _gate.Task.AttachExternalCancellation(ct);
                 await writer.YieldAsync(new ModelEvent(ModelEventKind.Started));
                 foreach (var step in _steps)
                 {

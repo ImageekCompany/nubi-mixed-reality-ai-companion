@@ -15,6 +15,8 @@ namespace Jolly.Core.Agent
     /// </summary>
     public sealed class AgentLoop : IAgentLoop
     {
+        const int MaxHoldLinesPerRound = 2;
+
         readonly IChatModel _model;
         readonly IToolRegistry _registry;
         readonly IConversationMemory _memory;
@@ -151,29 +153,60 @@ namespace Jolly.Core.Agent
                 _latency.Mark(turnId, LatencyMark.LlmRequestSent);
             var sentAt = _clock.Now;
             ModelTurnResult result = null;
-            await foreach (var e in _model.Stream(request, ct).WithCancellation(ct))
+            using var firstEvent = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            if (_settings.HoldLineAfter > TimeSpan.Zero)
+                SignalWhileSilent(turnId, round, events, firstEvent.Token).Forget();
+            try
             {
-                switch (e.Kind)
+                await foreach (var e in _model.Stream(request, ct).WithCancellation(ct))
                 {
-                    case ModelEventKind.Started:
-                        _latency.Mark(turnId, LatencyMark.LlmFirstEvent);
-                        break;
-                    case ModelEventKind.TextDelta:
-                        _latency.Mark(turnId, LatencyMark.LlmFirstText);
-                        events.Append(e.Text);
-                        break;
-                    case ModelEventKind.ToolCall:
-                        tools.Start(e.ToolCall);
-                        break;
-                    case ModelEventKind.Completed:
-                        result = e.Result;
-                        break;
+                    switch (e.Kind)
+                    {
+                        case ModelEventKind.Started:
+                            firstEvent.Cancel();
+                            _latency.Mark(turnId, LatencyMark.LlmFirstEvent);
+                            break;
+                        case ModelEventKind.TextDelta:
+                            _latency.Mark(turnId, LatencyMark.LlmFirstText);
+                            events.Append(e.Text);
+                            break;
+                        case ModelEventKind.ToolCall:
+                            tools.Start(e.ToolCall);
+                            break;
+                        case ModelEventKind.Completed:
+                            result = e.Result;
+                            break;
+                    }
                 }
+            }
+            finally
+            {
+                firstEvent.Cancel();
             }
             if (result == null)
                 throw new ProviderException("agent", ProviderErrorKind.Protocol, "model stream ended without Completed");
             _events.RaiseModelCallCompleted(result.Usage.Model, (_clock.Now - sentAt) * 1000.0);
             return result;
+        }
+
+        /// <summary>
+        /// Device runs saw the Responses API send nothing for the whole 6 s first-event window, twice in a row: without
+        /// this the user heard the release acknowledgement and then 12 s of silence. Ends at the round's first event.
+        /// </summary>
+        async UniTaskVoid SignalWhileSilent(int turnId, int round, ITurnEventSink events, CancellationToken firstEvent)
+        {
+            var wait = _settings.HoldLineAfter;
+            for (var line = 0; line < MaxHoldLinesPerRound; line++)
+            {
+                if (await _clock.Delay(wait, firstEvent).SuppressCancellationThrow())
+                    return;
+                if (_log.IsEnabled(LogLevel.Info))
+                    _log.Write(LogLevel.Info, "agent", $"evt=agent.hold_line turn={turnId} round={round} line={line + 1}");
+                events.Write(new AgentEvent(AgentEventKind.Delayed));
+                wait = _settings.HoldLineRepeat;
+                if (wait <= TimeSpan.Zero)
+                    return;
+            }
         }
     }
 }

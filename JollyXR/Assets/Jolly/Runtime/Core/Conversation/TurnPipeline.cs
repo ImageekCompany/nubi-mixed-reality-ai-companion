@@ -152,6 +152,9 @@ namespace Jolly.Core.Conversation
                     case AgentEventKind.Failed:
                         failure = e.Error;
                         break;
+                    case AgentEventKind.Delayed:
+                        HoldLine(ct).Forget();
+                        break;
                 }
             }
             if (toolsRunning > 0)
@@ -196,6 +199,15 @@ namespace Jolly.Core.Conversation
         {
             if (await released.AttachExternalCancellation(ct).SuppressCancellationThrow())
                 return;
+            await PlayFiller("evt=ack.failed", ct);
+        }
+
+        /// <summary>The model is late (AgentEventKind.Delayed): a short canned "One moment." instead of silence. The
+        /// Acknowledge lines are reused (no new clips to bake per character); ICannedLines avoids repeating the release one.</summary>
+        async UniTaskVoid HoldLine(CancellationToken ct) => await PlayFiller("evt=hold_line.failed", ct);
+
+        async UniTask PlayFiller(string failedEvent, CancellationToken ct)
+        {
             try
             {
                 await _offline.Respond(LineCategory.Acknowledge, _speech.NextUtteranceId(), ct);
@@ -205,7 +217,7 @@ namespace Jolly.Core.Conversation
             }
             catch (Exception e)
             {
-                _log.Write(LogLevel.Warning, "conversation", "evt=ack.failed", e);
+                _log.Write(LogLevel.Warning, "conversation", failedEvent, e);
             }
         }
     }

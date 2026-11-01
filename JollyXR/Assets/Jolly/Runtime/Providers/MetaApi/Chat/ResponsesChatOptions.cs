@@ -21,9 +21,9 @@ namespace Jolly.Providers.MetaApi.Chat
             ReservationUsd = reservationUsd;
         }
 
-        /// <summary>6 s first event × 2 attempts (≤ 13 s with backoff, under the 20 s Thinking watchdog).</summary>
+        /// <summary>4 s first event × 2 attempts (≤ 8.5 s with backoff, under the 20 s Thinking watchdog).</summary>
         public static ResponsesChatOptions VoiceTurn(string liveUserModel, string syntheticModel, decimal reservationUsd) =>
-            new(liveUserModel, syntheticModel, TimeSpan.FromSeconds(6), TimeSpan.FromSeconds(10), 2, reservationUsd);
+            new(liveUserModel, syntheticModel, TimeSpan.FromSeconds(4), TimeSpan.FromSeconds(10), 2, reservationUsd);
 
         /// <summary>10 s first event × 3 attempts.</summary>
         public static ResponsesChatOptions Background(string liveUserModel, string syntheticModel, decimal reservationUsd) =>

@@ -36,13 +36,15 @@ namespace Jolly.Tests.EditMode.Core.Agent
         public readonly AgentSettings Settings = new() { SafetyIdentifier = "0123456789abcdef0123456789abcdef" };
         public string Spoken = "";
 
-        public AgentFixture()
+        /// <param name="model">Replaces <see cref="Model"/> (left unused then), e.g. a real adapter over a fake transport
+        /// timed by <see cref="Clock"/>.</param>
+        public AgentFixture(Func<FakeClock, IChatModel> model = null)
         {
             var limits = new MemoryLimits();
             Memory = new ConversationMemory("unused", Personas, limits, Log);
             Scene = new SceneMemory("unused", new FakeSpatialAnchors(), Clock, limits, Log);
             var room = new RoomContext(RoomScan, World, User, new RoomSettings());
-            Loop = new AgentLoop(Model, Registry, Memory, Scene, room, Personas, Localizer, Preferences, Log, Clock,
+            Loop = new AgentLoop(model?.Invoke(Clock) ?? Model, Registry, Memory, Scene, room, Personas, Localizer, Preferences, Log, Clock,
                 new LatencyTracker(Clock, Log), Events, Settings);
         }
 

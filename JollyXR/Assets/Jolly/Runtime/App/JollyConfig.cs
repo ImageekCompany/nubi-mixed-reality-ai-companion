@@ -35,8 +35,14 @@ namespace Jolly.App
         };
 
         [Header("Timeouts, seconds (architecture §11)")]
-        public float voiceFirstEventSeconds = 6f;
+        [Tooltip("Live voice turns and vision. Request → first event was 0.3–1.4 s in 52 device turns; 4 s × 2 attempts " +
+                 "also leaves the vision retry room inside visionSeconds.")]
+        public float voiceFirstEventSeconds = 4f;
         public int voiceAttempts = 2;
+        [Tooltip("A model round silent this long gets a canned hold line (\"One moment.\"); 0 turns it off.")]
+        public float holdLineSeconds = 2f;
+        [Tooltip("Then once more after this long while still waiting (the retry); 0: only once.")]
+        public float holdLineRepeatSeconds = 4f;
         public float backgroundFirstEventSeconds = 10f;
         public int backgroundAttempts = 3;
         public float llmIdleSeconds = 10f;
