@@ -1,6 +1,6 @@
 # 0005. Speech to text: Muse Voice Transcribe realtime, pinch push-to-talk
 
-- Status: accepted (pending IL2CPP WebSocket spike R4)
+- Status: accepted (spike R4 passed: `ClientWebSocket` works under IL2CPP on Quest 3, `docs/research/device-spike.md`)
 - Date: 2026-11-01
 
 ## Context
@@ -14,7 +14,8 @@
   - It paces 80 ms frames in real time.
   - On release it sends `{"type":"endStream"}` and reads until close 1000.
 - **Activation:** hold a pinch on either hand. Pinching while Nubi is speaking is barge-in. Voice barge-in and a wake word are *could* tier.
-- **IL2CPP fallback (B2):** `POST /v1/asr/transcribe` with `Accept: text/event-stream` on PTT release, sending the buffered WAV. It costs latency but is verified.
+- **IL2CPP fallback (B2):** `POST /v1/asr/transcribe` on PTT release, sending the buffered WAV. It costs latency but is verified.
+  - Update (audit, ADR-0022): R4 passed, so the fallback was never wired into the app. Its adapter, HTTP client and tests were removed; the endpoint stays documented in `meta-model-api.md` §5.1 if it is ever needed.
 
 ## Consequences
 - Turn-taking is deterministic and needs no VAD on the main path. It is accessible one-handed.
