@@ -111,6 +111,7 @@ Hands are the primary input; Touch controllers work too. Your tracked hands are 
 | **Poke / greet Nubi** | Poke with the index finger, or hold an open palm toward Nubi | |
 
 - **A pinch does not talk** while that hand's ray is on a button, or while your palm faces you (the Horizon OS menu gesture). Pinching while you point at Nubi does talk: the ray doesn't select Nubi, only a finger poke does. Settings → *PTT hand* limits pinch-to-talk to your dominant hand.
+- **Settings appear only when you ask** (ADR-0042): turn your left palm toward you and press the small *Settings* button on the wrist, press ☰ on the left controller, or say "open settings". The panel opens in front of you and stays put; its X, a talk pinch, "close settings" or 20 s untouched close it.
 - **The trigger never talks.** It belongs to XRI's Activate action and UI press, and a runtime can report a hand pinch as a trigger; binding talk to it would skip the pinch checks above. The grip stays XRI's Select. A and X are bound to the Touch controller layouts by name, so no hand input can press them ([ADR-0021](docs/decisions/0021-controller-push-to-talk.md)).
 - While a hand is tracked, that side's controller button is ignored, which is the same rule XRI's input modality manager uses.
 - Holding a pinch and a button together counts as one press, so it can't interrupt your own turn.

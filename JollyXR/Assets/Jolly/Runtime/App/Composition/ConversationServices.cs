@@ -17,6 +17,8 @@ namespace Jolly.App.Composition
     public sealed class ConversationServices
     {
         public ConversationController Controller { get; private set; }
+        /// <summary>The local reactions to a final; raises the voice settings command.</summary>
+        public TurnGuards Guards { get; private set; }
         public MemoryKeeper Memory { get; private set; }
         public ConversationMemory Conversation { get; private set; }
         public SceneMemory Scene { get; private set; }
@@ -46,8 +48,8 @@ namespace Jolly.App.Composition
 
             var listener = new TurnListener(speech.Microphone, cloud.SpeechToText, frames, aliases,
                 localizer, f.Events, f.Latency, f.Log, timings);
-            var guards = new TurnGuards(new StopGuard(localizer), new ComeGuard(localizer), new CrisisGuard(localizer),
-                new QuestionCue(localizer), character, tools, personas, preferences, f.Events, f.Log);
+            var guards = new TurnGuards(new StopGuard(localizer), new ComeGuard(localizer), new SettingsGuard(localizer),
+                new CrisisGuard(localizer), new QuestionCue(localizer), character, tools, personas, preferences, f.Events, f.Log);
             var turnSpeech = disposables.Add(new TurnSpeech(speech.Queue, speech.Splitter, speech.Output, f.Machine,
                 f.Events, f.Latency, f.Clock));
             var pipeline = new TurnPipeline(listener, guards, turnSpeech, agent, speech.Offline, conversation, personas,
@@ -62,7 +64,7 @@ namespace Jolly.App.Composition
 
             return new ConversationServices
             {
-                Controller = controller, Memory = keeper, Conversation = conversation, Scene = scene, Tools = tools,
+                Controller = controller, Guards = guards, Memory = keeper, Conversation = conversation, Scene = scene, Tools = tools,
                 Frames = frames,
             };
         }

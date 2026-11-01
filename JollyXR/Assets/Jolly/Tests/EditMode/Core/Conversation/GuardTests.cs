@@ -131,6 +131,49 @@ namespace Jolly.Tests.EditMode.Core.Conversation
             Assert.That(new ComeGuard(new FakeLocalizer("pl")).Matches("Hej Nubi, chodź do mnie."), Is.True);
         }
 
+        [TestCase("open settings", SettingsCommand.Open)]
+        [TestCase("Nubi, show me the settings, please.", SettingsCommand.Open)]
+        [TestCase("Settings!", SettingsCommand.Open)]
+        [TestCase("Can you open the menu?", SettingsCommand.Open)]
+        [TestCase("Close settings.", SettingsCommand.Close)]
+        [TestCase("Hide the settings please", SettingsCommand.Close)]
+        [TestCase("what settings do you have", SettingsCommand.None)]
+        [TestCase("open the door", SettingsCommand.None)]
+        [TestCase("close the window and open settings", SettingsCommand.None)]
+        [TestCase("", SettingsCommand.None)]
+        public void SettingsGuard_MatchesOnlyShortOpenOrCloseRequests(string transcript, SettingsCommand expected)
+        {
+            var guard = new SettingsGuard(new FakeLocalizer());
+
+            Assert.That(guard.Match(transcript), Is.EqualTo(expected));
+        }
+
+        [TestCase("Otwórz ustawienia.", SettingsCommand.Open)]
+        [TestCase("Nubi, zamknij ustawienia", SettingsCommand.Close)]
+        [TestCase("open settings", SettingsCommand.None)]
+        public void SettingsGuard_Polish_UsesBuiltInFallback(string transcript, SettingsCommand expected)
+        {
+            Assert.That(new SettingsGuard(new FakeLocalizer("pl")).Match(transcript), Is.EqualTo(expected));
+        }
+
+        [Test]
+        public void ApplySettings_RaisesTheRequestAndLogsIt()
+        {
+            // Arrange
+            var c = new GuardContext();
+            var requests = new List<bool>();
+            c.Guards.SettingsRequested += requests.Add;
+
+            // Act
+            var applied = c.Guards.ApplySettings("close the settings") & c.Guards.ApplySettings("open settings")
+                          & !c.Guards.ApplySettings("what is this");
+
+            // Assert
+            Assert.That(applied, Is.True);
+            Assert.That(requests, Is.EqualTo(new[] { false, true }));
+            Assert.That(c.Log.Contains(LogLevel.Info, "evt=guard.settings open=true"), Is.True);
+        }
+
         [Test]
         public void ApplyComeHere_PersonaWithComeHere_StartsTheWalkThroughTheTool()
         {
@@ -208,8 +251,8 @@ namespace Jolly.Tests.EditMode.Core.Conversation
                 var events = new ConversationEvents();
                 events.ToolStarted += (id, name) => Tools.Add("start:" + id);
                 events.ToolCompleted += (id, name, ok) => Tools.Add("done:" + id);
-                Guards = new TurnGuards(new StopGuard(localizer), new ComeGuard(localizer), new CrisisGuard(localizer),
-                    new QuestionCue(localizer), Character, registry, Personas, new FakeUserPreferences(), events, Log);
+                Guards = new TurnGuards(new StopGuard(localizer), new ComeGuard(localizer), new SettingsGuard(localizer),
+                    new CrisisGuard(localizer), new QuestionCue(localizer), Character, registry, Personas, new FakeUserPreferences(), events, Log);
             }
         }
 

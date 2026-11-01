@@ -44,6 +44,7 @@ namespace Jolly.Tests.EditMode.Core.Conversation
         public readonly ConversationMemory Memory;
         public readonly SceneMemory Scene;
         public readonly ConversationController Controller;
+        public readonly TurnGuards Guards;
         public readonly List<ConversationState> States = new();
         public readonly List<string> Captions = new();
         public readonly List<string> Partials = new();
@@ -80,10 +81,11 @@ namespace Jolly.Tests.EditMode.Core.Conversation
             var frames = new FrameGrabber(Camera, new FakeImageEncoder(), Clock, new VisionSettings());
             var listener = new TurnListener(Mic, Stt, frames, TranscriptAliases.ForName("Nubi", new[] { "newbie" }), Localizer, Events, latency, Log, Timings);
             Tools.Register(new ComeHereTool(Character, new FakeUserPoseProvider(), World, new LocomotionSettings()));
-            var guards = new TurnGuards(new StopGuard(Localizer), new ComeGuard(Localizer), new CrisisGuard(Localizer),
-                new QuestionCue(Localizer), Character, Tools, Personas, new FakeUserPreferences(), Events, Log);
+            Guards = new TurnGuards(new StopGuard(Localizer), new ComeGuard(Localizer), new SettingsGuard(Localizer),
+                new CrisisGuard(Localizer), new QuestionCue(Localizer), Character, Tools, Personas, new FakeUserPreferences(),
+                Events, Log);
             var speech = new TurnSpeech(Queue, new FakeSentenceSplitter(), Output, Machine, Events, latency, Clock);
-            var pipeline = new TurnPipeline(listener, guards, speech, agentLoop, Offline, Memory, Personas, Machine, Events,
+            var pipeline = new TurnPipeline(listener, Guards, speech, agentLoop, Offline, Memory, Personas, Machine, Events,
                 latency, Localizer, Log, Timings);
             var switcher = new PersonaSwitcher(Personas, Personas, Memory, Character, Log);
             var keeper = new MemoryKeeper(Memory, Scene, Model, Personas, Log);

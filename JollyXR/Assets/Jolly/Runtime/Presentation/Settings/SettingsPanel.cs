@@ -42,6 +42,8 @@ namespace Jolly.Presentation
         public event Action<string> PersonaSelected;
         public event Action<string> LanguageSelected;
         public event Action ClearMemoryRequested;
+        /// <summary>Any control on the panel was used; keeps <see cref="SettingsWindow"/> open.</summary>
+        public event Action Interacted;
 
         public bool IsConfirmingClear => _clock != null && _clock.Now < _confirmUntil;
 
@@ -83,12 +85,23 @@ namespace Jolly.Presentation
         void OnVolumeStepped(int direction) => Step(Setting.Volume, direction);
         void OnSeatedStepped(int direction) => Step(Setting.Seated, direction);
         void OnPttHandStepped(int direction) => Step(Setting.PttHand, direction);
-        void OnPersonaChosen(string id) => PersonaSelected?.Invoke(id);
-        void OnLanguageChosen(string tag) => LanguageSelected?.Invoke(tag);
         void OnSpentChanged(decimal spent) => RenderUsage();
+
+        void OnPersonaChosen(string id)
+        {
+            Interacted?.Invoke();
+            PersonaSelected?.Invoke(id);
+        }
+
+        void OnLanguageChosen(string tag)
+        {
+            Interacted?.Invoke();
+            LanguageSelected?.Invoke(tag);
+        }
 
         void Step(Setting setting, int direction)
         {
+            Interacted?.Invoke();
             Current = SettingsModel.Step(Current, setting, direction);
             _store.Save(Current);
             RenderRows();
@@ -97,6 +110,7 @@ namespace Jolly.Presentation
 
         void OnClearMemoryClicked()
         {
+            Interacted?.Invoke();
             if (IsConfirmingClear)
             {
                 _confirmUntil = double.NegativeInfinity;

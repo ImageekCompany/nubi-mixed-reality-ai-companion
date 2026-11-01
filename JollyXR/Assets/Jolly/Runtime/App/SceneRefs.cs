@@ -33,6 +33,8 @@ namespace Jolly.App
         public RealWorldOcclusion occlusion;
         public InteractionSignals interactionSignals;
         public HandTrackingMonitor handMonitor;
+        [Tooltip("The left Touch controller's menu button and the left-hand menu gesture; open or close settings.")]
+        public MenuButton menuButton;
 
         [Header("AR managers (ship disabled; PermissionGate enables them)")]
         public ARCameraManager cameraManager;
@@ -58,5 +60,10 @@ namespace Jolly.App
         public MaskOverlayView maskOverlay;
         public StatusIndicator status;
         public SettingsPanel settings;
+        [Tooltip("Shows the settings panel on demand (ADR-0042); on the SettingsPanel object.")]
+        public SettingsWindow settingsWindow;
+        [Tooltip("The settings button on the left wrist, and what places it there.")]
+        public WristMenuButton wristMenu;
+        public WristAnchor wristAnchor;
     }
 }

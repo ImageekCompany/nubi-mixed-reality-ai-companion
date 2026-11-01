@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Cysharp.Threading.Tasks;
@@ -140,6 +141,20 @@ namespace Jolly.Tests.EditMode.Core.Conversation
 
             Assert.That(_f.Character.StopCount, Is.EqualTo(1));
             Assert.That(_f.Agent.Turns.Single().Text, Is.EqualTo("Stop, Nubi!"));
+        }
+
+        [Test]
+        public void SettingsCommand_OpensThePanelAndEndsTheTurnWithoutTheModel()
+        {
+            var requests = new List<bool>();
+            _f.Guards.SettingsRequested += requests.Add;
+
+            _f.Talk("Open settings.");
+
+            Assert.That(requests, Is.EqualTo(new[] { true }));
+            Assert.That(_f.Agent.Turns, Is.Empty);
+            Assert.That(_f.Offline.Categories, Is.Empty, "the panel is the answer; nothing is spoken");
+            Assert.That(_f.StatePath(), Is.EqualTo("Listening>Thinking>Idle"));
         }
 
         [Test]

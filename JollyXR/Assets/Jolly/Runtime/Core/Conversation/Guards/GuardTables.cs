@@ -13,6 +13,9 @@ namespace Jolly.Core.Conversation
         public const string StopFillers = "stop.fillers";
         public const string ComeTriggers = "come.triggers";
         public const string ComeFillers = "come.fillers";
+        public const string SettingsOpen = "settings.open";
+        public const string SettingsClose = "settings.close";
+        public const string SettingsFillers = "settings.fillers";
         public const string QuestionOpeners = "question.openers";
         public const string QuestionRequests = "question.requests";
         public const string QuestionFillers = "question.fillers";
@@ -29,6 +32,12 @@ namespace Jolly.Core.Conversation
             (ComeTriggers, _) => "come here|come to me|come closer|come over here",
             (ComeFillers, "pl") => "nubi|proszę|cześć|hej|witaj",
             (ComeFillers, _) => "nubi|please|hi|hey|hello",
+            (SettingsOpen, "pl") => "otwórz ustawienia|pokaż ustawienia|ustawienia|otwórz menu|pokaż menu",
+            (SettingsOpen, _) => "open settings|show settings|open the settings|show the settings|show me the settings|settings|open menu|show menu|open the menu|show the menu",
+            (SettingsClose, "pl") => "zamknij ustawienia|ukryj ustawienia|zamknij menu|ukryj menu",
+            (SettingsClose, _) => "close settings|hide settings|close the settings|hide the settings|close menu|hide menu|close the menu|hide the menu",
+            (SettingsFillers, "pl") => "nubi|proszę|hej|teraz|ok|okej|możesz",
+            (SettingsFillers, _) => "nubi|please|hey|now|ok|okay|can|could|you",
             (QuestionOpeners, "pl") => "co|czy|gdzie|kto|kogo|dlaczego|czemu|jak|jaki|jaka|jakie|kiedy|który|która|które|ile|skąd|dokąd",
             (QuestionOpeners, _) => "what|where|who|whom|whose|why|how|when|which|is|isn|are|aren|am|was|were|do|does|did|has|should|shall|may|might",
             (QuestionRequests, "pl") => "możesz|czy możesz|czy mógłbyś|czy mogłabyś|mógłbyś|mogłabyś",

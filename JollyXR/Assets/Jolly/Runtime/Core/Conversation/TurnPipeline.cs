@@ -8,7 +8,7 @@ namespace Jolly.Core.Conversation
 {
     /// <summary>
     /// One turn, start to finish: listen → guards → agent → speech (online), a canned line (offline, or after the come
-    /// guard started the walk), or an unprompted announcement. It drives the state machine; the controller owns tokens
+    /// guard started the walk), nothing (a settings command), or an unprompted announcement. It drives the state machine; the controller owns tokens
     /// and watchdogs.
     /// </summary>
     public sealed class TurnPipeline
@@ -76,6 +76,11 @@ namespace Jolly.Core.Conversation
             _latency.Mark(turnId, LatencyMark.AsrFinal);
             _events.RaiseUserFinal(heard.Text);
             _machine.Fire(ConversationTrigger.FinalText);
+            if (_guards.ApplySettings(heard.Text))
+            {
+                EndSpeakingTurn(turnId);
+                return;
+            }
             var text = await ApplyGuards(heard.Text, turnCt);
             if (text == null)
             {

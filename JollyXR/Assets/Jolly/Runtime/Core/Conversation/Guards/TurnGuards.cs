@@ -1,3 +1,4 @@
+using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using Jolly.Contracts;
@@ -19,6 +20,7 @@ namespace Jolly.Core.Conversation
 
         readonly StopGuard _stop;
         readonly ComeGuard _come;
+        readonly SettingsGuard _settings;
         readonly CrisisGuard _crisis;
         readonly QuestionCue _question;
         readonly ICharacterController _character;
@@ -28,12 +30,13 @@ namespace Jolly.Core.Conversation
         readonly ConversationEvents _events;
         readonly ILog _log;
 
-        public TurnGuards(StopGuard stop, ComeGuard come, CrisisGuard crisis, QuestionCue question, ICharacterController character,
+        public TurnGuards(StopGuard stop, ComeGuard come, SettingsGuard settings, CrisisGuard crisis, QuestionCue question, ICharacterController character,
                           IToolRegistry tools, IPersonaProvider personas, IUserPreferences preferences,
                           ConversationEvents events, ILog log)
         {
             _stop = stop;
             _come = come;
+            _settings = settings;
             _crisis = crisis;
             _question = question;
             _character = character;
@@ -43,6 +46,9 @@ namespace Jolly.Core.Conversation
             _events = events;
             _log = log;
         }
+
+        /// <summary>A short "open settings" (true) or "close settings" (false); the composition root shows or hides the panel.</summary>
+        public event Action<bool> SettingsRequested;
 
         /// <summary>Halts locomotion on a short "stop"; the turn still goes to the model.</summary>
         public bool ApplyStop(string transcript)
@@ -71,6 +77,19 @@ namespace Jolly.Core.Conversation
             var walking = result.Ok && _character.Mode == LocomotionMode.MovingTo;
             _log.Write(LogLevel.Info, "conversation", $"evt=guard.come status={(walking ? "walking" : "unreachable")}");
             return walking;
+        }
+
+        /// <summary>True on a short settings command, after raising <see cref="SettingsRequested"/>; the turn then ends
+        /// without the model (ADR-0042).</summary>
+        public bool ApplySettings(string transcript)
+        {
+            var command = _settings.Match(transcript);
+            if (command == SettingsCommand.None)
+                return false;
+            var open = command == SettingsCommand.Open;
+            _log.Write(LogLevel.Info, "conversation", open ? "evt=guard.settings open=true" : "evt=guard.settings open=false");
+            SettingsRequested?.Invoke(open);
+            return true;
         }
 
         /// <summary>Every persona: the hand-off must never depend on which mode the person happens to be in.</summary>

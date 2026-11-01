@@ -38,6 +38,18 @@ MonoBehaviour:
     m_Localized: "{name}|prosz\u0119|cze\u015B\u0107|hej|witaj"
     m_Metadata:
       m_Items: []
+  - m_Id: 581951488
+    m_Localized: "otw\xF3rz ustawienia|poka\u017C ustawienia|ustawienia|otw\xF3rz menu|poka\u017C menu"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 586145792
+    m_Localized: "zamknij ustawienia|ukryj ustawienia|zamknij menu|ukryj menu"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 590340096
+    m_Localized: "{name}|prosz\u0119|hej|teraz|ok|okej|mo\u017Cesz"
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

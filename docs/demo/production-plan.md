@@ -185,7 +185,7 @@ Quiet set: phones on silent, washing machine and fridge noise checked, windows s
 - Beat 2: remote at chest height, 40–50 cm from the face, in the centre 60 % of the view, the other hand pointing from the side so the hand does not cover the remote. Hold still until each answer ends (the outline is world-locked to the capture pose). After the second pinch, lean in slightly for the power button and hold 3 s, then turn toward the TV so the press and the TV coming on are in one frame.
 - Beat 3: look back over the shoulder so Nubi is visible behind or beside you during the walk; the phone angle can only show the wearer, never Nubi.
 - Meet shot and beat 1: the pinching hand in frame, so the viewer sees the trigger during the ~1 s before the first caption partial appears.
-- Keep the settings panel out of frame except for beat 6 (it is hidden by default once the in-progress change lands; open it from the wrist or menu button only for the cost shot).
+- Keep the settings panel out of frame except for beat 6 (hidden at launch since ADR-0042; open it from the wrist button, the left ☰ or "open settings" only for the cost shot).
 - Clean the room for privacy: no family photos, mail, addresses, screens or anything with names in view of the passthrough or phone camera. No terminal with keys on any screen in the phone shots.
 
 Third person (phone): tripod at seated eye height, 3–4 m back, the wearer and the sofa in frame; one wide for the cold open, one over-the-shoulder for beat 2 (shows the real remote in a real hand), one wide for the beat 3 walk.
@@ -321,7 +321,7 @@ Written 2026-11-01 ~23:30 CET from the point of view of a judge on their 200th v
 ### What remains (ranked by how much it can cost the Demo score)
 
 1. **No one has seen MR on a worn headset since the passthrough fix.** Passthrough in a system recording, Nubi grounded, panel layout, mask alignment and the hand pinch are all unseen. Everything above is a plan until W1 (Mon 09:30) passes. If the system recording shows black passthrough, the plan's escalation applies.
-2. **The settings panel hide-by-default change has not landed.** Until it does, every frame has a 0.34 × 0.52 m panel in it. Do not record before it lands.
+2. ~~**The settings panel hide-by-default change has not landed.**~~ Landed (ADR-0042): hidden at launch, opened on demand, world-locked.
 3. **Mask alignment on a real object is unmeasured** (R1 extrinsics marker test never run; the outline has only ever been shown on the bundled still). The hook and the thumbnail both depend on it.
 4. **The gaze greeting can fire mid-beat** (head ray on Nubi for 1.5 s, every 20 s), most likely during the beat 1 walk-up. Without code: retake. With code (needs Unity, under 1 h): a recording flag that disables gaze dwell after the Meet shot. A judge will not notice one extra greeting; a greeting that talks over the wearer's question is a retake.
 5. **Jolly vs Nubi.** The user wants Jolly. This plan still recommends the Nubi master unless the organizers permit the look-alike in writing, because of the IP warranty in the rules and the contradiction with our own README. Jolly's name has never been through ASR from a human voice ("Jolie"/"Jollie" are its only aliases). If Jolly is used, run the ×5 name test in W1 first.

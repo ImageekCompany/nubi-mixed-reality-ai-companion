@@ -35,6 +35,18 @@ MonoBehaviour:
     m_Key: come.fillers
     m_Metadata:
       m_Items: []
+  - m_Id: 581951488
+    m_Key: settings.open
+    m_Metadata:
+      m_Items: []
+  - m_Id: 586145792
+    m_Key: settings.close
+    m_Metadata:
+      m_Items: []
+  - m_Id: 590340096
+    m_Key: settings.fillers
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:

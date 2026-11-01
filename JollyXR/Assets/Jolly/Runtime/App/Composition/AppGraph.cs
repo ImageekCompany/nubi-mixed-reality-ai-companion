@@ -94,6 +94,8 @@ namespace Jolly.App.Composition
             d.Add(new StatusRelay(Cloud.Connectivity, scene.permissions, scene.status));
             Look = d.Add(new LookTelemetry(f.Machine, scene.nubi, Xr.User, f.Log));
             d.Add(new SettingsRouter(scene.settings, Personas, Text, Conversation.Controller, f.Log, appCt));
+            d.Add(new SettingsLauncher(scene.settingsWindow, scene.wristAnchor, scene.wristMenu, scene.menuButton,
+                Conversation.Guards, f.Events));
             var offline = Speech.Offline;
             offline.CaptionStarted += f.Events.RaiseCaptionStarted;
             d.Add(new Subscription(() => offline.CaptionStarted -= f.Events.RaiseCaptionStarted));
@@ -109,6 +111,9 @@ namespace Jolly.App.Composition
             scene.latencyHud.Construct(f.Events, f.Latency, Text);
             scene.maskOverlay.Construct(f.Clock, f.Events);
             scene.status.Construct(Text);
+            scene.settingsWindow.Construct(f.Clock, scene.head, f.Log);
+            scene.wristMenu.Construct(Text);
+            scene.wristAnchor.Construct(Xr.Hands, scene.head, f.Clock);
         }
 
         void BindInteractions(SceneRefs scene, CancellationToken appCt)

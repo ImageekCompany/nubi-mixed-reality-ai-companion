@@ -38,6 +38,18 @@ MonoBehaviour:
     m_Localized: '{name}|please|hi|hey|hello'
     m_Metadata:
       m_Items: []
+  - m_Id: 581951488
+    m_Localized: open settings|show settings|open the settings|show the settings|show me the settings|settings|open menu|show menu|open the menu|show the menu
+    m_Metadata:
+      m_Items: []
+  - m_Id: 586145792
+    m_Localized: close settings|hide settings|close the settings|hide the settings|close menu|hide menu|close the menu|hide the menu
+    m_Metadata:
+      m_Items: []
+  - m_Id: 590340096
+    m_Localized: '{name}|please|hey|now|ok|okay|can|could|you'
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

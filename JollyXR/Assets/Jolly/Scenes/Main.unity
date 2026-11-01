@@ -161,6 +161,7 @@ MonoBehaviour:
     occlusion: {fileID: 1084320128}
     interactionSignals: {fileID: 1084320120}
     handMonitor: {fileID: 1084320127}
+    menuButton: {fileID: 1084320130}
     cameraManager: {fileID: 1097538755}
     planeManager: {fileID: 1097538763}
     boxManager: {fileID: 1097538762}
@@ -178,7 +179,13 @@ MonoBehaviour:
     maskOverlay: {fileID: 1400143355}
     status: {fileID: 619269662}
     settings: {fileID: 603076397}
+    settingsWindow: {fileID: 603076398}
+    wristMenu: {fileID: 938239519}
+    wristAnchor: {fileID: 938239520}
   selfTestAssets: {fileID: 11400000, guid: eb586c7be45084d9e9403fbbe637b0b5, type: 2}
+  characters:
+    localCharacters: []
+    bakedId: 
 --- !u!4 &157909525
 Transform:
   m_ObjectHideFlags: 0
@@ -488,6 +495,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3718478e6422b4cb88b118d1bc260931, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Jolly.Presentation::Jolly.Presentation.SettingsPanel
+--- !u!114 &603076398 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 1253871324398102057, guid: ffc0a779532684c7a86729520ba3706b, type: 3}
+  m_PrefabInstance: {fileID: 603076396}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 55dea89e94877468c8c688b0ab629a59, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Jolly.Presentation::Jolly.Presentation.SettingsWindow
 --- !u!1001 &619269661
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -757,6 +775,125 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+--- !u!1001 &938239518
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 1609716151322811596, guid: bdae44482d0ec45e3a501ef0f8573deb, type: 3}
+      propertyPath: m_Pivot.x
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 1609716151322811596, guid: bdae44482d0ec45e3a501ef0f8573deb, type: 3}
+      propertyPath: m_Pivot.y
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 1609716151322811596, guid: bdae44482d0ec45e3a501ef0f8573deb, type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 1609716151322811596, guid: bdae44482d0ec45e3a501ef0f8573deb, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 1609716151322811596, guid: bdae44482d0ec45e3a501ef0f8573deb, type: 3}
+      propertyPath: m_AnchorMin.x
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 1609716151322811596, guid: bdae44482d0ec45e3a501ef0f8573deb, type: 3}
+      propertyPath: m_AnchorMin.y
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 1609716151322811596, guid: bdae44482d0ec45e3a501ef0f8573deb, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 170
+      objectReference: {fileID: 0}
+    - target: {fileID: 1609716151322811596, guid: bdae44482d0ec45e3a501ef0f8573deb, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 72
+      objectReference: {fileID: 0}
+    - target: {fileID: 1609716151322811596, guid: bdae44482d0ec45e3a501ef0f8573deb, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1609716151322811596, guid: bdae44482d0ec45e3a501ef0f8573deb, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1609716151322811596, guid: bdae44482d0ec45e3a501ef0f8573deb, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1609716151322811596, guid: bdae44482d0ec45e3a501ef0f8573deb, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1609716151322811596, guid: bdae44482d0ec45e3a501ef0f8573deb, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1609716151322811596, guid: bdae44482d0ec45e3a501ef0f8573deb, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1609716151322811596, guid: bdae44482d0ec45e3a501ef0f8573deb, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1609716151322811596, guid: bdae44482d0ec45e3a501ef0f8573deb, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1609716151322811596, guid: bdae44482d0ec45e3a501ef0f8573deb, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1609716151322811596, guid: bdae44482d0ec45e3a501ef0f8573deb, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1609716151322811596, guid: bdae44482d0ec45e3a501ef0f8573deb, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1609716151322811596, guid: bdae44482d0ec45e3a501ef0f8573deb, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4433784072780026518, guid: bdae44482d0ec45e3a501ef0f8573deb, type: 3}
+      propertyPath: m_Name
+      value: WristMenuButton
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: bdae44482d0ec45e3a501ef0f8573deb, type: 3}
+--- !u!114 &938239519 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 7996040595204126416, guid: bdae44482d0ec45e3a501ef0f8573deb, type: 3}
+  m_PrefabInstance: {fileID: 938239518}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 852af3e2746c14e199527361f34136c0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Jolly.Presentation::Jolly.Presentation.WristMenuButton
+--- !u!114 &938239520 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 2153544634175457289, guid: bdae44482d0ec45e3a501ef0f8573deb, type: 3}
+  m_PrefabInstance: {fileID: 938239518}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7a4f1987bbd224c9f8c2ee34933dd2fb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Jolly.XR::Jolly.XR.Interaction.WristAnchor
 --- !u!1001 &1052329864
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -883,6 +1020,7 @@ GameObject:
   - component: {fileID: 1084320127}
   - component: {fileID: 1084320128}
   - component: {fileID: 1084320129}
+  - component: {fileID: 1084320130}
   m_Layer: 0
   m_Name: Jolly XR
   m_TagString: Untagged
@@ -1024,6 +1162,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: Jolly.XR::Jolly.XR.Occlusion.SceneOccluders
   boxes: {fileID: 1097538762}
   occluderMaterial: {fileID: 2100000, guid: f2f1a39944994eb9be52d9db237d8967, type: 2}
+--- !u!114 &1084320130
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1084320119}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 397c7edc3092d4eb79f09352d9cf2d43, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Jolly.XR::Jolly.XR.Interaction.MenuButton
 --- !u!1001 &1097538753
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1056,6 +1206,10 @@ PrefabInstance:
       propertyPath: m_BackGroundColor.r
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 1487988606775125209, guid: d6878e1999eb4b44a9f5a263af86c185, type: 3}
+      propertyPath: m_InteractionLayers.m_Bits
+      value: 3
+      objectReference: {fileID: 0}
     - target: {fileID: 1820897918385990095, guid: d6878e1999eb4b44a9f5a263af86c185, type: 3}
       propertyPath: m_CameraYOffset
       value: 0
@@ -1063,10 +1217,6 @@ PrefabInstance:
     - target: {fileID: 1820897918385990095, guid: d6878e1999eb4b44a9f5a263af86c185, type: 3}
       propertyPath: m_RequestedTrackingOriginMode
       value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 2218496723442559054, guid: d6878e1999eb4b44a9f5a263af86c185, type: 3}
-      propertyPath: m_Name
-      value: XR Origin (XR Rig)
       objectReference: {fileID: 0}
     - target: {fileID: 2218496723442559053, guid: d6878e1999eb4b44a9f5a263af86c185, type: 3}
       propertyPath: m_LocalPosition.x
@@ -1108,9 +1258,9 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 1487988606775125209, guid: d6878e1999eb4b44a9f5a263af86c185, type: 3}
-      propertyPath: m_InteractionLayers.m_Bits
-      value: 3
+    - target: {fileID: 2218496723442559054, guid: d6878e1999eb4b44a9f5a263af86c185, type: 3}
+      propertyPath: m_Name
+      value: XR Origin (XR Rig)
       objectReference: {fileID: 0}
     - target: {fileID: 3844105587933937856, guid: d6878e1999eb4b44a9f5a263af86c185, type: 3}
       propertyPath: m_InteractionLayers.m_Bits
@@ -1836,3 +1986,4 @@ SceneRoots:
   - {fileID: 619269661}
   - {fileID: 603076396}
   - {fileID: 388796962}
+  - {fileID: 938239518}
