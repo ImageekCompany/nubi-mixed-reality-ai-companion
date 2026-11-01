@@ -13,8 +13,9 @@ namespace Jolly.XR.Permissions
     ///   creates the passthrough layer and latches the camera permission, so a denied camera still gets passthrough.
     /// - A camera grant that arrives later (Settings, focus regained) toggles the manager to re-run Start().
     /// - Scene managers start only with USE_SCENE, otherwise their subsystems latch permission errors.
-    /// - At launch the camera and each scene manager start on their own frame: started together (camera, planes, boxes,
-    ///   raycasts, occlusion) they made one 410-436 ms main-thread frame on the Quest (selftest-report.md, 4d228c8).
+    /// - At launch the camera and each scene manager start on their own frame, none on the frame that called Run (the
+    ///   one that built the app graph): together they made one 410-436 ms main-thread frame on the Quest
+    ///   (selftest-report.md, 4d228c8); the camera start alone is ~130 ms of it.
     /// Permission state is read with the Android API: ARCameraManager.permissionGranted reports false while frames
     /// flow on Quest (device-spike.md §2.2).
     /// </summary>
@@ -63,6 +64,7 @@ namespace Jolly.XR.Permissions
         async UniTask StartManagers(CancellationToken ct)
         {
             _requested = true;
+            await UniTask.NextFrame(ct);
             if (_cameraManager != null)
                 _cameraManager.enabled = true;
             if (_sceneManagers != null && _permissions.IsGranted(XrPermissions.UseScene))

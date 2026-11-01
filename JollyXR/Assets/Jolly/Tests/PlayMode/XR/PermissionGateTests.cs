@@ -129,12 +129,15 @@ namespace Jolly.Tests.PlayMode.XR
             _permissions.GrantOnRequest.Add(XrPermissions.HeadsetCamera);
             _permissions.GrantOnRequest.Add(XrPermissions.UseScene);
 
+            var runFrame = Time.frameCount;
+
             // Act
             await _gate.Run(CancellationToken.None);
 
             // Assert
             Assert.That(new[] { _camera.enabled, _planes.enabled, boxes.enabled }, Is.All.True);
-            Assert.That(new[] { _camera.StartFrame, _planes.StartFrame, boxes.StartFrame }, Is.Unique);
+            Assert.That(new[] { runFrame, _camera.StartFrame, _planes.StartFrame, boxes.StartFrame }, Is.Unique,
+                        "not even the camera shares the frame that built the app graph");
             Assert.That(_gate.SceneGranted, Is.True);
         });
 
