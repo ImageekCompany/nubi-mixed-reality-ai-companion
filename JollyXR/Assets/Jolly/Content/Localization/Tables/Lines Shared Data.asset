@@ -155,6 +155,18 @@ MonoBehaviour:
     m_Key: room.scan_opening
     m_Metadata:
       m_Items: []
+  - m_Id: 154132515
+    m_Key: coming_01
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132516
+    m_Key: coming_02
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132517
+    m_Key: coming_03
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:

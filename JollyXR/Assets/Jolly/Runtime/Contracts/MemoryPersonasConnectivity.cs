@@ -125,7 +125,7 @@ namespace Jolly.Contracts
         UniTask<bool> Ping(CancellationToken ct);
     }
 
-    public enum LineCategory { Greeting, WhoAmI, Acknowledge, Offline, Error, BudgetReached, Idle, SafetyNotice, CrisisHandoff, Unknown, RoomScanOffer }
+    public enum LineCategory { Greeting, WhoAmI, Acknowledge, Offline, Error, BudgetReached, Idle, SafetyNotice, CrisisHandoff, Unknown, RoomScanOffer, ComingOver }
 
     public sealed class CannedLine
     {
@@ -142,10 +142,11 @@ namespace Jolly.Contracts
     }
 
     /// <summary>Answers a turn without the cloud (Offline, Unauthorized, BudgetReached, or STT unavailable).
-    /// Plays a canned line through ISpeechOutput with captions and completes when it has played.</summary>
+    /// Plays a canned line through ISpeechOutput with captions and completes when it has played, with the line it
+    /// played (null when the category has none).</summary>
     public interface IOfflineResponder
     {
-        UniTask Respond(LineCategory category, int utteranceId, CancellationToken ct);
+        UniTask<CannedLine> Respond(LineCategory category, int utteranceId, CancellationToken ct);
     }
 
     public sealed class UserPreferencesSnapshot

@@ -50,8 +50,8 @@ namespace Jolly.App.Composition
                 tools, personas, preferences, f.Events, f.Log);
             var turnSpeech = disposables.Add(new TurnSpeech(speech.Queue, speech.Splitter, speech.Output, f.Machine,
                 f.Events, f.Latency, f.Clock));
-            var pipeline = new TurnPipeline(listener, guards, turnSpeech, agent, speech.Offline, personas, f.Machine,
-                f.Events, f.Latency, localizer, f.Log, timings);
+            var pipeline = new TurnPipeline(listener, guards, turnSpeech, agent, speech.Offline, conversation, personas,
+                f.Machine, f.Events, f.Latency, localizer, f.Log, timings);
             var keeper = new MemoryKeeper(conversation, scene, cloud.BackgroundChat, personas, f.Log);
             var switcher = new PersonaSwitcher(personas, personas, conversation, character, f.Log);
             disposables.Add(new ConversationStateRelay(f.Machine, f.Events, character));

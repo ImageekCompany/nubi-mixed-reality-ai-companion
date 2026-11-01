@@ -55,6 +55,7 @@ namespace Jolly.Tests.EditMode.Core.Conversation
             Localizer = new FakeLocalizer(languageTag);
             Personas = new FakePersonaProvider(personas);
             Queue = new RecordingSpeechQueue(Output);
+            Offline.Output = Output;
             Machine = new ConversationStateMachine(Log);
             var limits = new MemoryLimits();
             Memory = new ConversationMemory(Directory, Personas, limits, Log);
@@ -67,8 +68,8 @@ namespace Jolly.Tests.EditMode.Core.Conversation
             var guards = new TurnGuards(new StopGuard(Localizer), new ComeGuard(Localizer), new CrisisGuard(Localizer),
                 Character, Tools, Personas, new FakeUserPreferences(), Events, Log);
             var speech = new TurnSpeech(Queue, new FakeSentenceSplitter(), Output, Machine, Events, latency, Clock);
-            var pipeline = new TurnPipeline(listener, guards, speech, Agent, Offline, Personas, Machine, Events, latency,
-                Localizer, Log, Timings);
+            var pipeline = new TurnPipeline(listener, guards, speech, Agent, Offline, Memory, Personas, Machine, Events,
+                latency, Localizer, Log, Timings);
             var switcher = new PersonaSwitcher(Personas, Personas, Memory, Character, Log);
             var keeper = new MemoryKeeper(Memory, Scene, Model, Personas, Log);
             Controller = new ConversationController(Voice, new TurnRouter(Connectivity, Usage), pipeline,

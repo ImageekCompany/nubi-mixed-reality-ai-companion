@@ -7,8 +7,9 @@ using Jolly.Core.Config;
 namespace Jolly.Core.Conversation
 {
     /// <summary>
-    /// One turn, start to finish: listen → guards → agent → speech (online), a canned line (offline), or an unprompted
-    /// announcement. It drives the state machine; the controller owns tokens and watchdogs.
+    /// One turn, start to finish: listen → guards → agent → speech (online), a canned line (offline, or after the come
+    /// guard started the walk), or an unprompted announcement. It drives the state machine; the controller owns tokens
+    /// and watchdogs.
     /// </summary>
     public sealed class TurnPipeline
     {
@@ -17,6 +18,7 @@ namespace Jolly.Core.Conversation
         readonly TurnSpeech _speech;
         readonly IAgentLoop _agent;
         readonly IOfflineResponder _offline;
+        readonly IConversationMemory _memory;
         readonly IPersonaProvider _personas;
         readonly ConversationStateMachine _machine;
         readonly ConversationEvents _events;
@@ -27,15 +29,16 @@ namespace Jolly.Core.Conversation
         readonly Func<string> _spokenThisTurn;
 
         public TurnPipeline(TurnListener listener, TurnGuards guards, TurnSpeech speech, IAgentLoop agent,
-                            IOfflineResponder offline, IPersonaProvider personas, ConversationStateMachine machine,
-                            ConversationEvents events, ILatencyTracker latency, ILocalizer localizer, ILog log,
-                            ConversationTimings timings)
+                            IOfflineResponder offline, IConversationMemory memory, IPersonaProvider personas,
+                            ConversationStateMachine machine, ConversationEvents events, ILatencyTracker latency,
+                            ILocalizer localizer, ILog log, ConversationTimings timings)
         {
             _listener = listener;
             _guards = guards;
             _speech = speech;
             _agent = agent;
             _offline = offline;
+            _memory = memory;
             _personas = personas;
             _machine = machine;
             _events = events;
@@ -76,6 +79,11 @@ namespace Jolly.Core.Conversation
             _events.RaiseUserFinal(heard.Text);
             _machine.Fire(ConversationTrigger.FinalText);
             var text = await ApplyGuards(heard.Text, turnCt);
+            if (text == null)
+            {
+                await ComeOver(turnId, heard.Text, turnCt);
+                return;
+            }
             await RunAgent(new UserTurn
             {
                 TurnId = turnId, Text = text, LanguageTag = _localizer.LanguageTag, PreCaptured = heard.PreCaptured,
@@ -115,15 +123,38 @@ namespace Jolly.Core.Conversation
             await FinishSpeaking(turnId, turnCt);
         }
 
+        /// <summary>The text for the agent, or null when the come guard's walk answers the turn without it.</summary>
         async UniTask<string> ApplyGuards(string text, CancellationToken ct)
         {
             _guards.ApplyStop(text);
-            if (await _guards.ApplyComeHere(text, ct))
-                text += TurnGuards.ComeHereNote;
+            var walking = await _guards.ApplyComeHere(text, ct);
             if (!_guards.NeedsCrisisHandoff(text))
-                return text;
+                return walking ? null : text;
             await _offline.Respond(LineCategory.CrisisHandoff, _speech.NextUtteranceId(), ct);
             return text + TurnGuards.CrisisNote;
+        }
+
+        /// <summary>
+        /// The guard has started the walk, so a canned ComingOver line answers instead of a model round (ADR-0037): on
+        /// the demo's opening line the round cost 2.1 s to first audio and once two first-event timeouts and no reply.
+        /// The release acknowledgement was queued at release, before any final, so the line plays right after it. Both
+        /// sides are committed to memory as the agent would, so the next turn has the context.
+        /// </summary>
+        async UniTask ComeOver(int turnId, string userText, CancellationToken ct)
+        {
+            BeginSpeech(turnId, ct);
+            CannedLine line = null;
+            try
+            {
+                line = await _offline.Respond(LineCategory.ComingOver, _speech.ExpectClip(), ct);
+            }
+            finally
+            {
+                _memory.CommitTurn(line == null
+                    ? new[] { ConversationItem.User(userText) }
+                    : new[] { ConversationItem.User(userText), ConversationItem.Assistant(line.Text) });
+            }
+            EndSpeakingTurn(turnId);
         }
 
         async UniTask RunAgent(UserTurn turn, CancellationToken ct)

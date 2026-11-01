@@ -52,6 +52,7 @@ namespace Jolly.Tests.EditMode.Offline
             Assert.That(respond.Status, Is.EqualTo(UniTaskStatus.Pending));
             _speech.FinishCurrent();
             Assert.That(respond.Status, Is.EqualTo(UniTaskStatus.Succeeded));
+            Assert.That(respond.GetAwaiter().GetResult().Text, Is.EqualTo("text:budget.1"), "the played line, for the turn's memory");
         }
 
         [Test]
@@ -155,6 +156,7 @@ namespace Jolly.Tests.EditMode.Offline
             var respond = _responder.Respond(LineCategory.Unknown, 1, CancellationToken.None);
 
             Assert.That(respond.Status, Is.EqualTo(UniTaskStatus.Succeeded));
+            Assert.That(respond.GetAwaiter().GetResult(), Is.Null);
             Assert.That(_speech.Played, Is.Empty);
             Assert.That(_log.Contains(LogLevel.Warning, "evt=offline.no_line"), Is.True);
         }

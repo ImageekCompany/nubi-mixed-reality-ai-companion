@@ -98,24 +98,34 @@ namespace Jolly.Testing.Conversation
         }
     }
 
-    /// <summary>Records canned-line requests; with <see cref="Hold"/> each waits for <see cref="Release"/> (or its token).</summary>
+    /// <summary>
+    /// Records canned-line requests and answers each with <see cref="TextOf"/> (no clip). With <see cref="Output"/> set, a
+    /// request raises its first sample there, as a played clip would. With <see cref="Hold"/> each waits for
+    /// <see cref="Release"/> (or its token).
+    /// </summary>
     public sealed class RecordingOfflineResponder : IOfflineResponder
     {
         readonly Queue<UniTaskCompletionSource> _held = new();
 
         public List<LineCategory> Categories { get; } = new();
         public bool Hold { get; set; }
+        public FakeSpeechOutput Output { get; set; }
         public int Waiting => _held.Count;
 
-        public UniTask Respond(LineCategory category, int utteranceId, CancellationToken ct)
+        public static string TextOf(LineCategory category) => category + " line";
+
+        public async UniTask<CannedLine> Respond(LineCategory category, int utteranceId, CancellationToken ct)
         {
             ct.ThrowIfCancellationRequested();
             Categories.Add(category);
-            if (!Hold)
-                return UniTask.CompletedTask;
-            var gate = new UniTaskCompletionSource();
-            _held.Enqueue(gate);
-            return gate.Task.AttachExternalCancellation(ct);
+            Output?.RaiseFirstSample(utteranceId);
+            if (Hold)
+            {
+                var gate = new UniTaskCompletionSource();
+                _held.Enqueue(gate);
+                await gate.Task.AttachExternalCancellation(ct);
+            }
+            return new CannedLine(category.ToString(), TextOf(category), null);
         }
 
         public void Release() => _held.Dequeue().TrySetResult();

@@ -38,20 +38,20 @@ namespace Jolly.Core.Offline
         /// Relay it to IConversationEvents.CaptionStarted.</summary>
         public event Action<int, string> CaptionStarted;
 
-        public async UniTask Respond(LineCategory category, int utteranceId, CancellationToken ct)
+        public async UniTask<CannedLine> Respond(LineCategory category, int utteranceId, CancellationToken ct)
         {
             if (!TryPickLine(category, out var line))
             {
                 if (_log.IsEnabled(LogLevel.Warning))
                     _log.Write(LogLevel.Warning, LogCategory, $"evt=offline.no_line category={category}");
-                return;
+                return null;
             }
 
             if (line.Clip == null)
             {
                 CaptionStarted?.Invoke(utteranceId, line.Text);
                 await _clock.Delay(CaptionTiming.HoldFor(line.Text), ct);
-                return;
+                return line;
             }
 
             _captionUtteranceId = utteranceId;
@@ -65,6 +65,7 @@ namespace Jolly.Core.Offline
                 if (_captionUtteranceId == utteranceId)
                     _pendingCaption = null;
             }
+            return line;
         }
 
         public void Dispose()

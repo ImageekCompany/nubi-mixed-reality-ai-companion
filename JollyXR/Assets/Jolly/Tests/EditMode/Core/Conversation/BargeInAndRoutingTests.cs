@@ -1,6 +1,7 @@
 using System.Linq;
 using Jolly.Contracts;
 using Jolly.Core.Conversation;
+using Jolly.Testing.Conversation;
 using NUnit.Framework;
 
 namespace Jolly.Tests.EditMode.Core.Conversation
@@ -191,12 +192,65 @@ namespace Jolly.Tests.EditMode.Core.Conversation
         }
 
         [Test]
-        public void ComeHere_StartsTheWalkBeforeTheModelAndAnnotatesTheTurn()
+        public void ComeHere_GuardWalks_AnswersWithTheComingOverLineAndNoModelRound()
         {
             _f.Talk("Hi Nubi, come here.");
 
             Assert.That(_f.Character.Mode, Is.EqualTo(LocomotionMode.MovingTo));
-            Assert.That(_f.Agent.Turns.Single().Text, Is.EqualTo("Hi Nubi, come here." + TurnGuards.ComeHereNote));
+            Assert.That(_f.Agent.Turns, Is.Empty, "the guard's walk turn never reaches the agent");
+            Assert.That(_f.Offline.Categories, Is.EqualTo(new[] { LineCategory.ComingOver }));
+            Assert.That(_f.StatePath(), Is.EqualTo("Listening>Thinking>Speaking>Idle"),
+                "the line's first sample is the turn's FirstAudio, then the turn completes");
+            Assert.That(_f.Log.Contains(LogLevel.Info, "FirstAudioPlayed="), Is.True);
+            Assert.That(_f.Log.Contains(LogLevel.Info, "LlmRequestSent="), Is.False);
+        }
+
+        [Test]
+        public void ComeHere_GuardWalks_BothSidesLandInTheHistoryTheNextTurnReplays()
+        {
+            _f.Talk("Hi Nubi, come here.");
+            _f.Agent.Say("You're welcome.");
+            _f.Talk("Thank you.");
+
+            var recent = _f.Memory.Recent;
+            Assert.That(recent.Select(i => i.Kind), Is.EqualTo(new[] { ItemKind.UserText, ItemKind.AssistantText }));
+            Assert.That(recent[0].Text, Is.EqualTo("Hi Nubi, come here."));
+            Assert.That(recent[1].Text, Is.EqualTo(RecordingOfflineResponder.TextOf(LineCategory.ComingOver)));
+            Assert.That(_f.Agent.Turns.Single().Text, Is.EqualTo("Thank you."));
+        }
+
+        [Test]
+        public void ComeHere_BargeInDuringTheLine_KeepsTheUserTextInTheHistory()
+        {
+            _f.Offline.Hold = true;
+            _f.Talk("come here");
+
+            _f.Voice.Press();
+
+            Assert.That(_f.State, Is.EqualTo(ConversationState.Listening));
+            Assert.That(_f.Memory.Recent.Select(i => i.Text), Is.EqualTo(new[] { "come here" }));
+        }
+
+        [Test]
+        public void ComeHere_Unreachable_LeavesTheTurnToTheModel()
+        {
+            _f.World.Walkable = false;
+
+            _f.Talk("Hi Nubi, come here.");
+
+            Assert.That(_f.Offline.Categories, Is.Empty);
+            Assert.That(_f.Agent.Turns.Single().Text, Is.EqualTo("Hi Nubi, come here."));
+        }
+
+        [Test]
+        public void ComeHereAndCrisisWords_TheHandoffWinsAndTheModelStillAnswers()
+        {
+            _f.Localizer.With(GuardTables.Table, GuardTables.ComeFillers, "nubi|please|suicidal");
+
+            _f.Talk("Nubi suicidal come here");
+
+            Assert.That(_f.Offline.Categories, Is.EqualTo(new[] { LineCategory.CrisisHandoff }));
+            Assert.That(_f.Agent.Turns.Single().Text, Is.EqualTo("Nubi suicidal come here" + TurnGuards.CrisisNote));
         }
 
         [Test]

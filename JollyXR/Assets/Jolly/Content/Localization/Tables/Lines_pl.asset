@@ -158,6 +158,18 @@ MonoBehaviour:
     m_Localized: "Dobrze! Rozejrzyj si\u0119 po pokoju, a ja b\u0119d\u0119 tu, kiedy sko\u0144czysz."
     m_Metadata:
       m_Items: []
+  - m_Id: 154132515
+    m_Localized: "Ju\u017C id\u0119!"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132516
+    m_Localized: "Id\u0119!"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132517
+    m_Localized: "Ju\u017C do ciebie id\u0119!"
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

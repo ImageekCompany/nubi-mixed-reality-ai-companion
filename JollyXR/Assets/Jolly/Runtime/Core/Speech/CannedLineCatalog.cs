@@ -54,6 +54,10 @@ namespace Jolly.Core.Speech
             new CannedLineEntry("unknown_02", LineCategory.Unknown, "Hmm, I didn't quite hear you. Try holding the pinch while you talk."),
 
             new CannedLineEntry("room_scan_01", LineCategory.RoomScanOffer, "I don't know your room yet, so I'll stay close to you. If you'd like me to walk around, ask me to scan the room."),
+
+            new CannedLineEntry("coming_01", LineCategory.ComingOver, "On my way!"),
+            new CannedLineEntry("coming_02", LineCategory.ComingOver, "Coming!"),
+            new CannedLineEntry("coming_03", LineCategory.ComingOver, "Coming right over!"),
         };
     }
 }

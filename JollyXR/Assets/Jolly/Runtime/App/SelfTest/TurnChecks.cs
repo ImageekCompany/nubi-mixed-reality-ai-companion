@@ -85,8 +85,8 @@ namespace Jolly.App.SelfTest
         }
 
         /// <summary>
-        /// Who started come_here: "guard" (the local ComeGuard), "model", "guard+model" (the model restarted the walk
-        /// despite the note) or "none". <paramref name="callIds"/> is parallel to <paramref name="started"/>.
+        /// Who started come_here: "guard" (the local ComeGuard), "model", "guard+model" (the model restarted the walk:
+        /// only a crisis turn still reaches the model after the guard walked, ADR-0037) or "none". <paramref name="callIds"/> is parallel to <paramref name="started"/>.
         /// </summary>
         public static string ComeHereSource(IReadOnlyList<string> started, IReadOnlyList<string> callIds)
         {

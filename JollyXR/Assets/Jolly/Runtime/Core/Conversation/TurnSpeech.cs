@@ -30,6 +30,7 @@ namespace Jolly.Core.Conversation
         int _nextUtteranceId;
         int _turnId;
         int _mustCaptionId;
+        int _clipId;
         VoiceSpec _voice;
         bool _ttsAvailable;
         CancellationToken _ct;
@@ -58,6 +59,7 @@ namespace Jolly.Core.Conversation
             _captionsOnly.Clear();
             _spoken.Clear();
             _mustCaptionId = 0;
+            _clipId = 0;
             _drain = null;
             _turnId = turnId;
             _voice = voice;
@@ -85,11 +87,21 @@ namespace Jolly.Core.Conversation
             _mustCaptionId = Speak(text);
         }
 
+        /// <summary>
+        /// The utterance id for a canned clip this turn plays through <see cref="IOfflineResponder"/>, which captions it:
+        /// its first sample is the turn's FirstAudio, as a synthesized sentence's would be.
+        /// </summary>
+        public int ExpectClip() => _clipId = NextUtteranceId();
+
         /// <summary>Sentences captioned or started playing since <see cref="Begin"/>, in order.</summary>
         public string SpokenThisTurn => _spoken.ToString();
 
         /// <summary>A barge-in: a first sample that arrives after the flush belongs to silenced audio.</summary>
-        public void Cancel() => _awaitingFirstSample.Clear();
+        public void Cancel()
+        {
+            _awaitingFirstSample.Clear();
+            _clipId = 0;
+        }
 
         /// <summary>Completes once everything queued in this turn has played (at once when nothing is queued).</summary>
         public UniTask WhenIdle() => _drain?.Task ?? UniTask.CompletedTask;
@@ -167,11 +179,22 @@ namespace Jolly.Core.Conversation
 
         void OnFirstSamplePlayed(int utteranceId)
         {
+            if (utteranceId != 0 && utteranceId == _clipId)
+            {
+                _clipId = 0;
+                MarkFirstAudio();
+                return;
+            }
             if (!_awaitingFirstSample.Remove(utteranceId, out var sentence))
                 return;
+            MarkFirstAudio();
+            Caption(utteranceId, sentence);
+        }
+
+        void MarkFirstAudio()
+        {
             _latency.Mark(_turnId, LatencyMark.FirstAudioPlayed);
             _machine.Fire(ConversationTrigger.FirstAudio);
-            Caption(utteranceId, sentence);
         }
 
         void Caption(int utteranceId, string sentence)

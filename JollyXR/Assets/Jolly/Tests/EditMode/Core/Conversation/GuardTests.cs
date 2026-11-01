@@ -185,7 +185,7 @@ namespace Jolly.Tests.EditMode.Core.Conversation
             var started = Sync.Run(c.Guards.ApplyComeHere("come here", CancellationToken.None));
 
             // Assert
-            Assert.That(started, Is.False, "no note: the model calls come_here itself and explains 'unreachable'");
+            Assert.That(started, Is.False, "the turn goes to the model, which calls come_here itself and explains 'unreachable'");
             Assert.That(c.Character.Mode, Is.EqualTo(LocomotionMode.None));
             Assert.That(c.Log.Contains(LogLevel.Info, "evt=guard.come status=unreachable"), Is.True);
         }

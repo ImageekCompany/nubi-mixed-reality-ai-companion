@@ -158,6 +158,18 @@ MonoBehaviour:
     m_Localized: "Okay! Look around your room, and I'll be right here when you're done."
     m_Metadata:
       m_Items: []
+  - m_Id: 154132515
+    m_Localized: "On my way!"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132516
+    m_Localized: "Coming!"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132517
+    m_Localized: "Coming right over!"
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

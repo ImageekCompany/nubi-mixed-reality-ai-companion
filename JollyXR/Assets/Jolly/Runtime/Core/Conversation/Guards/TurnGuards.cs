@@ -13,13 +13,6 @@ namespace Jolly.Core.Conversation
             "\n\n(Note: emergency and crisis-line contacts were just read out to the user. Respond with warmth, take them " +
             "seriously, and encourage them to reach out to those services or someone they trust now.)";
 
-        /// <summary>
-        /// Appended once the guard has started the walk. A come_here call the model makes anyway only restarts the same
-        /// walk, so the note keeps the reply short rather than preventing a conflict.
-        /// </summary>
-        public const string ComeHereNote =
-            "\n\n(Note: you have already started walking to the user. Reply briefly in words and do not call come_here again.)";
-
         /// <summary>The call id of the guard's come_here on <see cref="ConversationEvents.ToolStarted"/>; the model's
         /// calls carry the provider's ids.</summary>
         public const string ComeHereCallId = "guard_come_here";
@@ -60,8 +53,8 @@ namespace Jolly.Core.Conversation
 
         /// <summary>
         /// Runs the come_here tool on a short "come here" when the persona is offered it (its allow-list is a privacy
-        /// promise, as for the model's calls). True when Nubi is walking; the turn still goes to the model, with
-        /// <see cref="ComeHereNote"/>. An unreachable target returns false, so the model's own call explains it.
+        /// promise, as for the model's calls). True when Nubi is walking: the pipeline then answers with a canned line and
+        /// no model round (ADR-0037). An unreachable target returns false, so the model's own call explains it.
         /// </summary>
         public async UniTask<bool> ApplyComeHere(string transcript, CancellationToken ct)
         {
