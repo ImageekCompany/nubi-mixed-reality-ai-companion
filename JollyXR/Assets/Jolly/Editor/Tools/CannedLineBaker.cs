@@ -102,7 +102,10 @@ namespace Jolly.Editor.Tools
                 writer.Write(sample);
         }
 
-        /// <summary>Decompress On Load keeps AudioClip.GetData working, which ClipPcm needs for the speech ring.</summary>
+        /// <summary>
+        /// Decompress On Load keeps AudioClip.GetData working, which ClipPcm needs for the speech ring. Normalize stays
+        /// off so offline lines keep live Wit loudness (ADR-0006); AudioImporter has no public property for it.
+        /// </summary>
         static void ConfigureImporters()
         {
             foreach (var line in CannedLineCatalog.English)
@@ -116,8 +119,18 @@ namespace Jolly.Editor.Tools
                 importer.defaultSampleSettings = settings;
                 importer.forceToMono = true;
                 importer.loadInBackground = false;
+                DisableNormalize(importer);
                 importer.SaveAndReimport();
             }
+        }
+
+        static void DisableNormalize(AudioImporter importer)
+        {
+            using var serialized = new SerializedObject(importer);
+            var normalize = serialized.FindProperty("m_Normalize")
+                ?? throw new InvalidOperationException("AudioImporter.m_Normalize not found; Unity renamed it.");
+            normalize.boolValue = false;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
         }
 
         sealed class DotEnvSecrets : ISecretsProvider
