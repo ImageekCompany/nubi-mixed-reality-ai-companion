@@ -58,8 +58,6 @@ namespace Jolly.App
         public string defaultPersonaId = "companion";
         public PersonaProfileAsset[] personas = Array.Empty<PersonaProfileAsset>();
         public LocaleVoiceMapAsset localeVoices;
-        [Tooltip("The character's Wit voice; personas scale it. Moves to CharacterDefinition with character swapping (ADR-0031).")]
-        public VoiceProfile characterVoice;
         public LineClipLibrary lineClips;
         [Tooltip("String tables preloaded at startup; ILocalizer.Get is synchronous afterwards.")]
         public string[] preloadTables = { "UI", "Lines", "Personas", "Crisis" };
@@ -93,9 +91,6 @@ namespace Jolly.App
         [Tooltip("Seconds the OpenXR head pose is predicted ahead of LateUpdate (R1 marker test).")]
         public float headPoseLeadSeconds;
         public LogLevel minimumLogLevel = LogLevel.Info;
-
-        /// <summary>Null when unset; lets assemblies without a Jolly.Character reference (the editor tools) read the voice.</summary>
-        public ICharacterVoice CharacterVoice => characterVoice != null ? characterVoice : null;
     }
 
     [Serializable]

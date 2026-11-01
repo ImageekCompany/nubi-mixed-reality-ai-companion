@@ -25,6 +25,9 @@ namespace Jolly.Character
         public string[] aliases = Array.Empty<string>();
 
         [Header("Voice")]
+        [Tooltip("The Wit voice it speaks with (ADR-0031); personas only scale it. Required: a character without one " +
+                 "is not used, rather than speaking in another character's voice.")]
+        public VoiceProfile voice;
         [Tooltip("Baked canned lines in this character's voice, per language. Lines that say the name play only these " +
                  "(Jolly/Character/Bake Named Lines For Selected Definition); other lines fall back to JollyConfig.lineClips.")]
         public LineClipSet[] lineClips = Array.Empty<LineClipSet>();
@@ -70,6 +73,7 @@ namespace Jolly.Character
         public bool IsUsable(out string reason)
         {
             reason = string.IsNullOrWhiteSpace(id) ? "no id"
+                : voice == null ? "no voice"
                 : model == null ? "no model"
                 : animatorController == null ? "no animator controller"
                 : facePresets == null ? "no face presets"

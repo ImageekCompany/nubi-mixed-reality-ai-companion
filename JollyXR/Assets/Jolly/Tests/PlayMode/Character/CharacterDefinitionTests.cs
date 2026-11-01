@@ -114,6 +114,53 @@ namespace Jolly.Tests.PlayMode.Character
         }
 
         [Test]
+        public void Validate_NoVoice_IsAnError()
+        {
+            // Arrange
+            var mute = Object.Instantiate(AssetDatabase.LoadAssetAtPath<CharacterDefinition>(NubiAssetPaths.Definition));
+            mute.voice = null;
+
+            try
+            {
+                // Act
+                var errors = CharacterDefinitionValidator.Validate(mute).Where(i => i.Level == CharacterIssueLevel.Error)
+                                                         .Select(i => i.Message);
+
+                // Assert
+                Assert.That(errors, Has.Some.Contains("voice is not set"));
+            }
+            finally
+            {
+                Object.DestroyImmediate(mute);
+            }
+        }
+
+        [Test]
+        public void Validate_VoiceWithoutAnEnglishWitVoice_IsAnError()
+        {
+            // Arrange
+            var definition = Object.Instantiate(AssetDatabase.LoadAssetAtPath<CharacterDefinition>(NubiAssetPaths.Definition));
+            var voice = UnityEngine.ScriptableObject.CreateInstance<VoiceProfile>();
+            voice.defaultVoice.voiceId = " ";
+            definition.voice = voice;
+
+            try
+            {
+                // Act
+                var errors = CharacterDefinitionValidator.Validate(definition).Where(i => i.Level == CharacterIssueLevel.Error)
+                                                         .Select(i => i.Message);
+
+                // Assert
+                Assert.That(errors, Has.Some.Contains("no English Wit voice"));
+            }
+            finally
+            {
+                Object.DestroyImmediate(definition);
+                Object.DestroyImmediate(voice);
+            }
+        }
+
+        [Test]
         public void Validate_JawOnlyViseme_IsAccepted()
         {
             // Arrange: A shown by the jaw alone, with the head bone standing in for a jaw.

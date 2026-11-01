@@ -16,11 +16,13 @@ namespace Jolly.Editor.Tools
 {
     /// <summary>
     /// Bakes <see cref="CannedLineCatalog.English"/> through the runtime <see cref="WitTextToSpeech"/> client into
-    /// 24 kHz mono WAVs (ADR-0006) in the character's English voice from <see cref="JollyConfig.characterVoice"/>
-    /// (ADR-0031), so offline lines sound like live speech. Rebake with -jollyForce after changing that voice:
-    /// existing files are kept unless forced.
-    /// Lines without a name go to the shared library folder. Lines that say the name are baked per character with its
-    /// display name into <c>Lines/en/</c> next to its definition, and assigned to its <c>lineClips</c>.
+    /// 24 kHz mono WAVs (ADR-0006) in a character's English <see cref="CharacterDefinition.voice"/> (ADR-0031), so
+    /// offline lines sound like live speech. Rebake with -jollyForce after changing a voice: existing files are kept
+    /// unless forced.
+    /// Lines without a name go to the shared library folder in the default character's voice. Lines that say the name
+    /// are baked per character with its display name into <c>Lines/en/</c> next to its definition, and assigned to its
+    /// <c>lineClips</c>; a character whose voice is not the default character's gets every line there, so it never
+    /// falls back to a shared clip in another voice.
     /// The Wit client token comes from WIT_AI_CLIENT_TOKEN, else from the .env at JOLLY_DOTENV or the repo root.
     /// Batch (without -quit: it exits itself once the requests finish):
     /// <c>Unity -batchmode -projectPath JollyXR -executeMethod Jolly.Editor.Tools.CannedLineBaker.BakeBatch [-jollyForce]</c>
@@ -74,19 +76,39 @@ namespace Jolly.Editor.Tools
                 if (!line.SaysName)
                     lines.Add((line.Key, line.Text));
             }
-            Finish(await BakeLines(lines, OutputFolder, force), exitWhenDone);
+            var config = AssetDatabase.LoadAssetAtPath<JollyConfig>(ConfigPath);
+            var voice = config != null && config.defaultCharacter != null ? config.defaultCharacter.voice : null;
+            if (voice == null)
+            {
+                Debug.LogError($"[CannedLineBaker] {ConfigPath} has no default character with a voice.");
+                Finish(1, exitWhenDone);
+                return;
+            }
+            Finish(await BakeLines(lines, voice.VoiceFor(Language), OutputFolder, force), exitWhenDone);
         }
 
         static async UniTaskVoid BakeCharacter(CharacterDefinition definition, bool force, bool exitWhenDone)
         {
+            if (definition.voice == null)
+            {
+                Debug.LogError($"[CannedLineBaker] {definition.name} has no voice.");
+                Finish(1, exitWhenDone);
+                return;
+            }
+            var voice = definition.voice.VoiceFor(Language);
+            var config = AssetDatabase.LoadAssetAtPath<JollyConfig>(ConfigPath);
+            var shared = config != null && config.defaultCharacter != null && config.defaultCharacter.voice != null
+                ? config.defaultCharacter.voice.VoiceFor(Language)
+                : null;
+            var everyLine = shared == null || !SameVoice(voice, shared);
             var folder = Path.GetDirectoryName(AssetDatabase.GetAssetPath(definition))?.Replace('\\', '/') + "/Lines/" + Language;
             var lines = new List<(string Key, string Text)>();
             foreach (var line in CannedLineCatalog.English)
             {
-                if (line.SaysName)
+                if (line.SaysName || everyLine)
                     lines.Add((line.Key, CharacterNamedLocalizer.Fill(line.Text, definition.displayName)));
             }
-            var failures = await BakeLines(lines, folder, force);
+            var failures = await BakeLines(lines, voice, folder, force);
             try
             {
                 Assign(definition, folder, lines);
@@ -99,16 +121,15 @@ namespace Jolly.Editor.Tools
             Finish(failures, exitWhenDone);
         }
 
-        static async UniTask<int> BakeLines(List<(string Key, string Text)> lines, string folder, bool force)
+        static bool SameVoice(VoiceSpec a, VoiceSpec b) =>
+            a.VoiceId == b.VoiceId && a.Style == b.Style && a.Speed == b.Speed && a.Pitch == b.Pitch
+            && a.SfxCharacter == b.SfxCharacter && a.SfxEnvironment == b.SfxEnvironment;
+
+        static async UniTask<int> BakeLines(List<(string Key, string Text)> lines, VoiceSpec voice, string folder, bool force)
         {
             var failures = 0;
             try
             {
-                var config = AssetDatabase.LoadAssetAtPath<JollyConfig>(ConfigPath);
-                var characterVoice = config != null ? config.CharacterVoice : null;
-                if (characterVoice == null)
-                    throw new InvalidOperationException($"{ConfigPath} has no characterVoice");
-                var voice = characterVoice.VoiceFor(Language);
                 Debug.Log($"evt=bake.voice voice={voice.VoiceId} style={voice.Style} speed={voice.Speed} pitch={voice.Pitch} " +
                           $"sfx={voice.SfxCharacter}/{voice.SfxEnvironment}");
                 var tts = new WitTextToSpeech(new DotEnvSecrets(), new EditorClock());

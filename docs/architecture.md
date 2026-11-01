@@ -445,7 +445,7 @@ Scene context sent to the model has the form `Seen recently: obj_3 white enamel 
 Fields:
 - `id`
 - display name, system prompt, greeting and optional safety notice: entries `{id}.name`, `{id}.prompt`, `{id}.greeting`, `{id}.safety` of the `Personas` string table (en, pl), resolved by `PersonaRepository` for the current locale
-- voice delivery: `voiceStyle` (empty keeps the character's), `voiceSpeedPercent`, `voicePitchPercent`, applied to the character's voice by `VoiceDelivery` (ADR-0031). The voice itself is the character's `VoiceProfile` (`JollyConfig.characterVoice`), so personas never name a Wit voice
+- voice delivery: `voiceStyle` (empty keeps the character's), `voiceSpeedPercent`, `voicePitchPercent`, applied to the character's voice by `VoiceDelivery` (ADR-0031). The voice itself is the selected character's `VoiceProfile` (`CharacterDefinition.voice`), so personas never name a Wit voice
 - `allowedTools` (string[])
 - `persistMemory`, `crisisHandoff`, `defaultMood`, `accentColor`
 

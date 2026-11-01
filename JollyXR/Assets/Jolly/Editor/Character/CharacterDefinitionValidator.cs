@@ -93,6 +93,10 @@ namespace Jolly.Editor.Character
                 Error(issues, $"id '{d.id}' must be lowercase letters, digits, '-' or '_'");
             if (string.IsNullOrWhiteSpace(d.displayName))
                 Error(issues, "displayName is empty");
+            if (d.voice == null)
+                Error(issues, "voice is not set (a VoiceProfile, ADR-0031)");
+            else if (string.IsNullOrWhiteSpace(d.voice.VoiceFor("en").VoiceId))
+                Error(issues, "voice has no English Wit voice");
         }
 
         static void CheckBody(CharacterDefinition d, List<CharacterIssue> issues)

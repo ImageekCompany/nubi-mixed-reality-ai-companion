@@ -13,6 +13,7 @@ namespace Jolly.Tests.PlayMode.App
         GameObject _model;
         AnimatorOverrideController _controller;
         TextAsset _presets;
+        VoiceProfile _voice;
         CharacterDefinition _nubi;
         CharacterDefinition _jolly;
         CharacterDefinition _kiwi;
@@ -25,6 +26,7 @@ namespace Jolly.Tests.PlayMode.App
             _model = new GameObject("Model");
             _controller = new AnimatorOverrideController();
             _presets = new TextAsset("{\"presets\":[]}");
+            _voice = ScriptableObject.CreateInstance<VoiceProfile>();
             _nubi = Definition("nubi");
             _jolly = Definition("jolly");
             _kiwi = Definition("kiwi");
@@ -38,6 +40,7 @@ namespace Jolly.Tests.PlayMode.App
             Object.Destroy(_model);
             Object.Destroy(_controller);
             Object.Destroy(_presets);
+            Object.Destroy(_voice);
             Object.Destroy(_nubi);
             Object.Destroy(_jolly);
             Object.Destroy(_kiwi);
@@ -50,6 +53,7 @@ namespace Jolly.Tests.PlayMode.App
             d.model = _model;
             d.animatorController = _controller;
             d.facePresets = _presets;
+            d.voice = _voice;
             return d;
         }
 
@@ -99,6 +103,20 @@ namespace Jolly.Tests.PlayMode.App
             // Assert
             Assert.That(chosen, Is.EqualTo(_nubi));
             Assert.That(_log.Contains(LogLevel.Warning, "evt=character.unusable source=override id=jolly"), Is.True);
+        }
+
+        [Test]
+        public void Resolve_DefinitionWithoutVoice_IsUnusableSoItNeverSpeaksInAnotherCharactersVoice()
+        {
+            // Arrange
+            _jolly.voice = null;
+
+            // Act
+            var chosen = CharacterSelection.Resolve(_available, _nubi, "jolly", null, _log);
+
+            // Assert
+            Assert.That(chosen, Is.EqualTo(_nubi));
+            Assert.That(_log.Contains(LogLevel.Warning, "id=jolly reason=\"no voice\""), Is.True);
         }
     
         [Test]

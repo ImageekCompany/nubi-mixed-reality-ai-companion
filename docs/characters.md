@@ -63,6 +63,7 @@ face mapping; fill in:
 | `displayName` | The name the character calls itself. Persona prompts, greetings, canned lines and stop fillers say it wherever their text has `{name}` |
 | `nameKey` | Optional `UI` table key of the name in other locales; empty or missing in a locale uses `displayName` |
 | `aliases` | Words live ASR hears instead of the name (e.g. `Jolie`, `Jollie`); rewritten to `displayName` before captions and the model |
+| `voice` | Its `VoiceProfile` (Assets ▸ Create ▸ Jolly ▸ Voice Profile, ADR-0031): Wit voice, style, speed, pitch and SSML sfx, with per-language replacements. Required: personas only scale it, and a definition without one is not used |
 | `lineClips` | Baked canned lines in this character's voice, per language. Filled by step 4b |
 | `model` | The FBX |
 | `animatorController` | Filled by step 4 |
@@ -104,9 +105,11 @@ Unity -batchmode -projectPath JollyXR -executeMethod Jolly.Editor.Tools.CannedLi
       -jollyCharacter Assets/Jolly/Local/Characters/Jolly/JollyCharacter.asset   # [-jollyForce]; exits by itself
 ```
 
-It writes `Lines/en/<key>.wav` next to the definition and assigns them to `lineClips`. A named line without a clip is
-shown as a caption only; it never plays the shared clip, which says another name. Every other line plays the shared
-`JollyConfig.lineClips` unless the character has its own.
+It bakes in the definition's `voice`, writes `Lines/en/<key>.wav` next to the definition and assigns them to
+`lineClips`. When that voice is not the default character's (in which the shared library is baked), it bakes every
+canned line, not only the named ones, so no offline line speaks in another character's voice. A named line without a
+clip is shown as a caption only; it never plays the shared clip, which says another name. Every other line plays the
+shared `JollyConfig.lineClips` unless the character has its own.
 
 Nubi's assets are rebuilt with **Jolly ▸ Character ▸ Rebuild Nubi Assets** (or
 `-executeMethod Jolly.Editor.Character.NubiPrefabBuilder.Build`); it keeps every value in `NubiCharacter.asset`.
@@ -146,7 +149,8 @@ Logcat tags (`character`): `evt=character.selected id=…`, `evt=character.unkno
 
 - The name is fixed at launch, like the character; a locale change re-reads `nameKey`. Tool descriptions and the
   memory summariser never name the character.
-- The voice belongs to the persona and locale (`LocaleVoiceMap`), not to the character.
+- The voice belongs to the character (`voice`); personas scale it and `LocaleVoiceMap` only says whether a locale can
+  be spoken. The launch Wit warm-up speaks in the selected character's voice.
 - The swap happens once at launch, before the graph is built; there is no live switch.
 - The shell (`Nubi.prefab`) keeps Nubi's agent, collider, interactable, voice and shadow objects and only resizes them;
   a character needing a different collider shape needs a code change.

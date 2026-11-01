@@ -21,6 +21,7 @@ MonoBehaviour:
   - nubie
   - newby
   - nobi
+  voice: {fileID: 11400000, guid: 402eaf332caa49ba951a4cbbce3462a4, type: 2}
   lineClips:
   - languageTag: en
     clips:

@@ -1,4 +1,3 @@
-using Jolly.App;
 using Jolly.Character;
 using Jolly.Contracts;
 using Jolly.Tests.PlayMode.Presentation;
@@ -95,12 +94,11 @@ namespace Jolly.Tests.PlayMode.Character
         }
 
         [Test]
-        public void ShippedConfig_SpeaksAsNubiWithTheAuditionWinner()
+        public void ShippedNubi_SpeaksWithTheAuditionWinner()
         {
-            var config = PresentationAssets.Load<JollyConfig>("Assets/Jolly/Content/Config/JollyConfig.asset");
+            var nubi = PresentationAssets.Load<CharacterDefinition>("Assets/Jolly/Content/Character/Nubi/NubiCharacter.asset");
 
-            ICharacterVoice characterVoice = config.characterVoice;
-            var voice = characterVoice.VoiceFor("en");
+            var voice = nubi.voice.VoiceFor("en");
 
             Assert.That(voice.VoiceId, Is.EqualTo("Rubie"), "ADR-0031");
             Assert.That(voice.Style, Is.Null);

@@ -70,8 +70,7 @@ namespace Jolly.App.Composition
             await Localizer.Initialize(appCt);
             var character = scene.nubi.Definition != null ? scene.nubi.Definition : config.defaultCharacter;
             Text = new CharacterNamedLocalizer(Localizer, NameOf(character), character.nameKey);
-            Personas = d.Add(new PersonaRepository(PersonaDefinitions(config), config.defaultPersonaId, Text,
-                config.CharacterVoice));
+            Personas = d.Add(new PersonaRepository(PersonaDefinitions(config), config.defaultPersonaId, Text, character.voice));
             scene.settings.Construct(Text, Personas, f.Usage, new PlayerPrefsPreferencesStore(), f.Clock);
             Preferences = scene.settings;
 
