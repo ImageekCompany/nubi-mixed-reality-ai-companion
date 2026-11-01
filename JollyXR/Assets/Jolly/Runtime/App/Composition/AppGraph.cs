@@ -106,7 +106,7 @@ namespace Jolly.App.Composition
         void BindViews(SceneRefs scene)
         {
             var f = Foundation;
-            scene.captions.Construct(f.Events, Preferences, f.Clock);
+            scene.captions.Construct(f.Events, Preferences, f.Clock, Text);
             scene.toolBadges.Construct(f.Events, Text, f.Clock);
             scene.latencyHud.Construct(f.Events, f.Latency, Text);
             scene.maskOverlay.Construct(f.Clock, f.Events);

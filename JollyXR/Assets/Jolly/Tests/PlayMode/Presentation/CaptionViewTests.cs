@@ -27,7 +27,7 @@ namespace Jolly.Tests.PlayMode.Presentation
             _clock = new FakeClock();
             _view = PresentationAssets.Instantiate<CaptionView>("Captions");
             _root = _view.transform.root.gameObject;
-            _view.Construct(_events, _preferences, _clock);
+            _view.Construct(_events, _preferences, _clock, new EchoLocalizer());
         }
 
         [TearDown]
@@ -85,6 +85,41 @@ namespace Jolly.Tests.PlayMode.Presentation
             await PresentationAssets.AfterUpdate();
             Assert.That(_view.UserText, Is.Empty);
         });
+
+        [Test]
+        public void TalkStart_ShowsListening_ThenTheFirstPartialReplacesIt()
+        {
+            _events.RaiseFinal("What is this?");
+
+            _events.RaiseState(ConversationState.Idle, ConversationState.Listening);
+            Assert.That(_view.UserText, Is.EqualTo("[en] caption.listening"), "the last turn's words give way at once");
+
+            _events.RaisePartial("Which");
+
+            Assert.That(_view.UserText, Is.EqualTo("Which"));
+        }
+
+        [TestCase(ConversationState.Idle)]
+        [TestCase(ConversationState.Speaking)]
+        public void NothingHeard_TheListeningCueGoesWithTheListening(ConversationState next)
+        {
+            _events.RaiseState(ConversationState.Idle, ConversationState.Listening);
+
+            _events.RaiseState(ConversationState.Listening, next);
+
+            Assert.That(_view.UserText, Is.Empty);
+        }
+
+        [Test]
+        public void LeavingListening_KeepsWhatWasHeard()
+        {
+            _events.RaiseState(ConversationState.Idle, ConversationState.Listening);
+            _events.RaiseFinal("Come here.");
+
+            _events.RaiseState(ConversationState.Listening, ConversationState.Thinking);
+
+            Assert.That(_view.UserText, Is.EqualTo("Come here."));
+        }
 
         [Test]
         public void NewTurn_ClearsTheInterruptedNubiLine()

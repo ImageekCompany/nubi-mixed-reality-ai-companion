@@ -222,6 +222,10 @@ MonoBehaviour:
     m_Localized: vision
     m_Metadata:
       m_Items: []
+  - m_Id: 380624943
+    m_Localized: "Listening\u2026"
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

@@ -219,6 +219,10 @@ MonoBehaviour:
     m_Key: badge.vision
     m_Metadata:
       m_Items: []
+  - m_Id: 380624943
+    m_Key: caption.listening
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:

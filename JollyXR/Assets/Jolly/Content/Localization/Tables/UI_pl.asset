@@ -222,6 +222,10 @@ MonoBehaviour:
     m_Localized: wizja
     m_Metadata:
       m_Items: []
+  - m_Id: 380624943
+    m_Localized: "S\u0142ucham\u2026"
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []
