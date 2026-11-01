@@ -149,3 +149,7 @@ Each work package appends bullets under its own heading only (`docs/scope.md` §
 
 ### Release audit
 - `docs/release-checklist.md` walks the definition of done on `main` with evidence and lists the human actions left. README test counts, status line, spend figure and Device User Data note corrected; the DoD secret grep excludes the synthetic keys in `Tests/`, and its perf deviations point at `docs/perf/selftest-report.md`.
+
+### Coverage gate
+- `com.unity.testtools.codecoverage` 1.3.0 (bundled with 6000.6.6f1). `tools/ci/test.sh` runs EditMode and PlayMode with coverage over the `Jolly.*` runtime assemblies and writes the merged report to `artifacts/coverage/Report`; `tools/ci/coverage.sh` prints line coverage per assembly and fails when Core + Net + Providers.MetaApi + Providers.Wit + Audio together fall below 91.6 % (measured 93.6 % minus 2 points; 92.7 % before the new tests).
+- 23 EditMode tests on the lowest-covered logic: `MemoryKeeper` failure and cancellation paths, a turn that throws a non-provider exception, a refused or crashing persona switch, SAM `response.incomplete` / `error` / malformed events, `MetaErrors` edge mappings, the health probe's `TransportStatusClient`, and `find_object`'s instance cap. EditMode 904 → 927.

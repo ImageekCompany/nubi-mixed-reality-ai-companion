@@ -162,7 +162,7 @@ graph TD
 - **Runtime NavMesh sized for a living room.** Floor plane outlines are triangulated into mesh colliders, and bounding boxes are baked as Not Walkable (`NavMeshBuilder.BuildNavMeshData`, agent radius 0.15 m). `NavMeshSurface` would use the 0.5 m Humanoid agent, which erases a living room (ADR-0017). Rebuilds are throttled to once per 2 s.
 - **Table-driven conversation state machine.** Three latched flags and per-state watchdogs. It is tested exhaustively, including every barge-in edge.
 - **Safety and robustness.** `CrisisGuard` runs before the model, for every persona, and hands off deterministically. A persona's tool allow-list is enforced when a call executes, not only in the list sent to the model. `StopGuard` stops Nubi locally. Retries happen only before the first streamed byte, with full jitter and `Retry-After` capped at 8 s. A five-state connectivity monitor (Online, Degraded, Offline, Unauthorized, BudgetReached) runs a backed-off health probe.
-- **Quality gates** (`tools/ci/test.sh`): `-warnaserror+` on every assembly; no `async void`; no `System.Threading.Tasks.Task` (UniTask everywhere); no `CancellationTokenSource.CancelAfter` (it fires on a thread-pool timer); no debug-capture defines in shipped settings; a content validator for personas, string tables and line clips. Current: **EditMode 904/904, PlayMode 216/216, zero compiler warnings, and an IL2CPP APK that builds.**
+- **Quality gates** (`tools/ci/test.sh`): `-warnaserror+` on every assembly; no `async void`; no `System.Threading.Tasks.Task` (UniTask everywhere); no `CancellationTokenSource.CancelAfter` (it fires on a thread-pool timer); no debug-capture defines in shipped settings; a content validator for personas, string tables and line clips; line coverage of Core, Net, Providers and Audio at or above 91.6 % (`tools/ci/coverage.sh`). Current: **EditMode 927/927, PlayMode 216/216, 93.6 % line coverage of that logic (84.3 % of all runtime code), zero compiler warnings, and an IL2CPP APK that builds.**
 - **A self-checking pipeline on the headset.** `tools/device/selftest.sh` installs the release APK, arms a built-in self-test and runs six scenarios with nobody wearing the headset. Bundled voice clips go through the real microphone pipeline to Muse ASR, Spark (with tools), SAM, Wit and the speaker. It also forces the network off and on, barges in, and samples frame time and render counters. It writes a PASS/DEGRADED/FAIL table and the run's API cost ([`docs/perf/selftest-report.md`](docs/perf/selftest-report.md), ADR-0018). It found bugs that no desk test could, including a health-probe URL that kept the app offline and a vision turn that ended in silence.
 
 ## Performance budget
@@ -247,9 +247,11 @@ The app reads the secrets at launch, so `push-secrets.sh` stops it; start it aga
 ### Tests
 
 ```bash
-tools/ci/test.sh                # EditMode + PlayMode in batchmode, plus static gates; results in artifacts/
-tools/ci/test.sh EditMode       # one platform
+tools/ci/test.sh                # EditMode + PlayMode in batchmode with coverage, plus static gates; results in artifacts/
+tools/ci/test.sh EditMode       # one platform (coverage is reported, not gated)
 ```
+
+Line coverage per assembly goes to `artifacts/coverage-summary.txt`, the HTML report to `artifacts/coverage/Report/index.htm`.
 
 No test touches the network. Providers are tested against SSE, ASR and SAM responses recorded from live calls (`Tests/Fixtures`), and everything else against hand-written fakes.
 
@@ -277,7 +279,7 @@ As of `main` after `fix/audit` (2026-11-01).
 
 | Area | State |
 |---|---|
-| All subsystems (Net, Responses chat, usage meter, ASR, SAM + one-bit decoder, Spark vision, Wit TTS, streaming audio, conversation core, agent loop, tools, memory, offline mode, XR layer, Nubi, presentation, localization) | **Built and tested**: EditMode 904/904, PlayMode 216/216 |
+| All subsystems (Net, Responses chat, usage meter, ASR, SAM + one-bit decoder, Spark vision, Wit TTS, streaming audio, conversation core, agent loop, tools, memory, offline mode, XR layer, Nubi, presentation, localization) | **Built and tested**: EditMode 927/927, PlayMode 216/216 |
 | Composition root (`JollyBootstrap` → `AppGraph`), four personas, `JollyConfig`, `Lines`/`Personas` tables (en, pl), end-to-end PlayMode tests on the real scene, zero-GC idle gate | **Done** |
 | Full app on Quest 3: voice turns, `capture_and_identify` on the live passthrough frame, barge-in, offline lines, idle performance | **Verified by the on-device self-test** (three runs, every scenario PASS except `come_here`, which is DEGRADED without Space Setup) |
 | Walking on a scanned floor, the camera extrinsics marker test (≤ 3 cm at 1 m), mask placement in a lit room, pinch/gaze/palm/poke with a wearer, OVR Metrics and Profiler captures, 20-turn latency run | **Pending** a session with a person in a lit room with Space Setup |
