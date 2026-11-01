@@ -10,8 +10,10 @@ namespace Jolly.Editor.Build
     /// <summary>
     /// Batchmode APK build for Quest.
     /// <c>Unity -batchmode -projectPath JollyXR -buildTarget Android -executeMethod Jolly.Editor.Build.QuestBuild.BuildApk
-    /// [-nubiOut Builds/Android/Nubi.apk] [-nubiScenes Assets/A.unity;Assets/B.unity] [-nubiDevelopment]</c>
-    /// Exits the editor with 0 on success and 1 on failure.
+    /// [-nubiOut Builds/Android/Nubi.apk] [-nubiScenes Assets/A.unity;Assets/B.unity] [-nubiDevelopment]
+    /// [-nubiCharacter id]</c>
+    /// Exits the editor with 0 on success and 1 on failure. <c>-nubiCharacter</c> is read by Jolly.Editor's
+    /// CharacterSceneProcessor while the scenes are processed (docs/characters.md).
     /// </summary>
     public static class QuestBuild
     {

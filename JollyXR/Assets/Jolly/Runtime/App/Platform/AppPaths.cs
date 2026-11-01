@@ -23,6 +23,8 @@ namespace Jolly.App.Platform
         public string Usage => Path.Combine(DataRoot, "usage.json");
         public string InstallId => Path.Combine(DataRoot, "install_id");
         public string DeviceSecrets => Path.Combine(DataRoot, "secrets.json");
+        /// <summary>One character id, pushed with adb or written by Jolly/Character/Play As Selected Definition.</summary>
+        public string CharacterOverride => Path.Combine(DataRoot, "character.txt");
         /// <summary>The repository's .env, two levels above Assets/ (Editor only).</summary>
         public static string EditorDotEnv => Path.GetFullPath(Path.Combine(Application.dataPath, "..", "..", ".env"));
     }
