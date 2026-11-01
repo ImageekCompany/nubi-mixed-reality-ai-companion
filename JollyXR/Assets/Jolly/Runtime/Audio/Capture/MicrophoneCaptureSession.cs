@@ -9,7 +9,8 @@ namespace Jolly.Audio.Capture
     /// One push-to-talk recording: device ring → resampler → 80 ms pooled chunks. Driven by <see cref="Pump"/> once per
     /// frame on the main thread (see <see cref="UnityMicrophoneCapture"/>); allocation-free per pump. A head that stops
     /// moving for 500 ms restarts the device, and after three fruitless restarts the stream ends normally, so the STT
-    /// returns an empty final instead of the turn hanging.
+    /// returns an empty final instead of the turn hanging. A restart counts as fruitful only once 500 ms of audio has
+    /// arrived after it: the stall seen on device delivers one buffer and then nothing.
     /// </summary>
     public sealed class MicrophoneCaptureSession : IAudioCaptureSession
     {
@@ -29,6 +30,8 @@ namespace Jolly.Audio.Capture
         readonly float[] _resampled;
         readonly PcmChunker _chunker;
         int _restarts;
+        long _samplesSinceRestart;
+        bool _rebaseTime = true;
 
         public MicrophoneCaptureSession(IMicrophoneDevice device, int targetSampleRate, IClock clock, ILog log)
         {
@@ -74,8 +77,14 @@ namespace Jolly.Audio.Capture
             var pending = _reader.Available(_device);
             if (pending == 0)
                 return;
-            _restarts = 0;
-            _chunker.SetStartTimeOnce(now - (double)pending / _device.SampleRate);
+            if (_rebaseTime)
+            {
+                _chunker.Rebase(now - (double)pending / _device.SampleRate);
+                _rebaseTime = false;
+            }
+            _samplesSinceRestart += pending;
+            if (_samplesSinceRestart >= _device.SampleRate * StallTimeoutSeconds)
+                _restarts = 0;
 
             int read;
             while ((read = _reader.Read(_device, _input)) > 0)
@@ -125,6 +134,8 @@ namespace Jolly.Audio.Capture
             }
             _reader.Reset();
             _watchdog.Reset(now);
+            _samplesSinceRestart = 0;
+            _rebaseTime = true;
         }
 
         void End(Exception error)

@@ -7,7 +7,8 @@ namespace Jolly.Audio.Capture
 {
     /// <summary>
     /// Packs float samples into fixed-size pooled <see cref="PcmChunk"/>s and hands each full one to the writer.
-    /// Capture times are derived from the sample count, so they stay exact however the input is split.
+    /// Capture times are derived from the sample count since the last <see cref="Rebase"/>, so they stay exact however
+    /// the input is split.
     /// </summary>
     sealed class PcmChunker
     {
@@ -17,7 +18,7 @@ namespace Jolly.Audio.Capture
         PcmChunk _current;
         int _filled;
         long _emitted;
-        double _startTime = double.NaN;
+        double _startTime;
 
         public PcmChunker(ChannelWriter<PcmChunk> writer, int sampleRate, int chunkSamples)
         {
@@ -29,12 +30,8 @@ namespace Jolly.Audio.Capture
         /// <summary>RMS 0..1 of the last emitted chunk.</summary>
         public float Level { get; private set; }
 
-        /// <summary>Sets the clock time of the first sample; only the first call counts.</summary>
-        public void SetStartTimeOnce(double time)
-        {
-            if (double.IsNaN(_startTime))
-                _startTime = time;
-        }
+        /// <summary>Sets the clock time of the next appended sample, e.g. after a device restart left a gap.</summary>
+        public void Rebase(double time) => _startTime = time - (double)(_emitted + _filled) / _sampleRate;
 
         public void Append(ReadOnlySpan<float> samples)
         {
@@ -84,6 +81,6 @@ namespace Jolly.Audio.Capture
             return partial;
         }
 
-        double CurrentTime() => (double.IsNaN(_startTime) ? 0 : _startTime) + (double)_emitted / _sampleRate;
+        double CurrentTime() => _startTime + (double)_emitted / _sampleRate;
     }
 }

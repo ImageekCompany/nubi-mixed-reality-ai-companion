@@ -191,6 +191,63 @@ namespace Jolly.Tests.EditMode.Audio
             LogAssert.NoUnexpectedReceived();
         }
 
+        [Test]
+        public void Watchdog_RepeatedOneBufferThenStallCycles_StillEndAfterThreeRestarts()
+        {
+            var device = new FakeMicrophoneDevice(24000, 24000);
+            using var session = Start(device, 24000);
+            var chunks = new StreamCollector<PcmChunk>(session.Chunks);
+
+            for (var i = 0; i < 4; i++)
+            {
+                device.Produce(new float[1440]);
+                session.Pump();
+                _clock.Advance(TimeSpan.FromMilliseconds(500));
+                session.Pump();
+            }
+
+            Assert.That(device.Starts, Is.EqualTo(4));
+            Assert.That(chunks.Succeeded, Is.True);
+            Assert.That(_log.Contains(LogLevel.Error, "evt=mic.dead"), Is.True);
+        }
+
+        [Test]
+        public void Watchdog_HalfASecondOfAudioAfterARestart_ResetsTheRestartBudget()
+        {
+            var device = new FakeMicrophoneDevice(24000, 24000);
+            using var session = Start(device, 24000);
+
+            for (var i = 0; i < 4; i++)
+            {
+                device.Produce(new float[12000]);
+                session.Pump();
+                _clock.Advance(TimeSpan.FromMilliseconds(500));
+                session.Pump();
+            }
+
+            Assert.That(device.Starts, Is.EqualTo(5));
+            Assert.That(session.IsCapturing, Is.True);
+        }
+
+        [Test]
+        public void CaptureTime_AfterARestart_FollowsTheClockAcrossTheGap()
+        {
+            var device = new FakeMicrophoneDevice(24000, 24000);
+            using var session = Start(device, 24000);
+            var chunks = new StreamCollector<PcmChunk>(session.Chunks);
+            device.Produce(new float[1920]);
+            session.Pump();
+            _clock.Advance(TimeSpan.FromMilliseconds(500));
+            session.Pump();
+
+            _clock.Advance(TimeSpan.FromSeconds(2));
+            device.Produce(new float[1920]);
+            session.Pump();
+
+            Assert.That(chunks.Items.Count, Is.EqualTo(2));
+            Assert.That(chunks.Items[1].CaptureTime, Is.EqualTo(2.42).Within(1e-9));
+        }
+
         [MethodImpl(MethodImplOptions.NoInlining)]
         void StartRefusedSessionAndDropIt()
         {
