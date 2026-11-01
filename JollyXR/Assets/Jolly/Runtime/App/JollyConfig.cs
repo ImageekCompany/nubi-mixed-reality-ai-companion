@@ -40,7 +40,7 @@ namespace Jolly.App
         public float samSeconds = 5f;
         public int samAttempts = 2;
         public float visionSeconds = 8f;
-        public int visionMaxOutputTokens = 600;
+        public int visionMaxOutputTokens = 1024;
         public float witFirstChunkSeconds = 3f;
         public float witIdleSeconds = 3f;
         public float healthProbeSeconds = 3f;

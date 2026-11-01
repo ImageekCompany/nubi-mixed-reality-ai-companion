@@ -51,7 +51,7 @@ MonoBehaviour:
   samSeconds: 5
   samAttempts: 2
   visionSeconds: 8
-  visionMaxOutputTokens: 600
+  visionMaxOutputTokens: 1024
   witFirstChunkSeconds: 3
   witIdleSeconds: 3
   healthProbeSeconds: 3
