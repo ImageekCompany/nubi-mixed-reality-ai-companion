@@ -31,7 +31,8 @@ namespace Jolly.Character
 
         static void Split(float angle, float eyeLead, float headMax, float eyeMax, out float head, out float eye)
         {
-            var lead = Mathf.Clamp(angle, -eyeLead, eyeLead);
+            var lead = Mathf.Min(eyeLead, eyeMax);
+            lead = Mathf.Clamp(angle, -lead, lead);
             head = Mathf.Clamp(angle - lead, -headMax, headMax);
             eye = Mathf.Clamp(angle - head, -eyeMax, eyeMax);
         }

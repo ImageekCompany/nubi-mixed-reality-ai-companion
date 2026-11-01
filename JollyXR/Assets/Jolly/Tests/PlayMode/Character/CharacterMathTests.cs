@@ -53,6 +53,15 @@ namespace Jolly.Tests.PlayMode.Character
         }
 
         [Test]
+        public void LookAtSolver_PitchWithinReach_HeadAndEyesCoverAllOfIt()
+        {
+            var a = LookAtSolver.Solve(0f, 15f, Look);
+
+            Assert.That(a.HeadPitch + a.EyePitch, Is.EqualTo(15f).Within(1e-4f));
+            Assert.That(a.EyePitch, Is.EqualTo(Look.eyePitchMax));
+        }
+
+        [Test]
         public void LookAtSolver_Bearing_RightIsPositiveYawAndUpIsNegativePitch()
         {
             LookAtSolver.Bearing(new Vector3(1f, 1f, 1f), Vector3.forward, Vector3.up, out var yaw, out var pitch);
