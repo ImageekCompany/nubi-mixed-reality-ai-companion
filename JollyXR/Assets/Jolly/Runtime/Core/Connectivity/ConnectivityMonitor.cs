@@ -9,14 +9,15 @@ namespace Jolly.Core.Connectivity
     using Connectivity = Jolly.Contracts.Connectivity;
 
     /// <summary>
-    /// Five-state connectivity (architecture §5.4, ADR-0012), by priority: Unauthorized (no key, or the current key got a 401),
-    /// BudgetReached, then the network link (Online/Degraded/Offline). The link is fed by provider reports, a reachability
-    /// pre-check polled by <see cref="RunAsync"/>, and health probes, which run only while the link is not Online, with
-    /// backoff, and never without a usable key.
+    /// Five-state connectivity (architecture §5.4, ADR-0012), by priority: Unauthorized (no Meta key, or the current one got
+    /// a 401 from a Meta provider), BudgetReached, then the network link (Online/Degraded/Offline). The link is fed by
+    /// provider reports, a reachability pre-check polled by <see cref="RunAsync"/>, and health probes, which run only while
+    /// the link is not Online, with backoff, one at a time, and never without a usable key.
     /// </summary>
     public sealed class ConnectivityMonitor : IConnectivityMonitor
     {
         const string LogCategory = "connectivity";
+        const string MetaProvider = "meta";
 
         readonly IHealthProbe _probe;
         readonly ISecretsProvider _secrets;
@@ -30,6 +31,8 @@ namespace Jolly.Core.Connectivity
         readonly CancellationTokenSource _lifetime = new();
         string _rejectedKey;
         double _nextProbeAt;
+        int _linkGeneration;
+        UniTaskCompletionSource _probeInFlight;
         bool _disposed;
 
         /// <param name="isNetworkReachable">Fast local check, e.g. Application.internetReachability != NotReachable.
@@ -57,7 +60,8 @@ namespace Jolly.Core.Connectivity
 
         public void ReportSuccess(string provider)
         {
-            _rejectedKey = null;
+            if (UsesMetaKey(provider))
+                _rejectedKey = null;
             MarkReached();
             Refresh();
         }
@@ -66,8 +70,12 @@ namespace Jolly.Core.Connectivity
         {
             switch (kind)
             {
-                case ProviderErrorKind.Unauthorized:
+                case ProviderErrorKind.Unauthorized when UsesMetaKey(provider):
                     _rejectedKey = _secrets.TryGet(SecretKeys.MetaApiKey, out var key) ? key : string.Empty;
+                    break;
+                case ProviderErrorKind.Unauthorized:
+                    if (_log.IsEnabled(LogLevel.Warning))
+                        _log.Write(LogLevel.Warning, LogCategory, "evt=connectivity.unauthorized provider=" + provider);
                     break;
                 case ProviderErrorKind.Network:
                 case ProviderErrorKind.Timeout:
@@ -78,14 +86,17 @@ namespace Jolly.Core.Connectivity
             Refresh();
         }
 
+        /// <summary>Joins the probe in flight if there is one. Cancelling ct stops the wait, not the shared probe.</summary>
         public async UniTask<Connectivity> ProbeNow(CancellationToken ct)
         {
+            if (_disposed)
+                throw new OperationCanceledException();
             if (HasUsableKey())
             {
-                if (_isNetworkReachable())
-                    ApplyProbe(await _probe.Ping(ct));
-                else
+                if (!_isNetworkReachable())
                     MarkUnreachable();
+                else
+                    await SharedProbe().AttachExternalCancellation(ct);
             }
             Refresh();
             return State;
@@ -94,6 +105,8 @@ namespace Jolly.Core.Connectivity
         /// <summary>Probes once, then polls until ct is cancelled or the monitor is disposed. Completes as cancelled.</summary>
         public async UniTask RunAsync(CancellationToken ct)
         {
+            if (_disposed)
+                throw new OperationCanceledException();
             using var linked = CancellationTokenSource.CreateLinkedTokenSource(ct, _lifetime.Token);
             var token = linked.Token;
             await ProbeNow(token);
@@ -138,8 +151,39 @@ namespace Jolly.Core.Connectivity
                 ScheduleNextProbe();
         }
 
+        /// <summary>UniTaskCompletionSource because, unlike a preserved UniTask, it accepts several awaiters while pending.</summary>
+        UniTask SharedProbe()
+        {
+            if (_probeInFlight != null)
+                return _probeInFlight.Task;
+            var done = _probeInFlight = new UniTaskCompletionSource();
+            Probe(done).Forget();
+            return done.Task;
+        }
+
+        /// <summary>Runs on the monitor's lifetime, so one caller's cancellation cannot fail the others. A result is dropped
+        /// when the link was reached or lost meanwhile, since it is then older than what the monitor knows.</summary>
+        async UniTaskVoid Probe(UniTaskCompletionSource done)
+        {
+            var generation = _linkGeneration;
+            try
+            {
+                var reachedServer = await _probe.Ping(_lifetime.Token);
+                if (generation == _linkGeneration)
+                    ApplyProbe(reachedServer);
+                _probeInFlight = null;
+                done.TrySetResult();
+            }
+            catch (Exception e)
+            {
+                _probeInFlight = null;
+                done.TrySetException(e);
+            }
+        }
+
         void MarkUnreachable()
         {
+            _linkGeneration++;
             _link.OnLost();
             _backoff.Reset();
             _nextProbeAt = _clock.Now;
@@ -147,6 +191,7 @@ namespace Jolly.Core.Connectivity
 
         void MarkReached()
         {
+            _linkGeneration++;
             _link.OnReachedServer();
             _backoff.Reset();
         }
@@ -163,6 +208,11 @@ namespace Jolly.Core.Connectivity
         }
 
         void ScheduleNextProbe() => _nextProbeAt = _clock.Now + _backoff.Next().TotalSeconds;
+
+        /// <summary>Meta providers report as "meta" or "meta.&lt;service&gt;"; every other provider has its own credential.</summary>
+        static bool UsesMetaKey(string provider) =>
+            provider != null && provider.StartsWith(MetaProvider, StringComparison.Ordinal)
+            && (provider.Length == MetaProvider.Length || provider[MetaProvider.Length] == '.');
 
         bool HasUsableKey()
         {

@@ -78,7 +78,7 @@ namespace Jolly.Tests.EditMode.Offline
         {
             Create();
 
-            _monitor.ReportFailure("chat", ProviderErrorKind.Network);
+            _monitor.ReportFailure("meta", ProviderErrorKind.Network);
 
             Assert.That(_monitor.State, Is.EqualTo(Connectivity.Degraded));
             Assert.That(_changes, Is.EqualTo(new[] { Connectivity.Degraded }));
@@ -89,8 +89,8 @@ namespace Jolly.Tests.EditMode.Offline
         {
             Create();
 
-            _monitor.ReportFailure("chat", ProviderErrorKind.Timeout);
-            _monitor.ReportFailure("tts", ProviderErrorKind.Server);
+            _monitor.ReportFailure("meta", ProviderErrorKind.Timeout);
+            _monitor.ReportFailure("wit", ProviderErrorKind.Server);
 
             Assert.That(_monitor.State, Is.EqualTo(Connectivity.Offline));
         }
@@ -99,10 +99,10 @@ namespace Jolly.Tests.EditMode.Offline
         public void ReportSuccess_WhileDegraded_ReturnsOnlineAndResetsTheFailureCount()
         {
             Create();
-            _monitor.ReportFailure("chat", ProviderErrorKind.Network);
+            _monitor.ReportFailure("meta", ProviderErrorKind.Network);
 
-            _monitor.ReportSuccess("chat");
-            _monitor.ReportFailure("chat", ProviderErrorKind.Network);
+            _monitor.ReportSuccess("meta");
+            _monitor.ReportFailure("meta", ProviderErrorKind.Network);
 
             Assert.That(_monitor.State, Is.EqualTo(Connectivity.Degraded));
         }
@@ -114,7 +114,7 @@ namespace Jolly.Tests.EditMode.Offline
         {
             Create();
 
-            _monitor.ReportFailure("chat", kind);
+            _monitor.ReportFailure("meta", kind);
 
             Assert.That(_monitor.State, Is.EqualTo(Connectivity.Online));
             Assert.That(_changes, Is.Empty);
@@ -126,7 +126,7 @@ namespace Jolly.Tests.EditMode.Offline
             Create();
             _reachable = false;
 
-            _monitor.ReportFailure("chat", ProviderErrorKind.Network);
+            _monitor.ReportFailure("meta", ProviderErrorKind.Network);
 
             Assert.That(_monitor.State, Is.EqualTo(Connectivity.Offline));
         }
@@ -138,7 +138,7 @@ namespace Jolly.Tests.EditMode.Offline
             Start();
             _probe.Result = false;
 
-            _monitor.ReportFailure("chat", ProviderErrorKind.Network);
+            _monitor.ReportFailure("meta", ProviderErrorKind.Network);
             Advance(1);
 
             Assert.That(_monitor.State, Is.EqualTo(Connectivity.Offline));
@@ -151,7 +151,7 @@ namespace Jolly.Tests.EditMode.Offline
             Start();
             var callsAtStart = _probe.Calls;
 
-            _monitor.ReportFailure("chat", ProviderErrorKind.Network);
+            _monitor.ReportFailure("meta", ProviderErrorKind.Network);
             Advance(1);
 
             Assert.That(_probe.Calls, Is.EqualTo(callsAtStart + 1));
@@ -195,7 +195,7 @@ namespace Jolly.Tests.EditMode.Offline
 
             _probe.Result = false;
             var calls = _probe.Calls;
-            _monitor.ReportFailure("chat", ProviderErrorKind.Network);
+            _monitor.ReportFailure("meta", ProviderErrorKind.Network);
             Advance(1);
             Advance(5);
             Assert.That(_probe.Calls, Is.EqualTo(calls + 2), "first probe right away, next one after 5 s");
@@ -238,7 +238,7 @@ namespace Jolly.Tests.EditMode.Offline
             Start();
             var calls = _probe.Calls;
 
-            _monitor.ReportFailure("chat", ProviderErrorKind.Unauthorized);
+            _monitor.ReportFailure("meta", ProviderErrorKind.Unauthorized);
             Advance(60);
             Assert.That(_monitor.State, Is.EqualTo(Connectivity.Unauthorized));
             Assert.That(_probe.Calls, Is.EqualTo(calls));
@@ -252,11 +252,97 @@ namespace Jolly.Tests.EditMode.Offline
         public void ReportSuccess_AfterUnauthorized_ClearsIt()
         {
             Create();
-            _monitor.ReportFailure("chat", ProviderErrorKind.Unauthorized);
+            _monitor.ReportFailure("meta", ProviderErrorKind.Unauthorized);
 
-            _monitor.ReportSuccess("chat");
+            _monitor.ReportSuccess("meta");
 
             Assert.That(_monitor.State, Is.EqualTo(Connectivity.Online));
+        }
+
+        [Test]
+        public void ReportFailure_UnauthorizedFromAProviderWithoutTheMetaKey_KeepsOnlineAndProbing()
+        {
+            Create();
+            Start();
+            _probe.Result = false;
+            _monitor.ReportFailure("meta", ProviderErrorKind.Network);
+            var calls = _probe.Calls;
+
+            _monitor.ReportFailure("wit", ProviderErrorKind.Unauthorized);
+            Advance(1);
+
+            Assert.That(_monitor.State, Is.EqualTo(Connectivity.Offline));
+            Assert.That(_probe.Calls, Is.EqualTo(calls + 1));
+        }
+
+        [TestCase("meta")]
+        [TestCase("meta.asr")]
+        public void ReportFailure_UnauthorizedFromAMetaProvider_GoesUnauthorized(string provider)
+        {
+            Create();
+
+            _monitor.ReportFailure(provider, ProviderErrorKind.Unauthorized);
+
+            Assert.That(_monitor.State, Is.EqualTo(Connectivity.Unauthorized));
+        }
+
+        [Test]
+        public void ReportSuccess_FromAProviderWithoutTheMetaKey_KeepsUnauthorized()
+        {
+            Create();
+            _monitor.ReportFailure("meta", ProviderErrorKind.Unauthorized);
+
+            _monitor.ReportSuccess("wit");
+
+            Assert.That(_monitor.State, Is.EqualTo(Connectivity.Unauthorized));
+        }
+
+        [Test]
+        public void ProbeFailsAfterAReportedSuccess_KeepsOnline()
+        {
+            Create();
+            Start();
+            _probe.Hold = true;
+            _monitor.ReportFailure("meta", ProviderErrorKind.Server);
+            Advance(1);
+            var calls = _probe.Calls;
+
+            _monitor.ReportSuccess("meta");
+            _probe.Resolve(false);
+
+            Assert.That(calls, Is.EqualTo(2), "start-up probe plus the one at the next poll");
+            Assert.That(_monitor.State, Is.EqualTo(Connectivity.Online));
+        }
+
+        [Test]
+        public void ProbeNow_WhileAProbeIsInFlight_SharesItsResult()
+        {
+            Create();
+            _probe.Hold = true;
+            _monitor.ReportFailure("meta", ProviderErrorKind.Network);
+
+            var first = _monitor.ProbeNow(CancellationToken.None);
+            var second = _monitor.ProbeNow(CancellationToken.None);
+            _probe.Resolve(true);
+
+            Assert.That(_probe.Calls, Is.EqualTo(1));
+            Assert.That(first.GetAwaiter().GetResult(), Is.EqualTo(Connectivity.Online));
+            Assert.That(second.GetAwaiter().GetResult(), Is.EqualTo(Connectivity.Online));
+        }
+
+        [Test]
+        public void Offline_WithTheCapReached_NeverProbes()
+        {
+            _probe.Result = false;
+            Create();
+            Start();
+            var calls = _probe.Calls;
+
+            _meter.ReachCap();
+            Advance(120);
+
+            Assert.That(_monitor.State, Is.EqualTo(Connectivity.BudgetReached));
+            Assert.That(_probe.Calls, Is.EqualTo(calls));
         }
 
         [Test]
@@ -275,10 +361,10 @@ namespace Jolly.Tests.EditMode.Offline
         {
             Create();
             _meter.ReachCap();
-            _monitor.ReportFailure("chat", ProviderErrorKind.Network);
-            _monitor.ReportFailure("chat", ProviderErrorKind.Network);
+            _monitor.ReportFailure("meta", ProviderErrorKind.Network);
+            _monitor.ReportFailure("meta", ProviderErrorKind.Network);
 
-            _monitor.ReportFailure("chat", ProviderErrorKind.Unauthorized);
+            _monitor.ReportFailure("meta", ProviderErrorKind.Unauthorized);
 
             Assert.That(_monitor.State, Is.EqualTo(Connectivity.Unauthorized));
         }
@@ -287,8 +373,8 @@ namespace Jolly.Tests.EditMode.Offline
         public void BudgetReached_OutranksOffline()
         {
             Create();
-            _monitor.ReportFailure("chat", ProviderErrorKind.Network);
-            _monitor.ReportFailure("chat", ProviderErrorKind.Network);
+            _monitor.ReportFailure("meta", ProviderErrorKind.Network);
+            _monitor.ReportFailure("meta", ProviderErrorKind.Network);
 
             _meter.ReachCap();
 
@@ -299,7 +385,7 @@ namespace Jolly.Tests.EditMode.Offline
         public void ProbeNow_ReturnsTheStateAfterTheProbe()
         {
             Create();
-            _monitor.ReportFailure("chat", ProviderErrorKind.Network);
+            _monitor.ReportFailure("meta", ProviderErrorKind.Network);
             _probe.Result = false;
 
             var probing = _monitor.ProbeNow(CancellationToken.None);
@@ -320,6 +406,16 @@ namespace Jolly.Tests.EditMode.Offline
 
             Assert.That(probing.Status, Is.EqualTo(UniTaskStatus.Canceled));
             Assert.That(_monitor.State, Is.EqualTo(Connectivity.Online));
+        }
+
+        [Test]
+        public void RunAsyncAndProbeNow_AfterDispose_CompleteAsCancelled()
+        {
+            Create();
+            _monitor.Dispose();
+
+            Assert.That(_monitor.RunAsync(_cts.Token).Status, Is.EqualTo(UniTaskStatus.Canceled));
+            Assert.That(_monitor.ProbeNow(CancellationToken.None).Status, Is.EqualTo(UniTaskStatus.Canceled));
         }
 
         [Test]
