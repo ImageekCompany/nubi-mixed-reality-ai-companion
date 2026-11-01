@@ -106,14 +106,17 @@ Hands are the primary input; Touch controllers work too. Your tracked hands are 
 | | Hands | Touch controllers |
 |---|---|---|
 | **Talk** (hold, release to send) | Pinch thumb and index finger and hold | Hold **A** (right) or **X** (left) |
-| **Interrupt Nubi** | Pinch again | Press A or X again |
+| **Send Nubi somewhere** | Point the hand ray at the floor (a small ring appears) and pinch briefly | Point the ray at the floor and pull the trigger |
+| **Interrupt Nubi** | Pinch again (with no ring showing) | Press A or X again |
 | **Settings, buttons** | Point the hand ray and pinch, or poke the button with your index finger | Point the ray and pull the trigger |
 | **Poke / greet Nubi** | Poke with the index finger, or hold an open palm toward Nubi | |
 
 - **A pinch does not talk** while that hand's ray is on a button, or while your palm faces you (the Horizon OS menu gesture). Pinching while you point at Nubi does talk: the ray doesn't select Nubi, only a finger poke does. Settings → *PTT hand* limits pinch-to-talk to your dominant hand.
 - **Settings appear only when you ask** (ADR-0042): turn your left palm toward you and press the small *Settings* button on the wrist, press ☰ on the left controller, or say "open settings". The panel opens in front of you and stays put; its X, a talk pinch, "close settings" or 20 s untouched close it.
-- **The trigger never talks.** It belongs to XRI's Activate action and UI press, and a runtime can report a hand pinch as a trigger; binding talk to it would skip the pinch checks above. The grip stays XRI's Select. A and X are bound to the Touch controller layouts by name, so no hand input can press them ([ADR-0021](docs/decisions/0021-controller-push-to-talk.md)).
-- While a hand is tracked, that side's controller button is ignored, which is the same rule XRI's input modality manager uses.
+- **The trigger never talks.** On the floor it moves Nubi; on a button it presses the button. It belongs to XRI's Activate action and UI press, and a runtime can report a hand pinch as a trigger; binding talk to it would skip the pinch checks above. The grip stays XRI's Select. A and X are bound to the Touch controller layouts by name, so no hand input can press them ([ADR-0021](docs/decisions/0021-controller-push-to-talk.md)).
+- **Tap to move, hold to talk** ([ADR-0044](docs/decisions/0044-point-and-tap-to-move.md)). While the ring shows, a pinch shorter than 0.25 s sends Nubi there; hold it longer and you are talking. The microphone starts at the pinch, so a hold loses no words; a tap's audio is dropped on the headset and never sent to ASR or the model. With no ring (pointing at the air, a wall, a button or Nubi) a pinch talks at once, as before. The ring shows only on floor Nubi can walk to; pointing at a table top, couch seat or box top sends Nubi to the floor beside it, on the side you pointed at. Nubi turns to you when it arrives.
+- **Moving doesn't interrupt.** A tap while Nubi speaks moves it and the reply carries on. To interrupt, pinch with no ring showing (or hold: a hold with the ring showing interrupts after 0.25 s).
+- While a hand is tracked, that side's controller button and trigger are ignored, which is the same rule XRI's input modality manager uses.
 - Holding a pinch and a button together counts as one press, so it can't interrupt your own turn.
 
 ## How Meta AI is used (beyond a basic integration)
@@ -220,7 +223,7 @@ Targets come from [`docs/definition-of-done.md`](docs/definition-of-done.md) §4
 ## Accessibility
 
 - **Captions** for both you and Nubi, on by default, in three text sizes.
-- **Hands-only operation.** Push-to-talk works on either hand or on the dominant hand only. Controllers also work: hold A or X ([Controls](#controls)). Pinches are ignored while you hover UI or poke Nubi, and while your palm faces you (the system-menu gesture).
+- **Hands-only operation.** Push-to-talk works on either hand or on the dominant hand only. Controllers also work: hold A or X ([Controls](#controls)). Sending Nubi somewhere is point and pinch briefly, or point and pull the trigger, with a ring that is light with a dark rim, so it reads on any floor. Pinches are ignored while you hover UI or poke Nubi, and while your palm faces you (the system-menu gesture).
 - **Seated mode.** Nubi comes to you, and the walking tools are withheld from the model.
 - **Speech rate and volume settings.** The mask highlight uses an outline *and* a fill, so it doesn't rely on colour alone.
 
@@ -312,6 +315,7 @@ As of `main` at `0f2cef4` (2026-11-01), which is also the build of the last devi
 - **No perching.** Nubi stops at the edge of the couch or table and faces it; it cannot climb onto furniture (no NavMesh links or climb clips).
 - **Interaction triggers and the pinch are unverified with a wearer.** With nobody wearing the headset, hand tracking produced phantom pinches, so the self-test drives push-to-talk itself.
 - **Hand meshes, the hand ray and finger pokes on the Settings panel are unverified with a wearer.** The device log shows the hand subsystem running and the hand visuals bound (`evt=hands.subsystem`, `evt=hands.tracked`, `evt=hands.visual`); until ADR-0030 the scene had no hand objects at all, so hands drew nothing and could not press UI.
+- **Point-and-tap is unverified with a wearer** (ADR-0044). The device self-test sends Nubi to a floor point with a scripted ray and a 100 ms pinch through the real tap/hold split, scene raycast, NavMesh and walk; the 0.25 s tap time, the ring's size and look, and how steady the hand ray stays through a pinch are for a person in the headset to judge. A hold that starts with the ring showing interrupts Nubi 0.25 s later than a pinch without it.
 - **Controller push-to-talk is unverified on the headset.** Holding A or X is tested against the OpenXR device layouts in PlayMode, but no controller session has been run on the Quest.
 - **One ~283 ms frame at launch**: a single synchronous call into Meta's OpenXR provider that starts the camera and creates the passthrough layer, which app code cannot defer or split (ADR-0032). The compositor loses ~36 frames around scene start in all. Starting the camera on the scene's first frame does not hide it: the Unity splash is already on screen, and the freeze only became one longer one (measured and reverted, ADR-0034).
 - **Stale frames depend on the headset's uptime.** After a reboot, turns and idle are under 1 % (0.23–0.60 %) and a 20-turn run is 0.93 % overall; a short default run is 1.77 % because of the launch hitch. After 4 days of uptime the same build dropped 5 % idle on a cooled headset. Reboot the headset before a demo (ADR-0034). A 10-minute OVR Metrics run is still due.
