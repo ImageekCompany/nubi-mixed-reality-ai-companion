@@ -147,5 +147,14 @@ Each work package appends bullets under its own heading only (`docs/scope.md` §
 - `ClipPcm` resamples an off-rate clip with the anti-aliased `Resampler` instead of its own linear interpolation.
 - Tests: duplicated fakes merged into `Fakes/Common` (one per port, no aliases); ASR tests use `RecordingUsageMeter`, which rejects a double settle like the real meter; locomotion tests bake with the production `NavMeshBaker`.
 
+### Mixed-reality occlusion and contact shadow (ADR-0023)
+- Real objects and the user's hands hide Nubi and its shadow. Primary: Quest environment depth through AR Foundation shader occlusion: the "Meta Quest: Occlusion" OpenXR feature (hand removal off), `AROcclusionManager` + `ARShaderOcclusion` (soft) on the Main Camera, both shipped disabled; `PermissionGate` starts the manager with `USE_SCENE`.
+- `Content/Rendering/Shaders/EnvironmentOcclusion.hlsl`: hard and soft depth tests against `_EnvironmentDepthTexture(Preprocessed)` with a 4 cm bias, respecting `_IsOcclusionOn`. `NubiSkin` writes premultiplied colour with alpha = visibility and `BlobShadow` scales its alpha, so hidden pixels show passthrough; no extra draws.
+- Fallback (scope Should 3): `SceneOccluders` draws a depth-only, colour-masked cube (`Jolly/XR/DepthOccluder`, `M_SceneOccluder`) per Space Setup bounding box before Nubi.
+- `RealWorldOcclusion` + pure `OcclusionPolicy`: depth while a depth frame arrived in the last 0.5 s, else scene meshes, else nothing; stops the manager when the runtime reports depth unsupported; logs `evt=occlusion.mode`. Tunable in `JollyConfig.occlusion` (preference Off/SceneMeshes/EnvironmentDepth, soft edges, fallback, stale window). `SceneRefs.occlusion` wired in `Main.unity` and `XrServices`.
+- Contact shadow: `ContactShadow` (part of `NubiCharacterController`) fades the blob to 0 and shrinks it to 60 % as the lower foot rises to 0.3 m above its rest height; `NubiPrefabBuilder` binds the quad, `Foot_L`/`Foot_R` and the bind-pose rest height (0.06 m) into `Nubi.prefab`.
+- Tests (PlayMode): `OcclusionPolicyTests`, `ContactShadowMathTests`, `SceneOccludersTests`, `RealWorldOcclusionTests`, `ContactShadowTests` on the real prefab, and `MixedRealityWiringTests` on the booted `Main.unity`.
+- Docs: ADR-0023, architecture §2/§5.5/§11, scope Should 3, README limitations, release checklist human action 10 (device checks).
+
 ### Release audit
 - `docs/release-checklist.md` walks the definition of done on `main` with evidence and lists the human actions left. README test counts, status line, spend figure and Device User Data note corrected; the DoD secret grep excludes the synthetic keys in `Tests/`, and its perf deviations point at `docs/perf/selftest-report.md`.

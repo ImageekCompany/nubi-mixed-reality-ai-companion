@@ -22,7 +22,7 @@ Hero user: an older adult living alone (`hackathon.md` §2). Demo objects serve 
 | Must | Tests green in batchmode, IL2CPP APK, README/THIRD_PARTY/CHANGELOG/ADRs, demo video | — | low | |
 | Should 1 | `find_object(noun_phrase)`: "where are my glasses?" → SAM text prompt highlights every instance, Nubi looks/walks to the nearest | **very high** | low | Reuses the capture pipeline; $0.0025 per call |
 | Should 2 | Scene memory + `highlight_part` follow-ups ("which part do I hold?") | high | low | "mug handle" part phrase verified live |
-| Should 3 | Depth-only occluders from AR planes/boxes | med | low | Nubi hidden behind real furniture |
+| Should 3 | Depth-only occluders from AR planes/boxes | med | low | Nubi hidden behind real furniture. Built as the fallback to environment-depth occlusion, from bounding boxes only (ADR-0023) |
 | Should 4 | `set_persona` by voice (greets in the new voice); Psychologist persona with crisis guard (built, not demoed) | med | low | |
 | Should 5 | `remember_place` + `walk_to(place)` with persisted anchors | med | med | |
 | Should 6 | `play_gesture`, moods, acknowledgement clip | med | low | Demo polish |
