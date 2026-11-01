@@ -45,7 +45,7 @@ namespace Jolly.App.Composition
             var secrets = edges.Secrets;
             var log = new RedactingLog(new UnityLog(config.minimumLogLevel), SecretsFactory.ValuesToRedact(secrets));
             var safetyId = InstallIdentity.LoadOrCreateSafetyIdentifier(paths.InstallId, Guid.NewGuid);
-            var usage = new ApiUsageMeter(Prices(config), paths.Usage, (decimal)config.hardCapUsd, clock);
+            var usage = new ApiUsageMeter(Prices(config), paths.Usage, (decimal)config.hardCapUsd, clock, log);
             return new Foundation(paths, clock, new SystemRandom(Environment.TickCount), log, secrets, safetyId, usage);
         }
 

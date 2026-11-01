@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using Jolly.Contracts;
@@ -9,7 +10,8 @@ namespace Jolly.Core.Usage
     /// <summary>
     /// Persisted spend meter with reservations (contracts §2). Main thread only. Saves are debounced to 2 s on IClock;
     /// <see cref="Flush"/> and <see cref="Dispose"/> write pending state at once. Settling a reservation that is unknown
-    /// or already settled throws instead of charging twice.
+    /// or already settled throws instead of charging twice. A failed save is logged and retried by the next flush, so
+    /// <see cref="Flush"/> never throws into the lifecycle callbacks that call it.
     /// </summary>
     public sealed class ApiUsageMeter : IApiUsageMeter
     {
@@ -18,6 +20,7 @@ namespace Jolly.Core.Usage
         readonly PriceTable _prices;
         readonly string _filePath;
         readonly IClock _clock;
+        readonly ILog _log;
         readonly Dictionary<string, UsageTotals> _models = new();
         readonly Dictionary<long, decimal> _reservations = new();
         readonly CancellationTokenSource _lifetime = new();
@@ -27,11 +30,12 @@ namespace Jolly.Core.Usage
         bool _saveScheduled;
         bool _disposed;
 
-        public ApiUsageMeter(PriceTable prices, string filePath, decimal hardCapUsd, IClock clock)
+        public ApiUsageMeter(PriceTable prices, string filePath, decimal hardCapUsd, IClock clock, ILog log)
         {
             _prices = prices;
             _filePath = filePath;
             _clock = clock;
+            _log = log;
             HardCapUsd = hardCapUsd;
             UsageFile.TryLoad(filePath, out var spent, _models);
             SpentUsd = spent;
@@ -69,8 +73,15 @@ namespace Jolly.Core.Usage
         {
             if (!_dirty)
                 return;
-            UsageFile.Save(_filePath, SpentUsd, _models);
-            _dirty = false;
+            try
+            {
+                UsageFile.Save(_filePath, SpentUsd, _models);
+                _dirty = false;
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+                _log.Write(LogLevel.Error, "usage", "evt=usage.save_failed", e);
+            }
         }
 
         public void Dispose()
