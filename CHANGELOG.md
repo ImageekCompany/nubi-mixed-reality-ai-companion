@@ -36,7 +36,8 @@ Each work package appends bullets under its own heading only (`docs/scope.md` §
 - `UnityLocalizer`: preloads tables at startup and on locale change, synchronous `Get` with key fallback and a warning, `evt=loc.ready` per table, static-event unsubscribe on `Dispose`.
 - Views in `Jolly.Presentation`: `CaptionView`, `MaskOverlayView` (`IMaskPresenter`, `Jolly/MaskOutline` fill + outline shader), `ToolBadgeView`, `LatencyHud`, `StatusIndicator` (`IStatusSink`) and `SettingsPanel` (`IUserPreferences`; caption size, speech rate, volume, seated, PTT hand, persona, language, clear memory, API usage), shipped as world-space prefabs.
 - TMP Essential Resources imported (needed by every TMP text).
-- 42 PlayMode tests under `Tests/PlayMode/Presentation` (localizer, caption timing, overlay placement, badges, HUD, status, settings).
+- 51 PlayMode tests under `Tests/PlayMode/Presentation` (localizer, caption timing, overlay placement, badges, HUD, status, settings); contract fakes shared in `Tests/Shared/Fakes/WP8`.
+- Review fixes: a cancelled `SetLanguage` no longer leaves the language half-switched; Polish falls back to English per entry; running tool badges end when the turn ends; the mask outline sets its texel size explicitly; stored preferences are clamped on load.
 
 ### WP9
 
