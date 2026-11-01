@@ -39,3 +39,6 @@ docs/research/samples/device/
 
 # CI outputs (tools/ci): test results, logs, APKs
 artifacts/
+
+# Agent worktrees
+.claude/
