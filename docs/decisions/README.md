@@ -33,6 +33,7 @@
 | [0032](0032-greeting-stays-put-text-done-and-staggered-launch.md) | Device-regression fixes: a greeting stays put, a text item ends speech, XR managers start one per frame | accepted |
 | [0033](0033-selftest-sam-text-tools-and-hand-debounce.md) | Device self-test for `highlight_part` and `find_object`; hand meshes follow a 200 ms debounced tracked state | accepted |
 | [0034](0034-latency-turns-and-stale-frames-are-device-state.md) | `selftest.sh --turns N` for a 20-turn latency sample; stale frames are headset state (reboot before a demo); the camera keeps its post-graph start | accepted |
+| [0035](0035-positive-movement-and-find-tool-descriptions.md) | Positive `come_here` / `find_object` triggers and a live tool-selection eval; `come_here` still missed 3 of 5 at `minimal` | accepted |
 
 Numbers 0027–0029 are unused and were not reserved on a dropped branch: no commit on any branch (`git log --all`) adds or mentions an ADR with those numbers.
 
