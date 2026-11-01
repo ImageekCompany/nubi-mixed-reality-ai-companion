@@ -31,7 +31,10 @@ namespace Jolly.XR.Permissions
         public bool CameraGranted { get; private set; }
         public bool SceneGranted { get; private set; }
         public bool MicrophoneGranted { get; private set; }
-        /// <summary>Raised on the main thread when any of the three grants changes after Run.</summary>
+        /// <summary>
+        /// Raised on the main thread when Run first reads the grants and whenever one changes after that. Listeners built
+        /// before Run (StatusRelay) otherwise keep the all-false defaults and show "microphone unavailable" for good.
+        /// </summary>
         public event Action Changed;
 
         public void Construct(IRuntimePermissions permissions, Behaviour cameraManager, IReadOnlyList<Behaviour> sceneManagers)
@@ -117,7 +120,7 @@ namespace Jolly.XR.Permissions
             CameraGranted = camera;
             SceneGranted = scene;
             MicrophoneGranted = microphone;
-            if (changed && restartCameraOnGrant)
+            if (changed)
                 Changed?.Invoke();
         }
     }

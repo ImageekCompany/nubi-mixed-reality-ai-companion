@@ -180,6 +180,18 @@ namespace Jolly.Tests.PlayMode.XR
             Assert.That(changes, Is.EqualTo(1));
         });
 
+        [UnityTest]
+        public IEnumerator Run_GrantsAlreadyGiven_RaisesChangedOnceWithTheMicrophoneGranted() => UniTask.ToCoroutine(async () =>
+        {
+            _permissions.Granted.Add(XrPermissions.RecordAudio);
+            var micAtChange = new List<bool>();
+            _gate.Changed += () => micAtChange.Add(_gate.MicrophoneGranted);
+
+            await _gate.Run(CancellationToken.None);
+
+            Assert.That(micAtChange, Is.EqualTo(new[] { true }), "a status built before Run must hear about the grant");
+        });
+
         [Test]
         public void Recheck_BeforeRun_DoesNotEnableTheCamera()
         {
