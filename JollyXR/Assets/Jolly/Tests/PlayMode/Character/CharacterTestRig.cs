@@ -45,7 +45,8 @@ namespace Jolly.Tests.PlayMode.Character
 
         public void Dispose()
         {
-            Object.Destroy(Nubi.gameObject);
+            if (Nubi != null)
+                Object.Destroy(Nubi.gameObject);
             Object.Destroy(_floor);
             Time.timeScale = 1f;
         }

@@ -10,6 +10,7 @@ using NUnit.Framework;
 using UnityEditor.Animations;
 using UnityEngine;
 using UnityEngine.TestTools;
+using Object = UnityEngine.Object;
 using P = Jolly.Character.NubiAnimatorParameters;
 
 namespace Jolly.Tests.PlayMode.Character
@@ -81,6 +82,49 @@ namespace Jolly.Tests.PlayMode.Character
         });
 
         [UnityTest]
+        public IEnumerator PlayGesture_NubiDestroyedMidClip_ThrowsCancelled() => UniTask.ToCoroutine(async () =>
+        {
+            // Arrange
+            var gesture = _rig.Nubi.PlayGesture(GestureId.Stretch, CancellationToken.None);
+            await UniTask.DelayFrame(5);
+
+            // Act
+            Object.Destroy(_rig.Nubi.gameObject);
+
+            // Assert
+            Exception thrown = null;
+            try { await gesture; }
+            catch (Exception e) { thrown = e; }
+            Assert.That(thrown, Is.InstanceOf<OperationCanceledException>());
+        });
+
+        [UnityTest]
+        public IEnumerator PlayGesture_LookAroundOverlapping_OlderEndingKeepsTheNewerSweep() => UniTask.ToCoroutine(async () =>
+        {
+            // Arrange: no Animator writes, so the head moves only with the look target
+            _rig.Animator.enabled = false;
+            var head = FindBone(_rig.Nubi.transform, "Head");
+            await UniTask.Delay(TimeSpan.FromSeconds(_rig.Nubi.Settings.look.blendSeconds * 2f));
+            var atUser = head.rotation;
+            var hold = TimeSpan.FromSeconds(0.4);
+            var older = _rig.Nubi.PlayGesture(GestureId.LookAround, CancellationToken.None);
+            _rig.Clock.Advance(hold);
+            var newer = _rig.Nubi.PlayGesture(GestureId.LookAround, CancellationToken.None);
+
+            // Act: past the older sweep's end, halfway through the newer one's last step
+            for (var i = 0; i < 5; i++)
+                _rig.Clock.Advance(hold);
+            await UniTask.DelayFrame(2);
+
+            // Assert
+            Assert.That(older.Status, Is.EqualTo(UniTaskStatus.Succeeded));
+            Assert.That(newer.Status, Is.EqualTo(UniTaskStatus.Pending));
+            Assert.That(Quaternion.Angle(head.rotation, atUser), Is.GreaterThan(5f), "still looking ahead, not at the user");
+            _rig.Clock.Advance(hold);
+            Assert.That(newer.Status, Is.EqualTo(UniTaskStatus.Succeeded));
+        });
+
+        [UnityTest]
         public IEnumerator SetConversationState_SetsExactlyOneConversationBool() => UniTask.ToCoroutine(async () =>
         {
             // Act
@@ -121,6 +165,9 @@ namespace Jolly.Tests.PlayMode.Character
             Assert.That(await CharacterTestRig.Until(() => Vector3.Angle(_rig.Nubi.Forward, Vector3.back) < 20f, 1.5f),
                         Is.True, "body turns toward the walk");
         });
+
+        static Transform FindBone(Transform root, string name) =>
+            root.GetComponentsInChildren<Transform>().Single(t => t.name == name);
 
         [Test]
         public void Controller_DeclaresEveryParameterTheRuntimeSets()

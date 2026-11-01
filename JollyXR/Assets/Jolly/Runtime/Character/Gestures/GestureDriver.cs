@@ -45,7 +45,7 @@ namespace Jolly.Character
             {
                 await WhileGesturePlays(generation, ct);
             }
-            catch (OperationCanceledException) when (generation == _generation)
+            catch (OperationCanceledException) when (generation == _generation && _animator != null)
             {
                 _animator.ResetTrigger(NubiAnimatorParameters.Gesture);
                 _animator.CrossFadeInFixedTime(NubiAnimatorParameters.EmptyState, AbortFadeSeconds, _layer);

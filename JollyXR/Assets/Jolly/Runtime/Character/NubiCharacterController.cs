@@ -43,6 +43,7 @@ namespace Jolly.Character
         ConversationState _conversation;
         bool _hasLookOverride;
         Vector3 _lookOverride;
+        int _lookAroundGeneration;
         float _speed;
 
         public bool IsConstructed => _locomotion != null;
@@ -91,7 +92,7 @@ namespace Jolly.Character
         public void LookAt(LookTarget target) => _lookTarget = target;
 
         public UniTask PlayGesture(GestureId gesture, CancellationToken ct) =>
-            gesture == GestureId.LookAround ? LookAround(ct) : Constructed()._gestures.Play(gesture, ct);
+            gesture == GestureId.LookAround ? LookAround(ct) : PlayClip(gesture, ct);
 
         public void SetMood(Mood mood)
         {
@@ -140,10 +141,19 @@ namespace Jolly.Character
                 _locomotion.Stop();
         }
 
+        async UniTask PlayClip(GestureId gesture, CancellationToken ct)
+        {
+            Constructed();
+            using var linked = CancellationTokenSource.CreateLinkedTokenSource(ct, destroyCancellationToken);
+            await _gestures.Play(gesture, linked.Token);
+        }
+
+        /// <summary>A newer sweep supersedes a running one, whose awaiter then completes normally, like a clip gesture.</summary>
         async UniTask LookAround(CancellationToken ct)
         {
             Constructed();
             using var linked = CancellationTokenSource.CreateLinkedTokenSource(ct, destroyCancellationToken);
+            var generation = ++_lookAroundGeneration;
             var forward = transform.forward;
             var origin = _bones.head.position;
             try
@@ -153,11 +163,14 @@ namespace Jolly.Character
                     _lookOverride = origin + Quaternion.AngleAxis(yaw, Vector3.up) * forward * 2f;
                     _hasLookOverride = true;
                     await _clock.Delay(LookAroundHold, linked.Token);
+                    if (generation != _lookAroundGeneration)
+                        return;
                 }
             }
             finally
             {
-                _hasLookOverride = false;
+                if (generation == _lookAroundGeneration)
+                    _hasLookOverride = false;
             }
         }
 
