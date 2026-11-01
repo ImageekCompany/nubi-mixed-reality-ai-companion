@@ -97,5 +97,7 @@ Each work package appends bullets under its own heading only (`docs/scope.md` §
 - `InteractionTriggers`: gaze dwell and open palm → Greeting, poke → WhoAmI. At most one request per 20 s across all signals, and signals that arrive while Nubi cannot speak don't count toward the limit.
 
 ### WP11
+- `README.md` (pitch, theme fit, Meta tooling, architecture, performance budget, privacy, getting started, status, roadmap), MIT `LICENSE`, and `THIRD_PARTY.md` with the versions resolved in `packages-lock.json`, non-OSI licences, committed third-party files and why Meta's Jolly mascot is not included.
+- `docs/demo-script.md` (six-beat shot list, per-beat fallbacks, Nov 9 live-finals runbook, rehearsal log) and `docs/perf/README.md` (OVR Metrics, Unity Profiler and `evt=turn.latency` percentile method).
 
 ### WP12
