@@ -1,4 +1,6 @@
 using System.Collections;
+using System.Collections.Generic;
+using Jolly.Contracts;
 using Jolly.XR.Navigation;
 using Jolly.XR.World;
 using NUnit.Framework;
@@ -58,9 +60,13 @@ namespace Jolly.Tests.PlayMode.XR
         [Test]
         public void WithoutSceneData_NothingIsWalkableOrLabelled()
         {
-            Assert.That(_query.HasWalkableArea, Is.False);
+            var surfaces = new List<SceneSurface> { default };
+
+            _query.GetSurfaces(surfaces);
+
+            Assert.That(_query.WalkableArea, Is.EqualTo(WalkableArea.None));
             Assert.That(_query.TrySampleWalkable(Vector3.zero, 1f, out _), Is.False);
-            Assert.That(_query.TryFindLabeledSurface("couch", Vector3.zero, out _), Is.False);
+            Assert.That(surfaces, Is.Empty, "cleared, nothing added");
         }
     }
 }

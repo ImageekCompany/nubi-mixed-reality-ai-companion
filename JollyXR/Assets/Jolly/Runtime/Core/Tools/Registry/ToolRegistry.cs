@@ -7,7 +7,7 @@ namespace Jolly.Core.Tools
 {
     /// <summary>
     /// Tools by name, each schema parsed once at <see cref="Register"/>. A persona's null <c>AllowedTools</c> means every tool;
-    /// seated mode withholds <c>walk_to</c> and <c>follow_user</c> but keeps <c>come_here</c> (architecture §5.5).
+    /// seated mode withholds <c>walk_to</c>, <c>go_to_surface</c> and <c>follow_user</c> but keeps <c>come_here</c> (architecture §5.5).
     /// </summary>
     public sealed class ToolRegistry : IToolRegistry
     {

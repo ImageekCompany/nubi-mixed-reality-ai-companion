@@ -147,6 +147,14 @@ MonoBehaviour:
     m_Key: vision.hold_closer
     m_Metadata:
       m_Items: []
+  - m_Id: 154132513
+    m_Key: room_scan_01
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132514
+    m_Key: room.scan_opening
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:

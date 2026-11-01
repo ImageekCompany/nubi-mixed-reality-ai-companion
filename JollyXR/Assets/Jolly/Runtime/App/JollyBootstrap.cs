@@ -11,7 +11,8 @@ namespace Jolly.App
 {
     /// <summary>
     /// Composition root of Main.unity (architecture §3, ADR-0009): builds the graph once, places Nubi, runs the app until
-    /// the scene is destroyed and disposes everything in reverse order. Pause and focus loss flush usage and memory.
+    /// the scene is destroyed and disposes everything in reverse order. Pause and focus loss flush usage and memory;
+    /// resuming reads the scene again.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class JollyBootstrap : MonoBehaviour
@@ -59,16 +60,21 @@ namespace Jolly.App
             }
         }
 
+        // Space Setup pauses the app and resumes it when the user is done (meta-openxr session.md "Life cycle").
         void OnApplicationPause(bool paused)
         {
             if (paused)
                 Graph?.Flush();
+            else
+                Graph?.Resume();
         }
 
         void OnApplicationFocus(bool focused)
         {
             if (!focused)
                 Graph?.Flush();
+            else
+                Graph?.Resume();
         }
 
         void OnDestroy()

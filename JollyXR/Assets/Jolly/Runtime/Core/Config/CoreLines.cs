@@ -11,6 +11,7 @@ namespace Jolly.Core.Config
         public const string Table = "Lines";
         public const string Tangled = "agent.tangled";
         public const string HoldCloser = "vision.hold_closer";
+        public const string ScanOpening = "room.scan_opening";
 
         public static string Get(ILocalizer localizer, string key)
         {
@@ -22,6 +23,7 @@ namespace Jolly.Core.Config
         {
             Tangled => "I got a bit tangled, could you say that again?",
             HoldCloser => "I couldn't see it clearly, can you hold it closer?",
+            ScanOpening => "Okay! Look around your room, and I'll be right here when you're done.",
             _ => string.Empty,
         };
     }

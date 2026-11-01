@@ -6,27 +6,33 @@ namespace Jolly.Tests.PlayMode.XR
 {
     public sealed class SurfaceLabelsTests
     {
-        [TestCase("couch", PlaneClassifications.Couch, BoundingBoxClassifications.Couch)]
-        [TestCase(" Sofa ", PlaneClassifications.Couch, BoundingBoxClassifications.Couch)]
-        [TestCase("TABLE", PlaneClassifications.Table, BoundingBoxClassifications.Table)]
-        [TestCase("desk", PlaneClassifications.Table, BoundingBoxClassifications.Table)]
-        [TestCase("bed", PlaneClassifications.None, BoundingBoxClassifications.Bed)]
-        [TestCase("tv", PlaneClassifications.None, BoundingBoxClassifications.Screen)]
-        [TestCase("storage", PlaneClassifications.None, BoundingBoxClassifications.Storage)]
-        [TestCase("chair", PlaneClassifications.Seat, BoundingBoxClassifications.Chair)]
-        public void TryParse_KnownLabelsAndAliases(string label, PlaneClassifications plane, BoundingBoxClassifications box)
+        [TestCase(BoundingBoxClassifications.Couch, "couch")]
+        [TestCase(BoundingBoxClassifications.Table, "table")]
+        [TestCase(BoundingBoxClassifications.Bed, "bed")]
+        [TestCase(BoundingBoxClassifications.Chair, "chair")]
+        [TestCase(BoundingBoxClassifications.Storage, "storage")]
+        [TestCase(BoundingBoxClassifications.Screen, "screen")]
+        [TestCase(BoundingBoxClassifications.Table | BoundingBoxClassifications.Lamp, "table")]
+        public void ForBox_NamesFurniture(BoundingBoxClassifications classifications, string label)
         {
-            Assert.That(SurfaceLabels.TryParse(label, out var p, out var b), Is.True);
-            Assert.That(p, Is.EqualTo(plane));
-            Assert.That(b, Is.EqualTo(box));
+            Assert.That(SurfaceLabels.ForBox(classifications), Is.EqualTo(label));
         }
 
-        [TestCase("kitchen")]
-        [TestCase("")]
-        [TestCase(null)]
-        public void TryParse_UnknownLabel_False(string label)
+        [TestCase(PlaneClassifications.Couch, "couch")]
+        [TestCase(PlaneClassifications.Table, "table")]
+        [TestCase(PlaneClassifications.Seat, "chair")]
+        public void ForPlane_NamesFurniture(PlaneClassifications classifications, string label)
         {
-            Assert.That(SurfaceLabels.TryParse(label, out _, out _), Is.False);
+            Assert.That(SurfaceLabels.ForPlane(classifications), Is.EqualTo(label));
+        }
+
+        [Test]
+        public void NonFurniture_HasNoLabel()
+        {
+            Assert.That(SurfaceLabels.ForBox(BoundingBoxClassifications.None), Is.Null);
+            Assert.That(SurfaceLabels.ForBox(BoundingBoxClassifications.Bathtub), Is.Null);
+            Assert.That(SurfaceLabels.ForPlane(PlaneClassifications.Floor), Is.Null);
+            Assert.That(SurfaceLabels.ForPlane(PlaneClassifications.WallFace), Is.Null);
         }
     }
 }

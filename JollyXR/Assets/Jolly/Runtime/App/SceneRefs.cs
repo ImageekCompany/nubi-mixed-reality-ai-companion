@@ -36,6 +36,8 @@ namespace Jolly.App
         public ARBoundingBoxManager boxManager;
         public ARRaycastManager raycastManager;
         public ARAnchorManager anchorManager;
+        [Tooltip("Opens Space Setup (MetaOpenXRSessionSubsystem.TryRequestSceneCapture).")]
+        public ARSession session;
 
         [Header("Nubi")]
         public NubiCharacterController nubi;

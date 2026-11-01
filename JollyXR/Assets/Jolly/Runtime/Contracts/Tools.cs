@@ -101,7 +101,7 @@ namespace Jolly.Contracts
     {
         void Register(ITool tool);                                     // throws on a duplicate name
         bool TryGet(string name, out ITool tool);
-        /// <summary>Filtered by persona.AllowedTools; in seated mode walk_to and follow_user are removed (come_here stays).</summary>
+        /// <summary>Filtered by persona.AllowedTools; in seated mode walk_to, go_to_surface and follow_user are removed (come_here stays).</summary>
         IReadOnlyList<ToolDefinition> DefinitionsFor(PersonaProfile persona, IUserPreferences preferences);
         /// <summary>Validates against the tool's schema subset. On failure, error is a model-facing message.</summary>
         bool TryValidate(string name, string argumentsJson, out IToolArguments args, out string error);

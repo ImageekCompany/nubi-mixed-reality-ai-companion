@@ -14,7 +14,8 @@ namespace Jolly.Tests.PlayMode.Character
 {
     /// <summary>
     /// A 10 × 10 m floor with a disconnected 3 × 3 m island at x = 20, baked by the production NavMeshBaker, and the real Nubi prefab
-    /// constructed with fakes. Time runs at <see cref="TimeScale"/>× so walks take a fraction of real time.
+    /// constructed with fakes. Time runs at <see cref="TimeScale"/>× so walks take a fraction of real time. Furniture added
+    /// with <see cref="AddFurniture"/> is baked as Not Walkable, like a Space Setup bounding box.
     /// </summary>
     sealed class CharacterTestRig : IDisposable
     {
@@ -40,6 +41,20 @@ namespace Jolly.Tests.PlayMode.Character
         public StubUserPose User { get; } = new();
         public ILipSyncDriver LipSync { get; }
         public Animator Animator => Nubi.Animator;
+        public NavMeshBaker NavMesh => _navMesh;
+
+        /// <summary>A box standing on the floor, baked as an obstacle; rebakes at once.</summary>
+        public void AddFurniture(Vector3 floorCenter, Vector3 size)
+        {
+            var box = new GameObject("Furniture");
+            box.transform.SetParent(_floor.transform, false);
+            box.transform.position = floorCenter + Vector3.up * (size.y * 0.5f);
+            var collider = box.AddComponent<BoxCollider>();
+            collider.size = size;
+            Physics.SyncTransforms();
+            _navMesh.AddObstacle(collider);
+            _navMesh.Rebuild(0);
+        }
 
         public static CharacterTestRig Create(ILipSyncDriver lipSync = null) => new(lipSync ?? new ScriptedLipSync());
 

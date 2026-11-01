@@ -14,7 +14,9 @@ namespace Jolly.Core.Tools
         public const string Stop = "stop";
         public const string PlayGesture = "play_gesture";
         public const string SetPersona = "set_persona";
+        public const string GoToSurface = "go_to_surface";
+        public const string RequestRoomScan = "request_room_scan";
 
-        public static bool IsWithheldWhenSeated(string name) => name == WalkTo || name == FollowUser;
+        public static bool IsWithheldWhenSeated(string name) => name == WalkTo || name == FollowUser || name == GoToSurface;
     }
 }

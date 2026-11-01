@@ -42,15 +42,17 @@ namespace Jolly.Tests.EditMode.Core.Tools
         }
 
         [Test]
-        public void WalkTo_FurnitureWordMapsToSurfaceLabel()
+        public void WalkTo_FurnitureWord_StopsBesideTheSurfaceFacingIt()
         {
-            _world.Surfaces["couch"] = new Vector3(1, 0.4f, 1);
+            _world.AddBox("couch", new Vector3(0, 0, 2), new Vector3(2f, 0.8f, 1f));
 
             var result = ToolHarness.Run(WalkTo(), "{\"place\":\"sofa\"}");
 
-            Assert.That(_world.LastSurfaceQuery, Is.EqualTo("couch"));
             Assert.That((string)ToolHarness.Output(result)["status"], Is.EqualTo("walking"));
-            Assert.That(_character.MoveTarget, Is.EqualTo(new Vector3(1, 0, 1)), "sampled onto the floor, never the seat");
+            Assert.That(Vector3.Distance(_character.MoveTarget.Value, new Vector3(0, 0, 1.25f)), Is.LessThan(1e-4f),
+                "the near edge plus clearance, on the floor, never the seat");
+            Assert.That(_character.MoveStopDistance, Is.EqualTo(_settings.SurfaceStopDistance));
+            Assert.That(_character.LastLook?.Point, Is.EqualTo(new Vector3(0, 0.8f, 2)));
         }
 
         [Test]
@@ -74,9 +76,43 @@ namespace Jolly.Tests.EditMode.Core.Tools
         }
 
         [Test]
+        public void WalkTo_SeenObjectLabel_WalksToTheMostRecentMatch()
+        {
+            _scene.AddObject("white enamel mug", new Vector3(-1, 0.8f, 2), "s");
+            _scene.AddObject("blue mug", new Vector3(2, 0.8f, 2), "s");
+
+            var result = ToolHarness.Run(WalkTo(), "{\"place\":\"Mug\"}");
+
+            Assert.That((string)ToolHarness.Output(result)["status"], Is.EqualTo("walking"));
+            Assert.That(_character.MoveTarget, Is.EqualTo(new Vector3(2, 0, 2)));
+            Assert.That(_character.LastLook?.Point, Is.EqualTo(new Vector3(2, 0.8f, 2)), "faces what it walks to");
+        }
+
+        [Test]
+        public void WalkTo_SeenObjectLabel_ExactMatchBeatsANewerWordMatch()
+        {
+            _scene.AddObject("mug", new Vector3(-1, 0.8f, 2), "s");
+            _scene.AddObject("mug handle", new Vector3(2, 0.8f, 2), "s");
+
+            ToolHarness.Run(WalkTo(), "{\"place\":\"mug\"}");
+
+            Assert.That(_character.MoveTarget, Is.EqualTo(new Vector3(-1, 0, 2)));
+        }
+
+        [Test]
+        public void WalkTo_PartialWord_IsNotALabelMatch()
+        {
+            _scene.AddObject("mug", new Vector3(-1, 0.8f, 2), "s");
+
+            var result = ToolHarness.Run(WalkTo(), "{\"place\":\"mu\"}");
+
+            Assert.That((string)ToolHarness.Output(result)["error"], Is.EqualTo("unknown_place"));
+        }
+
+        [Test]
         public void WalkTo_Unreachable_LooksTowardTheTarget()
         {
-            _world.Surfaces["table"] = new Vector3(3, 0.7f, 0);
+            _world.AddBox("table", new Vector3(3, 0, 0), new Vector3(1f, 0.7f, 1f));
             _character.Reachable = false;
 
             var result = ToolHarness.Run(WalkTo(), "{\"place\":\"table\"}");

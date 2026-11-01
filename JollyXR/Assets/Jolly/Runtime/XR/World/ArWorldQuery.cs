@@ -30,7 +30,7 @@ namespace Jolly.XR.World
             _navGeometryMask = 1 << floor.NavGeometryLayer;
         }
 
-        public bool HasWalkableArea => _floor.HasNavMesh;
+        public WalkableArea WalkableArea => _floor.WalkableArea;
 
         public bool TryRaycast(Ray ray, float maxDistance, out Vector3 hit)
         {
@@ -60,41 +60,30 @@ namespace Jolly.XR.World
             return _floor.TrySampleWalkable(near, radius, out point);
         }
 
-        /// <summary>The nearest matching box (or plane) to near, as its centre dropped to the bottom of the box
-        /// (or the plane's centre). Callers project it onto the NavMesh to get a reachable spot beside the furniture.</summary>
-        public bool TryFindLabeledSurface(string label, Vector3 near, out Vector3 point)
+        /// <summary>Every classified bounding box (pose = its centre) and every upward horizontal plane classified as a
+        /// table top, couch or seat (pose = the plane's centre, its rectangle in the plane's x/z).</summary>
+        public void GetSurfaces(List<SceneSurface> into)
         {
-            point = default;
-            if (!SurfaceLabels.TryParse(label, out var planeClass, out var boxClass))
-                return false;
-
-            var best = float.PositiveInfinity;
-            if (boxClass != BoundingBoxClassifications.None && IsRunning(_boxes))
+            into.Clear();
+            if (IsRunning(_boxes))
             {
                 foreach (var box in _boxes.trackables)
                 {
-                    if ((box.classifications & boxClass) != 0)
-                        Consider(box.transform.position - box.transform.up * (box.size.y * 0.5f), near, ref best, ref point);
+                    var label = SurfaceLabels.ForBox(box.classifications);
+                    if (label != null)
+                        into.Add(new SceneSurface(label, new Pose(box.transform.position, box.transform.rotation), box.size));
                 }
             }
-            if (planeClass != PlaneClassifications.None && IsRunning(_planes))
+            if (IsRunning(_planes))
             {
                 foreach (var plane in _planes.trackables)
                 {
-                    if ((plane.classifications & planeClass) != 0)
-                        Consider(plane.center, near, ref best, ref point);
+                    var label = plane.alignment == PlaneAlignment.HorizontalUp ? SurfaceLabels.ForPlane(plane.classifications) : null;
+                    if (label != null)
+                        into.Add(new SceneSurface(label, new Pose(plane.center, plane.transform.rotation),
+                            new Vector3(plane.size.x, 0f, plane.size.y)));
                 }
             }
-            return !float.IsPositiveInfinity(best);
-        }
-
-        static void Consider(Vector3 candidate, Vector3 near, ref float best, ref Vector3 point)
-        {
-            var distance = (candidate - near).sqrMagnitude;
-            if (distance >= best)
-                return;
-            best = distance;
-            point = candidate;
         }
 
         static bool IsRunning(Behaviour manager) => manager != null && manager.isActiveAndEnabled;

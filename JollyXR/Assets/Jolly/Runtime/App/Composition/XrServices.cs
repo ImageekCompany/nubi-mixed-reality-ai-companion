@@ -14,7 +14,7 @@ using Jolly.XR.Capture;
 namespace Jolly.App.Composition
 {
     /// <summary>
-    /// The XR layer (architecture §2, §5.5): hands, user pose, permissions, world queries, anchors and the camera. The
+    /// The XR layer (architecture §2, §5.5): hands, user pose, permissions, world queries, scene data, anchors and the camera. The
     /// camera source is the passthrough CPU image on device and a still image in the Editor and over Link, where
     /// meta-openxr gives no CPU image (xr-stack.md §2.2).
     /// </summary>
@@ -24,6 +24,7 @@ namespace Jolly.App.Composition
         public IUserPoseProvider User { get; private set; }
         public IRuntimePermissions Permissions { get; private set; }
         public IWorldQuery World { get; private set; }
+        public ISceneData SceneData { get; private set; }
         public ISpatialAnchors Anchors { get; private set; }
         public ICameraFrameSource Camera { get; private set; }
 
@@ -42,6 +43,9 @@ namespace Jolly.App.Composition
                 User = scene.userPose,
                 Permissions = permissions,
                 World = new ArWorldQuery(scene.raycastManager, scene.planeManager, scene.boxManager, scene.floor),
+                SceneData = new ArSceneData(scene.permissions, scene.floor, scene.origin,
+                    new Behaviour[] { scene.planeManager, scene.boxManager },
+                    new Jolly.XR.MetaQuest.MetaSceneCapture(scene.session)),
                 Anchors = new ArSpatialAnchors(scene.anchorManager, f.Log),
                 Camera = disposables.Add(wrapCamera(CreateCamera(f, config, scene.cameraManager, scene.userPose, permissions))),
             };

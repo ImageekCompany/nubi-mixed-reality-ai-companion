@@ -126,7 +126,7 @@ namespace Jolly.Contracts
         UniTask<bool> Ping(CancellationToken ct);
     }
 
-    public enum LineCategory { Greeting, WhoAmI, Acknowledge, Offline, Error, BudgetReached, Idle, SafetyNotice, CrisisHandoff, Unknown }
+    public enum LineCategory { Greeting, WhoAmI, Acknowledge, Offline, Error, BudgetReached, Idle, SafetyNotice, CrisisHandoff, Unknown, RoomScanOffer }
 
     public sealed class CannedLine
     {

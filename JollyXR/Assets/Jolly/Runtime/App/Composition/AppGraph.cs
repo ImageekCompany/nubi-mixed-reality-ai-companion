@@ -3,9 +3,11 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using Jolly.App.Adapters;
 using Jolly.Contracts;
+using Jolly.Core.Config;
 using Jolly.Core.Conversation;
 using Jolly.Core.Offline;
 using Jolly.Core.Personas;
+using Jolly.Core.Spatial;
 using Jolly.Localization;
 using Jolly.Presentation;
 
@@ -34,6 +36,7 @@ namespace Jolly.App.Composition
         public CloudServices Cloud { get; private set; }
         public XrServices Xr { get; private set; }
         public SpeechServices Speech { get; private set; }
+        public RoomScanMonitor Room { get; private set; }
         public ConversationServices Conversation { get; private set; }
         public IdleScheduler Idle { get; private set; }
         public SceneRefs Scene { get; private set; }
@@ -74,9 +77,12 @@ namespace Jolly.App.Composition
             scene.nubi.Construct(Xr.User, Speech.LipSync, f.Clock, f.Random);
             BindViews(scene);
 
+            var roomSettings = RoomSettingsFor(config, edges);
+            Room = new RoomScanMonitor(Xr.SceneData, Xr.User, f.Clock, f.Log, roomSettings,
+                InteractionLinePlayer.CanSpeak(f.Machine, Speech.Output));
             var voice = edges.Voice ?? d.Add(new CompositeVoiceActivation(scene.pushToTalk, scene.controllerPushToTalk));
             Conversation = ConversationServices.Build(f, config, Cloud, Xr, Speech, Personas, Localizer, Preferences,
-                scene.nubi, voice, scene.maskOverlay, d);
+                scene.nubi, voice, scene.maskOverlay, Room, new RoomContext(Room, Xr.World, Xr.User, roomSettings), d);
             d.Add(new StatusRelay(Cloud.Connectivity, scene.permissions, scene.status));
             d.Add(new SettingsRouter(scene.settings, Personas, Localizer, Conversation.Controller, f.Log, appCt));
             var offline = Speech.Offline;
@@ -102,7 +108,10 @@ namespace Jolly.App.Composition
             scene.interactionSignals.Construct(Xr.User, Xr.Hands, f.Clock, scene.nubiCollider, scene.nubiInteractable);
             var triggers = _disposables.Add(new InteractionTriggers(scene.interactionSignals, f.Clock,
                 InteractionLinePlayer.CanSpeak(f.Machine, Speech.Output)));
-            _disposables.Add(new InteractionLinePlayer(triggers, Speech.Offline, f.Machine, scene.nubi, f.Log, appCt));
+            var lines = _disposables.Add(new InteractionLinePlayer(triggers, Speech.Offline, f.Machine, scene.nubi, f.Log, appCt));
+            Action offer = () => lines.Request(LineCategory.RoomScanOffer);
+            Room.OfferScan += offer;
+            _disposables.Add(new Subscription(() => Room.OfferScan -= offer));
         }
 
         /// <summary>Permissions first (the microphone and camera wait for them), then the long-running loops.</summary>
@@ -113,6 +122,7 @@ namespace Jolly.App.Composition
             Loop("warmup", StartupWarmup.Run(Conversation.Frames, Cloud.RealtimeAsr, Foundation.Clock, Foundation.Log, appCt),
                 appCt).Forget();
             Loop("idle", Idle.RunAsync(IsIdle, appCt), appCt).Forget();
+            Loop("room", Room.RunAsync(appCt), appCt).Forget();
             var conversation = Conversation.Controller.RunAsync(appCt);
             _running.TrySetResult();
             await conversation;
@@ -124,6 +134,9 @@ namespace Jolly.App.Composition
             Foundation.Usage.Flush();
             Conversation?.Memory.Save(CancellationToken.None).Forget();
         }
+
+        /// <summary>The app is back in focus, possibly from Space Setup: read the scene again.</summary>
+        public void Resume() => Room?.OnResumed();
 
         public void Dispose() => _disposables.Dispose();
 
@@ -143,6 +156,14 @@ namespace Jolly.App.Composition
                 Foundation.Log.Write(LogLevel.Error, "app", "evt=loop.crashed loop=" + name, e);
             }
         }
+
+        static RoomSettings RoomSettingsFor(JollyConfig config, Edges edges) => new()
+        {
+            ScanTimeout = TimeSpan.FromSeconds(config.roomScanTimeoutSeconds),
+            FallbackFloor = config.fallbackFloor,
+            FallbackRadius = config.fallbackFloorRadius,
+            OfferScan = config.offerRoomScan && edges.OfferRoomScan,
+        };
 
         static PersonaDefinition[] PersonaDefinitions(JollyConfig config)
         {

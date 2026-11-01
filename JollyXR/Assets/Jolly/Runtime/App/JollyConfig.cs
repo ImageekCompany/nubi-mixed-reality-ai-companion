@@ -60,6 +60,15 @@ namespace Jolly.App
         [Tooltip("Pipelines warmed at boot; recorded by a development-player self-test (docs/perf/README.md §7).")]
         public GraphicsStateCollection graphicsStates;
 
+        [Header("Room (ADR-0024)")]
+        [Tooltip("Seconds after the scene permission is granted without a floor plane before the room counts as not scanned.")]
+        public float roomScanTimeoutSeconds = 8f;
+        [Tooltip("Without Space Setup, Nubi walks on a small disc around the user instead of not at all.")]
+        public bool fallbackFloor = true;
+        public float fallbackFloorRadius = 1.5f;
+        [Tooltip("Speak the Space Setup offer once per session when the room is not scanned.")]
+        public bool offerRoomScan = true;
+
         [Header("Behaviour")]
         public bool acknowledgeOnRelease = true;
         [Tooltip("Seconds the OpenXR head pose is predicted ahead of LateUpdate (R1 marker test).")]

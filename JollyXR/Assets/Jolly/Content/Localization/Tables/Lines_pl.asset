@@ -150,6 +150,14 @@ MonoBehaviour:
     m_Localized: "Nie widz\u0119 tego wyra\u017Anie. Mo\u017Cesz podsun\u0105\u0107 to bli\u017Cej?"
     m_Metadata:
       m_Items: []
+  - m_Id: 154132513
+    m_Localized: "Nie znam jeszcze twojego pokoju, wi\u0119c zostan\u0119 blisko ciebie. Je\u015Bli chcesz, \u017Cebym pochodzi\u0142 po pokoju, popro\u015B mnie o zeskanowanie pokoju."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132514
+    m_Localized: "Dobrze! Rozejrzyj si\u0119 po pokoju, a ja b\u0119d\u0119 tu, kiedy sko\u0144czysz."
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []
