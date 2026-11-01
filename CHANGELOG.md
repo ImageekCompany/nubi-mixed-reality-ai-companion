@@ -34,6 +34,7 @@ Each work package appends bullets under its own heading only (`docs/scope.md` §
 - `InteractionSignals`: head-gaze dwell, open palm toward Nubi, XRI poke.
 - `QuestBuild` builds Addressables content before the player; setup enables the Meta bounding-box feature.
 - Fakes: `FakeFrameSource`, `FakeUserPoseProvider`, `FakeWorldQuery`, `FakeSpatialAnchors`, `FakeVoiceActivation`, `FakeInteractionSignals`.
+- Review fixes: Camera2 lens pose no longer disposes the Unity-owned activity (it always fell back on device) and is read on first capture; a held pinch survives tracking dropouts up to 200 ms; race-free `CameraFrameSlot` dispose; camera manager enabled even if the permission request throws; cancellation-safe anchors; planes that lose the Floor label leave the NavMesh; controller-aim pointing fallback and a head-pose prediction lead for R1.
 
 ### WP6
 
