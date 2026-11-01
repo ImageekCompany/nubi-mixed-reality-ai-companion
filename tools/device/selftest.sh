@@ -131,7 +131,16 @@ awk '/FPS=/ { split(substr($0, index($0, "FPS=") + 4), f, "/"); frames += f[1]
 # Phantom hand tracking with nobody wearing the headset (selftest-report.md, 4d228c8: 38-56 lines per run).
 echo "[selftest] hand tracking: $(grep -c 'evt=hands.tracked' "$OUT/logcat.txt" || true) evt=hands.tracked lines"
 
-python3 -I - "$OUT/selftest_results.json" <<'PY'
+# Passthrough is a composition layer the compositor reports every 2 s; screencap can't show it and the app can't see
+# it. numLayers stayed 0 for every run until the Composition Layers feature was enabled: the wearer saw only black.
+PT_LAYERS="$(adb logcat -d -v time | grep 'PassthroughApiManager' | grep -oE 'numLayers: [0-9]+' | tail -n 3 \
+  | grep -oE '[0-9]+' | sort -n | tail -n 1 || true)"
+echo "[selftest] passthrough: compositor numLayers=${PT_LAYERS:-none} (needs >= 1)"
+PT_FAIL=0
+[[ "${PT_LAYERS:-0}" -ge 1 ]] || PT_FAIL=1
+
+RC=0
+python3 -I - "$OUT/selftest_results.json" <<'PY' || RC=$?
 import json, sys
 r = json.load(open(sys.argv[1], encoding="utf-8"))
 keys = ["release_to_first_audio_ms", "tool_to_answer_audio_ms", "tool_to_mask_ms", "found", "similarity", "caption_ms", "silence_ms", "avg_fps", "p95_frame_ms",
@@ -159,3 +168,8 @@ for s in r["scenarios"]:
 print(f"\nOVERALL {r['overall']}   Meta spend this run: ${r['spentUsd']:.4f} (log it in docs/api-spend.md)")
 sys.exit(1 if r["overall"] == "FAIL" else 0)
 PY
+if [[ $PT_FAIL -eq 1 ]]; then
+  echo "[selftest] FAIL: no passthrough layer; the wearer sees black" >&2
+  exit 1
+fi
+exit $RC

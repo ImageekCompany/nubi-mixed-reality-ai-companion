@@ -46,6 +46,10 @@ namespace Jolly.Editor.Build
             MetaQuestFeature.featureId,
             ARSessionFeature.featureId,
             ARCameraFeature.featureId,
+            // OpenXRCompositionLayersFeature.FeatureId (the type only compiles under XR_COMPOSITION_LAYERS, hence the
+            // literal). meta-openxr draws passthrough as a composition layer; with this off the camera starts but the
+            // compositor gets no passthrough layer and the user sees black.
+            "com.unity.openxr.feature.compositionlayers",
             ARPlaneFeature.featureId,
             ARBoundingBoxFeature.featureId,
             ARRaycastFeature.featureId,
