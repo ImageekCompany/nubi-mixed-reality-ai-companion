@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Linq;
 using Cysharp.Threading.Tasks;
+using Jolly.Contracts;
 using Jolly.Presentation;
 using Jolly.Testing;
 using NUnit.Framework;
@@ -85,6 +86,29 @@ namespace Jolly.Tests.PlayMode.Presentation
             Assert.That(Visible.Select(b => b.CallId), Is.EqualTo(new[] { "call_1" }));
         });
 
+        [TestCase(ConversationState.Listening)]
+        [TestCase(ConversationState.Idle)]
+        public void TurnEndingWithoutToolCompleted_FailsTheRunningBadge(ConversationState to)
+        {
+            _events.RaiseToolStarted("call_1", "capture_and_identify");
+
+            _events.RaiseState(ConversationState.Speaking, to);
+
+            var badge = Visible.Single();
+            Assert.That(badge.State, Is.EqualTo(BadgeState.Failed));
+            Assert.That(badge.HideAt, Is.EqualTo(_clock.Now + 4.0).Within(1e-6));
+        }
+
+        [Test]
+        public void ThinkingOrActing_LeaveTheRunningBadge()
+        {
+            _events.RaiseToolStarted("call_1", "walk_to");
+
+            _events.RaiseState(ConversationState.Thinking, ConversationState.Acting);
+
+            Assert.That(Visible.Single().State, Is.EqualTo(BadgeState.Running));
+        }
+
         [Test]
         public void MoreEventsThanSlots_ReuseTheSlotClosestToExpiry()
         {
@@ -98,5 +122,17 @@ namespace Jolly.Tests.PlayMode.Presentation
             Assert.That(Visible.Select(b => b.Title), Does.Contain("model_" + (_view.Slots.Length + 1)));
             Assert.That(Visible.Select(b => b.Title), Does.Not.Contain("model_0"));
         }
+
+        [UnityTest]
+        public IEnumerator Destroy_UnsubscribesFromEveryEvent() => UniTask.ToCoroutine(async () =>
+        {
+            Assert.That(_events.SubscriberCount, Is.GreaterThan(0));
+
+            Object.Destroy(_root);
+            await UniTask.NextFrame();
+
+            Assert.That(_events.SubscriberCount, Is.Zero);
+            Assert.That(_localizer.SubscriberCount, Is.Zero);
+        });
     }
 }

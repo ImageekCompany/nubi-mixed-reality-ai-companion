@@ -31,6 +31,7 @@ namespace Jolly.Presentation
             _events.ToolStarted += OnToolStarted;
             _events.ToolCompleted += OnToolCompleted;
             _events.ModelCallCompleted += OnModelCallCompleted;
+            _events.StateChanged += OnStateChanged;
             _localizer.Changed += Localize;
             Localize();
             foreach (var slot in _slots)
@@ -55,6 +56,20 @@ namespace Jolly.Presentation
         void OnModelCallCompleted(string model, double ms) =>
             Take().Show(null, model, ms.ToString("0", CultureInfo.InvariantCulture) + " ms", BadgeState.Succeeded,
                 _clock.Now + _holdSeconds);
+
+        /// <summary>A cancelled turn (barge-in, failure) raises no ToolCompleted for its unfinished calls
+        /// (contracts §3 RunTurn), so a new turn or Idle ends whatever is still running.</summary>
+        void OnStateChanged(ConversationState from, ConversationState to)
+        {
+            if (to != ConversationState.Listening && to != ConversationState.Idle)
+                return;
+            var hideAt = _clock.Now + _holdSeconds;
+            foreach (var slot in _slots)
+            {
+                if (slot.IsVisible && slot.State == BadgeState.Running)
+                    slot.Set(_failedText, BadgeState.Failed, hideAt);
+            }
+        }
 
         ToolBadge Find(string callId)
         {
@@ -108,6 +123,7 @@ namespace Jolly.Presentation
                 _events.ToolStarted -= OnToolStarted;
                 _events.ToolCompleted -= OnToolCompleted;
                 _events.ModelCallCompleted -= OnModelCallCompleted;
+                _events.StateChanged -= OnStateChanged;
             }
             if (_localizer != null)
                 _localizer.Changed -= Localize;
