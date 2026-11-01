@@ -1,0 +1,80 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b11a58205ec3474ca216360e9fa74a8, type: 3}
+  m_Name: Personas Shared Data
+  m_EditorClassIdentifier: Unity.Localization::UnityEngine.Localization.Tables.SharedTableData
+  m_TableCollectionName: Personas
+  m_TableCollectionNameGuidString: 2671620324b424cf695ade6c792936de
+  m_Entries:
+  - m_Id: 565174272
+    m_Key: companion.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 573562880
+    m_Key: companion.prompt
+    m_Metadata:
+      m_Items: []
+  - m_Id: 573562881
+    m_Key: companion.greeting
+    m_Metadata:
+      m_Items: []
+  - m_Id: 573562882
+    m_Key: mentor.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 577757184
+    m_Key: mentor.prompt
+    m_Metadata:
+      m_Items: []
+  - m_Id: 577757185
+    m_Key: mentor.greeting
+    m_Metadata:
+      m_Items: []
+  - m_Id: 577757186
+    m_Key: guru.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 577757187
+    m_Key: guru.prompt
+    m_Metadata:
+      m_Items: []
+  - m_Id: 577757188
+    m_Key: guru.greeting
+    m_Metadata:
+      m_Items: []
+  - m_Id: 577757189
+    m_Key: psychologist.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 577757190
+    m_Key: psychologist.prompt
+    m_Metadata:
+      m_Items: []
+  - m_Id: 577757191
+    m_Key: psychologist.greeting
+    m_Metadata:
+      m_Items: []
+  - m_Id: 577757192
+    m_Key: psychologist.safety
+    m_Metadata:
+      m_Items: []
+  m_Metadata:
+    m_Items: []
+  m_KeyGenerator:
+    rid: 8066298804302774272
+  references:
+    version: 2
+    RefIds:
+    - rid: 8066298804302774272
+      type: {class: DistributedUIDGenerator, ns: UnityEngine.Localization.Tables, asm: Unity.Localization}
+      data:
+        m_CustomEpoch: 1793511464982

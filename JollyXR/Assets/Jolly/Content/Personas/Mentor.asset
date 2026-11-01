@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2a1a2fe5883f346c4bb9b66770c595b2, type: 3}
+  m_Name: Mentor
+  m_EditorClassIdentifier: Jolly.App::Jolly.App.PersonaProfileAsset
+  id: mentor
+  hasSafetyNotice: 0
+  voices:
+  - languageTag: en
+    voiceId: Charlie
+    style: 
+    speed: 100
+    pitch: 100
+  allowedTools: []
+  persistMemory: 1
+  crisisHandoff: 0
+  defaultMood: 2
+  accentColor: {r: 0.3, g: 0.7, b: 1, a: 1}

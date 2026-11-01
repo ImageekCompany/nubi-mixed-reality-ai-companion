@@ -20,8 +20,18 @@ MonoBehaviour:
     m_ReadOnly: 1
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 2671620324b424cf695ade6c792936de
+    m_Address: Assets/Jolly/Content/Localization/Tables/Personas Shared Data.asset
+    m_ReadOnly: 1
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 489c9b8e0bb904f43ade3af7bd9f84cd
     m_Address: Assets/Jolly/Content/Localization/Tables/UI Shared Data.asset
+    m_ReadOnly: 1
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: e43bbaf9d4b10476682530a1ff8384f5
+    m_Address: Assets/Jolly/Content/Localization/Tables/Lines Shared Data.asset
     m_ReadOnly: 1
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0

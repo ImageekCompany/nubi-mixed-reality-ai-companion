@@ -1,0 +1,74 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: faec2cba08ef64c07a0d5fe5ab27cc9c, type: 3}
+  m_Name: JollyConfig
+  m_EditorClassIdentifier: Jolly.App::Jolly.App.JollyConfig
+  chatModel: muse-spark-1.3
+  syntheticChatModel: muse-spark-1.3-contributor
+  samModel: sam-3.1
+  asrModel: muse-voice-transcribe-1.0
+  hardCapUsd: 20
+  chatReservationUsd: 0.02
+  prices:
+  - model: muse-spark-1.3
+    inputPerMillion: 1.25
+    cachedInputPerMillion: 0.15
+    outputPerMillion: 4.25
+    perImage: 0
+    perAudioHour: 0
+  - model: muse-spark-1.3-contributor
+    inputPerMillion: 0.1
+    cachedInputPerMillion: 0.002
+    outputPerMillion: 0.2
+    perImage: 0
+    perAudioHour: 0
+  - model: sam-3.1
+    inputPerMillion: 0
+    cachedInputPerMillion: 0
+    outputPerMillion: 0
+    perImage: 0.0025
+    perAudioHour: 0
+  - model: muse-voice-transcribe-1.0
+    inputPerMillion: 0
+    cachedInputPerMillion: 0
+    outputPerMillion: 0
+    perImage: 0
+    perAudioHour: 0.18
+  voiceFirstEventSeconds: 6
+  voiceAttempts: 2
+  backgroundFirstEventSeconds: 10
+  backgroundAttempts: 3
+  llmIdleSeconds: 10
+  samSeconds: 5
+  samAttempts: 2
+  visionSeconds: 8
+  visionMaxOutputTokens: 600
+  witFirstChunkSeconds: 3
+  witIdleSeconds: 3
+  healthProbeSeconds: 3
+  defaultPersonaId: companion
+  personas:
+  - {fileID: 11400000, guid: 969af0e2ed41c476a9ba18f148d63b6d, type: 2}
+  - {fileID: 11400000, guid: db73e457726f14769a3ed8045224532d, type: 2}
+  - {fileID: 11400000, guid: 35b52b9c6049649cfa897f00c97d8d17, type: 2}
+  - {fileID: 11400000, guid: 7c38c06b6baac445ca690e42b3783790, type: 2}
+  localeVoices: {fileID: 11400000, guid: 295b676912e5242eea0947dcfd953595, type: 2}
+  lineClips: {fileID: 11400000, guid: 6a01e4385f9c84c99b1a14cb3e359cb2, type: 2}
+  preloadTables:
+  - UI
+  - Lines
+  - Personas
+  - Crisis
+  editorCameraStill: {fileID: 4900000, guid: 8d67d578542784ffc9f64d6a7139c4be, type: 3}
+  acknowledgeOnRelease: 1
+  headPoseLeadSeconds: 0
+  minimumLogLevel: 1
