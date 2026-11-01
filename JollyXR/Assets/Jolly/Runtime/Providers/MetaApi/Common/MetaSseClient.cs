@@ -24,14 +24,18 @@ namespace Jolly.Providers.MetaApi.Common
             _clock = clock;
         }
 
-        /// <summary>Completes once the first event has arrived; it is <see cref="MetaSseStream.Current"/>.</summary>
+        /// <summary>
+        /// Completes once the first event has arrived; it is <see cref="MetaSseStream.Current"/>. Every attempt is
+        /// counted in <paramref name="attempts"/>, also when Open throws.
+        /// </summary>
         public UniTask<MetaSseStream> Open(HttpRequestSpec request, TimeSpan firstEventTimeout, TimeSpan idleTimeout,
-                                           RetryPolicy policy, CancellationToken ct) =>
-            _retry.Execute(t => OpenOnce(request, firstEventTimeout, idleTimeout, t), policy, ct);
+                                           RetryPolicy policy, OpenAttempts attempts, CancellationToken ct) =>
+            _retry.Execute(t => OpenOnce(request, firstEventTimeout, idleTimeout, attempts, t), policy, ct);
 
         async UniTask<MetaSseStream> OpenOnce(HttpRequestSpec request, TimeSpan firstEventTimeout, TimeSpan idleTimeout,
-                                              CancellationToken ct)
+                                              OpenAttempts attempts, CancellationToken ct)
         {
+            attempts.OnStarted();
             var stream = new MetaSseStream(_transport, request, new StreamTimeout(_clock, ct), firstEventTimeout, idleTimeout, ct);
             try
             {
@@ -39,8 +43,10 @@ namespace Jolly.Providers.MetaApi.Common
                     return stream;
                 throw MetaErrors.Protocol("stream ended before its first event");
             }
-            catch
+            catch (Exception e)
             {
+                if (e is ProviderException { HttpStatus: >= 400 })
+                    attempts.OnRejected();
                 await stream.DisposeAsync();
                 throw;
             }

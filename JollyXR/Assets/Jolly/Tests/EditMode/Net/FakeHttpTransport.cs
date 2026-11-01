@@ -26,6 +26,8 @@ namespace Jolly.Tests.EditMode.Net
         public IReadOnlyList<CancellationToken> Tokens => _tokens;
         /// <summary>Requests whose script has ended: completed, failed, aborted or abandoned by the consumer.</summary>
         public int Ended { get; private set; }
+        /// <summary>Requests whose script was read to its end rather than aborted.</summary>
+        public int ReadToEnd { get; private set; }
 
         public FakeHttpTransport Respond(IEnumerable<SseEvent> events) => Enqueue(async (w, _) =>
         {
@@ -62,6 +64,7 @@ namespace Jolly.Tests.EditMode.Net
                 try
                 {
                     await _scripts.Dequeue()(writer, ct);
+                    ReadToEnd++;
                 }
                 finally
                 {

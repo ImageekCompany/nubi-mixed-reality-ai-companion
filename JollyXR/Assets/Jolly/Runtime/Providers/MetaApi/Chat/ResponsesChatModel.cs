@@ -51,11 +51,11 @@ namespace Jolly.Providers.MetaApi.Chat
                 throw new ProviderException(MetaErrors.Provider, ProviderErrorKind.BudgetExceeded, "Usage cap reached.");
 
             var reducer = new ResponsesStreamReducer(model);
+            var attempts = new OpenAttempts();
             var settled = false;
-            var rejected = false;
             try
             {
-                var stream = await _client.Open(http, _options.FirstEventTimeout, _options.IdleTimeout, _options.RetryPolicy, ct);
+                var stream = await _client.Open(http, _options.FirstEventTimeout, _options.IdleTimeout, _options.RetryPolicy, attempts, ct);
                 try
                 {
                     var events = new List<ModelEvent>(4);
@@ -65,12 +65,17 @@ namespace Jolly.Providers.MetaApi.Chat
                         foreach (var e in events)
                         {
                             if (e.Kind == ModelEventKind.Completed)
-                                settled = Settle(reservation, e.Result);
+                            {
+                                settled = true;
+                                Settle(reservation, e.Result);
+                            }
                             await writer.YieldAsync(e);
                         }
                         events.Clear();
                     }
                     while (!reducer.IsCompleted && await stream.MoveNext());
+                    if (reducer.IsCompleted)
+                        await DrainAfterCompletion(stream);
                 }
                 finally
                 {
@@ -81,20 +86,35 @@ namespace Jolly.Providers.MetaApi.Chat
             }
             catch (ProviderException e)
             {
-                rejected = e.HttpStatus >= 400;
                 LogFailure(model, e);
                 throw;
             }
             finally
             {
-                // A request the server rejected with a status was not billed; anything else may have been.
                 if (!settled)
-                    _meter.RecordEstimate(reservation, model, rejected ? 0 : body.InputChars / CharsPerToken,
+                    _meter.RecordEstimate(reservation, model, attempts.PossiblyBilled * (long)(body.InputChars / CharsPerToken),
                         reducer.OutputChars / CharsPerToken);
             }
         }
 
-        bool Settle(long reservation, ModelTurnResult result)
+        /// <summary>
+        /// Reads on to [DONE] and the end of the body instead of aborting, so the connection can be reused by the next
+        /// round. The turn has already succeeded: a failure here, including the idle timeout, is ignored.
+        /// </summary>
+        static async UniTask DrainAfterCompletion(MetaSseStream stream)
+        {
+            try
+            {
+                while (await stream.MoveNext())
+                {
+                }
+            }
+            catch (ProviderException)
+            {
+            }
+        }
+
+        void Settle(long reservation, ModelTurnResult result)
         {
             var usage = result.Usage;
             var usd = _meter.Record(reservation, usage);
@@ -102,7 +122,6 @@ namespace Jolly.Providers.MetaApi.Chat
                 _log.Write(LogLevel.Info, Category, $"evt=llm.completed model={usage.Model} req={result.ResponseId} " +
                                                     $"finish={result.FinishReason} in={usage.InputTokens} cached={usage.CachedInputTokens} " +
                                                     $"out={usage.OutputTokens} usd={usd}");
-            return true;
         }
 
         void LogFailure(string model, ProviderException e)

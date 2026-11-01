@@ -229,6 +229,72 @@ namespace Jolly.Tests.EditMode.Chat
         }
 
         [Test]
+        public void Stream_TimedOutAttemptThenRejected_StillBillsTheTimedOutAttemptsInput()
+        {
+            _transport.Hang().Fail(new HttpFailureException(503, ""));
+            var run = Collect(Model().Stream(Request(), CancellationToken.None), new List<ModelEvent>(), CancellationToken.None);
+
+            _clock.Advance(TimeSpan.FromSeconds(6));
+
+            Assert.That(Failure(run).HttpStatus, Is.EqualTo(503));
+            Assert.That(_meter.Estimates.Single().InputTokens, Is.EqualTo(InputTokens()));
+        }
+
+        [Test]
+        public void Stream_EveryAttemptTimedOut_BillsTheInputOncePerAttempt()
+        {
+            _transport.Hang().Hang();
+            var run = Collect(Model().Stream(Request(), CancellationToken.None), new List<ModelEvent>(), CancellationToken.None);
+
+            _clock.Advance(TimeSpan.FromSeconds(6));
+            _clock.Advance(TimeSpan.FromSeconds(6));
+
+            Assert.That(Failure(run).Kind, Is.EqualTo(ProviderErrorKind.Timeout));
+            Assert.That(_meter.Estimates.Single().InputTokens, Is.EqualTo(2 * InputTokens()));
+        }
+
+        [Test]
+        public void Stream_SpentChangedSubscriberThrows_SettlesTheReservationOnlyOnce()
+        {
+            _meter.SpentChanged += _ => throw new InvalidOperationException("subscriber");
+            _transport.Respond(SseFixtures.Parse("responses_text"));
+
+            var run = Collect(Model().Stream(Request(), CancellationToken.None), new List<ModelEvent>(), CancellationToken.None);
+
+            Assert.Throws<InvalidOperationException>(() => run.GetAwaiter().GetResult());
+            Assert.That(_meter.Records, Has.Count.EqualTo(1));
+            Assert.That(_meter.Estimates, Is.Empty);
+        }
+
+        [Test]
+        public void Stream_Completed_ReadsTheStreamToItsEndInsteadOfAborting()
+        {
+            _transport.Respond(SseFixtures.Parse("responses_text"));
+
+            var run = Collect(Model().Stream(Request(), CancellationToken.None), new List<ModelEvent>(), CancellationToken.None);
+
+            Assert.That(run.Status, Is.EqualTo(UniTaskStatus.Succeeded));
+            Assert.That(_transport.ReadToEnd, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void Stream_SilentAfterCompleted_SucceedsOnceTheIdleTimeoutAborts()
+        {
+            _transport.RespondThenHang(SseFixtures.Parse("responses_text").Where(e => !e.IsDone));
+            var events = new List<ModelEvent>();
+            var run = Collect(Model().Stream(Request(), CancellationToken.None), events, CancellationToken.None);
+            var completedWhilePending = events.Last().Kind == ModelEventKind.Completed && run.Status == UniTaskStatus.Pending;
+
+            _clock.Advance(TimeSpan.FromSeconds(10.1));
+
+            Assert.That(completedWhilePending, Is.True);
+            Assert.That(run.Status, Is.EqualTo(UniTaskStatus.Succeeded));
+            Assert.That(_meter.Records, Has.Count.EqualTo(1));
+            Assert.That(_meter.Estimates, Is.Empty);
+            Assert.That(_transport.Ended, Is.EqualTo(1));
+        }
+
+        [Test]
         public void Stream_EndsWithoutCompletion_ThrowsProtocol()
         {
             _transport.Respond(SseFixtures.Parse("responses_text").Take(5));
@@ -251,6 +317,8 @@ namespace Jolly.Tests.EditMode.Chat
             Instructions = "You are Nubi.",
             Input = new[] { ConversationItem.User("Say hello to me in one short sentence.") },
         };
+
+        static long InputTokens() => new ResponsesRequestWriter().Write(Request(), LiveModel).InputChars / 4;
 
         static async UniTask Collect(IUniTaskAsyncEnumerable<ModelEvent> stream, List<ModelEvent> into, CancellationToken ct)
         {
