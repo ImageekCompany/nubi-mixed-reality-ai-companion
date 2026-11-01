@@ -10,7 +10,7 @@ namespace Jolly.Providers.MetaApi.Asr
     /// <see cref="ISpeechToText"/> over Muse Voice Transcribe realtime (ADR-0005). <see cref="Transcribe"/> connects at
     /// once (<see cref="AsrSessionStream"/>), so a call at PTT press overlaps the 1.0–2.9 s handshake measured on Quest
     /// with the user speaking. Audio buffered in the source meanwhile goes out at once after the ack.
-    /// Fails with ProviderException: Unauthorized (no key, rejected key), BudgetExceeded, Timeout (no ack),
+    /// Fails with ProviderException: Unauthorized (no key, rejected key), BudgetExceeded, Timeout (not open in 5 s),
     /// BadRequest, RateLimited, Server, Network or Protocol.
     /// </summary>
     public sealed class MuseRealtimeSpeechToText : ISpeechToText

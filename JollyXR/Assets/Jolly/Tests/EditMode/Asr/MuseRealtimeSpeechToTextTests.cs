@@ -199,6 +199,21 @@ namespace Jolly.Tests.EditMode.Asr
         }
 
         [Test]
+        public void ConnectThatNeverCompletes_TimesOutAfter5Seconds()
+        {
+            _socket.HoldConnect = true;
+            var events = Transcribe();
+
+            _clock.Advance(TimeSpan.FromSeconds(4.9));
+            var pendingBefore = !events.IsCompleted;
+            _clock.Advance(TimeSpan.FromSeconds(0.1));
+
+            Assert.That(pendingBefore, Is.True);
+            Assert.That(Kind(events), Is.EqualTo(ProviderErrorKind.Timeout));
+            Assert.That(_socket.IsDisposed, Is.True);
+        }
+
+        [Test]
         public void Transcribe_ConnectsBeforeTheStreamIsEnumerated()
         {
             var stream = _stt.Transcribe(_audio.Reader.ReadAllAsync(), new SttOptions(), CancellationToken.None);

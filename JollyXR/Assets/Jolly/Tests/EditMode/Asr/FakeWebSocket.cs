@@ -8,7 +8,7 @@ namespace Jolly.Tests.EditMode.Asr
 {
     /// <summary>
     /// Scripted server side. Sends complete synchronously and are recorded; receives are fed by <see cref="Push"/>.
-    /// Cancelling a pending receive fails it, as a real socket abort does.
+    /// Cancelling a pending receive (or a held connect) fails it, as a real socket abort does.
     /// </summary>
     sealed class FakeWebSocket : IWebSocketConnection
     {
@@ -28,12 +28,18 @@ namespace Jolly.Tests.EditMode.Asr
         public Uri ConnectedUri { get; private set; }
         public bool IsDisposed { get; private set; }
         public Exception SendFailure { get; set; }
+        /// <summary>Connect never completes on its own, like a route that drops the SYN.</summary>
+        public bool HoldConnect { get; set; }
         public IReadOnlyList<Frame> Sent => _sent;
 
         public UniTask ConnectAsync(Uri uri, CancellationToken ct)
         {
             ConnectedUri = uri;
-            return UniTask.CompletedTask;
+            if (!HoldConnect)
+                return UniTask.CompletedTask;
+            var pending = new UniTaskCompletionSource();
+            ct.Register(() => pending.TrySetCanceled(ct));
+            return pending.Task;
         }
 
         public UniTask SendTextAsync(string text, CancellationToken ct) => Record(new Frame(text, null), ct);

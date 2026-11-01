@@ -9,7 +9,8 @@ using Jolly.Net.WebSockets;
 namespace Jolly.Providers.MetaApi.Asr
 {
     /// <summary>
-    /// One push-to-talk WebSocket session: connect → handshake → ack (clock timeout) → uplink and downlink run
+    /// One push-to-talk WebSocket session: connect → handshake → ack, all under one clock timeout (a dead route stalls
+    /// the connect itself for the OS timeout, tens of seconds) → uplink and downlink run
     /// concurrently → the first final ends it. An uplink failure cancels the downlink and is rethrown in its place,
     /// so the caller always sees the root cause rather than the cancellation it triggered.
     /// </summary>
@@ -41,9 +42,7 @@ namespace Jolly.Providers.MetaApi.Asr
             var started = _clock.Now;
             try
             {
-                await _socket.ConnectAsync(uri, session.Token);
-                await _socket.SendTextAsync(handshake, session.Token);
-                await ReceiveAckAsync(session);
+                await OpenAsync(uri, handshake, session);
                 Log(LogLevel.Info, "evt=asr.ack ms={0:F0} session={1}", (_clock.Now - started) * 1000, _sessionId);
 
                 SendAsync(audio, session).Forget();
@@ -59,15 +58,17 @@ namespace Jolly.Providers.MetaApi.Asr
             }
         }
 
-        async UniTask ReceiveAckAsync(CancellationTokenSource session)
+        async UniTask OpenAsync(Uri uri, string handshake, CancellationTokenSource session)
         {
-            using var ack = CancellationTokenSource.CreateLinkedTokenSource(session.Token);
-            using var timeout = new ClockTimeout(_clock, _options.AckTimeout, ack);
+            using var open = CancellationTokenSource.CreateLinkedTokenSource(session.Token);
+            using var timeout = new ClockTimeout(_clock, _options.AckTimeout, open);
             try
             {
+                await _socket.ConnectAsync(uri, open.Token);
+                await _socket.SendTextAsync(handshake, open.Token);
                 while (true)
                 {
-                    var e = await ReceiveEventAsync(ack.Token);
+                    var e = await ReceiveEventAsync(open.Token);
                     if (e.Kind == MuseAsrEventKind.Ack)
                     {
                         _sessionId = e.SessionId;
@@ -80,7 +81,7 @@ namespace Jolly.Providers.MetaApi.Asr
             catch (OperationCanceledException) when (timeout.Fired && !session.IsCancellationRequested)
             {
                 throw new ProviderException(MuseAsrErrors.Provider, ProviderErrorKind.Timeout,
-                    $"No ASR ack within {_options.AckTimeout.TotalSeconds:F0} s.");
+                    $"ASR session not acknowledged within {_options.AckTimeout.TotalSeconds:F0} s of connecting.");
             }
         }
 
