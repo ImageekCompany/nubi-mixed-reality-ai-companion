@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace Jolly.XR.Occlusion
 {
-    /// <summary>A 1 m cube centred on the origin, outward-facing, positions only: all a depth-only occluder needs.</summary>
+    /// <summary>A 1 m cube centred on the origin, outward-facing, positions only: all an occluder box needs.</summary>
     public static class UnitCube
     {
         static readonly int[] Triangles =

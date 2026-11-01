@@ -1,18 +1,21 @@
-// Depth-only stand-in for a real object (SceneOccluders, ADR-0023). It writes depth and no colour, one queue step
-// before Nubi, so Nubi's fragments behind it fail the depth test and the eye buffer keeps the clear alpha of 0 there:
-// the passthrough underlay, i.e. the real furniture, shows.
+// Stand-in for a real object (SceneOccluders, ADR-0023). Drawn after Nubi and its shadow, it depth-tests against
+// them and writes the clear colour (0,0,0,0) wherever it is nearer, so the passthrough underlay, i.e. the real
+// furniture, shows there. It writes no depth and comes before the Transparent queue, so world-space UI (TMP and UI
+// shaders: Queue Transparent, ZTest [unity_GUIZTestMode] = LEqual on a world-space canvas) still tests only against
+// Nubi, as with environment depth. A depth-only box in front of Nubi's queue would hide that UI too.
 Shader "Jolly/XR/DepthOccluder"
 {
     SubShader
     {
-        Tags { "RenderType" = "Opaque" "RenderPipeline" = "UniversalPipeline" "Queue" = "Geometry-1" "IgnoreProjector" = "True" }
+        Tags { "RenderType" = "Transparent" "RenderPipeline" = "UniversalPipeline" "Queue" = "Transparent-1" "IgnoreProjector" = "True" }
 
         Pass
         {
             Name "DepthOccluder"
             Tags { "LightMode" = "UniversalForward" }
-            ZWrite On
-            ColorMask 0
+            Blend Off
+            ZWrite Off
+            ZTest LEqual
 
             HLSLPROGRAM
             #pragma vertex Vert

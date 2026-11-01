@@ -7,16 +7,16 @@ using UnityEngine.XR.ARSubsystems;
 namespace Jolly.XR.Occlusion
 {
     /// <summary>
-    /// The occlusion fallback (scope "Should 3", ADR-0023): one depth-only box per Space Setup bounding box, drawn before
-    /// Nubi with no colour write, so Nubi's pixels behind furniture fail the depth test and the passthrough shows through
-    /// the transparent eye buffer. Planes are not used: the boxes already cover tables and couches, the floor would clip
-    /// Nubi's feet, and Nubi never walks behind a wall.
+    /// The occlusion fallback (scope "Should 3", ADR-0023): one box per Space Setup bounding box, drawn after Nubi and
+    /// before the world-space UI. Where a box is nearer than Nubi it writes the clear colour and no depth, so the
+    /// passthrough shows through the transparent eye buffer and the UI is never hidden. Planes are not used: the boxes
+    /// already cover tables and couches, the floor would clip Nubi's feet, and Nubi never walks behind a wall.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class SceneOccluders : MonoBehaviour
     {
         [SerializeField] ARBoundingBoxManager boxes;
-        [Tooltip("Jolly/XR/DepthOccluder: ZWrite on, ColorMask 0, queue before Nubi.")]
+        [Tooltip("Jolly/XR/DepthOccluder: writes (0,0,0,0) where nearer than Nubi, no depth, queued between Nubi and the UI.")]
         [SerializeField] Material occluderMaterial;
 
         readonly Dictionary<TrackableId, MeshRenderer> _occluders = new();

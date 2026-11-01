@@ -2,11 +2,13 @@
 using System.Collections;
 using Jolly.XR.Occlusion;
 using NUnit.Framework;
+using TMPro;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.TestTools;
 using UnityEngine.TestTools.Utils;
+using UnityEngine.UI;
 using UnityEngine.XR.ARSubsystems;
 using Object = UnityEngine.Object;
 
@@ -15,6 +17,9 @@ namespace Jolly.Tests.PlayMode.XR
     public sealed class SceneOccludersTests
     {
         const string OccluderMaterial = "Assets/Jolly/Content/Rendering/Materials/M_SceneOccluder.mat";
+        const string NubiPrefab = "Assets/Jolly/Content/Character/Nubi/Nubi.prefab";
+        const string UiPrefabFolder = "Assets/Jolly/Runtime/Presentation/Prefabs/";
+        static readonly string[] UiPrefabs = { "Captions", "SettingsPanel", "StatusIndicator", "ToolBadges", "LatencyHud" };
         static readonly TrackableId Table = new(1, 1);
 
         GameObject _go;
@@ -126,7 +131,32 @@ namespace Jolly.Tests.PlayMode.XR
             Assert.That(shader, Is.Not.Null, name);
             Assert.That(ShaderUtil.ShaderHasError(shader), Is.False, name);
             Assert.That(ShaderUtil.GetShaderMessageCount(shader), Is.Zero, name);
-            Assert.That(shader.renderQueue, Is.LessThan(2000), "drawn before Nubi's Geometry queue");
+        }
+
+        // The occluder writes no depth, so its queue is all that decides what it hides: everything of Nubi's drawn
+        // before it, none of the world-space UI drawn after it.
+        [Test]
+        public void Occluder_IsDrawnAfterNubiAndItsShadow_AndBeforeTheWorldSpaceUi()
+        {
+            var occluder = AssetDatabase.LoadAssetAtPath<Material>(OccluderMaterial).renderQueue;
+
+            var nubi = AssetDatabase.LoadAssetAtPath<GameObject>(NubiPrefab);
+            foreach (var renderer in nubi.GetComponentsInChildren<Renderer>(true))
+            foreach (var material in renderer.sharedMaterials)
+                Assert.That(material.renderQueue, Is.LessThan(occluder), $"{renderer.name}/{material.name}");
+
+            foreach (var prefab in UiPrefabs)
+            {
+                var graphics = AssetDatabase.LoadAssetAtPath<GameObject>(UiPrefabFolder + prefab + ".prefab")
+                    .GetComponentsInChildren<Graphic>(true);
+                Assert.That(graphics, Is.Not.Empty, prefab);
+                foreach (var graphic in graphics)
+                {
+                    // TMP_Text.material instantiates the font material; the shared one is what renders.
+                    var material = graphic is TMP_Text text ? text.fontSharedMaterial : graphic.material;
+                    Assert.That(material.renderQueue, Is.GreaterThan(occluder), $"{prefab}/{graphic.name}/{material.name}");
+                }
+            }
         }
 
         static (Vector3, Vector3)[] Zip(Vector3[] a, Vector3[] b)

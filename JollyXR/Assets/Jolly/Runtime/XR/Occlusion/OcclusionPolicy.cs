@@ -4,7 +4,7 @@ namespace Jolly.XR.Occlusion
     public enum OcclusionPreference
     {
         Off,
-        /// <summary>Depth-only boxes from Space Setup bounding boxes; no per-frame GPU depth.</summary>
+        /// <summary>Occluder boxes from Space Setup bounding boxes; no per-frame GPU depth.</summary>
         SceneMeshes,
         /// <summary>Quest environment depth through AR Foundation shader occlusion, scene meshes while it is absent.</summary>
         EnvironmentDepth,
