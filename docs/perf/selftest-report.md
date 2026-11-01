@@ -1,9 +1,34 @@
 # Device self-test report
 
-Latest: 2026-11-01, 14:05–14:37 UTC, stale-frame cause and a 20-turn latency sample on `751acba` (cooled headset, before and after a headset reboot; section below). Before that: 13:03 UTC, one release run of `6f0383c` with the `highlight_part` / `find_object` scenarios and the hand debounce (ADR-0033; section below). Before that: 11:43–11:51 UTC, final verification of `main` `4d228c8` after the occlusion, room, character, Jolly and device-fix merges: three release runs of the default build and one of `--character jolly` (section below). Before that: 11:26–11:38 UTC, six release runs for the device-finding fixes (`3f35f7f`, `6cd06e6`, `4e298d8`; section below). Before that: 09:39–09:45 UTC, three release runs of `main` `dd14847` after the turn-gc and coverage-gate merges (section below). Before that: 08:37–09:27 UTC, the turn-GC and cold-first-turn pass on `fix/turn-gc` (ADR-0023): three "before" runs of `main`, three "after" runs, development IL2CPP (the only player that reports GC per frame), four allocation-profile runs and one release verification run. Before that: 08:20–08:47 UTC, the performance and latency pass on `fix/perf-latency` (ADR-0019), release IL2CPP. Earlier: 06:38–06:50 UTC from `fix/integration-review`, 06:00–06:14 UTC from `feat/wp9-integration`.
+Latest: 2026-11-01, 14:47–14:53 UTC, three default release runs verifying `main` `f311081` after round 1 (section below). Before that: 14:05–14:37 UTC, stale-frame cause and a 20-turn latency sample on `751acba` (cooled headset, before and after a headset reboot; section below). Before that: 13:03 UTC, one release run of `6f0383c` with the `highlight_part` / `find_object` scenarios and the hand debounce (ADR-0033; section below). Before that: 11:43–11:51 UTC, final verification of `main` `4d228c8` after the occlusion, room, character, Jolly and device-fix merges: three release runs of the default build and one of `--character jolly` (section below). Before that: 11:26–11:38 UTC, six release runs for the device-finding fixes (`3f35f7f`, `6cd06e6`, `4e298d8`; section below). Before that: 09:39–09:45 UTC, three release runs of `main` `dd14847` after the turn-gc and coverage-gate merges (section below). Before that: 08:37–09:27 UTC, the turn-GC and cold-first-turn pass on `fix/turn-gc` (ADR-0023): three "before" runs of `main`, three "after" runs, development IL2CPP (the only player that reports GC per frame), four allocation-profile runs and one release verification run. Before that: 08:20–08:47 UTC, the performance and latency pass on `fix/perf-latency` (ADR-0019), release IL2CPP. Earlier: 06:38–06:50 UTC from `fix/integration-review`, 06:00–06:14 UTC from `feat/wp9-integration`.
 Device: Quest 3 `2G0YC1ZF7P090N`, Horizon OS v209. Build: `tools/ci/build.sh` (IL2CPP ARM64 release, 58 MB APK).
 Nobody wore the headset. The room was dim (camera mean luma 23–45 of 255) and had no Space Setup. Command: `tools/device/selftest.sh` (headless: `prox_close`, `guardian_pause 1`, 16 MiB logcat buffer; all restored afterwards).
 Raw outputs (`selftest_results.json`, `logcat.txt`, `vrapi.txt`) are under `artifacts/selftest/`, which is git-ignored.
+
+## Round 1 verification of main (f311081)
+
+`main` at `f311081` (no code change since `751acba`; the commits after it are docs). `tools/ci/test.sh` (EditMode 1056/1056, PlayMode 360/360, pure logic 92.7 % ≥ 91.6 %, 0 `warning CS`), `tools/ci/build.sh` (IL2CPP ARM64 release, 59 MB, `QuestBuild` 0 errors / 2 warnings, SHA-256 `155eff54bd37…`). Three default self-tests back to back on the same headset (uptime 39 min at the start, battery 35 °C), same dim room (mean luma 0.7, vision used the bundled still), no Space Setup. `guardian_pause` read back 0 after each run.
+
+| | Run 1 (14:47) | Run 2 (14:49) | Run 3 (14:51) | Last report (B / C, `751acba`) |
+|---|---|---|---|---|
+| Release → first audio, the 5 voice scenarios (ms) | 3,277 / 2,376 / 1,928 / 1,166 / 1,709 | 3,292 / 1,513 / 3,472 / 1,112 / 1,903 | 2,956 / 2,179 / 1,792 / 960 / 1,929 | — |
+| Release → first audio p50 | 1,928 | 1,903 | 1,929 | C: 1,804 (n=20) |
+| Greeting release → first audio | 3,277 | 3,292 | 2,956 | B: 4,067; C greeting p50 2,362 |
+| Worst launch frame (`FrameSpikeLog`) | 285.9 ms | 279.6 ms | 274.1 ms | 279–290 ms |
+| Idle fps / p95 frame | 72.0 / 13.9 ms | 72.0 / 13.9 ms | 72.0 / 13.9 ms | 72.0 / 13.9 ms |
+| Stale frames, launch / turns / idle | 53 / 0.71 % / 0.22 % | 87 / 0.62 % / 0.13 % | 82 / 0.70 % / 0.18 % | B: 97 / 0.60 % / 0.32 % |
+| Stale frames, whole run | 1.22 % | 1.63 % | 1.62 % | B: 1.77 % |
+| Idle draw / SetPass / triangles / system memory | 14 / 12 / 27.3k / 559 MB | 14 / 12 / 27.3k / 557 MB | 14 / 12 / 27.2k / 559 MB | B: 13 / 12 / 27.1k / 558 MB |
+| Barge-in silence | 29 ms | 55 ms | 40 ms | 28–54 ms |
+| Overall, spend | DEGRADED, $0.0259 | **FAIL**, $0.0248 | **FAIL**, $0.0189 | |
+
+Findings:
+
+- **No frame, stale-frame or memory regression.** Idle, launch and turn numbers are within the spread of the last report.
+- **`voice_come_here` FAILed in runs 2 and 3: the model answered in words without calling `come_here`** (ASR similarity 1.0, `finish=Stop`, one model round; run 1 called it). The model never skipped this tool in earlier reports (7 of 7 in the 20-turn run on the same code), and nothing in the app changed since, so this is model-side variance, not a round 1 regression; it was not fixed here. The app does not log reply text, so what the model said is not known. Run 3 also called `look_at` instead of `find_object` (DEGRADED) and `play_gesture` on the greeting.
+- **The greeting is the slow turn**, 3.0–3.3 s in all three runs; the other turns took 1.0–2.4 s except one vision turn (3,472 ms). The time is model time (request → first text 1.1–2.8 s), as in every earlier report; release → ASR final was 208–361 ms except one 1,302 ms greeting (run 3).
+
+Spend: 3 runs ($0.0259 + $0.0248 + $0.0189); `api-spend.md` has the row.
 
 ## Stale frames are device state, not the build or heat; 20-turn latency (751acba)
 
