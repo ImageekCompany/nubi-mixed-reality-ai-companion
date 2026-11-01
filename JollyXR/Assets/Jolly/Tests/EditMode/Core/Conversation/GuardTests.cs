@@ -202,6 +202,23 @@ namespace Jolly.Tests.EditMode.Core.Conversation
             Assert.That(c.Log.Contains(LogLevel.Info, "evt=guard.settings open=true"), Is.True);
         }
 
+        [TestCase("Suicidal. Close settings.")]
+        [TestCase("Suicide, open settings")]
+        public void ApplySettings_LeavesACrisisKeywordToTheCrisisHandoff(string transcript)
+        {
+            // Arrange
+            var c = new GuardContext();
+            var requests = new List<bool>();
+            c.Guards.SettingsRequested += requests.Add;
+
+            // Act
+            var applied = c.Guards.ApplySettings(transcript);
+
+            // Assert
+            Assert.That(applied, Is.False);
+            Assert.That(requests, Is.Empty);
+        }
+
         [Test]
         public void ApplyComeHere_PersonaWithComeHere_StartsTheWalkThroughTheTool()
         {

@@ -80,11 +80,12 @@ namespace Jolly.Core.Conversation
         }
 
         /// <summary>True on a short settings command, after raising <see cref="SettingsRequested"/>; the turn then ends
-        /// without the model (ADR-0042).</summary>
+        /// without the model (ADR-0042). A crisis keyword is never swallowed: the name-as-heard rule (ADR-0043) would
+        /// take "Suicidal. Close settings." as a command, and this turn ends before the crisis hand-off.</summary>
         public bool ApplySettings(string transcript)
         {
             var command = _settings.Match(transcript);
-            if (command == SettingsCommand.None)
+            if (command == SettingsCommand.None || NeedsCrisisHandoff(transcript))
                 return false;
             var open = command == SettingsCommand.Open;
             _log.Write(LogLevel.Info, "conversation", open ? "evt=guard.settings open=true" : "evt=guard.settings open=false");
