@@ -22,6 +22,7 @@ Open source (MIT). Unity 6.6 + OpenXR. Built for the Meta AI Developer Hackathon
 - [Theme fit: Build for Your World](#theme-fit-build-for-your-world)
 - [What it does](#what-it-does)
 - [How Meta AI is used](#how-meta-ai-is-used-beyond-a-basic-integration)
+- [Controls](#controls)
 - [Architecture](#architecture)
 - [Technical depth](#technical-depth)
 - [Performance budget](#performance-budget)
@@ -81,6 +82,22 @@ The demo runs as six beats. The full shot list is in [`docs/demo-script.md`](doc
 - Gaze, open-palm and poke greetings (not yet confirmed with a person wearing the headset).
 
 The full tool catalogue is in `JollyXR/Assets/Jolly/Runtime/Core/Tools`.
+
+## Controls
+
+Hands are the primary input; Touch controllers work too. With the headset's automatic switching on, putting the controllers down brings your hands back.
+
+| | Hands | Touch controllers |
+|---|---|---|
+| **Talk** (hold, release to send) | Pinch thumb and index finger and hold | Hold **A** (right) or **X** (left) |
+| **Interrupt Nubi** | Pinch again | Press A or X again |
+| **Settings, buttons** | Point the ray and pinch | Point the ray and pull the trigger |
+| **Poke / greet Nubi** | Poke with the index finger, or hold an open palm toward Nubi | |
+
+- **A pinch does not talk** while that hand's ray is on a button or on Nubi, or while your palm faces you (the Horizon OS menu gesture). Settings → *PTT hand* limits pinch-to-talk to your dominant hand.
+- **The trigger never talks.** It belongs to XRI's Activate action and UI press, and a runtime can report a hand pinch as a trigger; binding talk to it would skip the pinch checks above. The grip stays XRI's Select. A and X are bound to the Touch controller layouts by name, so no hand input can press them ([ADR-0021](docs/decisions/0021-controller-push-to-talk.md)).
+- While a hand is tracked, that side's controller button is ignored, which is the same rule XRI's input modality manager uses.
+- Holding a pinch and a button together counts as one press, so it can't interrupt your own turn.
 
 ## How Meta AI is used (beyond a basic integration)
 
@@ -184,7 +201,7 @@ Targets come from [`docs/definition-of-done.md`](docs/definition-of-done.md) §4
 ## Accessibility
 
 - **Captions** for both you and Nubi, on by default, in three text sizes.
-- **Hands-only operation.** Push-to-talk works on either hand or on the dominant hand only. Pinches are ignored while you hover UI or poke Nubi, and while your palm faces you (the system-menu gesture).
+- **Hands-only operation.** Push-to-talk works on either hand or on the dominant hand only. Controllers also work: hold A or X ([Controls](#controls)). Pinches are ignored while you hover UI or poke Nubi, and while your palm faces you (the system-menu gesture).
 - **Seated mode.** Nubi comes to you, and the walking tools are withheld from the model.
 - **Speech rate and volume settings.** The mask highlight uses an outline *and* a fill, so it doesn't rely on colour alone.
 
@@ -268,7 +285,7 @@ As of `fix/integration-review` (2026-11-01), merged into `main`.
 
 - **Walking is unverified on a real floor.** The test room has no Space Setup, so `come_here` answers "I can't reach you just yet". The NavMesh code is EditMode-tested.
 - **Interaction triggers and the pinch are unverified with a wearer.** With nobody wearing the headset, hand tracking produced phantom pinches, so the self-test drives push-to-talk itself.
-- **No controller push-to-talk.** The scene's controller binding is empty; push-to-talk is hand pinch only.
+- **Controller push-to-talk is unverified on the headset.** Holding A or X is tested against the OpenXR device layouts in PlayMode, but no controller session has been run on the Quest.
 - **One ~320 ms frame at launch** while Meta's passthrough camera starts (synchronous, native). Turns are under 1 % stale on ~1 min samples; a 10-minute OVR Metrics run is still due.
 - **GC during turns is over budget** (11–42 KB per frame in a development player; target ≤ 4 KB).
 - **Vision answers vary with the model's reasoning.** Tool start → answer audio was 1.6–3.4 s (p50 2.2 s); the mask appears first (0.7–1.1 s) and a preamble covers the wait.

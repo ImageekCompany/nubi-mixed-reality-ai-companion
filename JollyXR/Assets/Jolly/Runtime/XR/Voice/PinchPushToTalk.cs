@@ -2,16 +2,15 @@ using System;
 using Jolly.Contracts;
 using Jolly.XR.Hands;
 using UnityEngine;
-using UnityEngine.InputSystem;
 using UnityEngine.XR.Hands;
 using UnityEngine.XR.Interaction.Toolkit.Interactors;
 
 namespace Jolly.XR.Voice
 {
     /// <summary>
-    /// Push-to-talk from a thumb-index pinch (either hand or the dominant one, per IUserPreferences) or a controller
-    /// button. A pinch starts talking only when that hand's ray hovers nothing (so pinching UI or poking Nubi does not
-    /// talk) and the palm does not face the head (the Horizon OS system-menu gesture).
+    /// Push-to-talk from a thumb-index pinch (either hand or the dominant one, per IUserPreferences); controllers are
+    /// <see cref="ControllerPushToTalk"/>. A pinch starts talking only when that hand's ray hovers nothing (so pinching
+    /// UI or poking Nubi does not talk) and the palm does not face the head (the Horizon OS system-menu gesture).
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class PinchPushToTalk : MonoBehaviour, IVoiceActivation
@@ -21,7 +20,6 @@ namespace Jolly.XR.Voice
 
         [SerializeField] XRBaseInteractor leftHandRay;
         [SerializeField] XRBaseInteractor rightHandRay;
-        [SerializeField] InputActionReference controllerTalk;
         [SerializeField] Handedness dominantHand = Handedness.Right;
 
         readonly GatedPinch _left = new();
@@ -49,8 +47,7 @@ namespace Jolly.XR.Voice
                 return;
             var eitherHand = _preferences == null || _preferences.Current.PttEitherHand;
             var held = Track(Handedness.Left, _left, leftHandRay, eitherHand)
-                       | Track(Handedness.Right, _right, rightHandRay, eitherHand)
-                       | ControllerHeld();
+                       | Track(Handedness.Right, _right, rightHandRay, eitherHand);
             SetHeld(held);
         }
 
@@ -85,8 +82,6 @@ namespace Jolly.XR.Voice
             var gateOpen = !IsHovering(ray) && !HandGestures.PalmFaces(hand, _head.position, PalmTowardHeadMinCos);
             return pinch.Update(HandGestures.PinchDistance(hand), gateOpen, _clock.Now);
         }
-
-        bool ControllerHeld() => controllerTalk != null && controllerTalk.action != null && controllerTalk.action.IsPressed();
 
         static bool IsHovering(XRBaseInteractor ray)
         {
