@@ -11,7 +11,8 @@ namespace Jolly.Localization
 {
     /// <summary>
     /// ILocalizer over Unity Localization (ADR-0014). <see cref="Initialize"/> and every locale change preload the
-    /// configured string tables, so <see cref="Get"/> is a synchronous lookup. Main thread only.
+    /// configured string tables (and those of the locale's fallbacks), so <see cref="Get"/> is a synchronous lookup.
+    /// Main thread only.
     /// </summary>
     public sealed class UnityLocalizer : ILocalizer, IDisposable
     {
@@ -113,7 +114,19 @@ namespace Jolly.Localization
         {
             var tag = locale.Identifier.Code;
             _requestedTag = tag;
-            await LocalizationSettings.StringDatabase.PreloadTables(_preloadTables, locale).WithCancellation(ct);
+            try
+            {
+                await LocalizationSettings.StringDatabase.PreloadTables(_preloadTables, locale).WithCancellation(ct);
+                foreach (var fallback in locale.GetFallbacks())
+                    await LocalizationSettings.StringDatabase.PreloadTables(_preloadTables, fallback).WithCancellation(ct);
+            }
+            catch (OperationCanceledException)
+            {
+                // Release the claim so a retry with the same tag is not mistaken for a switch already in flight.
+                if (tag == _requestedTag)
+                    _requestedTag = LanguageTag;
+                throw;
+            }
             if (tag != _requestedTag)
                 return;
             LanguageTag = tag;

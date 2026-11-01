@@ -1,4 +1,6 @@
+using System;
 using System.Collections;
+using System.Linq;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using Jolly.Contracts;
@@ -74,6 +76,49 @@ namespace Jolly.Tests.PlayMode.Presentation
             Assert.That(_localizer.Voice.TtsAvailable, Is.False, "the Wit app has no Polish voice (architecture §10)");
             Assert.That(_changed, Is.EqualTo(1));
         });
+
+        [UnityTest]
+        public IEnumerator SetLanguage_CancelledMidSwitch_ThenRetried_Switches() => UniTask.ToCoroutine(async () =>
+        {
+            using var cancelled = new CancellationTokenSource();
+            cancelled.Cancel();
+
+            var threw = false;
+            try { await _localizer.SetLanguage("pl", cancelled.Token); }
+            catch (OperationCanceledException) { threw = true; }
+
+            Assert.That(threw, Is.True);
+            Assert.That(_localizer.LanguageTag, Is.EqualTo("en"));
+            Assert.That(_changed, Is.Zero);
+
+            await _localizer.SetLanguage("pl", CancellationToken.None);
+
+            Assert.That(_localizer.LanguageTag, Is.EqualTo("pl"));
+            Assert.That(_localizer.Voice.AsrLanguageBias, Is.EqualTo("Polish"));
+            Assert.That(_changed, Is.EqualTo(1));
+        });
+
+        [UnityTest]
+        public IEnumerator SetLanguage_BackToBack_TheLaterRequestWins() => UniTask.ToCoroutine(async () =>
+        {
+            var toPolish = _localizer.SetLanguage("pl", CancellationToken.None);
+            var toEnglish = _localizer.SetLanguage("en", CancellationToken.None);
+            await UniTask.WhenAll(toPolish, toEnglish);
+            await UniTask.DelayFrame(2);
+
+            Assert.That(_localizer.LanguageTag, Is.EqualTo("en"));
+            Assert.That(_localizer.Get("UI", "settings.title"), Is.EqualTo("Settings"));
+            Assert.That(_changed, Is.EqualTo(1));
+        });
+
+        [Test]
+        public void Polish_FallsBackToEnglish_ForEntriesItLacks()
+        {
+            var polish = LocalizationSettings.AvailableLocales.GetLocale("pl");
+
+            Assert.That(polish.GetFallbacks().Select(l => l.Identifier.Code), Is.EqualTo(new[] { "en" }));
+            Assert.That(LocalizationSettings.StringDatabase.UseFallback, Is.True);
+        }
 
         [UnityTest]
         public IEnumerator SetLanguage_Unknown_KeepsTheCurrentLanguage() => UniTask.ToCoroutine(async () =>
