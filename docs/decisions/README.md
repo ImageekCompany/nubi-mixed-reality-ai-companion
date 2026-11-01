@@ -32,4 +32,6 @@
 | [0031](0031-character-voice-profile.md) | Character voice as data (`VoiceProfile`, persona delivery); Nubi speaks as Wit Rubie, pitch 110 | accepted |
 | [0032](0032-greeting-stays-put-text-done-and-staggered-launch.md) | Device-regression fixes: a greeting stays put, a text item ends speech, XR managers start one per frame | accepted |
 
+Numbers 0027–0029 are unused and were not reserved on a dropped branch: no commit on any branch (`git log --all`) adds or mentions an ADR with those numbers.
+
 Review findings and their accept/reject decisions: [review-log.md](review-log.md).

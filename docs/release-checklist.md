@@ -6,6 +6,19 @@ Legend: ✅ met, with evidence · ⚠️ partial · ❌ not met · 🧑 needs a 
 
 **Totals: 24 DoD items: 16 ✅, 5 ⚠️, 3 ❌/🧑. Release-audit extras: 4 ✅, 1 🧑.**
 
+## Verification of `main` at `3e99cb5` (2026-11-01, 13:30–13:38 UTC)
+
+After the cartoon-voice merge, the character voice on `CharacterDefinition`, the greeting fix, the text-done speech break and the staggered launch (ADR-0031, ADR-0032). Details in [`perf/selftest-report.md`](perf/selftest-report.md) "Cartoon voice merged, character voices, device-regression fixes (3e99cb5)". These lines supersede the `4d228c8` block and the per-item table where they differ.
+
+- **1.1 / 1.2 / 2.1:** `tools/ci/test.sh` → EditMode 1050/1050, PlayMode 332/332, content validation passed, pure logic coverage 92.6 % (threshold 91.6 %), no `warning CS` in any log.
+- **3.1:** `tools/ci/build.sh` → succeeded, `QuestBuild` 0 errors, 59 MB. `tools/device/build.sh --character jolly` → succeeded, `local=1`, 64 MB.
+- **3.2 / 3.3:** installed and launched on `2G0YC1ZF7P090N`; `offline_greeting` PASS in 4 of 4 runs.
+- **4.1:** 72.0 fps idle, p95 13.9 ms, 17 draw / 15 SetPass, 33.7k triangles, 543–546 MB (Jolly 567 MB). Worst launch frame **282–285 ms** (was ~410), still over the ~100 ms target: one synchronous call into the Meta OpenXR provider that starts the camera and the passthrough layer. Stale frames **over the < 1 % target**: turns 1.48–2.07 %, idle 0.92–1.30 % (2.21 % in the Jolly run), whole run 2.79–3.24 %. Idle rose run by run in the same session with no app frame over 28 ms, so the cause is not known and there is no mitigation yet (speculation in the report: compositor or a warm headset after ~12 back-to-back runs; a run on a cooled headset would separate it). ⚠️ 🧑
+- **5.1:** release → first audio p50 **1,776 ms** (1,282–2,971 ms) over 12 online turns, under the 2.0 s target but close to it; n=12 does not show it stays under. The 20-consecutive-turn run with a wearer is still pending. Tool → answer audio 1,608–2,055 ms; mask 614–1,349 ms. ⚠️ 🧑
+- **Greeting:** "Hi Nubi, who are you?" called no tool in 7 of 7 runs on the new prompt (development, 3 × `b504f60`, 3 × `3e99cb5`) and in the Jolly run; `voice_come_here` still calls `come_here` in every run.
+- **Vision:** every run used the bundled still image (dark room, mean luma 16–19), DEGRADED in 3 of 4; run 1 FAILed when the Spark vision call failed on the network (`kind=Network status=0`), the only such failure.
+- **Spend:** 8 device runs, app meter $0.104; `api-spend.md` total ≤ $1.42.
+
 ## Final verification of `main` at `4d228c8` (2026-11-01, 11:40–11:52 UTC)
 
 After the occlusion, room-awareness, character-swap, Jolly pipeline and device-fix merges. Details in [`perf/selftest-report.md`](perf/selftest-report.md) "Final verification of main". The per-item table below is from the `3f35562` audit; these lines supersede its numbers where they differ.
@@ -106,7 +119,7 @@ After the occlusion, room-awareness, character-swap, Jolly pipeline and device-f
     - **Denied `USE_SCENE`:** deny it on a fresh install → `mode=scene_meshes` with **zero** occluders (the bounding-box manager is gated on the same permission), so Nubi is not occluded; no per-frame occlusion errors.
     - **Fallback boxes:** with depth available, set `preference: SceneMeshes` in a development build → the boxes line up with the furniture (box pose = centre is assumed, as for the NavMesh colliders), and captions, the settings panel, status indicator and tool badges stay visible with a box between them and the eyes.
     - **Cost:** OVR Metrics app GPU time and stale frames, 2 min each with `preference` Off, EnvironmentDepth hard and EnvironmentDepth soft, Nubi in view; record the deltas in `perf/selftest-report.md` (budget: ≤ 1 ms GPU for occlusion, 72 fps held). Profiler: no per-frame GC from the occlusion frame callback.
-    - **Pipeline warm-up:** re-record `QuestVulkan.graphicsstate` with depth active (`docs/perf/README.md` §7), so the occlusion shader variants do not compile on the first depth frame.
+    - **Pipeline warm-up:** done headless in `b504f60` (ADR-0032): `QuestVulkan.graphicsstate` was re-recorded with the hand rig and depth occlusion active (15 variants / 14 states, was 10 / 9). A wearer only needs to confirm no hitch on the first depth frame.
 11. **Room awareness** (wearer; ADR-0025): checks A–C in "Room awareness device checks" below.
 12. **Hands** (wearer; ADR-0030): checks in "Hand tracking device checks" below.
 13. **Jolly demo skin** (wearer, `tools/device/build.sh --character jolly`; ADR-0026): checks in "Jolly demo skin device checks" below. Reinstall the default build afterwards.

@@ -36,7 +36,7 @@ Open source (MIT). Unity 6.6 + OpenXR. Built for the Meta AI Developer Hackathon
 
 ## The problem
 
-Many people live alone and get stuck on everyday physical tasks: an unfamiliar remote, a new coffee machine, a thermostat, a label they can't read. The help on offer today is either a person who isn't in the room, or a phone chatbot that can't see what you're holding and can't show you anything.
+Many people live alone and get stuck on everyday physical tasks: an unfamiliar remote, a new coffee machine, a thermostat, a label they can't read. In the US, 26 % of adults 65 and older lived alone in 2023, and 38 % of those 85 and older ([Pew Research Center](https://www.pewresearch.org/short-reads/2025/12/04/a-smaller-share-of-older-us-adults-live-alone-today-than-in-1990/), from Census Bureau data). The help on offer today is either a person who isn't in the room, or a phone chatbot that can't see what you're holding and can't show you anything.
 
 Nubi lives in your room. You talk to it, hold up an object, and point at it. Nubi outlines that exact object in your passthrough view, says what it is, and explains step by step how to use it. It also walks over when you call it, follows you to another room, and keeps you company. When the network drops, it doesn't go silent.
 
@@ -72,7 +72,7 @@ The demo runs as six beats. The full shot list is in [`docs/demo-script.md`](doc
 1. **"Hi Nubi, come here."** You pinch and hold to talk. A live caption follows your words (with "Nubi", not "newbie"), you hear a short acknowledgement, and the answer starts streaming with lip-sync. Nubi walks around your furniture and stops about 1 m in front of you.
 2. **"What is this, and which button turns it on?"** You hold up the TV remote and point at it. An outline appears on the real remote, the answer is spoken as it streams, then `highlight_part` outlines the power button itself. That is two SAM prompt types on one object: your pointing hand, then a text-prompted part. Tool badges show **SAM 3.1** and **Spark** firing.
 3. **"Follow me." … "Stop."** Nubi follows you across the room and stops at once. "Stop" is matched on the device, before any model call.
-4. **Barge-in.** You pinch in the middle of a long answer. The audio fades out within a 150 ms target (54 ms on the headset), and Nubi listens.
+4. **Barge-in.** You pinch in the middle of a long answer. The audio fades out within a 150 ms target (33–55 ms on the headset), and Nubi listens.
 5. **Wi-Fi off.** "Are you there?" Nubi answers with a baked offline line, still lip-synced, and its idle behaviour carries on. Turn Wi-Fi back on and the next turn is online again.
 6. **Cost.** The usage meter in Settings shows what the session cost, checked against [`docs/api-spend.md`](docs/api-spend.md).
 
@@ -165,29 +165,29 @@ graph TD
 - **Runtime NavMesh sized for a living room.** Floor plane outlines are triangulated into mesh colliders, and bounding boxes are baked as Not Walkable (`NavMeshBuilder.BuildNavMeshData`, agent radius 0.15 m). `NavMeshSurface` would use the 0.5 m Humanoid agent, which erases a living room (ADR-0017). Rebuilds are throttled to once per 2 s.
 - **Table-driven conversation state machine.** Three latched flags and per-state watchdogs. It is tested exhaustively, including every barge-in edge.
 - **Safety and robustness.** `CrisisGuard` runs before the model, for every persona, and hands off deterministically. A persona's tool allow-list is enforced when a call executes, not only in the list sent to the model. `StopGuard` stops Nubi locally. Retries happen only before the first streamed byte, with full jitter and `Retry-After` capped at 8 s. A five-state connectivity monitor (Online, Degraded, Offline, Unauthorized, BudgetReached) runs a backed-off health probe.
-- **Quality gates** (`tools/ci/test.sh`): `-warnaserror+` on every assembly; no `async void`; no `System.Threading.Tasks.Task` (UniTask everywhere); no `CancellationTokenSource.CancelAfter` (it fires on a thread-pool timer); no debug-capture defines in shipped settings; a content validator for personas, string tables and line clips; line coverage of Core, Net, Providers and Audio at or above 91.6 % (`tools/ci/coverage.sh`). Current: **EditMode 1023/1023, PlayMode 298/299 (the local-skin case skips without the skin; 299/299 with it), 92.5 % line coverage of that logic (84.4 % of all runtime code), zero compiler warnings, and an IL2CPP APK that builds.**
+- **Quality gates** (`tools/ci/test.sh`): `-warnaserror+` on every assembly; no `async void`; no `System.Threading.Tasks.Task` (UniTask everywhere); no `CancellationTokenSource.CancelAfter` (it fires on a thread-pool timer); no debug-capture defines in shipped settings; a content validator for personas, string tables and line clips; line coverage of Core, Net, Providers and Audio at or above 91.6 % (`tools/ci/coverage.sh`). Current: **EditMode 1050/1050, PlayMode 332/332 (with the local Jolly skin present; its one case skips on a clone without it), 92.6 % line coverage of that logic (84.7 % of all runtime code), zero compiler warnings, and an IL2CPP APK that builds.**
 - **A self-checking pipeline on the headset.** `tools/device/selftest.sh` installs the release APK, arms a built-in self-test and runs six scenarios with nobody wearing the headset. Bundled voice clips go through the real microphone pipeline to Muse ASR, Spark (with tools), SAM, Wit and the speaker. It also forces the network off and on, barges in, and samples frame time and render counters. It writes a PASS/DEGRADED/FAIL table and the run's API cost ([`docs/perf/selftest-report.md`](docs/perf/selftest-report.md), ADR-0018). It found bugs that no desk test could, including a health-probe URL that kept the app offline and a vision turn that ended in silence.
 
 ## Performance budget
 
-Targets come from [`docs/definition-of-done.md`](docs/definition-of-done.md) §4–5. Measured values come from the on-device self-test of the full app (Quest 3, Horizon OS v209, IL2CPP release build, four runs of the performance pass on 2026-11-01 unless noted; [`docs/perf/selftest-report.md`](docs/perf/selftest-report.md)), in a dim room with no Space Setup and nobody wearing the headset. Rows marked **unmeasured** need the OVR Metrics capture or a development-build Profiler session; the self-test report keeps the full DoD coverage table. Method: [`docs/perf/README.md`](docs/perf/README.md).
+Targets come from [`docs/definition-of-done.md`](docs/definition-of-done.md) §4–5. Measured values come from the on-device self-test of the full app on `main` at `3e99cb5` (Quest 3, Horizon OS v209, IL2CPP release build, three runs of the default build plus one of the Jolly build on 2026-11-01; [`docs/perf/selftest-report.md`](docs/perf/selftest-report.md), section "3e99cb5"), in a dim room with no Space Setup and nobody wearing the headset. Rows that name an earlier pass come from that pass's section of the same report; the self-test does not measure them. Rows marked **unmeasured** need the OVR Metrics capture or a development-build Profiler session; the self-test report keeps the full DoD coverage table. Method: [`docs/perf/README.md`](docs/perf/README.md).
 
 | Metric | Target | Measured |
 |---|---|---|
-| Frame rate (passthrough, Nubi visible) | ≥ 72 fps sustained | **72.0 fps** average, p95 frame 13.9 ms (30 s idle, 3 runs) |
-| Stale frames | < 1 % over 10 min | during turns **0.55–0.99 %** (was 1.06–1.28 %); idle ≤ **0.22 %**; one ~320 ms frame at launch while Meta's passthrough camera starts |
-| Draw calls / SetPass | ≤ 200 / ≤ 60 | **12 / 11** max per frame (idle) |
-| Triangles | ≤ 300k scene; Nubi ≤ 30k | **27,178** max per frame; Nubi 25,248 tris, 2 materials, one 1024² texture |
-| GC alloc | 0 B/frame idle; ≤ 4 KB/frame in a turn | idle: PlayMode gate `NoGcAllocInSteadyStateIdle` passes, and 0 GC collections in 30 s on the headset; per turn in a development player: p50 **3.9 KB/frame**, max 6.4 (`barge_in`, **over**) |
-| Memory | `app_rss_MB` ≤ 1,500 MB peak | system used memory **530 MB** (idle); `app_rss_MB` unmeasured |
+| Frame rate (passthrough, Nubi visible) | ≥ 72 fps sustained | **72.0 fps** average, p95 frame 13.9 ms (30 s idle, 4 runs) |
+| Stale frames | < 1 % over 10 min | **Over target.** During turns **1.48–2.07 %**, idle **0.92–1.30 %** (2.21 % in the Jolly run, which was last), whole run **2.79–3.24 %**, including a worst launch frame of **282–285 ms**. The idle and turn shares rose run by run in the same session (earlier builds: idle 0.04–0.49 %), and the app's main thread had no frame over 28 ms in idle; the cause is not known yet (speculation in the report: compositor or a warm headset after ~12 back-to-back runs) |
+| Draw calls / SetPass | ≤ 200 / ≤ 60 | **17 / 15** per frame (idle) |
+| Triangles | ≤ 300k scene; Nubi ≤ 30k | **33,744** per frame (idle); Nubi 25,248 tris, 2 materials, one 1024² texture (performance pass) |
+| GC alloc | 0 B/frame idle; ≤ 4 KB/frame in a turn | idle: PlayMode gate `NoGcAllocInSteadyStateIdle` passes, and 0 GC collections in 30 s on the headset; per turn in a development player (fix/turn-gc): p50 **3.9 KB/frame**, max 6.4 (`barge_in`, **over**) |
+| Memory | `app_rss_MB` ≤ 1,500 MB peak | system used memory **543–546 MB** (idle; Jolly 567 MB); `app_rss_MB` unmeasured |
 | CPU main thread, thermal, battery | p95 ≤ 11 ms; 30 min without throttling; ≤ 20 % per 30 min | unmeasured |
-| **PTT release → first answer audio** | p50 ≤ 2.0 s | p50 **1.44 s**, max 2.87 s over 16 online turns, including each launch's first turn (not yet the 20 consecutive turns the DoD asks for) |
-| PTT release → ASR final | p50 ≤ 300 ms | p50 **208 ms** |
-| ASR final → first LLM text | p50 ≤ 1.3 s | p50 **0.84 s** |
-| Pinch → silence | p50 ≤ 150 ms | **28–54 ms** |
-| Network loss → offline line | ≤ 2.0 s | Offline detected in < 1 s; offline line captioned **14–27 ms** after the press |
-| `capture_and_identify` → mask visible | p50 ≤ 2.0 s | **0.72–1.13 s** (live dim frame) |
-| `capture_and_identify` → answer audio | p50 ≤ 2.5 s | p50 **2.24 s**, range 1.56–3.39 s (4 runs); the spread is the model's reasoning time |
+| **PTT release → first answer audio** | p50 ≤ 2.0 s | p50 **1,776 ms**, range 1,282–2,971 ms over 12 online turns, close to the budget; the 20 consecutive turns the DoD asks for are not done yet |
+| PTT release → ASR final | p50 ≤ 300 ms | p50 **208 ms** (performance pass, n=16) |
+| ASR final → first LLM text | p50 ≤ 1.3 s | p50 **0.84 s** (performance pass, n=16) |
+| Pinch → silence | p50 ≤ 150 ms | **33–55 ms** |
+| Network loss → offline line | ≤ 2.0 s | offline line captioned **13–27 ms** after the press |
+| `capture_and_identify` → mask visible | p50 ≤ 2.0 s | **614–1,349 ms** (bundled still image; the room was too dark for the live frame) |
+| `capture_and_identify` → answer audio | p50 ≤ 2.5 s | **1,608–2,055 ms** (4 runs); in one run the Spark vision call failed on the network and the scenario FAILed |
 | Camera frame → 640 px RGBA | — | **12–14 ms** convert, frame age 31–46 ms at acquire (device spike) |
 
 ## Privacy and security
@@ -260,7 +260,7 @@ No test touches the network. Providers are tested against SSE, ASR and SAM respo
 
 ### On-device check
 
-The scripted self-test runs the whole app on the headset without anyone wearing it (about 2 minutes and $0.02–0.03 of API calls per run):
+The scripted self-test runs the whole app on the headset without anyone wearing it (about 2 minutes and $0.01–0.02 of API calls per run):
 
 ```bash
 NUBI_TMPDIR=<short temp dir> tools/device/selftest.sh   # --build to build first; exit 1 on any FAIL
@@ -278,13 +278,13 @@ adb logcat -G 16M && adb logcat -s Unity | grep -E "evt=(loc.ready|turn.latency)
 
 ## Status
 
-As of `main` after `fix/turn-gc` and `feat/coverage-gate` (2026-11-01).
+As of `main` at `eba1d50` (2026-11-01); the last device runs are of `3e99cb5`.
 
 | Area | State |
 |---|---|
-| All subsystems (Net, Responses chat, usage meter, ASR, SAM + one-bit decoder, Spark vision, Wit TTS, streaming audio, conversation core, agent loop, tools, memory, offline mode, XR layer, Nubi, presentation, localization) | **Built and tested**: EditMode 1012/1012, PlayMode 295/296 (one local-skin case skipped) |
+| All subsystems (Net, Responses chat, usage meter, ASR, SAM + one-bit decoder, Spark vision, Wit TTS, streaming audio, conversation core, agent loop, tools, memory, offline mode, XR layer, Nubi, presentation, localization) | **Built and tested**: EditMode 1050/1050, PlayMode 332/332 |
 | Composition root (`JollyBootstrap` → `AppGraph`), four personas, `JollyConfig`, `Lines`/`Personas` tables (en, pl), end-to-end PlayMode tests on the real scene, zero-GC idle gate | **Done** |
-| Full app on Quest 3: voice turns, `capture_and_identify` on the live passthrough frame, barge-in, offline lines, idle performance | **Verified by the on-device self-test** (three runs, every scenario PASS except `come_here`, which is DEGRADED without Space Setup) |
+| Full app on Quest 3: voice turns, `capture_and_identify`, barge-in, offline lines, idle performance | **Verified by the on-device self-test** on `3e99cb5` (four runs: offline line, barge-in and idle performance PASS in every run; voice turns PASS, or DEGRADED when first audio took over 2.0 s; `capture_and_identify` DEGRADED on the bundled still because the room was too dark, and FAIL once when the Spark vision call failed on the network) |
 | Walking on a scanned floor, the camera extrinsics marker test (≤ 3 cm at 1 m), mask placement in a lit room, pinch/gaze/palm/poke with a wearer, OVR Metrics and Profiler captures, 20-turn latency run | **Pending** a session with a person in a lit room with Space Setup |
 
 ## Known limitations
@@ -292,19 +292,19 @@ As of `main` after `fix/turn-gc` and `feat/coverage-gate` (2026-11-01).
 - **Walking is unverified on a real floor.** The test room has no Space Setup. `come_here` now walks on the fallback disc there (ADR-0025), but walking on a scanned floor and to real furniture (`go_to_surface`) is tested only in PlayMode on a simulated room.
 - **Without Space Setup, Nubi only knows the floor near you.** The fallback is a 1.5 m disc around the user at the tracking-origin floor height, stretched over to Nubi (up to 4 m); it does not know about a chair inside it. Re-reading planes after Space Setup by restarting the plane and box managers is unverified on the headset.
 - **No perching.** Nubi stops at the edge of the couch or table and faces it; it cannot climb onto furniture (no NavMesh links or climb clips).
-- **Real furniture does not hide Nubi.** Depth occlusion (Should 3) is not built.
 - **Interaction triggers and the pinch are unverified with a wearer.** With nobody wearing the headset, hand tracking produced phantom pinches, so the self-test drives push-to-talk itself.
 - **Hand meshes, the hand ray and finger pokes on the Settings panel are unverified with a wearer.** The device log shows the hand subsystem running and the hand visuals bound (`evt=hands.subsystem`, `evt=hands.tracked`, `evt=hands.visual`); until ADR-0030 the scene had no hand objects at all, so hands drew nothing and could not press UI.
 - **Controller push-to-talk is unverified on the headset.** Holding A or X is tested against the OpenXR device layouts in PlayMode, but no controller session has been run on the Quest.
-- **One ~320 ms frame at launch** while Meta's passthrough camera starts (synchronous, native). Turns are under 1 % stale on ~1 min samples; a 10-minute OVR Metrics run is still due.
+- **One ~283 ms frame at launch**: a single synchronous call into Meta's OpenXR provider that starts the camera and creates the passthrough layer, which app code cannot defer or split (ADR-0032).
+- **Stale frames are over the < 1 % target.** In the last runs, 1.48–2.07 % during turns, 0.92–1.30 % idle and 2.79–3.24 % over the whole run; the cause is not known yet (see [Performance](#performance-budget)). A 10-minute OVR Metrics run is still due.
 - **GC during turns is at the budget, not under it everywhere.** p50 3.9 KB per frame in a development player (target ≤ 4 KB); a barge-in, with two ASR sessions in seconds, reaches 6.4 KB. Most of the rest is Mono's TLS stream allocating 16 KB per WebSocket read (ADR-0023).
-- **Vision answers vary with the model's reasoning.** Tool start → answer audio was 1.6–3.4 s (p50 2.2 s); the mask appears first (0.7–1.1 s) and a preamble covers the wait.
+- **Vision answers vary with the model's reasoning.** Tool start → answer audio was 1.6–2.1 s in the last runs (1.6–3.4 s in earlier ones); the mask appears first (0.6–1.3 s) and a preamble covers the wait.
 - **The first turn after launch is a little slower.** Connections opened at launch warm TLS for the ASR and Wit; the first acknowledgement takes 1.1–1.4 s vs 0.6–1.1 s later, and the first sentence's audio starts 0.2–0.3 s after it is queued vs 0.1–0.35 s later.
 - **Polish TTS is not available.** Polish replies are captions-only.
 - **The camera pose is gyroscope-relative.** The mapping from that pose to the OpenXR head pose is still to be confirmed by the marker test. Until then, the mask overlay and pointing may be off by a few centimetres.
 - **No server-side cancel for streaming responses.** A barge-in aborts the HTTP stream on the client and books an estimate of the aborted request.
 - **Push-to-talk only.** Hands-free voice barge-in and a wake word were cut for the hackathon.
-- **Real-world occlusion is unverified on the headset.** Environment-depth occlusion (furniture and hands in front of Nubi), its edge quality, the 4 cm floor bias and its GPU cost have not been seen or measured on a Quest yet; the Editor and the tests only exercise the fallback and the wiring. The pipeline warm-up list was recorded without the occlusion shader variants, so the first depth frame may hitch until it is re-recorded.
+- **Real-world occlusion is unverified on the headset.** Environment-depth occlusion (furniture and hands in front of Nubi), its edge quality, the 4 cm floor bias and its GPU cost have not been seen or measured on a Quest yet; the Editor and the tests only exercise the fallback and the wiring.
 - **Without environment depth, only furniture occludes.** The fallback uses Space Setup bounding boxes: no hands, no unscanned objects, and a box is larger than the furniture in it, so Nubi can be cut a little early near a couch's armrest.
 - **The glasses path is unverified.** Passthrough Camera Access on Meta's glasses was not checked, so it is listed as roadmap only.
 
@@ -317,6 +317,10 @@ These items are **not built.** They are where the architecture is designed to go
 - **Offline and private models.** On-device STT and TTS, or a LAN host for open-weight Muse Glimmer (Apache-2.0) behind `IChatModel`, so nothing leaves the home.
 - **A therapist-grade private mode.** The Listener persona (id `psychologist`) keeps no memory, uses no camera tools and gives a safety notice. A real counselling mode only makes sense once it runs on private models with professional review, so it is not demoed, and the app never calls it a psychologist.
 - **Hands-free conversation.** Playback-gated VAD for voice barge-in, and a wake word.
+
+### Why Quest today, glasses tomorrow
+
+The brain does not depend on the headset: the asmdefs of `Jolly.Contracts`, `Jolly.Core`, `Jolly.Net`, `Jolly.Providers.MetaApi` and `Jolly.Providers.Wit` reference only each other and UniTask, no XR package, so the agent loop, tools, memory, ASR, Spark, SAM and Wit would carry over unchanged. A glasses build would need new adapters for the device edges declared in `Jolly.Contracts`: an `ICameraFrameSource` for the glasses camera (frames with intrinsics and a camera pose), an `IAudioCapture` and an `ISpeechOutput` for its microphones and speakers, and an `IUserPoseProvider` for where the wearer is. None of these adapters exists today. Quest 3 is the prototype because what makes Nubi mixed reality needs a world-locked display and room understanding: a body that walks a NavMesh baked from the real floor, the SAM mask drawn over the real object in passthrough, a hand ray as the pointing prompt, and depth occlusion.
 
 ## License
 
@@ -334,7 +338,7 @@ Characters are data: a model, a face-preset file and a `CharacterDefinition` ass
 
 ## Design decisions
 
-Twenty-three ADRs record every key choice and its alternatives: [`docs/decisions/`](docs/decisions/README.md). Examples are OpenXR + meta-openxr instead of the Meta XR SDK (0002), Responses API routing (0004), Wit over raw HTTP (0006), a plain composition root (0009), secrets provisioning (0010) the integration deviations (0017) and the device self-test (0018). Review findings are in [`review-log.md`](docs/decisions/review-log.md). API spend is tracked call by call in [`docs/api-spend.md`](docs/api-spend.md), and is about $1 of the $140 budget so far.
+Twenty-nine ADRs (0001–0026, 0030–0032) record every key choice and its alternatives: [`docs/decisions/`](docs/decisions/README.md). Examples are OpenXR + meta-openxr instead of the Meta XR SDK (0002), Responses API routing (0004), Wit over raw HTTP (0006), a plain composition root (0009), secrets provisioning (0010) the integration deviations (0017) and the device self-test (0018). Review findings are in [`review-log.md`](docs/decisions/review-log.md). API spend is tracked call by call in [`docs/api-spend.md`](docs/api-spend.md), and is about $1.42 of the $140 budget so far.
 
 ## Credits
 
