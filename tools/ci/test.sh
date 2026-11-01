@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Batchmode EditMode + PlayMode tests and the static quality gates of docs/definition-of-done.md §1-2.
-# Usage: tools/ci/test.sh [EditMode|PlayMode]...   (default: both)
+# Batchmode EditMode + PlayMode tests with code coverage, and the static quality gates of
+# docs/definition-of-done.md §1-2.
+# Usage: tools/ci/test.sh [EditMode|PlayMode]...   (default: both; the coverage gate needs both)
 #   UNITY=/path/to/Unity   override the editor (default: Hub 6000.6.6f1)
 # Results and logs go to artifacts/. Exits non-zero on any failed gate.
 set -euo pipefail
@@ -10,8 +11,12 @@ UNITY="${UNITY:-/Applications/Unity/Hub/Editor/6000.6.6f1/Unity.app/Contents/Mac
 PROJECT="$ROOT/JollyXR"
 SRC="$PROJECT/Assets/Jolly"
 OUT="$ROOT/artifacts"
+COVERAGE="$OUT/coverage"
+# com.unity.testtools.codecoverage 1.3.0 filter syntax (Documentation~/CoverageBatchmode.md).
+COVERAGE_ASSEMBLIES="+Jolly.*,-Jolly.Tests.*,-Jolly.Testing,-Jolly.Editor*,-Jolly.Spikes*"
 if [[ $# -gt 0 ]]; then PLATFORMS=("$@"); else PLATFORMS=(EditMode PlayMode); fi
 mkdir -p "$OUT"
+rm -rf "$COVERAGE"
 
 failures=0
 fail() { echo "[test] FAIL: $*" >&2; failures=$((failures + 1)); }
@@ -48,15 +53,20 @@ fi
 
 attr() { xmllint --xpath "string(/test-run/@$1)" "$2" 2>/dev/null || echo ""; }
 
+last="${PLATFORMS[${#PLATFORMS[@]}-1]}"
 for platform in "${PLATFORMS[@]}"; do
   name="$(echo "$platform" | tr '[:upper:]' '[:lower:]')"
+  # dontClear keeps the earlier platform's results; the last run's report merges every run under $COVERAGE.
+  coverage_options="dontClear;assemblyFilters:$COVERAGE_ASSEMBLIES"
+  [[ "$platform" == "$last" ]] && coverage_options="$coverage_options;generateHtmlReport"
   results="$OUT/$name.xml"
   log="$OUT/$name.log"
   rm -f "$results"
   echo "[test] $platform (log: $log)"
   set +e
   "$UNITY" -batchmode -nographics -projectPath "$PROJECT" -runTests -testPlatform "$platform" \
-    -testResults "$results" -logFile "$log"
+    -testResults "$results" -logFile "$log" \
+    -debugCodeOptimization -enableCodeCoverage -coverageResultsPath "$COVERAGE" -coverageOptions "$coverage_options"
   code=$?
   set -e
 
@@ -76,6 +86,11 @@ for platform in "${PLATFORMS[@]}"; do
   [[ "${failed:-1}" -eq 0 ]] || fail "$platform failed=$failed"
   [[ "${inconclusive:-0}" -eq 0 ]] || fail "$platform inconclusive=$inconclusive"
 done
+
+# Line coverage per assembly (HTML: artifacts/coverage/Report/index.htm), gated only on a full run.
+gate=0
+[[ " ${PLATFORMS[*]} " == *" EditMode "* && " ${PLATFORMS[*]} " == *" PlayMode "* ]] && gate=1
+COVERAGE_GATE=$gate "$ROOT/tools/ci/coverage.sh" "$COVERAGE/Report/Summary.xml" || fail "coverage"
 
 if [[ $failures -gt 0 ]]; then
   echo "[test] $failures gate(s) failed" >&2
