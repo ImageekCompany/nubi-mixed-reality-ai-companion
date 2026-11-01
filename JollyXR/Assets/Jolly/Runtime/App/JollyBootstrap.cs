@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using Jolly.App.Composition;
+using Jolly.App.Platform;
 using Jolly.App.SelfTest;
 using Jolly.Contracts;
 using UnityEngine;
@@ -39,6 +40,7 @@ namespace Jolly.App
             }
             var edges = _edges ?? Edges.ForPlayer();
             var foundation = Foundation.Build(config, edges);
+            GraphicsWarmup.Start(config.graphicsStates, foundation.Log);
             var selfTest = SelfTestSession.TryStart(edges, selfTestAssets, foundation, scene);
             selfTest?.Frames.Run(ct).Forget();
             try

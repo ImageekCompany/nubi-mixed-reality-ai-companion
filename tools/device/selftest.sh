@@ -28,7 +28,7 @@ done
 OUT="$ROOT/artifacts/selftest"
 FILES="/sdcard/Android/data/$PKG/files"
 mkdir -p "$OUT"
-rm -f "$OUT/selftest_results.json" "$OUT/logcat.txt"
+rm -f "$OUT/selftest_results.json" "$OUT/logcat.txt" "$OUT/graphics_states.graphicsstate"
 
 adb get-state >/dev/null || { echo "[selftest] no device (adb get-state failed)" >&2; exit 2; }
 adb wait-for-device
@@ -69,7 +69,7 @@ adb logcat -G 16M
 adb logcat -c
 
 adb shell am force-stop "$PKG"
-adb shell rm -f "$FILES/selftest_results.json"
+adb shell rm -f "$FILES/selftest_results.json" "$FILES/graphics_states.graphicsstate"
 adb shell "echo '{}' > $FILES/selftest.json"
 ACTIVITY="$(adb shell cmd package resolve-activity --brief "$PKG" | tail -n 1 | tr -d '\r')"
 adb shell am start -n "$ACTIVITY" >/dev/null
@@ -92,6 +92,8 @@ while ! adb shell test -f "$FILES/selftest_results.json" 2>/dev/null; do
 done
 
 adb pull "$FILES/selftest_results.json" "$OUT/selftest_results.json" >/dev/null
+# Development players also record the graphics states the run drew (docs/perf/README.md §7).
+adb pull "$FILES/graphics_states.graphicsstate" "$OUT/graphics_states.graphicsstate" >/dev/null 2>&1 || true
 adb logcat -d -v time -s Unity:V > "$OUT/logcat.txt" || true
 grep -E "evt=(selftest|turn.latency)" "$OUT/logcat.txt" > "$OUT/selftest_events.txt" || true
 # Compositor stale frames over the whole run (DoD §4: < 1%); the app cannot see these itself.

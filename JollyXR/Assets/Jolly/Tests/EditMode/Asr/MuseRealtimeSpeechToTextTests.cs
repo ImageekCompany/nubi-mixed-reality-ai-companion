@@ -50,6 +50,18 @@ namespace Jolly.Tests.EditMode.Asr
         }
 
         [Test]
+        public void WarmUp_ConnectsAndDropsTheSocketWithoutAHandshakeOrBilling()
+        {
+            Jolly.Tests.EditMode.Core.Sync.Run(_stt.WarmUp(CancellationToken.None));
+
+            Assert.That(_socket.ConnectedUri, Is.EqualTo(new Uri("wss://api.meta.ai/v1/asr/realtime")));
+            Assert.That(_socket.Sent, Is.Empty, "no handshake: the server starts no session");
+            Assert.That(_socket.IsDisposed, Is.True);
+            Assert.That(_meter.LastReservedUsd, Is.Zero);
+            Assert.That(_meter.Records, Is.Empty);
+        }
+
+        [Test]
         public void Ack_SendsTheBufferedBacklogAtOnceWithoutWaiting()
         {
             Transcribe();

@@ -24,6 +24,8 @@ namespace Jolly.App.Composition
         /// <summary>Summarisation: 10 s first event, 3 attempts.</summary>
         public IChatModel BackgroundChat { get; private set; }
         public ISpeechToText SpeechToText { get; private set; }
+        /// <summary>The adapter behind <see cref="SpeechToText"/>, for the launch warm-up only.</summary>
+        public MuseRealtimeSpeechToText RealtimeAsr { get; private set; }
         public ITextToSpeech TextToSpeech { get; private set; }
         public ISegmenter Segmenter { get; private set; }
         public IObjectIdentifier Identifier { get; private set; }
@@ -46,15 +48,15 @@ namespace Jolly.App.Composition
                     (decimal)c.chatReservationUsd), f.Log),
                 MetaErrors.Provider, monitor);
 
+            var asr = new MuseRealtimeSpeechToText(() => edges.WebSockets(MuseAsrErrors.Provider), f.Secrets, f.Usage,
+                f.Clock, f.Log, new MuseAsrOptions(MetaModelResolver.Resolve(ModelRoute.LiveUser, c.asrModel)));
             var services = new CloudServices
             {
                 Connectivity = monitor,
                 VoiceChat = Chat(c.voiceFirstEventSeconds, c.voiceAttempts),
                 BackgroundChat = Chat(c.backgroundFirstEventSeconds, c.backgroundAttempts),
-                SpeechToText = new ReportingSpeechToText(new MuseRealtimeSpeechToText(
-                        () => edges.WebSockets(MuseAsrErrors.Provider), f.Secrets, f.Usage, f.Clock, f.Log,
-                        new MuseAsrOptions(MetaModelResolver.Resolve(ModelRoute.LiveUser, c.asrModel))),
-                    MuseAsrErrors.Provider, monitor),
+                RealtimeAsr = asr,
+                SpeechToText = new ReportingSpeechToText(asr, MuseAsrErrors.Provider, monitor),
                 TextToSpeech = new ReportingTextToSpeech(edges.TextToSpeech ?? new WitTextToSpeech(f.Secrets, f.Clock,
                         TimeSpan.FromSeconds(c.witFirstChunkSeconds), TimeSpan.FromSeconds(c.witIdleSeconds)),
                     WitProtocol.Provider, monitor),

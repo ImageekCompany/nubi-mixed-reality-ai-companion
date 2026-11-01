@@ -65,6 +65,7 @@ namespace Jolly.App.SelfTest
                 return;
             }
 
+            _session.SaveGraphicsStates(f.Log);
             var overall = Overall(results);
             ResultsWriter.Write(_resultsPath, SystemInfo.deviceModel, started, f.Usage.SpentUsd - spentBefore, overall, results);
             f.Log.Write(LogLevel.Info, "selftest",

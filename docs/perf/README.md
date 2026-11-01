@@ -115,3 +115,22 @@ For **network loss → offline line**, toggle Wi-Fi, pinch, and time the gap to 
 For every row that misses its target, give the cause and the mitigation (fixed foveation level, refresh rate, mask overlay cost, a cheaper model for small talk). Record any change of target in an ADR.
 
 The README's performance table links here and shows the headline numbers.
+
+## 7. Self-test frame diagnostics and the pipeline warm-up
+
+Every self-test run logs, besides the scenario results:
+
+- `evt=frame.spike ms=… frame=… gc_bytes=…` for every main-thread frame longer than 28 ms (two 72 Hz frames, so at least one stale compositor frame). Match it to the `evt=` lines around it to find the cause. `gc_bytes` is real only in development players.
+- `evt=selftest.frames name=<phase> frames=… spikes=… worst_ms=… gc_bytes_per_frame=…` once for the launch and once per scenario. In a development player this is the DoD §4 "GC alloc per frame during a turn" number.
+- `evt=vision.timing frame=pre|fresh header_ms=… answer_text_ms=… mask_ms=…`, measured from the `capture_and_identify` start, and the `tool_to_answer_audio_ms` metric of the vision scenario (first caption at least 1 s after the tool started; the preamble plays before that).
+
+Vulkan builds a pipeline (PSO) at its first draw, so the first caption, badge, mask and Nubi pose each stalled the render thread once. `GraphicsWarmup` warms the recorded pipelines on worker threads at boot from `JollyConfig.graphicsStates`. To re-record after changing shaders, materials, URP settings or the scene:
+
+```bash
+NUBI_DEVELOPMENT=1 tools/ci/build.sh "$PWD/artifacts/Nubi-dev.apk"
+NUBI_TMPDIR=<short temp dir> tools/device/selftest.sh --apk artifacts/Nubi-dev.apk   # pulls artifacts/selftest/graphics_states.graphicsstate
+/Applications/Unity/Hub/Editor/6000.6.6f1/Unity.app/Contents/MacOS/Unity -batchmode -nographics -projectPath JollyXR \
+  -executeMethod Jolly.Editor.Tools.GraphicsStateImport.ImportBatch -nubiTrace "$PWD/artifacts/selftest/graphics_states.graphicsstate" -logFile -
+```
+
+The import copies the trace to `Assets/Jolly/Content/Rendering/QuestVulkan.graphicsstate` and assigns it to `JollyConfig`. A collection recorded on another graphics API is skipped at boot (`evt=gfx.warmup skipped=api`).
