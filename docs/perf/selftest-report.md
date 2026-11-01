@@ -1,9 +1,48 @@
 # Device self-test report
 
-Latest: 2026-11-01, 13:03 UTC, one release run of `6f0383c` with the `highlight_part` / `find_object` scenarios and the hand debounce (ADR-0033; section below). Before that: 11:43–11:51 UTC, final verification of `main` `4d228c8` after the occlusion, room, character, Jolly and device-fix merges: three release runs of the default build and one of `--character jolly` (section below). Before that: 11:26–11:38 UTC, six release runs for the device-finding fixes (`3f35f7f`, `6cd06e6`, `4e298d8`; section below). Before that: 09:39–09:45 UTC, three release runs of `main` `dd14847` after the turn-gc and coverage-gate merges (section below). Before that: 08:37–09:27 UTC, the turn-GC and cold-first-turn pass on `fix/turn-gc` (ADR-0023): three "before" runs of `main`, three "after" runs, development IL2CPP (the only player that reports GC per frame), four allocation-profile runs and one release verification run. Before that: 08:20–08:47 UTC, the performance and latency pass on `fix/perf-latency` (ADR-0019), release IL2CPP. Earlier: 06:38–06:50 UTC from `fix/integration-review`, 06:00–06:14 UTC from `feat/wp9-integration`.
+Latest: 2026-11-01, 14:05–14:37 UTC, stale-frame cause and a 20-turn latency sample on `751acba` (cooled headset, before and after a headset reboot; section below). Before that: 13:03 UTC, one release run of `6f0383c` with the `highlight_part` / `find_object` scenarios and the hand debounce (ADR-0033; section below). Before that: 11:43–11:51 UTC, final verification of `main` `4d228c8` after the occlusion, room, character, Jolly and device-fix merges: three release runs of the default build and one of `--character jolly` (section below). Before that: 11:26–11:38 UTC, six release runs for the device-finding fixes (`3f35f7f`, `6cd06e6`, `4e298d8`; section below). Before that: 09:39–09:45 UTC, three release runs of `main` `dd14847` after the turn-gc and coverage-gate merges (section below). Before that: 08:37–09:27 UTC, the turn-GC and cold-first-turn pass on `fix/turn-gc` (ADR-0023): three "before" runs of `main`, three "after" runs, development IL2CPP (the only player that reports GC per frame), four allocation-profile runs and one release verification run. Before that: 08:20–08:47 UTC, the performance and latency pass on `fix/perf-latency` (ADR-0019), release IL2CPP. Earlier: 06:38–06:50 UTC from `fix/integration-review`, 06:00–06:14 UTC from `feat/wp9-integration`.
 Device: Quest 3 `2G0YC1ZF7P090N`, Horizon OS v209. Build: `tools/ci/build.sh` (IL2CPP ARM64 release, 58 MB APK).
 Nobody wore the headset. The room was dim (camera mean luma 23–45 of 255) and had no Space Setup. Command: `tools/device/selftest.sh` (headless: `prox_close`, `guardian_pause 1`, 16 MiB logcat buffer; all restored afterwards).
 Raw outputs (`selftest_results.json`, `logcat.txt`, `vrapi.txt`) are under `artifacts/selftest/`, which is git-ignored.
+
+## Stale frames are device state, not the build or heat; 20-turn latency (751acba)
+
+`main` at `751acba` (`selftest.sh --turns N`, ADR-0034). `tools/ci/test.sh` (EditMode 1056/1056, PlayMode 360/360, pure logic 92.7 %, 0 `warning CS`), `tools/device/build.sh` (IL2CPP ARM64 release, 59 MB, `QuestBuild` 0 errors / 5 warnings, SHA-256 `1c07e305f44e…`). OVR Metrics Tool (`com.oculus.ovrmonitormetricsservice`) CSV capture was on for every run. Temperatures: `dumpsys battery` (live); `dumpsys thermalservice` returned the same cached sensor values while the headset slept, so its readings are not used here, and its thermal status was 0 (none) throughout. Same dim room (mean luma 0.5–15, vision used the bundled still), no Space Setup.
+
+Sequence: headset idle 20+ min, default self-test (A, 14:05); `adb reboot` after 4 days 14 h of uptime; idle 20 min; default self-test (B, 14:28); `--turns 20` (C, 14:30); then six launch-only runs (below). The default build was reinstalled at the end (installed APK SHA-256 matches) and `guardian_pause` read back 0.
+
+| | A: cooled, 4 d uptime | B: after reboot | C: `--turns 20`, after reboot |
+|---|---|---|---|
+| Battery at start → end | 32 → 33 °C | 31 → 33 °C | 34 → 35 °C |
+| Stale frames, launch (to first scenario + 2 s) | 109 | 97 | 85 |
+| Stale frames, turns | **5.21 %** (253 / 4,858) | **0.60 %** (30 / 5,006) | **0.49 %** (73 / 14,887) |
+| Stale frames, idle (`perf_idle`, 30 s) | **5.01 %** (109 / 2,177), 2–5 every second | **0.32 %** (7 / 2,175) | **0.23 %** (5 / 2,178) |
+| Stale frames, whole run | 6.24 % | 1.77 % | **0.93 %** |
+| App GPU time p50 (OVR Metrics), GPU utilisation | **5.44 ms**, 47 % | **3.00 ms**, 29 % | 3.22 ms, 30 % |
+| CPU / GPU level in idle | 2 / 2 | 2 / 2 | 2 / 2 |
+| App main-thread frames > 28 ms after launch | 2 (worst 36.5 ms) | 6 (worst 38.7 ms) | 5 (worst 35.8 ms) |
+| App memory: `app_rss_MB` peak (OVR Metrics) / `dumpsys meminfo` | 630 MB / — | 642 MB / RSS 644 MB, PSS 463 MB | 643 MB / RSS 643 MB, PSS 463 MB |
+| Idle draw / SetPass / triangles / system memory | 15 / 13 / 28.3k / 546 MB | 13 / 12 / 27.1k / 558 MB | 17 / 15 / 28.5k / 562 MB |
+| Overall, spend | DEGRADED, $0.0241 | FAIL (greeting 4,067 ms), $0.0276 | PASS, $0.0845 |
+
+Findings:
+
+- **The idle stale-frame rate is device state that a reboot clears, not the build and not heat.** The same APK on a headset cooled for 20+ minutes (battery 32 °C) dropped 2–5 frames every second of idle (5.0 %), worse than the warm runs of the last report (0.9–2.2 %). After `adb reboot`, with the same APK and the same battery temperature, idle was 0.23–0.32 % and turns 0.49–0.60 %. OVR Metrics shows why it is not the app's CPU side: stale frames were already 4 per second during the Unity splash screen, before any app code ran, and the app's GPU time for the same idle scene at the same GPU level fell from 5.4 to 3.0 ms (utilisation 47 → 29 %) across the reboot. The steady rise over the day (idle 0.04 % in the morning, 5 % at 4 days 14 h uptime) follows uptime, not the builds. speculation: something on the GPU outside the app (the headset had 610 MB in swap before the reboot); OVR Metrics does not show which process.
+- **With a fresh headset the whole run meets < 1 % only when it is long.** The 20-turn run (242 s) is 0.93 %; the default run (106 s) is 1.77 %, because its ~90–110 launch stale frames are the larger part. Turns and idle are under 1 % in both.
+- **Release → first audio over 20 consecutive turns: p50 1,804 ms, p90 2,577 ms, max 2,737 ms** (n=20, all turns answered, none over 4 s). Breakdown (p50 / p90 / max): release → ASR final 265 / 278 / 293 ms; ASR final → request 0 / 0 / 5 ms; request → first event 541 / 959 / 1,403 ms; first event → first text 611 / 1,527 / 2,098 ms; first text → sentence queued 0 / 0 / 42 ms; sentence queued → first audio 127 / 333 / 723 ms. By turn type: the greeting (no tool, a full spoken answer) p50 2,362 ms, 6 of 7 over 2.0 s; `come_here` p50 1,387 ms, 0 of 7 over; vision p50 1,806 ms, 3 of 6 over. The p50 meets the 2.0 s budget, the p90 does not; what varies is model time (request → first text p50 1,277 / p90 2,068 / max 2,445 ms), as in every earlier report. Prompt caching held (`cached=1777`–`1905` from turn 2).
+- **One default-run greeting took 4,067 ms** (run B), the only turn over 4 s in this session: release → ASR final took 1,096 ms (p50 265 ms) and request → first text 2,772 ms. The other 25 online turns of B and C took 1.1–2.7 s.
+- **Launch hitch experiment, measured and reverted.** `PermissionGate` started `ARCameraManager` a frame after the app graph; the experiment started it in `JollyBootstrap.Start` when every permission was already granted, expecting the ~280 ms stall to land before the first visible frame. Three launch-only runs of each build, interleaved (A, B, A, B, A, B; stopped after `offline_greeting`, $0):
+
+  | | Current (camera after the graph) | Camera in `Start` when pre-granted |
+  |---|---|---|
+  | Worst frame the app measured (`FrameSpikeLog`) | 279, 278, 290 ms | 71, 72, 78 ms |
+  | Compositor: frames lost in the scene-start hitch (72 − FPS) | 35, 37, 38 | 37, 36, 38 |
+  | Longest run of consecutive stale frames after the first visible frame | 22, 22, 23 (plus 15, 16, 15) | **35, 34, 38** |
+  | Stale frames, launch window | 88, 85, 88 | 79, 59, 89 |
+
+  The scene's first frame is not under the OS loading screen: the Unity splash is drawn at 66–72 fps for ~3 s before `Start`, so the stall still freezes a visible frame. The app's own worst frame "improved" only because the stall moved before `FrameSpikeLog` starts. The compositor lost the same ~36 frames, now as one ~0.5 s freeze instead of two shorter ones, so the change was reverted. The "worst launch frame 280 ms" figure of earlier reports undercounts the launch: the compositor sees ~36 frames lost around scene start.
+
+Spend: 3 runs (A $0.0241, B $0.0276, C $0.0845) plus one run whose flag the app could not read (it hung at boot, no paid call; fixed in `751acba`), launch-only runs free; `api-spend.md` has the row.
 
 ## SAM text-prompt tools under the self-test, hand debounce (6f0383c)
 

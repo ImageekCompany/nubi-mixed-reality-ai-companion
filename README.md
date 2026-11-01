@@ -170,19 +170,19 @@ graph TD
 
 ## Performance budget
 
-Targets come from [`docs/definition-of-done.md`](docs/definition-of-done.md) §4–5. Measured values come from the on-device self-test of the full app on `main` at `3e99cb5` (Quest 3, Horizon OS v209, IL2CPP release build, three runs of the default build plus one of the Jolly build on 2026-11-01; [`docs/perf/selftest-report.md`](docs/perf/selftest-report.md), section "3e99cb5"), in a dim room with no Space Setup and nobody wearing the headset. Rows that name an earlier pass come from that pass's section of the same report; the self-test does not measure them. Rows marked **unmeasured** need the OVR Metrics capture or a development-build Profiler session; the self-test report keeps the full DoD coverage table. Method: [`docs/perf/README.md`](docs/perf/README.md).
+Targets come from [`docs/definition-of-done.md`](docs/definition-of-done.md) §4–5. Stale-frame, memory and voice-latency rows come from `751acba` (cooled and rebooted headset, 20-turn run; report section "751acba"); the other measured values come from the on-device self-test of the full app on `main` at `3e99cb5` (Quest 3, Horizon OS v209, IL2CPP release build, three runs of the default build plus one of the Jolly build on 2026-11-01; [`docs/perf/selftest-report.md`](docs/perf/selftest-report.md), section "3e99cb5"), in a dim room with no Space Setup and nobody wearing the headset. Rows that name an earlier pass come from that pass's section of the same report; the self-test does not measure them. Rows marked **unmeasured** need the OVR Metrics capture or a development-build Profiler session; the self-test report keeps the full DoD coverage table. Method: [`docs/perf/README.md`](docs/perf/README.md).
 
 | Metric | Target | Measured |
 |---|---|---|
 | Frame rate (passthrough, Nubi visible) | ≥ 72 fps sustained | **72.0 fps** average, p95 frame 13.9 ms (30 s idle, 4 runs) |
-| Stale frames | < 1 % over 10 min | **Over target.** During turns **1.48–2.07 %**, idle **0.92–1.30 %** (2.21 % in the Jolly run, which was last), whole run **2.79–3.24 %**, including a worst launch frame of **282–285 ms**. The idle and turn shares rose run by run in the same session (earlier builds: idle 0.04–0.49 %), and the app's main thread had no frame over 28 ms in idle; the cause is not known yet (speculation in the report: compositor or a warm headset after ~12 back-to-back runs) |
+| Stale frames | < 1 % over 10 min | **Met on a freshly rebooted headset except at launch.** After a reboot: turns **0.49–0.60 %**, idle **0.23–0.32 %**, whole run **0.93 %** over a 242 s 20-turn run and 1.77 % over a 106 s default run, whose ~90–110 launch stale frames are most of it. Before the reboot (4 days 14 h uptime), the same APK on a headset cooled for 20 min dropped 5.0 % idle and 6.2 % over the run, and OVR Metrics already counted stale frames during the Unity splash: device state, not the build or heat (ADR-0034). The 10-minute run is not done |
 | Draw calls / SetPass | ≤ 200 / ≤ 60 | **17 / 15** per frame (idle) |
 | Triangles | ≤ 300k scene; Nubi ≤ 30k | **33,744** per frame (idle); Nubi 25,248 tris, 2 materials, one 1024² texture (performance pass) |
 | GC alloc | 0 B/frame idle; ≤ 4 KB/frame in a turn | idle: PlayMode gate `NoGcAllocInSteadyStateIdle` passes, and 0 GC collections in 30 s on the headset; per turn in a development player (fix/turn-gc): p50 **3.9 KB/frame**, max 6.4 (`barge_in`, **over**) |
-| Memory | `app_rss_MB` ≤ 1,500 MB peak | system used memory **543–546 MB** (idle; Jolly 567 MB); `app_rss_MB` unmeasured |
+| Memory | `app_rss_MB` ≤ 1,500 MB peak | `app_rss_MB` peak **642–643 MB** (OVR Metrics; `dumpsys meminfo` RSS 643–644 MB, PSS 463 MB); system used memory 546–562 MB idle (Jolly 567 MB) |
 | CPU main thread, thermal, battery | p95 ≤ 11 ms; 30 min without throttling; ≤ 20 % per 30 min | unmeasured |
-| **PTT release → first answer audio** | p50 ≤ 2.0 s | p50 **1,776 ms**, range 1,282–2,971 ms over 12 online turns, close to the budget; the 20 consecutive turns the DoD asks for are not done yet |
-| PTT release → ASR final | p50 ≤ 300 ms | p50 **208 ms** (performance pass, n=16) |
+| **PTT release → first answer audio** | p50 ≤ 2.0 s | p50 **1,804 ms**, p90 2,577 ms, max 2,737 ms over **20 consecutive online turns** (greeting, `come_here`, vision, repeated; no wearer, so `selftest.sh --turns 20` stands in for LiveUser). Greetings are the slow ones (p50 2,362 ms, 6 of 7 over 2.0 s); the variance is model time, request → first text p50 1,277 ms, p90 2,068 ms, max 2,445 ms |
+| PTT release → ASR final | p50 ≤ 300 ms | p50 **265 ms**, max 293 ms (20-turn run) |
 | ASR final → first LLM text | p50 ≤ 1.3 s | p50 **0.84 s** (performance pass, n=16) |
 | Pinch → silence | p50 ≤ 150 ms | **33–55 ms** |
 | Network loss → offline line | ≤ 2.0 s | offline line captioned **13–27 ms** after the press |
@@ -266,7 +266,7 @@ The scripted self-test runs the whole app on the headset without anyone wearing 
 NUBI_TMPDIR=<short temp dir> tools/device/selftest.sh   # --build to build first; exit 1 on any FAIL
 ```
 
-It prints one row per scenario (offline line, two voice turns, `capture_and_identify`, barge-in, 30 s of idle performance), the compositor's stale-frame share and the run's cost. A dark room or a room without Space Setup shows up as DEGRADED, not FAIL. Only adb can arm it: it starts when `selftest.json` exists in the app's files folder, and the script writes that file.
+It prints one row per scenario (offline line, two voice turns, `capture_and_identify`, barge-in, 30 s of idle performance), the compositor's stale-frame share and the run's cost. A dark room or a room without Space Setup shows up as DEGRADED, not FAIL. Only adb can arm it: it starts when `selftest.json` exists in the app's files folder, and the script writes that file. `tools/device/selftest.sh --turns 20` runs 20 consecutive online voice turns instead and prints release → first audio p50/p90/max with the stage breakdown (about $0.085).
 
 During normal use, latency and readiness come from logfmt log lines:
 
@@ -295,8 +295,8 @@ As of `main` at `eba1d50` (2026-11-01); the last device runs are of `3e99cb5`.
 - **Interaction triggers and the pinch are unverified with a wearer.** With nobody wearing the headset, hand tracking produced phantom pinches, so the self-test drives push-to-talk itself.
 - **Hand meshes, the hand ray and finger pokes on the Settings panel are unverified with a wearer.** The device log shows the hand subsystem running and the hand visuals bound (`evt=hands.subsystem`, `evt=hands.tracked`, `evt=hands.visual`); until ADR-0030 the scene had no hand objects at all, so hands drew nothing and could not press UI.
 - **Controller push-to-talk is unverified on the headset.** Holding A or X is tested against the OpenXR device layouts in PlayMode, but no controller session has been run on the Quest.
-- **One ~283 ms frame at launch**: a single synchronous call into Meta's OpenXR provider that starts the camera and creates the passthrough layer, which app code cannot defer or split (ADR-0032).
-- **Stale frames are over the < 1 % target.** In the last runs, 1.48–2.07 % during turns, 0.92–1.30 % idle and 2.79–3.24 % over the whole run; the cause is not known yet (see [Performance](#performance-budget)). A 10-minute OVR Metrics run is still due.
+- **One ~283 ms frame at launch**: a single synchronous call into Meta's OpenXR provider that starts the camera and creates the passthrough layer, which app code cannot defer or split (ADR-0032). The compositor loses ~36 frames around scene start in all. Starting the camera on the scene's first frame does not hide it: the Unity splash is already on screen, and the freeze only became one longer one (measured and reverted, ADR-0034).
+- **Stale frames depend on the headset's uptime.** After a reboot, turns and idle are under 1 % (0.23–0.60 %) and a 20-turn run is 0.93 % overall; a short default run is 1.77 % because of the launch hitch. After 4 days of uptime the same build dropped 5 % idle on a cooled headset. Reboot the headset before a demo (ADR-0034). A 10-minute OVR Metrics run is still due.
 - **GC during turns is at the budget, not under it everywhere.** p50 3.9 KB per frame in a development player (target ≤ 4 KB); a barge-in, with two ASR sessions in seconds, reaches 6.4 KB. Most of the rest is Mono's TLS stream allocating 16 KB per WebSocket read (ADR-0023).
 - **Vision answers vary with the model's reasoning.** Tool start → answer audio was 1.6–2.1 s in the last runs (1.6–3.4 s in earlier ones); the mask appears first (0.6–1.3 s) and a preamble covers the wait.
 - **The first turn after launch is a little slower.** Connections opened at launch warm TLS for the ASR and Wit; the first acknowledgement takes 1.1–1.4 s vs 0.6–1.1 s later, and the first sentence's audio starts 0.2–0.3 s after it is queued vs 0.1–0.35 s later.

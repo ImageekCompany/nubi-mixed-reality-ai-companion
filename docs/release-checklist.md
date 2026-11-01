@@ -6,6 +6,15 @@ Legend: ✅ met, with evidence · ⚠️ partial · ❌ not met · 🧑 needs a 
 
 **Totals: 24 DoD items: 16 ✅, 5 ⚠️, 3 ❌/🧑. Release-audit extras: 4 ✅, 1 🧑.**
 
+## Stale-frame cause and 20-turn latency on `751acba` (2026-11-01, 14:05–14:37 UTC)
+
+`selftest.sh --turns N` (ADR-0034), a cooled-headset run, a reboot, and a launch experiment. Details in [`perf/selftest-report.md`](perf/selftest-report.md) "Stale frames are device state…". These lines supersede the 4.1 stale-frame and 5.1 numbers below.
+
+- **1.1 / 1.2 / 2.1:** `tools/ci/test.sh` → EditMode 1056/1056, PlayMode 360/360, pure logic coverage 92.7 % (threshold 91.6 %), no `warning CS`.
+- **4.1:** stale frames are **under 1 % in turns and idle only on a freshly rebooted headset**: turns 0.49–0.60 %, idle 0.23–0.32 %, whole run 0.93 % (20-turn run, 242 s) and **1.77 %** (default run, 106 s; mostly the ~90–110 launch stale frames). The same APK on a headset cooled 20+ min but up for 4 days 14 h: idle **5.0 %**, whole run 6.2 %, with stale frames already during the Unity splash and app GPU time 5.4 ms vs 3.0 ms after the reboot at the same GPU level, so the cause is device state, not the build or heat. Mitigation: reboot the headset before a demo. Launch: the compositor loses ~36 frames around scene start; starting the camera on the scene's first frame did not reduce it (reverted). `app_rss_MB` peak **642–643 MB** (OVR Metrics). 10-minute stale run, CPU main-thread p95, 30-min thermal and battery are still unmeasured. ⚠️ 🧑
+- **5.1:** **20 consecutive online turns** (self-test stand-in, no wearer): release → first audio **p50 1,804 ms**, p90 2,577 ms, max 2,737 ms, under the 2.0 s p50 target; ASR final p50 265 ms; request → first text p50 1,277 ms, max 2,445 ms; sentence → audio p50 127 ms. Greetings p50 2,362 ms (6 of 7 over 2.0 s). The LiveUser run with a wearer on Wi-Fi is still a human item. ⚠️ 🧑
+- **Spend:** 3 paid runs, app meter $0.136; `api-spend.md` total ≤ $1.59.
+
 ## Verification of `main` at `3e99cb5` (2026-11-01, 13:30–13:38 UTC)
 
 After the cartoon-voice merge, the character voice on `CharacterDefinition`, the greeting fix, the text-done speech break and the staggered launch (ADR-0031, ADR-0032). Details in [`perf/selftest-report.md`](perf/selftest-report.md) "Cartoon voice merged, character voices, device-regression fixes (3e99cb5)". These lines supersede the `4d228c8` block and the per-item table where they differ.
