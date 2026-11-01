@@ -38,6 +38,14 @@ check_absent "FindObjectOfType / FindFirstObjectByType / Resources.Load / single
 check_absent "JOLLY_DEBUG_CAPTURE / JOLLY_DEBUG_LOG in committed scripting defines" \
   grep -nE "JOLLY_DEBUG_(CAPTURE|LOG)" "$PROJECT/ProjectSettings/ProjectSettings.asset"
 
+# Shipped content and scene wiring (Editor/Tools/Validators): personas, tables, clips, JollyBootstrap bindings.
+echo "[test] content validation (log: $OUT/content.log)"
+if ! "$UNITY" -batchmode -nographics -projectPath "$PROJECT" \
+     -executeMethod Jolly.Editor.Tools.Validators.ContentValidator.RunBatch -logFile "$OUT/content.log"; then
+  fail "content validation"
+  grep -hE "\[ContentValidator\]|error CS" "$OUT/content.log" | sort -u >&2 || true
+fi
+
 attr() { xmllint --xpath "string(/test-run/@$1)" "$2" 2>/dev/null || echo ""; }
 
 for platform in "${PLATFORMS[@]}"; do

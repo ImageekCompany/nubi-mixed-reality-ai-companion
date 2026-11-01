@@ -15,8 +15,20 @@ MonoBehaviour:
   m_GroupName: Localization-String-Tables-Polish
   m_GUID: 817483775871742df8f4ac25fb4c13db
   m_SerializeEntries:
+  - m_GUID: 0b6d7cd2e0e574a5a92817848e0d9c51
+    m_Address: Personas_pl
+    m_ReadOnly: 1
+    m_SerializedLabels:
+    - Locale-pl
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 6395389da5e91442a99cc5f5b7163c4a
     m_Address: Crisis_pl
+    m_ReadOnly: 1
+    m_SerializedLabels:
+    - Locale-pl
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 90b5a2859f0c24347ac2a280bf726e3a
+    m_Address: Lines_pl
     m_ReadOnly: 1
     m_SerializedLabels:
     - Locale-pl

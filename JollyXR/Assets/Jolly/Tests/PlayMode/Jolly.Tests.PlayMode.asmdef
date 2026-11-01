@@ -27,7 +27,9 @@
         "Unity.AI.Navigation",
         "Unity.Localization",
         "Unity.TextMeshPro",
-        "UnityEngine.UI"
+        "UnityEngine.UI",
+        "Jolly.Integrations.ULipSync",
+        "uLipSync.Runtime"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

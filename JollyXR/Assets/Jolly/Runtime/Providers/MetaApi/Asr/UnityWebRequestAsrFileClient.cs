@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using Jolly.Contracts;
+using Jolly.Providers.MetaApi.Common;
 using UnityEngine.Networking;
 
 namespace Jolly.Providers.MetaApi.Asr
@@ -28,19 +29,10 @@ namespace Jolly.Providers.MetaApi.Asr
             }
             catch (UnityWebRequestException e)
             {
-                throw new ProviderException(MuseAsrErrors.Provider, KindOf(e.ResponseCode),
+                throw new ProviderException(MuseAsrErrors.Provider, MetaErrors.KindOfStatus(e.ResponseCode),
                     $"Transcribe failed: HTTP {e.ResponseCode} {e.Error}", (int)e.ResponseCode, inner: e);
             }
             return request.downloadHandler.text;
         }
-
-        static ProviderErrorKind KindOf(long status) => status switch
-        {
-            0 => ProviderErrorKind.Network,
-            401 or 403 => ProviderErrorKind.Unauthorized,
-            429 => ProviderErrorKind.RateLimited,
-            >= 500 => ProviderErrorKind.Server,
-            _ => ProviderErrorKind.BadRequest,
-        };
     }
 }

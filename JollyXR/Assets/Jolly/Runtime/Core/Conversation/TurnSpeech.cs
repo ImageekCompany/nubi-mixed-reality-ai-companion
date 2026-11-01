@@ -4,14 +4,16 @@ using System.Text;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using Jolly.Contracts;
+using Jolly.Core.Speech;
 
 namespace Jolly.Core.Conversation
 {
     /// <summary>
     /// Turns a turn's speech deltas into queued sentences and the speech side of the state machine: SpeechQueued per
     /// sentence, FirstAudio + caption when a sentence's first sample plays, SpeechDrained when the queue empties. When the
-    /// locale has no TTS voice, sentences become captions only (architecture §10). It also keeps what this turn has said, for
-    /// the agent's interrupted commit: the queue's own record spans turns and is wiped by the barge-in's Clear.
+    /// locale has no TTS voice, sentences become captions only (architecture §10), each held for its reading time so a
+    /// reply is not reduced to its last sentence; the first one counts as FirstAudio. It also keeps what this turn has
+    /// said, for the agent's interrupted commit: the queue's own record spans turns and is wiped by the barge-in's Clear.
     /// </summary>
     public sealed class TurnSpeech : IDisposable
     {
@@ -21,7 +23,9 @@ namespace Jolly.Core.Conversation
         readonly ConversationStateMachine _machine;
         readonly ConversationEvents _events;
         readonly ILatencyTracker _latency;
+        readonly IClock _clock;
         readonly Dictionary<int, string> _awaitingFirstSample = new();
+        readonly Queue<(int Id, string Text)> _captionsOnly = new();
         readonly StringBuilder _spoken = new();
         int _nextUtteranceId;
         int _turnId;
@@ -30,10 +34,12 @@ namespace Jolly.Core.Conversation
         bool _ttsAvailable;
         CancellationToken _ct;
         UniTaskCompletionSource _drain;
+        bool _pacing;
 
         public TurnSpeech(ISpeechQueue queue, ISentenceSplitter splitter, ISpeechOutput output,
-                          ConversationStateMachine machine, ConversationEvents events, ILatencyTracker latency)
+                          ConversationStateMachine machine, ConversationEvents events, ILatencyTracker latency, IClock clock)
         {
+            _clock = clock;
             _queue = queue;
             _splitter = splitter;
             _output = output;
@@ -49,6 +55,7 @@ namespace Jolly.Core.Conversation
         {
             _splitter.Flush();
             _awaitingFirstSample.Clear();
+            _captionsOnly.Clear();
             _spoken.Clear();
             _mustCaptionId = 0;
             _drain = null;
@@ -98,7 +105,10 @@ namespace Jolly.Core.Conversation
             var id = NextUtteranceId();
             if (!_ttsAvailable)
             {
-                Caption(id, sentence);
+                _captionsOnly.Enqueue((id, sentence));
+                _machine.Fire(ConversationTrigger.SpeechQueued);
+                if (!_pacing)
+                    PaceCaptions().Forget();
                 return 0;
             }
             _awaitingFirstSample[id] = sentence;
@@ -123,6 +133,36 @@ namespace Jolly.Core.Conversation
                 _machine.Fire(ConversationTrigger.SpeechDrained);
             }
             drain.TrySetResult();
+        }
+
+        async UniTaskVoid PaceCaptions()
+        {
+            _pacing = true;
+            var drain = _drain ??= new UniTaskCompletionSource();
+            var ct = _ct;
+            var first = true;
+            try
+            {
+                while (_captionsOnly.Count > 0)
+                {
+                    var (id, text) = _captionsOnly.Dequeue();
+                    if (first)
+                        _machine.Fire(ConversationTrigger.FirstAudio);
+                    first = false;
+                    Caption(id, text);
+                    if (await _clock.Delay(CaptionTiming.HoldFor(text), ct).SuppressCancellationThrow())
+                        return;
+                }
+                _machine.Fire(ConversationTrigger.SpeechDrained);
+            }
+            finally
+            {
+                _pacing = false;
+                _captionsOnly.Clear();
+                if (_drain == drain)
+                    _drain = null;
+                drain.TrySetResult();
+            }
         }
 
         void OnFirstSamplePlayed(int utteranceId)

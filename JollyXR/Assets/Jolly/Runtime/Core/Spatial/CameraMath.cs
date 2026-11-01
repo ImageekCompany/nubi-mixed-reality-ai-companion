@@ -12,14 +12,8 @@ namespace Jolly.Core.Spatial
     {
         const float MinDepth = 1e-4f;
 
-        public static Ray PixelToWorldRay(Vector2 px, CameraIntrinsics k, Pose cam)
-        {
-            var local = new Vector3(
-                (px.x - k.PrincipalPoint.x) / k.FocalLength.x,
-                -(px.y - k.PrincipalPoint.y) / k.FocalLength.y,
-                1f);
-            return new Ray(cam.position, cam.rotation * local);
-        }
+        public static Ray PixelToWorldRay(Vector2 px, CameraIntrinsics k, Pose cam) =>
+            new(cam.position, cam.rotation * k.PixelToCameraDir(px));
 
         /// <summary>Projects a world point into the image. False when it is behind the camera or outside the image;
         /// px is still set for points in front of the camera.</summary>

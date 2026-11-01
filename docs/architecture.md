@@ -33,13 +33,13 @@ Root: `JollyXR/Assets/Jolly/`. All runtime asmdefs set `autoReferenced: false`. 
 | `Jolly.Character` | `Runtime/Character` | Contracts, `UniTask` | `NubiCharacterController` (NavMeshAgent from the built-in AI module), `LookAtDriver` (procedural bone look-at, ADR-0017), `GestureDriver`, `BlinkDriver`, `MouthShapeDriver`, `MoodDriver`. |
 | `Jolly.Localization` | `Runtime/Localization` | Contracts, `UniTask`, `UniTask.Addressables`, `Unity.ResourceManager`, `Unity.Localization` | `UnityLocalizer`, `LocaleVoiceMapAsset`. Awaiting `AsyncOperationHandle` needs `UniTask.Addressables` (its `UNITASK_ADDRESSABLE_SUPPORT` define is on because Addressables is installed) and `Unity.ResourceManager` for the type. |
 | `Jolly.Presentation` | `Runtime/Presentation` | Contracts, `UniTask`, `Unity.TextMeshPro`, `UnityEngine.UI`, `Unity.Localization` | `CaptionView`, `MaskOverlayView` (`IMaskPresenter`), `ToolBadgeView`, `LatencyHud`, `StatusIndicator` (`IStatusSink`), `SettingsPanel` (`IUserPreferences`). Views only: no service logic. |
-| `Jolly.App` | `Runtime/App` | everything above | `JollyBootstrap` (composition root), `JollyConfig` ScriptableObject, `PersonaProfileAsset` ScriptableObject, platform provider selection. |
+| `Jolly.App` | `Runtime/App` | everything above, plus the XR packages and `uLipSync.Runtime` for its typed scene references | `JollyBootstrap` + `Composition/` (`AppGraph`, `Edges`, per-concern builders, connectivity-reporting decorators), `JollyConfig`, `PersonaProfileAsset`, `LineClipLibrary` (ADR-0018), `SelfTest/` (device self-test, inert unless flagged). |
 | `Jolly.Editor.Build` | `Editor/Build` (exists) | XR management/OpenXR/MetaOpenXR/Hands/URP/Addressables editor asmdefs | `QuestBuild.BuildApk` (CI entry point; builds Addressables content first, see §10), `QuestProjectSetup` (player and XR settings, `com.nubi.companion`), `NubiManifestRequirements`. |
 | `Jolly.Editor.Character` | `Editor/Character` (Editor platform only) | Character, Contracts | `NubiModelPostprocessor`, `NubiAnimatorBuilder`, `NubiPrefabBuilder`, `NubiAssetPaths` (ADR-0017). |
-| `Jolly.Editor` | `Editor/Tools` (Editor platform only) | App, Core, Contracts, Providers.Wit | `CannedLineBaker`, persona and asset validators. |
+| `Jolly.Editor` | `Editor/Tools` (Editor platform only) | App, Core, Contracts, Providers.Wit, `Unity.Localization(.Editor)` | `CannedLineBaker`, `Validators/` (content, persona and scene validators; a `tools/ci/test.sh` gate). |
 | `Jolly.Testing` | `Tests/Shared` (`defineConstraints: ["UNITY_INCLUDE_TESTS"]`) | Contracts, Core, Net, `UniTask` | Hand-written fakes under `Fakes/WPn/`: `FakeClock`, `ScriptedChatModel`, `ScriptedSpeechToText`, `FakeTextToSpeech`, `FakeFrameSource`, `RecordingCharacterController`, `InMemorySecrets`, and others. Never used by runtime code. |
 | `Jolly.Tests.EditMode` | `Tests/EditMode` (Editor only) | Contracts, Core, Net, Providers.*, Audio, Testing, `UnityEngine.TestRunner`, `UnityEditor.TestRunner`, `nunit.framework.dll` | Pure logic and parser tests, `CameraMath`, the asmdef-graph test. |
-| `Jolly.Tests.PlayMode` | `Tests/PlayMode` | the above plus App, Character, Editor.Character, Presentation, Localization, XR | Scene and e2e tests with fakes. |
+| `Jolly.Tests.PlayMode` | `Tests/PlayMode` | the above plus App, Character, Editor.Character, Presentation, Localization, XR, Integrations.ULipSync, `uLipSync.Runtime` | Scene tests and `E2E/` (Main.unity with doubles only at the provider edges). |
 
 The asmdef names above (`Unity.XR.MetaOpenXR`, `Unity.XR.ARFoundation`, `Unity.XR.ARSubsystems`, `Unity.XR.Hands`, `Unity.XR.Interaction.Toolkit`, `Unity.AI.Navigation`, `Unity.Localization`, `Unity.Animation.Rigging`, `Unity.TextMeshPro`, `UnityEngine.UI`, `UnityEngine.TestRunner`, `UnityEditor.TestRunner`, `uLipSync.Runtime`, `UniTask`, `UniTask.Linq`, `UniTask.Addressables`) were read from the package asmdefs. `Unity.XR.CoreUtils`, `Unity.InputSystem` and `Unity.ResourceManager` were read from `JollyXR/Library/PackageCache`. `Newtonsoft.Json.dll` has `isExplicitlyReferenced: 0`, so asmdefs with `overrideReferences:false` get it automatically. The existing throwaway `Jolly.Spikes*` assemblies (`Assets/Spikes`) are deleted once WP5 lands.
 
@@ -61,12 +61,12 @@ graph TD
 
 **Decision: a plain composition root (ADR-0009).** `JollyBootstrap : MonoBehaviour` sits in the single scene `Assets/Jolly/Scenes/Main.unity`. It holds serialized references to the scene components: the XR Origin parts, the character prefab instance, views and the `JollyConfig` asset.
 
-In `Awake` it:
-1. Builds the secrets provider and config.
-2. Picks platform adapters: `#if UNITY_ANDROID && !UNITY_EDITOR` selects `MetaPassthroughFrameSource`; otherwise `EditorStillFrameSource` (in `Jolly.XR`, fixture images), since meta-openxr gives no CPU image in the Editor or over Link (`xr-stack.md` §2.2). Test fakes never ship in runtime wiring.
-3. `new`s every service in dependency order and adds each `IDisposable` to a list.
-4. Calls `Construct(...)` on the scene MonoBehaviours.
-5. Starts `ConversationController.RunAsync(appCts.Token)`.
+In `Start` it (ADR-0018):
+1. Takes the `Edges` (files, secrets, reachability, HTTP, WebSocket, probe status call, Wit, microphone, push-to-talk, speaker, camera wrapper): `Edges.ForPlayer()` in the app, doubles in the E2E tests, a few substitutes in the device self-test.
+2. Builds `Foundation` (clock, random, redacting log, secrets, usage meter, latency tracker, events, state machine).
+3. Builds `AppGraph`: initialises the localizer, then personas, settings, cloud adapters (each wrapped to report to the connectivity monitor), the XR layer, speech, the character, the views, the conversation core and the interaction triggers, adding each `IDisposable` to one stack and calling `Construct(...)` on the scene MonoBehaviours. Platform adapters: `#if UNITY_ANDROID && !UNITY_EDITOR` selects `MetaPassthroughFrameSource`; otherwise `EditorStillFrameSource` with `JollyConfig.editorCameraStill`, since meta-openxr gives no CPU image in the Editor or over Link (`xr-stack.md` §2.2). Test fakes never ship in runtime wiring.
+4. Places Nubi on the floor 1.2 m in front of the user once the head is tracked.
+5. Runs `PermissionGate`, then the connectivity and idle loops and `ConversationController.RunAsync(appCts.Token)`.
 
 `OnApplicationPause(true)` and `OnApplicationFocus(false)` flush the usage meter and the memories (Quest does not reliably call `OnDestroy`). `OnDestroy` cancels `appCts` and disposes the list in reverse order; disposal also unsubscribes static events such as `LocalizationSettings.SelectedLocaleChanged`, so PlayMode tests that build several bootstraps in one domain do not stack handlers.
 
@@ -431,9 +431,7 @@ Scene context sent to the model has the form `Seen recently: obj_3 white enamel 
 
 Fields:
 - `id`
-- `displayName` (LocalizedString)
-- `systemPrompt` (LocalizedString in the `Personas` table)
-- `safetyNotice` (LocalizedString, optional)
+- display name, system prompt, greeting and optional safety notice: entries `{id}.name`, `{id}.prompt`, `{id}.greeting`, `{id}.safety` of the `Personas` string table (en, pl), resolved by `PersonaRepository` for the current locale
 - `voiceOverrides` (per-locale `VoiceSpec`: Wit voice name, speed 50–200, pitch 25–200, style)
 - `allowedTools` (string[])
 - `persistMemory`, `crisisHandoff`, `defaultMood`, `accentColor`
@@ -451,7 +449,7 @@ Psychologist:
   - `UI`
   - `Lines` (canned lines + crisis keywords)
   - `Personas` (system prompts)
-  Asset table: `LineClips` (AudioClip per line key).
+  Clips: `LineClipLibrary` (`Content/Config/LineClips.asset`, AudioClip per language and line key) instead of a `LineClips` asset table (ADR-0018).
 - Startup locale: the system language if available, otherwise `en`.
 - `LocaleVoiceMapAsset` maps locale code → `LocaleVoiceProfile {AsrLanguageBias, TtsVoice, TtsAvailable}`:
   - `en` → ASR `"English"`, Wit `Charlie` (or `Cartoon Kid`, chosen in WP7).

@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Text.RegularExpressions;
 using Cysharp.Threading.Tasks;
 using Jolly.App;
 using NUnit.Framework;
@@ -13,6 +14,7 @@ namespace Jolly.Tests.PlayMode.Smoke
         [UnityTest]
         public IEnumerator Bootstrap_SurvivesAFrameAndDestroysCleanly() => UniTask.ToCoroutine(async () =>
         {
+            LogAssert.Expect(LogType.Error, new Regex("no JollyConfig"));
             var go = new GameObject(nameof(JollyBootstrap));
             go.AddComponent<JollyBootstrap>();
             var frame = Time.frameCount;

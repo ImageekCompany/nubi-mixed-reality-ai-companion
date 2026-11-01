@@ -1,0 +1,155 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e9620f8c34305754d8cc9a7e49e852d9, type: 3}
+  m_Name: Lines_en
+  m_EditorClassIdentifier: Unity.Localization::UnityEngine.Localization.Tables.StringTable
+  m_LocaleId:
+    m_Code: en
+  m_SharedData: {fileID: 11400000, guid: e43bbaf9d4b10476682530a1ff8384f5, type: 2}
+  m_Metadata:
+    m_Items: []
+  m_TableData:
+  - m_Id: 154132480
+    m_Localized: Hi! I'm Nubi. It's lovely to see you.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132481
+    m_Localized: Hello again! How are you today?
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132482
+    m_Localized: Oh, hello! I was hoping you'd stop by.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132483
+    m_Localized: Good to see you! Pinch your fingers when you want to talk.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132484
+    m_Localized: I'm Nubi, your little helper. Show me something and I'll tell you what it is.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132485
+    m_Localized: I'm Nubi! I can chat, find your things, and keep you company.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132486
+    m_Localized: My name is Nubi. Hold a pinch, ask me anything, then let go.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132487
+    m_Localized: Hmm!
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132488
+    m_Localized: Let me see.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132489
+    m_Localized: Okay!
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132490
+    m_Localized: One moment.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132491
+    m_Localized: Good question.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132492
+    m_Localized: I can't reach the internet right now, but I'm still here with you.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132493
+    m_Localized: My connection is down, so I can't think very well. Let's try again in a bit.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132494
+    m_Localized: Sorry, I'm offline at the moment. Please check the Wi-Fi.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132495
+    m_Localized: I lost my connection. I'll keep you company until it's back.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132496
+    m_Localized: Oops, something went wrong. Could you say that again?
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132497
+    m_Localized: Sorry, I got a bit muddled there. Let's try once more.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132498
+    m_Localized: Hmm, that didn't work. Please ask me again.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132499
+    m_Localized: I've used up my thinking time for now, so I can only say a few simple things.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132500
+    m_Localized: My thinking allowance has run out. I'm still happy to keep you company.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132501
+    m_Localized: Hi there!
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132502
+    m_Localized: Hee hee, that tickles!
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132503
+    m_Localized: Hello! Need anything?
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132504
+    m_Localized: I'm right here if you want to chat.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132505
+    m_Localized: Ooh, a wave! Hello to you too.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132506
+    m_Localized: Just so you know, I'm an AI companion, not a doctor or a therapist. For anything serious, please talk to a professional.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132507
+    m_Localized: I'm really glad you told me. This sounds serious, and you deserve help from a real person right now. Please call your local emergency number or a crisis line.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132508
+    m_Localized: You matter, and you don't have to face this alone. Please reach out to someone you trust, or call your local emergency number now.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132509
+    m_Localized: Sorry, I didn't catch that. Could you say it again?
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132510
+    m_Localized: Hmm, I didn't quite hear you. Try holding the pinch while you talk.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132511
+    m_Localized: I got a bit tangled, could you say that again?
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132512
+    m_Localized: I couldn't see it clearly, can you hold it closer?
+    m_Metadata:
+      m_Items: []
+  references:
+    version: 2
+    RefIds: []

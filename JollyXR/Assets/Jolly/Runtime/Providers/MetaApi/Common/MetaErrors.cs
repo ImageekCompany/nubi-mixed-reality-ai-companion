@@ -16,7 +16,7 @@ namespace Jolly.Providers.MetaApi.Common
             if (e.IsNetworkError)
                 return new ProviderException(Provider, ProviderErrorKind.Network, e.Message, inner: e);
             var message = EnvelopeMessage(e.Body) is { } m ? $"HTTP {e.Status}: {m}" : $"HTTP {e.Status}";
-            return new ProviderException(Provider, KindOf(e.Status), message, e.Status, e.RequestId, e.RetryAfter, e);
+            return new ProviderException(Provider, KindOfStatus(e.Status), message, e.Status, e.RequestId, e.RetryAfter, e);
         }
 
         /// <summary>A terminal response.failed or "error" event; code is machine-readable, message is server-sanitised.</summary>
@@ -28,8 +28,10 @@ namespace Jolly.Providers.MetaApi.Common
 
         public static ProviderException Protocol(string message) => new(Provider, ProviderErrorKind.Protocol, message);
 
-        static ProviderErrorKind KindOf(int status) => status switch
+        /// <summary>The one HTTP status → ProviderErrorKind mapping of every MetaApi adapter; 0 is a connection error.</summary>
+        public static ProviderErrorKind KindOfStatus(long status) => status switch
         {
+            0 => ProviderErrorKind.Network,
             401 or 403 => ProviderErrorKind.Unauthorized,
             402 => ProviderErrorKind.BudgetExceeded,
             408 => ProviderErrorKind.Timeout,

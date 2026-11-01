@@ -1,0 +1,155 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e9620f8c34305754d8cc9a7e49e852d9, type: 3}
+  m_Name: Lines_pl
+  m_EditorClassIdentifier: Unity.Localization::UnityEngine.Localization.Tables.StringTable
+  m_LocaleId:
+    m_Code: pl
+  m_SharedData: {fileID: 11400000, guid: e43bbaf9d4b10476682530a1ff8384f5, type: 2}
+  m_Metadata:
+    m_Items: []
+  m_TableData:
+  - m_Id: 154132480
+    m_Localized: "Cze\u015B\u0107! Jestem Nubi. Mi\u0142o ci\u0119 widzie\u0107."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132481
+    m_Localized: "Witaj ponownie! Jak si\u0119 dzi\u015B masz?"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132482
+    m_Localized: "O, cze\u015B\u0107! Mia\u0142em nadziej\u0119, \u017Ce zajrzysz."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132483
+    m_Localized: "Dobrze ci\u0119 widzie\u0107! Z\u0142\u0105cz palce, gdy chcesz porozmawia\u0107."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132484
+    m_Localized: "Jestem Nubi, tw\xF3j ma\u0142y pomocnik. Poka\u017C mi co\u015B, a powiem ci, co to jest."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132485
+    m_Localized: "Jestem Nubi! Umiem rozmawia\u0107, szuka\u0107 twoich rzeczy i dotrzymywa\u0107 ci towarzystwa."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132486
+    m_Localized: "Nazywam si\u0119 Nubi. Z\u0142\u0105cz palce, zapytaj o cokolwiek, potem pu\u015B\u0107."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132487
+    m_Localized: Hmm!
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132488
+    m_Localized: Zobaczmy.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132489
+    m_Localized: Dobrze!
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132490
+    m_Localized: "Chwileczk\u0119."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132491
+    m_Localized: Dobre pytanie.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132492
+    m_Localized: "Nie mog\u0119 teraz po\u0142\u0105czy\u0107 si\u0119 z internetem, ale nadal tu jestem."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132493
+    m_Localized: "Straci\u0142em po\u0142\u0105czenie, wi\u0119c trudno mi my\u015Ble\u0107. Spr\xF3bujmy za chwil\u0119."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132494
+    m_Localized: "Przepraszam, jestem teraz offline. Sprawd\u017A prosz\u0119 Wi-Fi."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132495
+    m_Localized: "Straci\u0142em po\u0142\u0105czenie. Dotrzymam ci towarzystwa, dop\xF3ki nie wr\xF3ci."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132496
+    m_Localized: "Ups, co\u015B posz\u0142o nie tak. Mo\u017Cesz powt\xF3rzy\u0107?"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132497
+    m_Localized: "Przepraszam, troch\u0119 si\u0119 pogubi\u0142em. Spr\xF3bujmy jeszcze raz."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132498
+    m_Localized: "Hmm, nie uda\u0142o si\u0119. Zapytaj mnie prosz\u0119 jeszcze raz."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132499
+    m_Localized: "Wykorzysta\u0142em na razie sw\xF3j czas na my\u015Blenie, wi\u0119c mog\u0119 m\xF3wi\u0107 tylko proste rzeczy."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132500
+    m_Localized: "Sko\u0144czy\u0142 mi si\u0119 limit my\u015Blenia. Ch\u0119tnie jednak dotrzymam ci towarzystwa."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132501
+    m_Localized: "Cze\u015B\u0107!"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132502
+    m_Localized: "Hi hi, to \u0142askocze!"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132503
+    m_Localized: "Cze\u015B\u0107! Potrzebujesz czego\u015B?"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132504
+    m_Localized: "Jestem tutaj, je\u015Bli chcesz pogada\u0107."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132505
+    m_Localized: "Och, machasz! Ja te\u017C ci\u0119 pozdrawiam."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132506
+    m_Localized: "Chc\u0119, \u017Ceby\u015B wiedzia\u0142: jestem towarzyszem AI, nie lekarzem ani terapeut\u0105. W powa\u017Cnych sprawach porozmawiaj ze specjalist\u0105."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132507
+    m_Localized: "Dobrze, \u017Ce mi o tym m\xF3wisz. To brzmi powa\u017Cnie i zas\u0142ugujesz teraz na pomoc prawdziwej osoby. Zadzwo\u0144 prosz\u0119 na numer alarmowy 112 albo na telefon zaufania 116 123."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132508
+    m_Localized: "Jeste\u015B wa\u017Cny i nie musisz mierzy\u0107 si\u0119 z tym sam. Odezwij si\u0119 do kogo\u015B zaufanego albo zadzwo\u0144 teraz na numer alarmowy 112."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132509
+    m_Localized: "Przepraszam, nie us\u0142ysza\u0142em. Mo\u017Cesz powt\xF3rzy\u0107?"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132510
+    m_Localized: "Hmm, nie dos\u0142ysza\u0142em. Trzymaj z\u0142\u0105czone palce, kiedy m\xF3wisz."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132511
+    m_Localized: "Troch\u0119 si\u0119 zapl\u0105ta\u0142em. Mo\u017Cesz powt\xF3rzy\u0107?"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132512
+    m_Localized: "Nie widz\u0119 tego wyra\u017Anie. Mo\u017Cesz podsun\u0105\u0107 to bli\u017Cej?"
+    m_Metadata:
+      m_Items: []
+  references:
+    version: 2
+    RefIds: []

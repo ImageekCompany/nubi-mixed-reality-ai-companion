@@ -45,7 +45,7 @@ namespace Jolly.Tests.EditMode.Architecture
             ["Jolly.Localization"] = With("Jolly.Contracts", UniTask,
                 "UniTask.Addressables", "Unity.ResourceManager", "Unity.Localization"),
             ["Jolly.Presentation"] = With("Jolly.Contracts", UniTask, "Unity.TextMeshPro", "UnityEngine.UI", "Unity.Localization"),
-            ["Jolly.App"] = With(JollyRuntime, UniTask),
+            ["Jolly.App"] = With(JollyRuntime, UniTask, XrPackages, "uLipSync.Runtime"),
             ["Jolly.Editor.Build"] = new[]
             {
                 "Unity.XR.Management", "Unity.XR.Management.Editor", "Unity.XR.OpenXR", "Unity.XR.OpenXR.Editor",
@@ -53,11 +53,12 @@ namespace Jolly.Tests.EditMode.Architecture
                 "Unity.RenderPipelines.Core.Runtime", "Unity.RenderPipelines.Universal.Runtime",
             },
             ["Jolly.Editor.Character"] = new[] { "Jolly.Character", "Jolly.Contracts" },
-            ["Jolly.Editor"] = With("Jolly.App", "Jolly.Core", "Jolly.Contracts", "Jolly.Providers.Wit", UniTask),
+            ["Jolly.Editor"] = With("Jolly.App", "Jolly.Core", "Jolly.Contracts", "Jolly.Providers.Wit", UniTask,
+                "Unity.Localization", "Unity.Localization.Editor"),
             ["Jolly.Testing"] = With("Jolly.Contracts", "Jolly.Core", "Jolly.Net", UniTask),
             ["Jolly.Tests.EditMode"] = EditModeTests,
             ["Jolly.Tests.PlayMode"] = With(EditModeTests, "Jolly.App", "Jolly.Character", "Jolly.Editor.Character", "Jolly.Presentation", "Jolly.Localization", "Jolly.XR",
-                XrPackages, "Unity.Localization", "Unity.TextMeshPro", "UnityEngine.UI"),
+                XrPackages, "Unity.Localization", "Unity.TextMeshPro", "UnityEngine.UI", "Jolly.Integrations.ULipSync", "uLipSync.Runtime"),
         };
 
         static readonly HashSet<string> RuntimeAssemblies = new(JollyRuntime.Append("Jolly.App"));

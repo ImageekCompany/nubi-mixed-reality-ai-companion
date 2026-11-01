@@ -571,6 +571,10 @@ namespace Jolly.Contracts
         public Vector2Int Resolution { get; }
         public CameraIntrinsics Scaled(float s) => new(FocalLength * s, PrincipalPoint * s,
             new Vector2Int(Mathf.RoundToInt(Resolution.x * s), Mathf.RoundToInt(Resolution.y * s)));
+        /// <summary>Camera-space direction (z = 1) through a top-left-origin pixel. The camera pose has +Y = image up,
+        /// so pixel y flips (ADR-0017). The one projection CameraMath and the mask overlay share (ADR-0018).</summary>
+        public Vector3 PixelToCameraDir(Vector2 px) =>
+            new((px.x - PrincipalPoint.x) / FocalLength.x, -(px.y - PrincipalPoint.y) / FocalLength.y, 1f);
     }
 
     /// <summary>One captured frame, already converted to the requested size. Pixels live in the frame source's buffer;
@@ -1028,3 +1032,4 @@ Recorded at integration so WP9 wires against what was built; none of these chang
 - **Provider ids** in `ProviderException.Provider` and `IConnectivityMonitor.Report*`: `meta` (every MetaApi HTTP/SSE call), `meta.asr` (Muse ASR), `wit` (Wit TTS), `meta-passthrough` (camera). `ConnectivityMonitor` treats `meta` and `meta.*` as using `META_API_KEY`; a 401 from any other provider does not mark the key rejected.
 - **`IHealthProbe.Ping` cannot report a 401.** `MetaHealthProbe` raises an `Unauthorized` event, which the composition root routes to `ReportFailure("meta", ProviderErrorKind.Unauthorized)`. A 429 counts as reachable.
 - **Persona, language and clear-memory requests are not on `IUserPreferences`.** `SettingsPanel` raises `PersonaSelected`, `LanguageSelected` and `ClearMemoryRequested`; the composition root routes them to the controller and localizer.
+- **WP9 integration (ADR-0018).** `TurnSpeech` takes an `IClock` (it paces captions-only replies). `MetaHealthProbe`'s `baseUrl` is the versioned API base (`MetaApiEndpoint.DefaultBaseUrl`); it appends `/models`. `CameraIntrinsics.PixelToCameraDir` (§6) is the one pixel → camera-ray projection. `MetaErrors.KindOfStatus` is the one HTTP status mapping. Provider calls reach `IConnectivityMonitor` through the composition root's decorators, not from the providers.

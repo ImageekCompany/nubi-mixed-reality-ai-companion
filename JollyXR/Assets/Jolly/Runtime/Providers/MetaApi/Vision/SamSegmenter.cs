@@ -63,15 +63,17 @@ namespace Jolly.Providers.MetaApi.Vision
         }
 
         /// <summary>
-        /// Settles the reservation on every path. Only a request the server rejected with a 4xx status is known to be
-        /// unbilled; a 5xx, timeout, abort or broken stream may have reached SAM, so it is settled as one billed image.
+        /// Settles the reservation on every path, one billed image per attempt that may have reached SAM
+        /// (<see cref="OpenAttempts.PossiblyBilled"/>: timeouts, aborts, broken streams). A final 4xx with no such attempt is
+        /// known to be unbilled; a final 5xx is assumed billed.
         /// </summary>
         async UniTask<SamStreamReader> Receive(HttpRequestSpec request, long reservation, CancellationToken ct)
         {
             var reader = new SamStreamReader();
+            var attempts = new OpenAttempts();
             try
             {
-                var stream = await _client.Open(request, _options.Timeout, _options.Timeout, _options.RetryPolicy, new OpenAttempts(), ct);
+                var stream = await _client.Open(request, _options.Timeout, _options.Timeout, _options.RetryPolicy, attempts, ct);
                 try
                 {
                     while (!reader.Apply(stream.Current) && await stream.MoveNext()) { }
@@ -83,17 +85,22 @@ namespace Jolly.Providers.MetaApi.Vision
                 if (!reader.IsFinished)
                     throw MetaErrors.Protocol("SAM stream ended before its output");
             }
-            catch (ProviderException e) when (e.HttpStatus is >= 400 and < 500)
+            catch (ProviderException e) when (e.HttpStatus is >= 400 and < 500 && attempts.PossiblyBilled == 0)
             {
                 _usage.RecordEstimate(reservation, _options.ModelId, 0, 0);
                 throw;
             }
-            catch
+            catch (ProviderException e) when (e.HttpStatus >= 500)
             {
-                _usage.Record(reservation, Billed(1));
+                _usage.Record(reservation, Billed(attempts.PossiblyBilled + 1));
                 throw;
             }
-            _usage.Record(reservation, Billed(reader.ImagesProcessed));
+            catch
+            {
+                _usage.Record(reservation, Billed(Math.Max(1, attempts.PossiblyBilled)));
+                throw;
+            }
+            _usage.Record(reservation, Billed(reader.ImagesProcessed + Math.Max(0, attempts.PossiblyBilled - 1)));
             return reader;
         }
 

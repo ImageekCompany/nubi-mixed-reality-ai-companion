@@ -25,6 +25,7 @@ namespace Jolly.Providers.MetaApi.Health
         readonly string _url;
         readonly TimeSpan _timeout;
 
+        /// <param name="baseUrl">The API base including the version (MetaApiEndpoint.DefaultBaseUrl); /models is appended.</param>
         public MetaHealthProbe(IHttpStatusClient http, ISecretsProvider secrets, IClock clock, ILog log,
                                string baseUrl, TimeSpan? timeout = null)
         {
@@ -32,7 +33,7 @@ namespace Jolly.Providers.MetaApi.Health
             _secrets = secrets;
             _clock = clock;
             _log = log;
-            _url = baseUrl.TrimEnd('/') + "/v1/models";
+            _url = baseUrl.TrimEnd('/') + "/models";
             _timeout = timeout ?? DefaultTimeout;
         }
 
@@ -50,7 +51,10 @@ namespace Jolly.Providers.MetaApi.Health
                 var status = await _http.GetStatus(_url, key, request.Token);
                 if (status == 401)
                     Unauthorized?.Invoke();
-                return status is >= 200 and < 300 or TooManyRequests;
+                var reached = status is >= 200 and < 300 or TooManyRequests;
+                if (!reached)
+                    Warn("status_" + status);
+                return reached;
             }
             catch (OperationCanceledException) when (ct.IsCancellationRequested)
             {
