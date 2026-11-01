@@ -34,7 +34,16 @@ namespace Jolly.Testing
 
         public void Complete() => _channel.Writer.TryComplete();
 
-        public void Fail(Exception error) => _channel.Writer.TryComplete(error);
+        public void Fail(Exception error)
+        {
+            _channel.Writer.TryComplete(error);
+            // Observe the faulted Completion so its finalizer doesn't report the error as unobserved in a later test.
+            var completion = _channel.Reader.Completion;
+            if (!completion.Status.IsCompleted())
+                return;
+            try { completion.GetAwaiter().GetResult(); }
+            catch (Exception) { }
+        }
 
         public IUniTaskAsyncEnumerator<PcmChunk> GetAsyncEnumerator(CancellationToken cancellationToken = default)
         {
