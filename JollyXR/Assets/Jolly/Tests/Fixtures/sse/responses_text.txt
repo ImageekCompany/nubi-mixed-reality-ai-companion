@@ -1,0 +1,44 @@
+event: response.created
+data: {"response":{"background":false,"created_at":1793495747.0,"error":null,"id":"resp_6ae692c3cfdd8fc2b8ee45d0","incomplete_details":null,"instructions":"You are Nubi, a friendly mixed-reality companion. Be brief.","max_output_tokens":1024,"model":"muse-spark-1.3-contributor","object":"response","output":[],"parallel_tool_calls":true,"reasoning":{"effort":"minimal"},"service_tier":"auto","status":"in_progress","store":false,"temperature":1.0,"tool_choice":"auto","tools":[],"top_logprobs":0,"top_p":1.0,"truncation":"disabled"},"sequence_number":0,"type":"response.created"}
+
+event: response.in_progress
+data: {"response":{"background":false,"created_at":1793495747.0,"error":null,"id":"resp_6ae692c3cfdd8fc2b8ee45d0","incomplete_details":null,"instructions":"You are Nubi, a friendly mixed-reality companion. Be brief.","max_output_tokens":1024,"model":"muse-spark-1.3-contributor","object":"response","output":[],"parallel_tool_calls":true,"reasoning":{"effort":"minimal"},"service_tier":"auto","status":"in_progress","store":false,"temperature":1.0,"tool_choice":"auto","tools":[],"top_logprobs":0,"top_p":1.0,"truncation":"disabled"},"sequence_number":1,"type":"response.in_progress"}
+
+event: response.output_item.added
+data: {"item":{"id":"rs_6ae692c3cfdd8fc2b8ee45d0:rs_01a194ad4a3376feaee308ef04e71dd6","status":"in_progress","summary":[],"type":"reasoning"},"output_index":0,"sequence_number":2,"type":"response.output_item.added"}
+
+event: response.output_item.done
+data: {"item":{"encrypted_content":"Q-PaDgGeRfkODDVvXuEIhhN7lQ43HDaSdoS-O3yqraqh3Fm4N-ZljAT6sU_fcfGLmNPF9tXVq0t2UtUG5ruNlhHvdHpkL3nbXeMzo15gMfRgqNFtq_z6v_irlGQhG5kaTuLnr7CTDDVWhrSNArDs5koU8nAZK9davbg40ZJnH7nm8hzGstE_g_43vAzw50BXS-IrCwE8NONyeya4sn7Kry5FOsznZlrrmsoOZGiiBa3w6jbJVZHPaJACvNEcdDotv_gwoun0qqX5VO8qwk6ZjlRSpJVbhZaameGrOiMaiTELms9LzUcoNOucoZlp_LrkhQTHvn8lNGZTGqNvTgLA2QrW98-WVNmWe02Uf8nl0nwsVRbDldFJRYTtvHyMwEcVTLI50n8O_M3_uKUiZViNXZkdqlPLOw7_5pKuLUVpjsDwNiTU9FuLsFBIn3xfxgI7VAyUQhuOZBn44_3BLgSK0r3w1FavkhZj4S2cdGFhBq225X4ykSB3Ytayld3I6E13FYLq3pxQmiu4v_ASBaoy31NIZTOuHBzWbNXon-Hah3852oNQ3DrrvHP9UNwjptabjKZwaOAv77uVvAZf_pCbcr6Nb8UDJvSC2B9LwWqOKmC5DnMyQY2oauwLH5QEURCj1ar9PdgjBSDONKj4Po2NdYuI7OyLOiNV327haKfexMMd-UwbJILRUui7uD0VSO97GbbXgxJh2ULQ5Hg9mlKvyJi6y25UYuhjvARSvh17R18JD7PIMTH-bQYqPeVs9RUcU7ocSH7I7kqLGZTSholcUne5P0MaONKPM6pqhn75mjlxdjVSPOCV9slT-ZOeHfD61lEZCvMtd1nVqdk8hIjMF_b52q1oDgQNFi0nUTeTw17HX7pqGdsSIFMQLIXwhLFmA5QMFXqMiFFTIOsjVVSVys1CAISfocMaOuAdKuFViBt5i5FUn8q0DMXo8LN5xsQh9lqIR-2bUouKAheJSOtwkAsIfMcgdO4611OR37SeARH-EWrvwCyVW2bvn6cSKfsZ59Iurd2DyD69q6yzK6nuvtwhTSMZAj7SGyKYV3bvASoMukst5bGQNuOB3bJsL1lJCvCfbTNtE0T3-UtH31kiSGftwUCHoyWYoXr8tJ0KzTIROejYbXQlUMP5mkHkARYajxMqK9kgfa-cQKZ6CDtlMHJgHy00Q3plSC7ywWmO6sAyMDti_O-UBB7rredN2F8uGnuN-WCBK3qW5gC3vQbzuGY2T7Z8CP6ztxd69XzqIt2qmOMv4r4LzBdIcUqUQA7QiZoMPLxfB8qs5qs0Ox8u61CXg7vbjA-l78uU5qMos_7-n_eO3UnmSzm3fTMnDjPqBpbjFoL3n0Yv3hR-MnJFMeWzkFjIfOeV3ezCyX4ZyFCKduRAz_7_FYosm2k_GLEOnCWsl5mxR6EWTMzK7w","id":"rs_6ae692c3cfdd8fc2b8ee45d0:rs_01a194ad4a3376feaee308ef04e71dd6","status":"completed","summary":[],"type":"reasoning"},"output_index":0,"sequence_number":3,"type":"response.output_item.done"}
+
+event: response.output_item.added
+data: {"item":{"content":[],"id":"msg_01a194ad4a9573c7a99955d83a8de398","role":"assistant","status":"in_progress","type":"message"},"output_index":1,"sequence_number":4,"type":"response.output_item.added"}
+
+event: response.content_part.added
+data: {"content_index":0,"item_id":"msg_01a194ad4a9573c7a99955d83a8de398","output_index":1,"part":{"annotations":[],"logprobs":[],"text":"","type":"output_text"},"sequence_number":5,"type":"response.content_part.added"}
+
+event: response.output_text.delta
+data: {"content_index":0,"delta":"Hey","item_id":"msg_01a194ad4a9573c7a99955d83a8de398","logprobs":[],"output_index":1,"sequence_number":6,"type":"response.output_text.delta"}
+
+event: response.output_text.delta
+data: {"content_index":0,"delta":" there","item_id":"msg_01a194ad4a9573c7a99955d83a8de398","logprobs":[],"output_index":1,"sequence_number":7,"type":"response.output_text.delta"}
+
+event: response.output_text.delta
+data: {"content_index":0,"delta":" — good","item_id":"msg_01a194ad4a9573c7a99955d83a8de398","logprobs":[],"output_index":1,"sequence_number":8,"type":"response.output_text.delta"}
+
+event: response.output_text.delta
+data: {"content_index":0,"delta":" to see you!","item_id":"msg_01a194ad4a9573c7a99955d83a8de398","logprobs":[],"output_index":1,"sequence_number":9,"type":"response.output_text.delta"}
+
+event: response.output_text.done
+data: {"content_index":0,"item_id":"msg_01a194ad4a9573c7a99955d83a8de398","logprobs":[],"output_index":1,"sequence_number":10,"text":"Hey there — good to see you!","type":"response.output_text.done"}
+
+event: response.content_part.done
+data: {"content_index":0,"item_id":"msg_01a194ad4a9573c7a99955d83a8de398","output_index":1,"part":{"annotations":[],"logprobs":[],"text":"Hey there — good to see you!","type":"output_text"},"sequence_number":11,"type":"response.content_part.done"}
+
+event: response.output_item.done
+data: {"item":{"content":[{"annotations":[],"logprobs":[],"text":"Hey there — good to see you!","type":"output_text"}],"id":"msg_01a194ad4a9573c7a99955d83a8de398","role":"assistant","status":"completed","type":"message"},"output_index":1,"sequence_number":12,"type":"response.output_item.done"}
+
+event: response.completed
+data: {"response":{"background":false,"completed_at":1793495747.0,"created_at":1793495747.0,"error":null,"id":"resp_6ae692c3cfdd8fc2b8ee45d0","incomplete_details":null,"instructions":"You are Nubi, a friendly mixed-reality companion. Be brief.","max_output_tokens":1024,"model":"muse-spark-1.3-contributor","object":"response","output":[{"encrypted_content":"Q-PaDgGMAaDL7CRcxPS2uua0cAWyb1veokFASnYwytkpCFD36-wQEudCct1U7mIclbQx1Zq8HAoZ4gxNMmzgM--_bHVoCuHpdW4vU56aY70svEHOcIrSNktTy4QBOyzuAHOQEsiRv9bYgzqKN6Bnz752QiTarEPB_G0b-YHlKqBLk1BDbYtbLBl6psSi0E6InYLzxGzQL5nEPANRu9CKDWWYEMxueAXKgrcly6YOL3BaubGD2BcE3kGNZLLfbpslZhnKMJft6feab5rT0qHwsYfHHacoHAk1QdBIkZc7o84MpxgADOFWHK1oQZYl1uhIokY5uKmR6rddeFNESI2IYk3KKnyJN5wfjycYeevsbsatCGK6XE9ofHH08ZuldhA0Lt7DXUYlhQcm-FMroKyo2AUSFECO6st4Xsyrwv00Dz5Cma6GQW9wdpAcrwZPbTx-UXoU-uRj40_4OG4vXBLQH2VkmU2icA7XY0dl17bR1E86eKC0ECkoNtgM7UKgp0rY5lL6_Dwu8HVUW2_xmxPiQUb_V1A_i4d_6mtVF0NJhRMBq1tp83G0f0GhWnOVO1tCP53dknIOe7HSQ4PqOQZQ30FJo5-7AgBE7uit_4ZHpWBTLpM5qUAYOG7EtO5vyyKpm0S27xiZoW3Tg9RxLTBpb2RGiViRWNfSiA5kaI1U34ZW4mcqdFnb8ocbzCLgS-5YaPEmGF4ijRvr3i7BmMDYgarfTuoht0Z_wGyr3iNeP35uZHcDggmuFv5gPHl2pavwrvsKqtcvKILCwAh_bC_r1B_toKsYBrmgEhCK552D7B71phlmvMz7TY4Mybl-R8BpmxNnhidMZcvvObUsK_QSrfN-kAgE8uipxgocmKI8l8Q7StdDnqXyZDTDVcnajP4vsC_B6wY_QJHHKXgInpX66YtlpsWmxMARaBnt77UWJOoN7nO10rjGo8PkI4f4Xp15m6swe-ltQ412Kx0_1yQrAgTLRIEwxsTwwSZIrB_qSvJtlhCJU8T2ko32WM0N6HCcG_LK7EclWmtHiAwb3Mz_uXSQ9_E_pZK7EetpZi0t6yf37hvmKXNM_B4qVFyG-SfykCLf8KEFX_k5CpIZr4qmorzu4R6DrdscwW69LDpsLTMiuAt5JX65Y46TcUv4hUdvJZh2rtFV4cOiZNaoqvy4AeK7O5K94eZLL2RhG8V1lcH9PH1rxqlk3bWOiS06P9onjy_0_mGQ-HsOgzPRZqxpItKiWDyo5KM7Hzb4jljiXcbFIHhWr8p2q9eqatcLpjauLziYIhIWhUl20OYT8kCc2dRD743cbh1NtZNf-_krw2ZPLMkNXdFFdjZ2GEYuO1NMx4ZwoTfuefSB5XwvBlzDj6Xfct2toJkejJdrXi6T4WbOdqkSQCPbNAaCboftSt6p-2zTHmukIp_66JPs_w","id":"rs_6ae692c3cfdd8fc2b8ee45d0:rs_01a194ad4a3376feaee308ef04e71dd6","status":"completed","summary":[],"type":"reasoning"},{"content":[{"annotations":[],"logprobs":[],"text":"Hey there — good to see you!","type":"output_text"}],"id":"msg_01a194ad4a9573c7a99955d83a8de398","role":"assistant","status":"completed","type":"message"}],"parallel_tool_calls":true,"reasoning":{"effort":"minimal"},"service_tier":"auto","status":"completed","store":false,"temperature":1.0,"tool_choice":"auto","tools":[],"top_logprobs":0,"top_p":1.0,"truncation":"disabled","usage":{"input_tokens":36,"input_tokens_details":{"cached_tokens":0},"output_tokens":29,"output_tokens_details":{"reasoning_tokens":12},"total_tokens":65}},"sequence_number":13,"type":"response.completed"}
+
+data: [DONE]
+

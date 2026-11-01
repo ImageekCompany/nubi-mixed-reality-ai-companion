@@ -1,0 +1,6 @@
+event: response.created
+data: {"response":{"background":false,"created_at":1793495761.0,"error":null,"id":"resp_handwritten_error","incomplete_details":null,"model":"muse-spark-1.3-contributor","object":"response","output":[],"status":"in_progress","store":false},"sequence_number":0,"type":"response.created"}
+
+event: error
+data: {"type":"error","code":"rate_limit_exceeded","message":"Rate limit exceeded.","param":null,"sequence_number":1}
+
