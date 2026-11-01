@@ -3,7 +3,7 @@
 This page explains how to measure the targets in [`definition-of-done.md`](../definition-of-done.md) §4 (performance) and §5 (latency), and where to put the results.
 
 - Raw captures (CSV, `.data`, logcat dumps) go to `artifacts/`, which is git-ignored.
-- Committed summaries go here: `docs/perf/report.md` for frame time, memory and thermals (until the first OVR Metrics capture, the DoD coverage table in [`selftest-report.md`](selftest-report.md) records what is measured and what is not), and [`vision-eval.md`](vision-eval.md) for the R6 vision/SAM evaluation.
+- Committed summaries go here: `docs/perf/report.md` for frame time, memory and thermals (until the first OVR Metrics capture, the DoD coverage table in [`selftest-report.md`](selftest-report.md) records what is measured and what is not), [`vision-eval.md`](vision-eval.md) for the R6 vision/SAM evaluation, and [`tool-selection-eval.md`](tool-selection-eval.md) for tool routing (`tools/eval/tool-selection.sh`).
 
 Always measure on a **Quest 3** with passthrough on and Nubi visible, during the scripted conversation (the six beats of [`demo-script.md`](../demo-script.md), looped). Record the Horizon OS version (`adb shell getprop ro.vros.build.version`) and the commit in every summary.
 
