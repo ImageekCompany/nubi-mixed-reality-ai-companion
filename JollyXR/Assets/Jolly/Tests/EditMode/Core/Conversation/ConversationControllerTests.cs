@@ -5,7 +5,9 @@ using Cysharp.Threading.Tasks;
 using Jolly.Contracts;
 using Jolly.Core.Conversation;
 using Jolly.Core.Speech;
+using Jolly.Testing;
 using Jolly.Testing.Conversation;
+using Jolly.Tests.EditMode.Core.Agent;
 using NUnit.Framework;
 
 namespace Jolly.Tests.EditMode.Core.Conversation
@@ -177,6 +179,29 @@ namespace Jolly.Tests.EditMode.Core.Conversation
 
             Assert.That(_f.Offline.Categories,
                 Is.EqualTo(new[] { LineCategory.Acknowledge, LineCategory.Acknowledge, LineCategory.Error }));
+            Assert.That(_f.State, Is.EqualTo(ConversationState.Idle));
+        }
+
+        [Test]
+        public void BothHedgeLegsStall_TheHoldLineThenTheErrorLineAreSpoken()
+        {
+            _f.Dispose();
+            var transport = new FakeHttpTransport().Hang().Hang();
+            _f = new ConversationFixture(f => f.RealAgentLoop(SlowModelTests.VoiceModel(transport, f.Clock))).Start();
+
+            _f.Talk("What is this?");
+            _f.Advance(2.0);
+            var atHoldLine = _f.Offline.Categories.ToArray();
+            _f.Advance(1.9);
+            var beforeDeadline = _f.State;
+            _f.Advance(0.1);
+
+            Assert.That(atHoldLine, Is.EqualTo(new[] { LineCategory.Acknowledge }));
+            Assert.That(beforeDeadline, Is.EqualTo(ConversationState.Thinking));
+            Assert.That(transport.Requests, Has.Count.EqualTo(2), "the original and its hedge (ADR-0038)");
+            Assert.That(_f.Offline.Categories, Is.EqualTo(new[] { LineCategory.Acknowledge, LineCategory.Error }),
+                "a double stall ends in a spoken canned line, never in silence");
+            Assert.That(_f.Log.Contains(LogLevel.Warning, "evt=agent.failed kind=Timeout"), Is.True);
             Assert.That(_f.State, Is.EqualTo(ConversationState.Idle));
         }
 

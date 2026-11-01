@@ -107,7 +107,7 @@ namespace Jolly.Tests.EditMode.Core.Agent
         }
 
         /// <summary>The production voice-turn adapter: 4 s first event, one attempt, hedged after 2.5 s.</summary>
-        static IChatModel VoiceModel(FakeHttpTransport transport, FakeClock c)
+        internal static IChatModel VoiceModel(FakeHttpTransport transport, FakeClock c)
         {
             var log = new RecordingLog();
             var retry = new RetryExecutor(c, new FakeRandom().EnqueueFloat(0f, 0f, 0f), log);

@@ -4,10 +4,12 @@ using System.IO;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using Jolly.Contracts;
+using Jolly.Core.Agent;
 using Jolly.Core.Config;
 using Jolly.Core.Conversation;
 using Jolly.Core.Diagnostics;
 using Jolly.Core.Memory;
+using Jolly.Core.Spatial;
 using Jolly.Core.Tools;
 using Jolly.Testing;
 using Jolly.Testing.Conversation;
@@ -51,6 +53,17 @@ namespace Jolly.Tests.EditMode.Core.Conversation
         UniTask _running;
 
         public ConversationFixture(string languageTag = "en", params PersonaProfile[] personas)
+            : this(languageTag, personas, null)
+        {
+        }
+
+        /// <param name="agent">Replaces <see cref="Agent"/> (left unused then), e.g. <see cref="RealAgentLoop"/> over a real
+        /// adapter timed by <see cref="Clock"/>. Called once the memories exist.</param>
+        public ConversationFixture(Func<ConversationFixture, IAgentLoop> agent) : this("en", Array.Empty<PersonaProfile>(), agent)
+        {
+        }
+
+        ConversationFixture(string languageTag, PersonaProfile[] personas, Func<ConversationFixture, IAgentLoop> agent)
         {
             Localizer = new FakeLocalizer(languageTag);
             Personas = new FakePersonaProvider(personas);
@@ -61,6 +74,8 @@ namespace Jolly.Tests.EditMode.Core.Conversation
             Memory = new ConversationMemory(Directory, Personas, limits, Log);
             Scene = new SceneMemory(Path.Combine(Directory, "scene.json"), new FakeSpatialAnchors(), Clock, limits, Log);
 
+            var agentLoop = agent?.Invoke(this) ?? Agent;
+
             var latency = new LatencyTracker(Clock, Log);
             var frames = new FrameGrabber(Camera, new FakeImageEncoder(), Clock, new VisionSettings());
             var listener = new TurnListener(Mic, Stt, frames, TranscriptAliases.ForName("Nubi", new[] { "newbie" }), Localizer, Events, latency, Log, Timings);
@@ -68,7 +83,7 @@ namespace Jolly.Tests.EditMode.Core.Conversation
             var guards = new TurnGuards(new StopGuard(Localizer), new ComeGuard(Localizer), new CrisisGuard(Localizer),
                 new QuestionCue(Localizer), Character, Tools, Personas, new FakeUserPreferences(), Events, Log);
             var speech = new TurnSpeech(Queue, new FakeSentenceSplitter(), Output, Machine, Events, latency, Clock);
-            var pipeline = new TurnPipeline(listener, guards, speech, Agent, Offline, Memory, Personas, Machine, Events,
+            var pipeline = new TurnPipeline(listener, guards, speech, agentLoop, Offline, Memory, Personas, Machine, Events,
                 latency, Localizer, Log, Timings);
             var switcher = new PersonaSwitcher(Personas, Personas, Memory, Character, Log);
             var keeper = new MemoryKeeper(Memory, Scene, Model, Personas, Log);
@@ -83,6 +98,14 @@ namespace Jolly.Tests.EditMode.Core.Conversation
             Events.CaptionStarted += (_, text) => Captions.Add(text);
             Events.UserPartial += Partials.Add;
         }
+
+        /// <summary>The production agent loop over <paramref name="model"/> and this fixture's tools and memories.</summary>
+        public IAgentLoop RealAgentLoop(IChatModel model) =>
+            new AgentLoop(model, Tools, Memory, Scene,
+                new RoomContext(new FakeRoomScan { Status = RoomScanStatus.Pending }, World, new FakeUserPoseProvider(),
+                    new RoomSettings()),
+                Personas, Localizer, new FakeUserPreferences(), Log, Clock, new LatencyTracker(Clock, Log), Events,
+                new AgentSettings { SafetyIdentifier = "0123456789abcdef0123456789abcdef" });
 
         public ConversationState State => Machine.State;
         public UniTaskStatus RunStatus => _running.Status;
