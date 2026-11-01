@@ -55,7 +55,7 @@ namespace Jolly.Tests.EditMode.Architecture
             ["Jolly.Editor"] = With("Jolly.App", "Jolly.Core", "Jolly.Contracts", "Jolly.Providers.Wit", UniTask),
             ["Jolly.Testing"] = With("Jolly.Contracts", "Jolly.Core", UniTask),
             ["Jolly.Tests.EditMode"] = EditModeTests,
-            ["Jolly.Tests.PlayMode"] = With(EditModeTests, "Jolly.App", "Jolly.Character", "Jolly.Presentation", "Jolly.XR",
+            ["Jolly.Tests.PlayMode"] = With(EditModeTests, "Jolly.App", "Jolly.Character", "Jolly.Presentation", "Jolly.Localization", "Jolly.XR",
                 XrPackages, "Unity.Localization", "Unity.TextMeshPro", "UnityEngine.UI", "Unity.Animation.Rigging"),
         };
 
