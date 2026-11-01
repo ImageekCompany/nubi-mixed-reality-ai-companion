@@ -34,7 +34,8 @@ echo "[reset] relaunched $PKG"
 
 if [[ $WARMUP -eq 1 ]]; then
   for _ in $(seq 1 40); do
-    if adb logcat -d -s Unity:I 2>/dev/null | grep -q "evt=warmup.done"; then
+    # Not grep -q: it exits at the first match, adb takes SIGPIPE and pipefail turns the match into a miss.
+    if adb logcat -d -s Unity:I 2>/dev/null | grep "evt=warmup.done" >/dev/null; then
       adb logcat -d -s Unity:I | grep -oE "evt=(character.selected|warmup.done)[^\"]*" | sort -u | sed 's/^/[reset] /'
       echo "[reset] warm; say the throwaway greeting off camera, then Settings -> Clear memory (a relaunch would make the next turn cold again)"
       exit 0
