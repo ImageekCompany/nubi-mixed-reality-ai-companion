@@ -31,20 +31,27 @@ namespace Jolly.XR.World
             if (!SupportsPersistence(out var descriptor) || !descriptor.supportsSaveAnchor)
                 return null;
 
+            // Cancellation is honoured only between steps that leave nothing behind: an added anchor is removed, and a
+            // saved one is returned, since its GUID is the only handle to what is now persisted.
             var added = await _anchors.TryAddAnchorAsync(pose);
-            ct.ThrowIfCancellationRequested();
             if (!added.status.IsSuccess())
             {
+                ct.ThrowIfCancellationRequested();
                 _log.Write(LogLevel.Warning, "xr", $"evt=anchor.add_failed status={added.status.statusCode}");
                 return null;
             }
+            if (ct.IsCancellationRequested)
+            {
+                _anchors.TryRemoveAnchor(added.value);
+                ct.ThrowIfCancellationRequested();
+            }
 
             var saved = await _anchors.TrySaveAnchorAsync(added.value, ct);
-            ct.ThrowIfCancellationRequested();
             if (!saved.status.IsSuccess())
             {
-                _log.Write(LogLevel.Warning, "xr", $"evt=anchor.save_failed status={saved.status.statusCode}");
                 _anchors.TryRemoveAnchor(added.value);
+                ct.ThrowIfCancellationRequested();
+                _log.Write(LogLevel.Warning, "xr", $"evt=anchor.save_failed status={saved.status.statusCode}");
                 return null;
             }
 
@@ -63,9 +70,11 @@ namespace Jolly.XR.World
                 return null;
 
             var loaded = await _anchors.TryLoadAnchorAsync(new SerializableGuid(guid), ct);
-            ct.ThrowIfCancellationRequested();
             if (!loaded.status.IsSuccess())
+            {
+                ct.ThrowIfCancellationRequested();
                 return null;
+            }
             _loaded[anchorId] = loaded.value;
             return PoseOf(loaded.value);
         }
