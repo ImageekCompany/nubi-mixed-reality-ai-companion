@@ -125,7 +125,7 @@ namespace Jolly.App.Composition
         {
             await Scene.permissions.Run(appCt);
             Loop("connectivity", Cloud.Connectivity.RunAsync(appCt), appCt).Forget();
-            Loop("warmup", StartupWarmup.Run(Conversation.Frames, Cloud.RealtimeAsr, Cloud.Wit, Foundation.Clock,
+            Loop("warmup", StartupWarmup.Run(Conversation.Frames, Cloud.RealtimeAsr, Cloud.Wit, Personas.Current?.Voice, Foundation.Clock,
                 Foundation.Log, appCt),
                 appCt).Forget();
             Loop("idle", Idle.RunAsync(IsIdle, appCt), appCt).Forget();

@@ -3,7 +3,6 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using Cysharp.Threading.Tasks.Linq;
 using Jolly.Contracts;
-using UnityEngine.Networking;
 
 namespace Jolly.Providers.Wit
 {
@@ -15,6 +14,8 @@ namespace Jolly.Providers.Wit
     {
         public static readonly TimeSpan DefaultFirstChunkTimeout = TimeSpan.FromSeconds(3);
         public static readonly TimeSpan DefaultIdleTimeout = TimeSpan.FromSeconds(3);
+        /// <summary>Never played; short, so the warm-up costs one small response.</summary>
+        public const string WarmUpText = "Hi.";
 
         readonly ISecretsProvider _secrets;
         readonly IClock _clock;
@@ -49,25 +50,27 @@ namespace Jolly.Providers.Wit
         }
 
         /// <summary>
-        /// Opens the HTTPS connection to api.wit.ai with one <c>GET /voices</c> (nothing is synthesized), so DNS, TCP and
-        /// TLS are paid at launch instead of by the first sentence: UnityWebRequest keeps the connection for the next
-        /// request to the host. Returns the HTTP status, 0 without a token or a response. Throws only on cancellation.
+        /// Synthesizes <see cref="WarmUpText"/> in <paramref name="voice"/> through the same streaming request a sentence
+        /// uses and discards the audio (Wit TTS is free), so the first real sentence finds everything warm. A
+        /// <c>GET /voices</c> warm-up (ADR-0023) opened the connection but not the synthesis path: from the dev Mac the
+        /// first <c>/synthesize</c> after it took p50 143 ms against 88 ms after a synthesized warm-up and 83 ms later,
+        /// on the same kept-alive connection; on the Quest 472–543 ms against 99–278 ms. Returns the HTTP status (200),
+        /// or 0 without a token or a response. Throws only on cancellation.
         /// </summary>
-        public async UniTask<long> WarmUp(CancellationToken ct)
+        public async UniTask<long> WarmUp(VoiceSpec voice, CancellationToken ct)
         {
-            if (!_secrets.TryGet(SecretKeys.WitClientToken, out var token))
+            if (!_secrets.TryGet(SecretKeys.WitClientToken, out _))
                 return 0;
-            using var request = UnityWebRequest.Get(WitProtocol.VoicesUrl);
-            request.SetRequestHeader("Authorization", "Bearer " + token);
             try
             {
-                await request.SendWebRequest().ToUniTask(cancellationToken: ct);
+                await foreach (var chunk in Synthesize(WarmUpText, voice, ct).WithCancellation(ct))
+                    chunk.Dispose();
+                return 200;
             }
-            catch (UnityWebRequestException)
+            catch (ProviderException e)
             {
-                // Any answer, even an error status, has opened the connection.
+                return e.HttpStatus;
             }
-            return request.responseCode;
         }
 
         async UniTask Stream(string body, IAsyncWriter<PcmChunk> writer, CancellationToken enumerationCt, CancellationToken callerCt)

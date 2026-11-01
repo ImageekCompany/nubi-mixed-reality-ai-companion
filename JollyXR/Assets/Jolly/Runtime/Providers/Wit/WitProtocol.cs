@@ -10,8 +10,6 @@ namespace Jolly.Providers.Wit
     {
         public const string Provider = "wit";
         public const string SynthesizeUrl = "https://api.wit.ai/synthesize?v=20250213";
-        /// <summary>Lists the app's voices; synthesizes nothing. Used only to open the connection at launch.</summary>
-        public const string VoicesUrl = "https://api.wit.ai/voices?v=20250213";
         public const int SampleRate = 24000;
 
         public static string SynthesizeBody(string text, VoiceSpec voice)
