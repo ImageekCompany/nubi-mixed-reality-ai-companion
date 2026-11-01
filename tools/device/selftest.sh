@@ -6,7 +6,7 @@
 #   artifacts/selftest/selftest_turns_<scenario>.raw for Jolly.Editor.Tools.GcAllocReport (docs/perf/README.md §7).
 #   ANDROID_SERIAL selects the device (adb). NUBI_PACKAGE=com.nubi.companion. Results go to artifacts/selftest/.
 #   NUBI_TMPDIR: where push-secrets.sh writes its temporary JSON (keep TMPDIR short for Unity builds).
-# Spends real Meta API money (about $0.02-0.04 per run: ~5 short Spark turns, 1 vision call, 1-2 SAM images, ASR);
+# Spends real Meta API money (about $0.02-0.04 per run: ~7 short Spark turns, 1 vision call, 3-4 SAM images, ASR);
 # append the printed spend to docs/api-spend.md.
 set -euo pipefail
 
@@ -115,10 +115,13 @@ awk '/FPS=/ { split(substr($0, index($0, "FPS=") + 4), f, "/"); frames += f[1]
      END { if (frames > 0) printf "[selftest] compositor: %d of %d frames stale (%.2f%%, target < 1%%)\n", stale, frames, 100 * stale / frames }' \
   "$OUT/vrapi.txt"
 
+# Phantom hand tracking with nobody wearing the headset (selftest-report.md, 4d228c8: 38-56 lines per run).
+echo "[selftest] hand tracking: $(grep -c 'evt=hands.tracked' "$OUT/logcat.txt" || true) evt=hands.tracked lines"
+
 python3 -I - "$OUT/selftest_results.json" <<'PY'
 import json, sys
 r = json.load(open(sys.argv[1], encoding="utf-8"))
-keys = ["release_to_first_audio_ms", "tool_to_answer_audio_ms", "similarity", "caption_ms", "silence_ms", "avg_fps", "p95_frame_ms",
+keys = ["release_to_first_audio_ms", "tool_to_answer_audio_ms", "tool_to_mask_ms", "found", "similarity", "caption_ms", "silence_ms", "avg_fps", "p95_frame_ms",
         "draw_calls_max", "setpass_calls_max", "triangles_max", "system_memory_mb",
         "gc_alloc_bytes_per_frame", "mean_luma", "frame", "navmesh", "tools"]
 print(f"\nSelf-test on {r['device']} at {r['startedUtc']}")

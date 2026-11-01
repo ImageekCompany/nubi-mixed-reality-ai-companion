@@ -6,14 +6,16 @@ namespace Jolly.App.SelfTest.Scenarios
 {
     /// <summary>
     /// One full spoken turn through the real Muse ASR → Spark → Wit TTS → output + lip-sync, from a bundled clip.
-    /// Checks the transcript, the reply, the first-audio budget and the tools (<see cref="TurnChecks"/>).
+    /// Checks the transcript, the reply, the first-audio budget and the tools (<see cref="TurnChecks"/>); with
+    /// <c>otherToolDegrades</c> another tool than <c>expectedTool</c> degrades instead of failing (<see cref="TurnChecks.PreferredTool"/>).
     /// </summary>
     public static class VoiceTurnScenario
     {
         const double MinSimilarity = 0.5;
 
         public static async UniTask<ScenarioResult> Run(SelfTestContext c, string name, SelfTestAssets.Utterance utterance,
-                                                        string expectedTool, CancellationToken ct)
+                                                        string expectedTool, CancellationToken ct,
+                                                        bool otherToolDegrades = false)
         {
             var r = new ScenarioResult(name);
             if (!r.Check(utterance.clip != null, "no clip bundled"))
@@ -38,7 +40,10 @@ namespace Jolly.App.SelfTest.Scenarios
             r.Check(similarity >= MinSimilarity, "transcript too far from the spoken text");
             r.Check(c.Observer.Captions.Count > 0, "no reply caption");
             TurnChecks.FirstAudio(r, firstAudio);
-            TurnChecks.Tools(r, c.Observer.ToolsStarted, c.Observer.ToolsCompleted, expectedTool);
+            if (otherToolDegrades)
+                TurnChecks.PreferredTool(r, c.Observer.ToolsStarted, c.Observer.ToolsCompleted, expectedTool);
+            else
+                TurnChecks.Tools(r, c.Observer.ToolsStarted, c.Observer.ToolsCompleted, expectedTool);
             return r;
         }
     }

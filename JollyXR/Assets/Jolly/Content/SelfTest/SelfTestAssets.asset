@@ -24,4 +24,10 @@ MonoBehaviour:
   longAnswer:
     clip: {fileID: 8300000, guid: 4cef2cda4234d46eab9e1df71c411508, type: 3}
     expectedText: Nubi, please tell me a long story about the sea.
+  whichPart:
+    clip: {fileID: 8300000, guid: 0a194ec1cd0940859ae03d41ee2fad0f, type: 3}
+    expectedText: Which part of the mug should I hold?
+  findObject:
+    clip: {fileID: 8300000, guid: 35872edf457f49c5ba5c7e2dce99a26f, type: 3}
+    expectedText: Nubi, where is my mug? Show me.
   fallbackStill: {fileID: 4900000, guid: 8d67d578542784ffc9f64d6a7139c4be, type: 3}

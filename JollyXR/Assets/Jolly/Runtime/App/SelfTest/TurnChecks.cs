@@ -50,6 +50,24 @@ namespace Jolly.App.SelfTest
         }
 
         /// <summary>
+        /// For a request another tool can also answer (find_object or capture_and_identify for "where is my mug?"):
+        /// choosing another tool, or none, degrades with what the model called; a call of <paramref name="expected"/> is
+        /// checked as in <see cref="Tools"/>. True when <paramref name="expected"/> was called.
+        /// </summary>
+        public static bool PreferredTool(ScenarioResult r, IReadOnlyList<string> started, IReadOnlyList<string> completed,
+                                         string expected)
+        {
+            if (Contains(started, expected))
+            {
+                Tools(r, started, completed, expected);
+                return true;
+            }
+            Tools(r, started, completed, null);
+            r.Degrade($"the model called {(started.Count == 0 ? "no tool" : string.Join(",", started))} instead of {expected}");
+            return false;
+        }
+
+        /// <summary>
         /// A turn that asked for no movement must not walk: the greeting called come_here in 4 of 7 release runs
         /// (selftest-report.md, 4d228c8). Degrades, because the reply itself was fine.
         /// </summary>

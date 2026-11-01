@@ -12,6 +12,8 @@ namespace Jolly.App.SelfTest
 
         readonly IConversationEvents _events;
         readonly IClock _clock;
+        readonly List<double> _toolStartedTimes = new();
+        readonly List<double> _toolCompletedTimes = new();
 
         public TurnObserver(IConversationEvents events, IClock clock)
         {
@@ -42,9 +44,37 @@ namespace Jolly.App.SelfTest
             CaptionTimes.Clear();
             ToolsStarted.Clear();
             ToolsCompleted.Clear();
+            _toolStartedTimes.Clear();
+            _toolCompletedTimes.Clear();
             UserFinal = null;
             FirstCaptionAt = double.NaN;
             FirstToolStartedAt = double.NaN;
+        }
+
+        /// <summary><see cref="IClock.Now"/> of the first start of <paramref name="name"/>; NaN when it never started.</summary>
+        public double ToolStartedAt(string name)
+        {
+            var i = ToolsStarted.IndexOf(name);
+            return i < 0 ? double.NaN : _toolStartedTimes[i];
+        }
+
+        /// <summary>
+        /// The first caption after <paramref name="name"/> first succeeded, in seconds from its start: the spoken answer
+        /// of a tool that hands its result back to the model (a preamble is spoken before the tool). NaN when it never
+        /// succeeded or nothing was said after it.
+        /// </summary>
+        public double AnswerAfter(string name)
+        {
+            var i = ToolsCompleted.IndexOf(name);
+            if (i < 0)
+                return double.NaN;
+            var completedAt = _toolCompletedTimes[i];
+            foreach (var at in CaptionTimes)
+            {
+                if (at >= completedAt)
+                    return at - ToolStartedAt(name);
+            }
+            return double.NaN;
         }
 
         public string StatePath() => string.Join(">", States);
@@ -79,8 +109,13 @@ namespace Jolly.App.SelfTest
             if (ToolsStarted.Count == 0)
                 FirstToolStartedAt = _clock.Now;
             ToolsStarted.Add(name);
+            _toolStartedTimes.Add(_clock.Now);
         }
 
-        void OnToolCompleted(string callId, string name, bool ok) => ToolsCompleted.Add(ok ? name : name + FailedSuffix);
+        void OnToolCompleted(string callId, string name, bool ok)
+        {
+            ToolsCompleted.Add(ok ? name : name + FailedSuffix);
+            _toolCompletedTimes.Add(_clock.Now);
+        }
     }
 }

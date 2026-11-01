@@ -108,6 +108,57 @@ namespace Jolly.Tests.PlayMode.App
         }
 
         [Test]
+        public void PreferredTool_OtherToolChosen_DegradesWithItsName()
+        {
+            var r = new ScenarioResult("t");
+
+            var called = TurnChecks.PreferredTool(r, new[] { Vision }, new[] { Vision }, "find_object");
+
+            Assert.That(called, Is.False);
+            Assert.That(r.Status, Is.EqualTo(ScenarioStatus.Degraded));
+            Assert.That(r.Notes, Is.EqualTo(new[] { "the model called capture_and_identify instead of find_object" }));
+        }
+
+        [Test]
+        public void PreferredTool_NoToolCalled_Degrades()
+        {
+            var r = new ScenarioResult("t");
+
+            var called = TurnChecks.PreferredTool(r, new List<string>(), new List<string>(), "find_object");
+
+            Assert.That(called, Is.False);
+            Assert.That(r.Status, Is.EqualTo(ScenarioStatus.Degraded));
+            Assert.That(r.Notes, Is.EqualTo(new[] { "the model called no tool instead of find_object" }));
+        }
+
+        [Test]
+        public void PreferredTool_CalledButFailed_Fails()
+        {
+            var r = new ScenarioResult("t");
+
+            var called = TurnChecks.PreferredTool(r, new[] { "find_object" },
+                new[] { "find_object" + TurnObserver.FailedSuffix }, "find_object");
+
+            Assert.That(called, Is.True);
+            Assert.That(r.Status, Is.EqualTo(ScenarioStatus.Fail));
+            Assert.That(r.Notes, Is.EqualTo(new[] { "find_object failed" }));
+        }
+
+        [Test]
+        public void PreferredTool_OtherToolFailed_DegradesForBoth()
+        {
+            var r = new ScenarioResult("t");
+
+            TurnChecks.PreferredTool(r, new[] { Vision }, new[] { Vision + TurnObserver.FailedSuffix }, "find_object");
+
+            Assert.That(r.Status, Is.EqualTo(ScenarioStatus.Degraded));
+            Assert.That(r.Notes, Is.EqualTo(new[]
+            {
+                "capture_and_identify failed", "the model called capture_and_identify instead of find_object",
+            }));
+        }
+
+        [Test]
         public void StayedPut_GreetingThatWalked_DegradesWithTheTool()
         {
             var r = new ScenarioResult("t");

@@ -46,6 +46,7 @@ namespace Jolly.App.SelfTest
         public ClipMicrophone Microphone { get; private set; }
         public ScriptedPushToTalk Voice { get; private set; }
         public SwitchableCameraSource Camera { get; private set; }
+        public MaskObserver Masks { get; private set; }
         /// <summary>Started by the bootstrap so the launch is traced too; disposes itself when the app token cancels.</summary>
         public FrameSpikeLog Frames { get; private set; }
         /// <summary>Null unless a turn profile was requested (<see cref="TurnProfileCapture"/>).</summary>
@@ -110,7 +111,11 @@ namespace Jolly.App.SelfTest
             _realReachability = edges.IsNetworkReachable;
             edges.IsNetworkReachable = () => !ForceOffline && _realReachability();
             Microphone = new ClipMicrophone(edges.Microphone, foundation.Clock);
-            foreach (var utterance in new[] { _assets.greeting, _assets.comeHere, _assets.whatIsThis, _assets.longAnswer })
+            var utterances = new[]
+            {
+                _assets.greeting, _assets.comeHere, _assets.whatIsThis, _assets.whichPart, _assets.findObject, _assets.longAnswer,
+            };
+            foreach (var utterance in utterances)
                 Microphone.Prepare(utterance.clip);
             edges.Microphone = Microphone;
             Voice = new ScriptedPushToTalk();
@@ -120,6 +125,8 @@ namespace Jolly.App.SelfTest
             var still = _assets.fallbackStill != null ? _assets.fallbackStill.bytes : Array.Empty<byte>();
             edges.WrapCamera = live => Camera = new SwitchableCameraSource(wrap(live),
                 new EditorStillFrameSource(still, scene.userPose, foundation.Clock));
+            var wrapMasks = edges.WrapMasks;
+            edges.WrapMasks = masks => Masks = new MaskObserver(wrapMasks(masks), foundation.Clock);
         }
 
         static bool ConsumeFlag(string path)

@@ -22,6 +22,10 @@ namespace Jolly.App.SelfTest
         public Utterance whatIsThis = new();
         [Tooltip("Asks for a long answer, so there is speech to interrupt.")]
         public Utterance longAnswer = new();
+        [Tooltip("A part question about the object in the fallback still, for highlight_part.")]
+        public Utterance whichPart = new();
+        [Tooltip("Asks for the object in the fallback still, for find_object.")]
+        public Utterance findObject = new();
         [Tooltip("JPEG bytes (.bytes) of a CC-licensed still, see Content/SelfTest/ATTRIBUTION.md.")]
         public TextAsset fallbackStill;
     }

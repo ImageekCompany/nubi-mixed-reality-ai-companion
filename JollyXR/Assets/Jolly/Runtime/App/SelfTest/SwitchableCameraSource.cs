@@ -20,10 +20,16 @@ namespace Jolly.App.SelfTest
         }
 
         public bool UseStill { get; set; }
+        /// <summary>Whether the last <see cref="Capture"/> came from the still.</summary>
+        public bool LastCaptureWasStill { get; private set; }
         public ICameraFrameSource Live => _live;
         public CameraAvailability Availability => Current.Availability;
 
-        public UniTask<CameraFrame> Capture(int maxSide, CancellationToken ct) => Current.Capture(maxSide, ct);
+        public UniTask<CameraFrame> Capture(int maxSide, CancellationToken ct)
+        {
+            LastCaptureWasStill = UseStill;
+            return Current.Capture(maxSide, ct);
+        }
 
         public void Dispose()
         {
