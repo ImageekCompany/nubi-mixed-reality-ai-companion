@@ -19,6 +19,7 @@ namespace Jolly.XR.MetaQuest
         public static readonly Pose QuestLeftFallback = Camera2LensPose.ToUnity(
             new Vector3(-0.03229f, -0.01753f, -0.06316f), new Quaternion(-0.99527f, 0.00269f, -0.00406f, 0.09704f));
 
+        /// <summary>Call after HEADSET_CAMERA is granted: the passthrough cameras may not be listed before.</summary>
         public static bool TryReadLensPose(int metaPosition, out Pose lensPose, out string error)
         {
             lensPose = default;
@@ -26,7 +27,8 @@ namespace Jolly.XR.MetaQuest
 #if UNITY_ANDROID && !UNITY_EDITOR
             try
             {
-                using var activity = UnityEngine.Android.AndroidApplication.currentActivity;
+                // Unity owns currentActivity: disposing it throws (device-spike run1-3 lost the pose to exactly that).
+                var activity = UnityEngine.Android.AndroidApplication.currentActivity;
                 using var cameraManager = activity.Call<AndroidJavaObject>("getSystemService", "camera");
                 using var classClass = new AndroidJavaClass("java.lang.Class");
                 using var floatArrayType = classClass.CallStatic<AndroidJavaObject>("forName", "[F");

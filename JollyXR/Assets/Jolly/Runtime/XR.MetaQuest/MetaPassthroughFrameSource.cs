@@ -26,15 +26,18 @@ namespace Jolly.XR.MetaQuest
         const CameraPosition Lens = CameraPosition.LeftEye;
         // fx / width of the Quest 3 left camera (1172.536 / 1728), used only if the runtime reports no intrinsics.
         const float QuestFocalRatio = 0.6786f;
+        const int QuestCameraSide = 1728;
 
         readonly ARCameraManager _cameraManager;
         readonly IHeadPoseHistory _headHistory;
         readonly IUserPoseProvider _user;
         readonly IRuntimePermissions _permissions;
         readonly IClock _clock;
+        readonly ILog _log;
         readonly XRCpuImage.Transformation _transformation;
-        readonly Pose _lensInHead;
+        readonly Pose _gyroToHead;
         readonly CameraFrameSlot _slot = new();
+        Pose? _lensInHead;
 
         /// <param name="transformation">Row order fix-up so Rgba32 is top row first. None until the R1 lit-room check
         /// says otherwise (device-spike.md §5.1).</param>
@@ -49,14 +52,9 @@ namespace Jolly.XR.MetaQuest
             _user = user;
             _permissions = permissions;
             _clock = clock;
+            _log = log;
             _transformation = transformation;
-
-            if (!Camera2Extrinsics.TryReadLensPose(Camera2Extrinsics.LeftCamera, out var lensInGyro, out var error))
-            {
-                lensInGyro = Camera2Extrinsics.QuestLeftFallback;
-                log.Write(LogLevel.Warning, "xr", "evt=camera.extrinsics_fallback reason=\"" + error + "\"");
-            }
-            _lensInHead = Compose(gyroToHead ?? Pose.identity, lensInGyro);
+            _gyroToHead = gyroToHead ?? Pose.identity;
         }
 
         public CameraAvailability Availability
@@ -83,13 +81,14 @@ namespace Jolly.XR.MetaQuest
                 throw new ProviderException(Provider, ProviderErrorKind.Protocol, "camera " + availability);
             var meta = (MetaOpenXRCameraSubsystem)_cameraManager.subsystem;
 
-            var buffer = await _slot.Acquire(maxSide * maxSide * 4, ct);
+            var side = Mathf.Min(maxSide, NativeSide(meta));
+            var buffer = await _slot.Acquire(side * side * 4, ct);
             try
             {
                 var cinfo = await AcquireLatest(meta, ct);
                 var acquiredAt = _clock.Now;
                 using var image = new XRCpuImage(meta.cpuImageApi, cinfo);
-                var size = FrameSize.Fit(image.dimensions, maxSide);
+                var size = FrameSize.Fit(image.dimensions, side);
                 var pose = CameraPoseAt(image.timestamp);
                 var intrinsics = ScaledIntrinsics(meta, image.dimensions, size);
                 await ConvertInto(image, size, buffer, ct);
@@ -137,8 +136,28 @@ namespace Jolly.XR.MetaQuest
         {
             var exposure = monotonicTimestamp - MonotonicClock.OffsetFromRealtime();
             var head = !double.IsNaN(exposure) && _headHistory.TryGetHeadAt(exposure, out var past) ? past : _user.Head;
-            return Compose(head, _lensInHead);
+            return Compose(head, LensInHead());
         }
+
+        // Read on the first capture, not at construction: Availability is Ready only once HEADSET_CAMERA is granted.
+        Pose LensInHead()
+        {
+            if (_lensInHead is { } cached)
+                return cached;
+            if (!Camera2Extrinsics.TryReadLensPose(Camera2Extrinsics.LeftCamera, out var lensInGyro, out var error))
+            {
+                lensInGyro = Camera2Extrinsics.QuestLeftFallback;
+                _log.Write(LogLevel.Warning, "xr", "evt=camera.extrinsics_fallback reason=\"" + error + "\"");
+            }
+            var lensInHead = Compose(_gyroToHead, lensInGyro);
+            _lensInHead = lensInHead;
+            return lensInHead;
+        }
+
+        static int NativeSide(MetaOpenXRCameraSubsystem meta) =>
+            meta.TryGetIntrinsicsForPosition(Lens, out var native) && native.resolution.x > 0
+                ? Mathf.Max(native.resolution.x, native.resolution.y)
+                : QuestCameraSide;
 
         CameraIntrinsics ScaledIntrinsics(MetaOpenXRCameraSubsystem meta, Vector2Int full, Vector2Int size)
         {
