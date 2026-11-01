@@ -3,14 +3,16 @@ using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using Cysharp.Threading.Tasks.Linq;
+using Jolly.Contracts;
 using Jolly.Net.Http;
 using Jolly.Net.Sse;
 
 namespace Jolly.Testing
 {
     /// <summary>
-    /// Scripted IHttpTransport: each StreamSse enumeration consumes the next script. Synchronous unless a script hangs,
-    /// in which case it completes only when its token is cancelled (as UnityWebRequest abort does).
+    /// Scripted IHttpTransport: each StreamSse enumeration consumes the next script. Synchronous unless a script hangs
+    /// or waits on a clock, in which case an abort cancels it (as UnityWebRequest abort does). The first written event
+    /// is the first byte.
     /// </summary>
     public sealed class FakeHttpTransport : IHttpTransport
     {
@@ -30,6 +32,13 @@ namespace Jolly.Testing
 
         public FakeHttpTransport Respond(IEnumerable<SseEvent> events) => Enqueue(async (w, _) =>
         {
+            foreach (var e in events)
+                await w.YieldAsync(e);
+        });
+
+        public FakeHttpTransport RespondAfter(IClock clock, TimeSpan delay, IEnumerable<SseEvent> events) => Enqueue(async (w, ct) =>
+        {
+            await clock.Delay(delay, ct);
             foreach (var e in events)
                 await w.YieldAsync(e);
         });
@@ -55,14 +64,14 @@ namespace Jolly.Testing
         public UniTask<HttpResponse> Send(HttpRequestSpec request, CancellationToken ct) =>
             throw new NotSupportedException("Scripted streams only.");
 
-        public IUniTaskAsyncEnumerable<SseEvent> StreamSse(HttpRequestSpec request) =>
+        public IUniTaskAsyncEnumerable<SseEvent> StreamSse(HttpRequestSpec request, Action firstByte = null) =>
             UniTaskAsyncEnumerable.Create<SseEvent>(async (writer, ct) =>
             {
                 _requests.Add(request);
                 _tokens.Add(ct);
                 try
                 {
-                    await _scripts.Dequeue()(writer, ct);
+                    await _scripts.Dequeue()(firstByte == null ? writer : new FirstByteWriter(writer, firstByte), ct);
                     ReadToEnd++;
                 }
                 finally
@@ -70,6 +79,26 @@ namespace Jolly.Testing
                     Ended++;
                 }
             });
+
+        sealed class FirstByteWriter : IAsyncWriter<SseEvent>
+        {
+            readonly IAsyncWriter<SseEvent> _inner;
+            Action _firstByte;
+
+            public FirstByteWriter(IAsyncWriter<SseEvent> inner, Action firstByte)
+            {
+                _inner = inner;
+                _firstByte = firstByte;
+            }
+
+            public UniTask YieldAsync(SseEvent value)
+            {
+                var firstByte = _firstByte;
+                _firstByte = null;
+                firstByte?.Invoke();
+                return _inner.YieldAsync(value);
+            }
+        }
 
         FakeHttpTransport Enqueue(Script script)
         {

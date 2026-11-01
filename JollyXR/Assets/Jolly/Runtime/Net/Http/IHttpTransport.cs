@@ -1,3 +1,4 @@
+using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using Jolly.Net.Sse;
@@ -24,7 +25,8 @@ namespace Jolly.Net.Http
         /// <summary>
         /// Starts the request when enumeration starts and yields server-sent events as they arrive. A non-2xx status
         /// throws before any event. Cancelling the enumeration token, or disposing the enumerator, aborts the request.
+        /// <paramref name="firstByte"/>, when given, is called once on the main thread when the first body byte arrives.
         /// </summary>
-        IUniTaskAsyncEnumerable<SseEvent> StreamSse(HttpRequestSpec request);
+        IUniTaskAsyncEnumerable<SseEvent> StreamSse(HttpRequestSpec request, Action firstByte = null);
     }
 }

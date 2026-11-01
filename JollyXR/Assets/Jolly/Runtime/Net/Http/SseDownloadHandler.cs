@@ -10,16 +10,28 @@ namespace Jolly.Net.Http
     sealed class SseDownloadHandler : DownloadHandlerScript
     {
         readonly SseResponseSink _sink;
+        Action _firstByte;
         UnityWebRequest _request;
 
-        public SseDownloadHandler(byte[] preallocatedBuffer, SseResponseSink sink) : base(preallocatedBuffer) => _sink = sink;
+        public SseDownloadHandler(byte[] preallocatedBuffer, SseResponseSink sink, Action firstByte) : base(preallocatedBuffer)
+        {
+            _sink = sink;
+            _firstByte = firstByte;
+        }
 
         public void Attach(UnityWebRequest request) => _request = request;
 
         protected override bool ReceiveData(byte[] data, int dataLength)
         {
-            if (data != null && dataLength > 0)
-                _sink.Receive(_request.responseCode, new ReadOnlySpan<byte>(data, 0, dataLength));
+            if (data == null || dataLength <= 0)
+                return true;
+            if (_firstByte != null)
+            {
+                var firstByte = _firstByte;
+                _firstByte = null;
+                firstByte();
+            }
+            _sink.Receive(_request.responseCode, new ReadOnlySpan<byte>(data, 0, dataLength));
             return true;
         }
 

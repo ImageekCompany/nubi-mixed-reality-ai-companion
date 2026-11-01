@@ -39,15 +39,15 @@ namespace Jolly.Net.Http
             return new HttpResponse((int)request.responseCode, body, request.GetResponseHeader(RequestIdHeader));
         }
 
-        public IUniTaskAsyncEnumerable<SseEvent> StreamSse(HttpRequestSpec spec) =>
-            UniTaskAsyncEnumerable.Create<SseEvent>((writer, ct) => Stream(spec, writer, ct));
+        public IUniTaskAsyncEnumerable<SseEvent> StreamSse(HttpRequestSpec spec, Action firstByte = null) =>
+            UniTaskAsyncEnumerable.Create<SseEvent>((writer, ct) => Stream(spec, firstByte, writer, ct));
 
-        async UniTask Stream(HttpRequestSpec spec, IAsyncWriter<SseEvent> writer, CancellationToken ct)
+        async UniTask Stream(HttpRequestSpec spec, Action firstByte, IAsyncWriter<SseEvent> writer, CancellationToken ct)
         {
             ct.ThrowIfCancellationRequested();
             var buffer = ArrayPool<byte>.Shared.Rent(StreamBufferBytes);
             var sink = _sinks.Count > 0 ? _sinks.Pop() : new SseResponseSink();
-            var handler = new SseDownloadHandler(buffer, sink);
+            var handler = new SseDownloadHandler(buffer, sink, firstByte);
             var request = Create(spec, handler);
             handler.Attach(request);
             try

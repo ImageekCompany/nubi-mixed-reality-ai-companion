@@ -45,7 +45,7 @@ namespace Jolly.Tests.PlayMode.E2E.Doubles
         public UniTask<HttpResponse> Send(HttpRequestSpec request, CancellationToken ct) =>
             throw new NotSupportedException("The app only streams.");
 
-        public IUniTaskAsyncEnumerable<SseEvent> StreamSse(HttpRequestSpec request) =>
+        public IUniTaskAsyncEnumerable<SseEvent> StreamSse(HttpRequestSpec request, Action firstByte = null) =>
             UniTaskAsyncEnumerable.Create<SseEvent>(async (writer, ct) =>
             {
                 var kind = KindOf(request);

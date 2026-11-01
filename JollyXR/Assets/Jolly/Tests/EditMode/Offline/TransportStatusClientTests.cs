@@ -23,7 +23,7 @@ namespace Jolly.Tests.EditMode.Offline
                 return Respond(request, ct);
             }
 
-            public IUniTaskAsyncEnumerable<SseEvent> StreamSse(HttpRequestSpec request) =>
+            public IUniTaskAsyncEnumerable<SseEvent> StreamSse(HttpRequestSpec request, Action firstByte = null) =>
                 throw new NotSupportedException("The probe never streams.");
         }
 

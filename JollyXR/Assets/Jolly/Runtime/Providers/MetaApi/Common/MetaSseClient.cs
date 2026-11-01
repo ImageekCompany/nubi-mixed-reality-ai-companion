@@ -36,7 +36,7 @@ namespace Jolly.Providers.MetaApi.Common
                                               OpenAttempts attempts, CancellationToken ct)
         {
             attempts.OnStarted();
-            var stream = new MetaSseStream(_transport, request, new StreamTimeout(_clock, ct), firstEventTimeout, idleTimeout, ct);
+            var stream = new MetaSseStream(_transport, request, _clock, new StreamTimeout(_clock, ct), firstEventTimeout, idleTimeout, ct);
             try
             {
                 if (await stream.MoveNext())

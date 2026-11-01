@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
+using Jolly.Contracts;
 using Jolly.Net.Http;
 using Jolly.Net.Sse;
 
@@ -13,23 +14,31 @@ namespace Jolly.Providers.MetaApi.Common
     public sealed class MetaSseStream
     {
         readonly IUniTaskAsyncEnumerator<SseEvent> _events;
+        readonly IClock _clock;
+        readonly double _openedAt;
         readonly StreamTimeout _timeout;
         readonly TimeSpan _idleTimeout;
         readonly CancellationToken _ct;
         TimeSpan _window;
         bool _started;
 
-        internal MetaSseStream(IHttpTransport transport, HttpRequestSpec request, StreamTimeout timeout,
+        internal MetaSseStream(IHttpTransport transport, HttpRequestSpec request, IClock clock, StreamTimeout timeout,
                                TimeSpan firstEventTimeout, TimeSpan idleTimeout, CancellationToken ct)
         {
+            _clock = clock;
+            _openedAt = clock.Now;
             _timeout = timeout;
             _idleTimeout = idleTimeout;
             _ct = ct;
-            _events = transport.StreamSse(request).GetAsyncEnumerator(timeout.Token);
+            _events = transport.StreamSse(request, () => TimeToFirstByte ??= Since(_openedAt)).GetAsyncEnumerator(timeout.Token);
             Arm(firstEventTimeout);
         }
 
         public SseEvent Current { get; private set; }
+        /// <summary>From the request to the first body byte; null until one arrives.</summary>
+        public TimeSpan? TimeToFirstByte { get; private set; }
+        /// <summary>From the request to the first event; null until one arrives.</summary>
+        public TimeSpan? TimeToFirstEvent { get; private set; }
 
         public async UniTask<bool> MoveNext()
         {
@@ -47,6 +56,7 @@ namespace Jolly.Providers.MetaApi.Common
                 throw MetaErrors.FromHttp(e);
             }
             Current = _events.Current;
+            TimeToFirstEvent ??= Since(_openedAt);
             _started = true;
             Arm(_idleTimeout);
             return true;
@@ -63,6 +73,8 @@ namespace Jolly.Providers.MetaApi.Common
                 _timeout.Dispose();
             }
         }
+
+        TimeSpan Since(double at) => TimeSpan.FromSeconds(_clock.Now - at);
 
         void Arm(TimeSpan window)
         {
