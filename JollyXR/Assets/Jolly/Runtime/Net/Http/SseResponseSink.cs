@@ -35,5 +35,13 @@ namespace Jolly.Net.Http
         public void Complete() => _parser.Complete(_events);
 
         public bool TryTake(out SseEvent e) => _events.TryDequeue(out e);
+
+        /// <summary>Ready for the next response; the parser keeps its grown buffers.</summary>
+        public void Reset()
+        {
+            _parser.Reset();
+            _events.Clear();
+            _errorLength = 0;
+        }
     }
 }
