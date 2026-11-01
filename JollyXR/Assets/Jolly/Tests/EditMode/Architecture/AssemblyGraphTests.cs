@@ -45,7 +45,7 @@ namespace Jolly.Tests.EditMode.Architecture
             ["Jolly.Localization"] = With("Jolly.Contracts", UniTask,
                 "UniTask.Addressables", "Unity.ResourceManager", "Unity.Localization"),
             ["Jolly.Presentation"] = With("Jolly.Contracts", UniTask, "Unity.TextMeshPro", "UnityEngine.UI", "Unity.Localization"),
-            ["Jolly.App"] = With(JollyRuntime, UniTask),
+            ["Jolly.App"] = With(JollyRuntime, UniTask, XrPackages, "uLipSync.Runtime"),
             ["Jolly.Editor.Build"] = new[]
             {
                 "Unity.XR.Management", "Unity.XR.Management.Editor", "Unity.XR.OpenXR", "Unity.XR.OpenXR.Editor",

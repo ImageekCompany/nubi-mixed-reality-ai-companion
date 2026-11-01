@@ -15,7 +15,11 @@
         "Jolly.Localization",
         "Jolly.Presentation",
         "UniTask",
-        "UniTask.Linq"
+        "UniTask.Linq",
+        "Unity.XR.CoreUtils",
+        "Unity.XR.ARFoundation",
+        "Unity.XR.Interaction.Toolkit",
+        "uLipSync.Runtime"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
