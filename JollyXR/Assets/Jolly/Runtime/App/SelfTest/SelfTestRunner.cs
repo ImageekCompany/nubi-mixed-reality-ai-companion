@@ -56,6 +56,7 @@ namespace Jolly.App.SelfTest
                 f.Log.Write(LogLevel.Info, "selftest",
                     $"evt=selftest.network reachable={_session.NetworkReachable} probe={initial}");
                 await context.WaitUntil(() => connectivity.State == Connectivity.Online, 20, ct);
+                LogFrames("launch");
                 foreach (var (name, run) in Scenarios)
                     results.Add(await RunOne(name, run, context, ct));
             }
@@ -89,8 +90,12 @@ namespace Jolly.App.SelfTest
             result.DurationMs = (context.Clock.Now - startedAt) * 1000;
             log.Write(LogLevel.Info, "selftest", $"evt=selftest.result name={name} status={result.Status} " +
                                                  $"ms={result.DurationMs:0} notes=\"{string.Join("; ", result.Notes)}\"");
+            LogFrames(name);
             return result;
         }
+
+        void LogFrames(string phase) =>
+            _graph.Foundation.Log.Write(LogLevel.Info, "selftest", $"evt=selftest.frames name={phase} {_session.Frames.TakeWindow()}");
 
         static string Overall(List<ScenarioResult> results)
         {

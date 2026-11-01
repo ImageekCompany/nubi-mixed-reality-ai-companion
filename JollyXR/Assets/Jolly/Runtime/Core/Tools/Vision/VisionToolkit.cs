@@ -17,7 +17,6 @@ namespace Jolly.Core.Tools
 
         readonly ISegmenter _segmenter;
         readonly IMaskPresenter _presenter;
-        readonly ILog _log;
 
         public VisionToolkit(FrameGrabber frames, SegmentPromptPlanner prompts, MaskGeometry geometry, ISegmenter segmenter,
                              IMaskPresenter presenter, IClock clock, ILog log, VisionSettings settings)
@@ -27,9 +26,9 @@ namespace Jolly.Core.Tools
             Geometry = geometry;
             Settings = settings;
             Clock = clock;
+            Log = log;
             _segmenter = segmenter;
             _presenter = presenter;
-            _log = log;
         }
 
         public FrameGrabber Frames { get; }
@@ -37,6 +36,7 @@ namespace Jolly.Core.Tools
         public MaskGeometry Geometry { get; }
         public VisionSettings Settings { get; }
         public IClock Clock { get; }
+        public ILog Log { get; }
 
         /// <summary>A fresh capture, or null when the camera is unavailable or delivers no frame.</summary>
         public async UniTask<EncodedImage> TryCapture(CancellationToken ct)
@@ -47,7 +47,7 @@ namespace Jolly.Core.Tools
             }
             catch (ProviderException e)
             {
-                _log.Write(LogLevel.Warning, "vision", $"evt=capture.failed kind={e.Kind}");
+                Log.Write(LogLevel.Warning, "vision", $"evt=capture.failed kind={e.Kind}");
                 return null;
             }
         }
@@ -62,11 +62,11 @@ namespace Jolly.Core.Tools
             }
             catch (OperationCanceledException) when (scope.TimedOut && !ct.IsCancellationRequested)
             {
-                _log.Write(LogLevel.Warning, "vision", "evt=sam.timeout");
+                Log.Write(LogLevel.Warning, "vision", "evt=sam.timeout");
             }
             catch (ProviderException e)
             {
-                _log.Write(LogLevel.Warning, "vision", $"evt=sam.failed kind={e.Kind} status={e.HttpStatus}");
+                Log.Write(LogLevel.Warning, "vision", $"evt=sam.failed kind={e.Kind} status={e.HttpStatus}");
             }
             return NoObjects;
         }

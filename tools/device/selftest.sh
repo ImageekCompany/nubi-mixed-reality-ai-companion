@@ -106,7 +106,7 @@ awk '/FPS=/ { split(substr($0, index($0, "FPS=") + 4), f, "/"); frames += f[1]
 python3 -I - "$OUT/selftest_results.json" <<'PY'
 import json, sys
 r = json.load(open(sys.argv[1], encoding="utf-8"))
-keys = ["release_to_first_audio_ms", "similarity", "caption_ms", "silence_ms", "avg_fps", "p95_frame_ms",
+keys = ["release_to_first_audio_ms", "tool_to_answer_audio_ms", "similarity", "caption_ms", "silence_ms", "avg_fps", "p95_frame_ms",
         "draw_calls_max", "setpass_calls_max", "triangles_max", "system_memory_mb",
         "gc_alloc_bytes_per_frame", "mean_luma", "frame", "navmesh", "tools"]
 print(f"\nSelf-test on {r['device']} at {r['startedUtc']}")

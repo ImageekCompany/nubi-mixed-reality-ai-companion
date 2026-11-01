@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using Jolly.Contracts;
@@ -44,7 +45,9 @@ namespace Jolly.Core.Tools
             args.TryGetString("question", out var question);
             args.TryGetString("object_hint", out var hint);
 
-            var image = _kit.Frames.IsFresh(context.Turn?.PreCaptured) ? context.Turn.PreCaptured : await _kit.TryCapture(ct);
+            var started = _kit.Clock.Now;
+            var preCaptured = _kit.Frames.IsFresh(context.Turn?.PreCaptured);
+            var image = preCaptured ? context.Turn.PreCaptured : await _kit.TryCapture(ct);
             if (image == null)
                 return ToolResult.Failure("camera_unavailable");
             _scene.LastCapture = image;
@@ -52,7 +55,9 @@ namespace Jolly.Core.Tools
             var header = new UniTaskCompletionSource<string>();
             var identify = new VisionAnswerStream(_identifier, _kit.Clock, _kit.Settings.VisionTimeout)
                 .Run(image, question, context, header, ct);
-            var (answer, mask) = await UniTask.WhenAll(identify, Mask(image, hint, header.Task, ct));
+            var maskShownAt = double.NaN;
+            var (answer, mask) = await UniTask.WhenAll(identify, Mask(image, hint, header.Task, at => maskShownAt = at, ct));
+            LogTiming(started, preCaptured, answer, maskShownAt);
 
             if (answer.TimedOut)
                 return new ToolResult(false, ToolResult.Failure("vision_timeout").OutputJson,
@@ -75,7 +80,8 @@ namespace Jolly.Core.Tools
         }
 
         /// <summary>SAM with the planned prompt; one noun-phrase retry once the vision header names the object.</summary>
-        async UniTask<Vector3?> Mask(EncodedImage image, string hint, UniTask<string> nounPhrase, CancellationToken ct)
+        async UniTask<Vector3?> Mask(EncodedImage image, string hint, UniTask<string> nounPhrase, Action<double> shown,
+                                     CancellationToken ct)
         {
             var plan = _kit.Prompts.Plan(image, hint);
             var objects = await _kit.Segment(image, plan.Prompt, ct);
@@ -95,8 +101,20 @@ namespace Jolly.Core.Tools
             var best = MaskGeometry.Best(objects);
             var distance = _kit.Geometry.Locate(best, image, out var world);
             _kit.Present(new[] { best }, image, distance);
+            shown(_kit.Clock.Now);
             _character.LookAt(LookTarget.At(world));
             return world;
+        }
+
+        /// <summary>Milliseconds from the tool start (DoD §5: mask ≤ 2 s; answer audio ≤ 2.5 s, which adds TTS).</summary>
+        void LogTiming(double started, bool preCaptured, in VisionAnswer answer, double maskShownAt)
+        {
+            if (!_kit.Log.IsEnabled(LogLevel.Info))
+                return;
+            _kit.Log.Write(LogLevel.Info, "vision", string.Format(CultureInfo.InvariantCulture,
+                "evt=vision.timing frame={0} header_ms={1:F0} answer_text_ms={2:F0} mask_ms={3:F0}",
+                preCaptured ? "pre" : "fresh", (answer.HeaderAt - started) * 1000, (answer.FirstTextAt - started) * 1000,
+                (maskShownAt - started) * 1000));
         }
     }
 }

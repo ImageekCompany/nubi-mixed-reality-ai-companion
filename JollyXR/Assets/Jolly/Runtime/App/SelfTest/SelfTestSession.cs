@@ -25,10 +25,10 @@ namespace Jolly.App.SelfTest
         readonly string _resultsPath;
         Func<bool> _realReachability;
 
-        SelfTestSession(SelfTestAssets assets, string resultsPath)
+        SelfTestSession(SelfTestAssets assets, string dataRoot)
         {
             _assets = assets;
-            _resultsPath = resultsPath;
+            _resultsPath = Path.Combine(dataRoot, ResultsFile);
         }
 
         public bool ForceOffline { get; set; }
@@ -37,6 +37,8 @@ namespace Jolly.App.SelfTest
         public ClipMicrophone Microphone { get; private set; }
         public ScriptedPushToTalk Voice { get; private set; }
         public SwitchableCameraSource Camera { get; private set; }
+        /// <summary>Started by the bootstrap so the launch is traced too; disposes itself when the app token cancels.</summary>
+        public FrameSpikeLog Frames { get; private set; }
 
         /// <summary>Null in normal use. Otherwise rewires <paramref name="edges"/> and returns the armed session.</summary>
         public static SelfTestSession TryStart(Edges edges, SelfTestAssets assets, Foundation foundation, SceneRefs scene)
@@ -50,12 +52,10 @@ namespace Jolly.App.SelfTest
                 log.Write(LogLevel.Error, "selftest", "evt=selftest.no_assets");
                 return null;
             }
-            var results = Path.Combine(edges.Paths.DataRoot, ResultsFile);
-            if (File.Exists(results))
-                File.Delete(results);
+            var session = new SelfTestSession(assets, edges.Paths.DataRoot) { Frames = new FrameSpikeLog(log) };
+            if (File.Exists(session._resultsPath))
+                File.Delete(session._resultsPath);
             log.Write(LogLevel.Info, "selftest", "evt=selftest.armed");
-
-            var session = new SelfTestSession(assets, results);
             session.Rewire(edges, foundation, scene);
             return session;
         }

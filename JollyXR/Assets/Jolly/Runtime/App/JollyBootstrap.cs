@@ -40,6 +40,7 @@ namespace Jolly.App
             var edges = _edges ?? Edges.ForPlayer();
             var foundation = Foundation.Build(config, edges);
             var selfTest = SelfTestSession.TryStart(edges, selfTestAssets, foundation, scene);
+            selfTest?.Frames.Run(ct).Forget();
             try
             {
                 Graph = await AppGraph.Build(foundation, config, scene, edges, ct);

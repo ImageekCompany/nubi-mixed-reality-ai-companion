@@ -15,6 +15,9 @@ namespace Jolly.App.SelfTest.Scenarios
         public const string Name = "vision_capture_and_identify";
         const float MinMeanLuma = 25f;
         const int ProbeSide = 160;
+        // The preamble ("Let me check.") plays within ~0.8 s of the tool start; the answer cannot: its header alone took
+        // ≥ 1.5 s in every measured call (docs/perf/selftest-report.md). So the first caption after this is the answer.
+        const double AnswerNotBeforeSeconds = 1.0;
 
         public static async UniTask<ScenarioResult> Run(SelfTestContext c, CancellationToken ct)
         {
@@ -25,7 +28,8 @@ namespace Jolly.App.SelfTest.Scenarios
             {
                 var r = await VoiceTurnScenario.Run(c, Name, c.Assets.whatIsThis, ToolNames.CaptureAndIdentify, ct);
                 r.Metric("camera", camera.Live.Availability.ToString()).Metric("mean_luma", luma)
-                 .Metric("frame", camera.UseStill ? "bundled_still" : "live");
+                 .Metric("frame", camera.UseStill ? "bundled_still" : "live")
+                 .Metric("tool_to_answer_audio_ms", ToolToAnswerAudioMs(c.Observer));
                 if (camera.UseStill)
                     r.Degrade("camera frame unusable (dark room or no camera): identified the bundled still instead");
                 return r;
@@ -34,6 +38,18 @@ namespace Jolly.App.SelfTest.Scenarios
             {
                 camera.UseStill = false;
             }
+        }
+
+        /// <summary>DoD §5 "tool start → answer audio"; NaN when no caption followed the tool.</summary>
+        static double ToolToAnswerAudioMs(TurnObserver observer)
+        {
+            var tool = observer.FirstToolStartedAt;
+            foreach (var at in observer.CaptionTimes)
+            {
+                if (at - tool >= AnswerNotBeforeSeconds)
+                    return (at - tool) * 1000;
+            }
+            return double.NaN;
         }
 
         /// <summary>NaN when no frame could be captured.</summary>
