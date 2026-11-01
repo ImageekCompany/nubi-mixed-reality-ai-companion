@@ -4,28 +4,33 @@ using System.Globalization;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using Jolly.Contracts;
+using Jolly.Net.Http;
+using Jolly.Providers.MetaApi.Common;
 
 namespace Jolly.Providers.MetaApi.Vision
 {
     /// <summary>
-    /// <see cref="ISegmenter"/> over SAM 3.1 on <c>/v1/responses</c>: reserves one image in the usage meter, posts the
-    /// prompt and inline JPEG, parses the box/mask grammar and decodes the <c>one_bit</c> masks on the thread pool.
+    /// <see cref="ISegmenter"/> over SAM 3.1 on <c>/v1/responses</c>: reserves one image in the usage meter, streams the
+    /// prompt and inline JPEG through <see cref="MetaSseClient"/>, stops at the output text, parses the box/mask grammar
+    /// and decodes the <c>one_bit</c> masks on the thread pool.
     /// </summary>
     public sealed class SamSegmenter : ISegmenter
     {
-        const string Provider = "meta.sam";
         const string ResponsesPath = "responses";
         const string LogCategory = "vision";
 
-        readonly IMetaApiJsonClient _http;
+        readonly MetaApiEndpoint _endpoint;
+        readonly MetaSseClient _client;
         readonly IApiUsageMeter _usage;
         readonly IClock _clock;
         readonly ILog _log;
         readonly SamOptions _options;
 
-        public SamSegmenter(IMetaApiJsonClient http, IApiUsageMeter usage, IClock clock, ILog log, SamOptions options)
+        public SamSegmenter(MetaApiEndpoint endpoint, MetaSseClient client, IApiUsageMeter usage, IClock clock, ILog log,
+                            SamOptions options)
         {
-            _http = http ?? throw new ArgumentNullException(nameof(http));
+            _endpoint = endpoint ?? throw new ArgumentNullException(nameof(endpoint));
+            _client = client ?? throw new ArgumentNullException(nameof(client));
             _usage = usage ?? throw new ArgumentNullException(nameof(usage));
             _clock = clock ?? throw new ArgumentNullException(nameof(clock));
             _log = log ?? throw new ArgumentNullException(nameof(log));
@@ -37,73 +42,77 @@ namespace Jolly.Providers.MetaApi.Vision
             if (image == null)
                 throw new ArgumentNullException(nameof(image));
             ct.ThrowIfCancellationRequested();
-            var body = SamRequestWriter.Write(_options.ModelId, SamPromptFormatter.Format(prompt, image.Width, image.Height), image);
+            if (!SamPromptFormatter.TryFormat(prompt, image.Width, image.Height, out var promptText))
+                return Array.Empty<SegmentedObject>();
+            var request = _endpoint.PostStreaming(ResponsesPath, SamRequestWriter.Write(_options.ModelId, promptText, image));
             if (!_usage.TryReserve(_options.UsdPerImage, out var reservation))
-                throw new ProviderException(Provider, ProviderErrorKind.BudgetExceeded, "SAM request refused: API budget reached.");
+                throw new ProviderException(MetaErrors.Provider, ProviderErrorKind.BudgetExceeded, "SAM request refused: API budget reached.");
 
             var started = _clock.Now;
-            var response = await Post(body, reservation, ct);
-            if (!response.IsCompleted)
-            {
-                throw new ProviderException(Provider, response.Status == "failed" ? ProviderErrorKind.Server : ProviderErrorKind.Protocol,
-                    $"SAM response {response.Status}: {response.ErrorMessage}", requestId: response.Id);
-            }
-
-            IReadOnlyList<SegmentedObject> objects;
-            try
-            {
-                objects = string.IsNullOrWhiteSpace(response.OutputText)
-                    ? Array.Empty<SegmentedObject>()
-                    : await DecodeOffMainThread(response.OutputText);
-            }
-            catch (FormatException e)
-            {
-                throw new ProviderException(Provider, ProviderErrorKind.Protocol, e.Message, requestId: response.Id, inner: e);
-            }
+            var output = await Receive(request, reservation, ct);
+            var objects = await Decode(output);
             ct.ThrowIfCancellationRequested();
 
             if (_log.IsEnabled(LogLevel.Info))
             {
                 _log.Write(LogLevel.Info, LogCategory, string.Format(CultureInfo.InvariantCulture,
                     "evt=sam.done ms={0:F0} prompt={1} objects={2} req={3}",
-                    (_clock.Now - started) * 1000, prompt.Kind, objects.Count, response.Id));
+                    (_clock.Now - started) * 1000, prompt.Kind, objects.Count, output.ResponseId));
             }
             return objects;
         }
 
-        /// <summary>Settles the reservation on every path: actual images once a body arrived, a zero estimate otherwise.</summary>
-        async UniTask<SamResponse> Post(string body, long reservation, CancellationToken ct)
+        /// <summary>
+        /// Settles the reservation on every path. Only a request the server rejected with a 4xx status is known to be
+        /// unbilled; a 5xx, timeout, abort or broken stream may have reached SAM, so it is settled as one billed image.
+        /// </summary>
+        async UniTask<SamStreamReader> Receive(HttpRequestSpec request, long reservation, CancellationToken ct)
         {
-            string json;
-            using (var deadline = new ClockDeadline(_clock, _options.Timeout, ct))
-            {
-                try
-                {
-                    json = await _http.PostJson(ResponsesPath, body, deadline.Token);
-                }
-                catch (Exception e)
-                {
-                    _usage.RecordEstimate(reservation, _options.ModelId, 0, 0);
-                    if (e is OperationCanceledException && deadline.IsExpired)
-                        throw new ProviderException(Provider, ProviderErrorKind.Timeout, $"SAM gave no answer within {_options.Timeout.TotalSeconds:F1} s.");
-                    throw;
-                }
-            }
-
+            var reader = new SamStreamReader();
             try
             {
-                var response = SamResponseReader.Read(json);
-                _usage.Record(reservation, Billed(response.ImagesProcessed));
-                return response;
+                var stream = await _client.Open(request, _options.Timeout, _options.Timeout, _options.RetryPolicy, ct);
+                try
+                {
+                    while (!reader.Apply(stream.Current) && await stream.MoveNext()) { }
+                }
+                finally
+                {
+                    await stream.DisposeAsync();
+                }
+                if (!reader.IsFinished)
+                    throw MetaErrors.Protocol("SAM stream ended before its output");
             }
-            catch (FormatException e)
+            catch (ProviderException e) when (e.HttpStatus is >= 400 and < 500)
+            {
+                _usage.RecordEstimate(reservation, _options.ModelId, 0, 0);
+                throw;
+            }
+            catch
             {
                 _usage.Record(reservation, Billed(1));
-                throw new ProviderException(Provider, ProviderErrorKind.Protocol, e.Message, inner: e);
+                throw;
             }
+            _usage.Record(reservation, Billed(reader.ImagesProcessed));
+            return reader;
         }
 
         UsageRecord Billed(int images) => new(_options.ModelId, 0, 0, 0, images);
+
+        static async UniTask<IReadOnlyList<SegmentedObject>> Decode(SamStreamReader output)
+        {
+            var text = output.OutputText;
+            if (string.IsNullOrWhiteSpace(text))
+                return Array.Empty<SegmentedObject>();
+            try
+            {
+                return await DecodeOffMainThread(text);
+            }
+            catch (FormatException e)
+            {
+                throw new ProviderException(MetaErrors.Provider, ProviderErrorKind.Protocol, e.Message, requestId: output.ResponseId, inner: e);
+            }
+        }
 
         static async UniTask<IReadOnlyList<SegmentedObject>> DecodeOffMainThread(string outputText)
         {

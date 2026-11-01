@@ -1,7 +1,7 @@
 using System;
 using Jolly.Contracts;
 
-namespace Jolly.Providers.MetaApi.Vision
+namespace Jolly.Providers.MetaApi.Common
 {
     static class ImageDataUrl
     {

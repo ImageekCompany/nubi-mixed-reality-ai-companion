@@ -13,17 +13,22 @@ namespace Jolly.Providers.MetaApi.Vision
     {
         const int MaxPhraseLength = 60;
 
-        public static string Format(SegmentPrompt prompt, int imageWidth, int imageHeight)
+        /// <returns>
+        /// False when a text prompt has no usable characters: the phrase comes from the model (find_object,
+        /// highlight_part), so an empty one is a no-match, not a programmer error.
+        /// </returns>
+        public static bool TryFormat(SegmentPrompt prompt, int imageWidth, int imageHeight, out string text)
         {
             if (prompt == null)
                 throw new ArgumentNullException(nameof(prompt));
-            return prompt.Kind switch
+            text = prompt.Kind switch
             {
                 SegmentPromptKind.Text => NounPhrase(prompt.Text),
                 SegmentPromptKind.Points => Points(prompt, imageWidth, imageHeight),
                 SegmentPromptKind.Box => Box(prompt.Box, imageWidth, imageHeight),
                 _ => throw new ArgumentOutOfRangeException(nameof(prompt), prompt.Kind, "Unknown SAM prompt kind."),
             };
+            return text.Length > 0;
         }
 
         /// <summary>Only letters, digits, apostrophes and hyphens survive, so grammar characters cannot inject tokens.</summary>
@@ -45,8 +50,7 @@ namespace Jolly.Providers.MetaApi.Vision
                 var cut = sb.ToString(0, MaxPhraseLength + 1).LastIndexOf(' ');
                 sb.Length = cut > 0 ? cut : MaxPhraseLength;
             }
-            var phrase = sb.ToString().Trim();
-            return phrase.Length > 0 ? phrase : throw new ArgumentException("SAM text prompt has no usable characters.", nameof(text));
+            return sb.ToString().Trim();
         }
 
         static string Points(SegmentPrompt prompt, int width, int height)

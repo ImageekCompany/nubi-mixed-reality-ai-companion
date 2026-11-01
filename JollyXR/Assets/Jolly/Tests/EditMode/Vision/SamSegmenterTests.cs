@@ -1,10 +1,16 @@
 using System;
 using System.Collections;
+using System.Linq;
+using System.Text;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using Jolly.Contracts;
+using Jolly.Net.Http;
+using Jolly.Net.Retry;
+using Jolly.Providers.MetaApi.Common;
 using Jolly.Providers.MetaApi.Vision;
 using Jolly.Testing;
+using Jolly.Tests.EditMode.Net;
 using Jolly.Tests.EditMode.Vision.Doubles;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
@@ -16,11 +22,12 @@ namespace Jolly.Tests.EditMode.Vision
     public sealed class SamSegmenterTests
     {
         const string Model = "sam-3.1";
-        static readonly SamOptions Options = new(Model, 0.0025m, TimeSpan.FromSeconds(5));
+        static readonly SamOptions Options = new(Model, 0.0025m, TimeSpan.FromSeconds(5), maxAttempts: 1);
 
         FakeClock _clock;
         RecordingUsageMeter _usage;
         RecordingLog _log;
+        FakeHttpTransport _transport;
 
         [SetUp]
         public void SetUp()
@@ -28,19 +35,22 @@ namespace Jolly.Tests.EditMode.Vision
             _clock = new FakeClock();
             _usage = new RecordingUsageMeter();
             _log = new RecordingLog();
+            _transport = new FakeHttpTransport();
         }
 
         [UnityTest]
-        public IEnumerator Segment_ConceptPrompt_PostsOneBitRequestWithInlineImage() => UniTask.ToCoroutine(async () =>
+        public IEnumerator Segment_ConceptPrompt_StreamsAnAuthenticatedOneBitRequestWithInlineImage() => UniTask.ToCoroutine(async () =>
         {
-            var http = FakeMetaApiJsonClient.Returning(VisionFixtures.Sam(VisionFixtures.PenConcept));
+            _transport.Respond(SamStreams.FromRecorded(VisionFixtures.Sam(VisionFixtures.PenConcept)));
 
-            await Segmenter(http).Segment(VisionFixtures.Jpeg(640, 428), SegmentPrompt.ForText("pen"), CancellationToken.None);
+            await Segmenter().Segment(VisionFixtures.Jpeg(640, 428), SegmentPrompt.ForText("pen"), CancellationToken.None);
 
-            Assert.That(http.LastPath, Is.EqualTo("responses"));
-            var body = JObject.Parse(http.LastBody);
+            var sent = _transport.Requests.Single();
+            Assert.That(sent.Url, Is.EqualTo(MetaApiEndpoint.DefaultBaseUrl + "/responses"));
+            Assert.That(sent.TryGetHeader("Authorization", out _), Is.True);
+            var body = JObject.Parse(Encoding.UTF8.GetString(sent.Body));
             Assert.That((string)body["model"], Is.EqualTo(Model));
-            Assert.That((bool)body["stream"], Is.False);
+            Assert.That((bool)body["stream"], Is.True);
             Assert.That((bool)body["store"], Is.False);
             Assert.That((string)body["metadata"]["mask_encoding"], Is.EqualTo("one_bit"));
             Assert.That((string)body["metadata"]["include_confidence"], Is.EqualTo("true"));
@@ -55,21 +65,21 @@ namespace Jolly.Tests.EditMode.Vision
         [UnityTest]
         public IEnumerator Segment_PointPrompt_SendsTokensSizedToTheImage() => UniTask.ToCoroutine(async () =>
         {
-            var http = FakeMetaApiJsonClient.Returning(VisionFixtures.Sam(VisionFixtures.MugConcept));
+            _transport.Respond(SamStreams.FromRecorded(VisionFixtures.Sam(VisionFixtures.MugConcept)));
             var prompt = SegmentPrompt.ForPoints(new[] { new PromptPoint(400, 180), new PromptPoint(10, 300, false) });
 
-            await Segmenter(http).Segment(VisionFixtures.Jpeg(640, 360), prompt, CancellationToken.None);
+            await Segmenter().Segment(VisionFixtures.Jpeg(640, 360), prompt, CancellationToken.None);
 
-            Assert.That((string)JObject.Parse(http.LastBody)["input"][0]["content"][0]["text"], Is.EqualTo(
+            Assert.That((string)SentBody()["input"][0]["content"][0]["text"], Is.EqualTo(
                 "<0f>1<|point;x=400;y=180;w=640;h=360|>-<|point;x=10;y=300;w=640;h=360|>"));
         });
 
         [UnityTest]
         public IEnumerator Segment_PenFixture_ReturnsBoxLocalDecodedMaskOnTheMainThread() => UniTask.ToCoroutine(async () =>
         {
-            var http = FakeMetaApiJsonClient.Returning(VisionFixtures.Sam(VisionFixtures.PenConcept));
+            _transport.Respond(SamStreams.FromRecorded(VisionFixtures.Sam(VisionFixtures.PenConcept)));
 
-            var objects = await Segmenter(http).Segment(VisionFixtures.Jpeg(640, 428), SegmentPrompt.ForText("pen"), CancellationToken.None);
+            var objects = await Segmenter().Segment(VisionFixtures.Jpeg(640, 428), SegmentPrompt.ForText("pen"), CancellationToken.None);
 
             Assert.That(PlayerLoopHelper.IsMainThread, Is.True);
             Assert.That(objects.Count, Is.EqualTo(1));
@@ -83,97 +93,150 @@ namespace Jolly.Tests.EditMode.Vision
         });
 
         [UnityTest]
+        public IEnumerator Segment_OutputTextDone_ReturnsWithoutWaitingForCompletedAndAbortsTheRest() => UniTask.ToCoroutine(async () =>
+        {
+            var text = VisionFixtures.SamOutputText(VisionFixtures.PenConcept);
+            _transport.RespondThenHang(SamStreams.UpToOutputTextDone(text));
+
+            var objects = await Segmenter().Segment(VisionFixtures.Jpeg(640, 428), SegmentPrompt.ForText("pen"), CancellationToken.None);
+
+            Assert.That(objects.Count, Is.EqualTo(1));
+            Assert.That(_transport.Ended, Is.EqualTo(1));
+            Assert.That(_usage.Records.Single().Images, Is.EqualTo(1));
+            Assert.That(_usage.OpenReservations, Is.Zero);
+            Assert.That(_clock.PendingDelays, Is.Zero);
+        });
+
+        [UnityTest]
+        public IEnumerator Segment_TextOnlyInDeltas_IsTakenWhenTheResponseCompletes() => UniTask.ToCoroutine(async () =>
+        {
+            _transport.Respond(SamStreams.DeltaThenCompleted(VisionFixtures.SamOutputText(VisionFixtures.PenConcept)));
+
+            var objects = await Segmenter().Segment(VisionFixtures.Jpeg(640, 428), SegmentPrompt.ForText("pen"), CancellationToken.None);
+
+            Assert.That(objects.Count, Is.EqualTo(1));
+        });
+
+        [UnityTest]
         public IEnumerator Segment_SettlesTheReservationWithTheBilledImage() => UniTask.ToCoroutine(async () =>
         {
-            var http = FakeMetaApiJsonClient.Returning(VisionFixtures.Sam(VisionFixtures.PenConcept));
+            _transport.Respond(SamStreams.FromRecorded(VisionFixtures.Sam(VisionFixtures.PenConcept)));
 
-            await Segmenter(http).Segment(VisionFixtures.Jpeg(640, 428), SegmentPrompt.ForText("pen"), CancellationToken.None);
+            await Segmenter().Segment(VisionFixtures.Jpeg(640, 428), SegmentPrompt.ForText("pen"), CancellationToken.None);
 
-            Assert.That(_usage.Reserved, Is.EqualTo(new[] { 0.0025m }));
-            Assert.That(_usage.Recorded, Has.Count.EqualTo(1));
-            Assert.That(_usage.Recorded[0].usage.Model, Is.EqualTo(Model));
-            Assert.That(_usage.Recorded[0].usage.Images, Is.EqualTo(1));
+            Assert.That(_usage.Reservations, Is.EqualTo(new[] { 0.0025m }));
+            var record = _usage.Records.Single();
+            Assert.That(record.Model, Is.EqualTo(Model));
+            Assert.That(record.Images, Is.EqualTo(1));
+            Assert.That(_usage.Estimates, Is.Empty);
             Assert.That(_usage.OpenReservations, Is.Zero);
         });
 
         [UnityTest]
         public IEnumerator Segment_NoMatch_IsAnEmptyListAndStillBilled() => UniTask.ToCoroutine(async () =>
         {
-            var http = FakeMetaApiJsonClient.Returning(VisionFixtures.Sam(VisionFixtures.MugNoMatch));
+            _transport.Respond(SamStreams.FromRecorded(VisionFixtures.Sam(VisionFixtures.MugNoMatch)));
 
-            var objects = await Segmenter(http).Segment(VisionFixtures.Jpeg(1280, 720), SegmentPrompt.ForText("banana"), CancellationToken.None);
+            var objects = await Segmenter().Segment(VisionFixtures.Jpeg(1280, 720), SegmentPrompt.ForText("banana"), CancellationToken.None);
 
             Assert.That(objects, Is.Empty);
-            Assert.That(_usage.Recorded[0].usage.Images, Is.EqualTo(1));
+            Assert.That(_usage.Records.Single().Images, Is.EqualTo(1));
+        });
+
+        [UnityTest]
+        public IEnumerator Segment_ModelPhraseWithNoUsableCharacters_IsNoMatchWithoutARequest() => UniTask.ToCoroutine(async () =>
+        {
+            var objects = await Segmenter().Segment(VisionFixtures.Jpeg(640, 428), SegmentPrompt.ForText("???"), CancellationToken.None);
+
+            Assert.That(objects, Is.Empty);
+            Assert.That(_transport.Requests, Is.Empty);
+            Assert.That(_usage.Reservations, Is.Empty);
         });
 
         [UnityTest]
         public IEnumerator Segment_BudgetRefused_ThrowsBudgetExceededWithoutCalling() => UniTask.ToCoroutine(async () =>
         {
-            var http = FakeMetaApiJsonClient.Returning(VisionFixtures.Sam(VisionFixtures.PenConcept));
-            _usage.AllowReservations = false;
+            _usage.RefuseReservations = true;
 
             var e = await AsyncAssert.Throws<ProviderException>(() =>
-                Segmenter(http).Segment(VisionFixtures.Jpeg(640, 428), SegmentPrompt.ForText("pen"), CancellationToken.None));
+                Segmenter().Segment(VisionFixtures.Jpeg(640, 428), SegmentPrompt.ForText("pen"), CancellationToken.None));
 
             Assert.That(e.Kind, Is.EqualTo(ProviderErrorKind.BudgetExceeded));
-            Assert.That(http.Calls, Is.Zero);
+            Assert.That(e.Provider, Is.EqualTo(MetaErrors.Provider));
+            Assert.That(_transport.Requests, Is.Empty);
         });
 
         [UnityTest]
-        public IEnumerator Segment_LosslessMask_IsAProtocolError() => UniTask.ToCoroutine(async () =>
+        public IEnumerator Segment_LosslessMask_IsAProtocolErrorAndBilled() => UniTask.ToCoroutine(async () =>
         {
-            var http = FakeMetaApiJsonClient.Returning(Response("completed", VisionFixtures.Sam(VisionFixtures.PenPointBoxLossless)));
+            _transport.Respond(SamStreams.WithText(VisionFixtures.Sam(VisionFixtures.PenPointBoxLossless)));
 
             var e = await AsyncAssert.Throws<ProviderException>(() =>
-                Segmenter(http).Segment(VisionFixtures.Jpeg(640, 428), SegmentPrompt.ForText("pen"), CancellationToken.None));
+                Segmenter().Segment(VisionFixtures.Jpeg(640, 428), SegmentPrompt.ForText("pen"), CancellationToken.None));
 
             Assert.That(e.Kind, Is.EqualTo(ProviderErrorKind.Protocol));
             Assert.That(e.RequestId, Is.EqualTo("resp_test"));
+            Assert.That(_usage.Records.Single().Images, Is.EqualTo(1));
             Assert.That(_usage.OpenReservations, Is.Zero);
         });
 
         [UnityTest]
-        public IEnumerator Segment_FailedResponse_IsAServerError() => UniTask.ToCoroutine(async () =>
+        public IEnumerator Segment_FailedResponse_IsMappedFromItsCodeAndAssumedBilled() => UniTask.ToCoroutine(async () =>
         {
-            var http = FakeMetaApiJsonClient.Returning(Response("failed", ""));
+            _transport.Respond(SamStreams.Failed("server_error"));
 
             var e = await AsyncAssert.Throws<ProviderException>(() =>
-                Segmenter(http).Segment(VisionFixtures.Jpeg(640, 428), SegmentPrompt.ForText("pen"), CancellationToken.None));
+                Segmenter().Segment(VisionFixtures.Jpeg(640, 428), SegmentPrompt.ForText("pen"), CancellationToken.None));
 
             Assert.That(e.Kind, Is.EqualTo(ProviderErrorKind.Server));
+            Assert.That(e.RequestId, Is.EqualTo("resp_test"));
+            Assert.That(_usage.Records.Single().Images, Is.EqualTo(1));
         });
 
         [UnityTest]
-        public IEnumerator Segment_UnparsableBody_IsAProtocolError() => UniTask.ToCoroutine(async () =>
+        public IEnumerator Segment_StreamEndingBeforeOutput_IsAProtocolError() => UniTask.ToCoroutine(async () =>
         {
-            var http = FakeMetaApiJsonClient.Returning("<html>bad gateway</html>");
+            _transport.Respond(SamStreams.EndingBeforeOutput());
 
             var e = await AsyncAssert.Throws<ProviderException>(() =>
-                Segmenter(http).Segment(VisionFixtures.Jpeg(640, 428), SegmentPrompt.ForText("pen"), CancellationToken.None));
+                Segmenter().Segment(VisionFixtures.Jpeg(640, 428), SegmentPrompt.ForText("pen"), CancellationToken.None));
 
             Assert.That(e.Kind, Is.EqualTo(ProviderErrorKind.Protocol));
-        });
-
-        [UnityTest]
-        public IEnumerator Segment_TransportFailure_PropagatesAndReleasesTheReservation() => UniTask.ToCoroutine(async () =>
-        {
-            var failure = new ProviderException("meta", ProviderErrorKind.RateLimited, "429", 429);
-            var http = FakeMetaApiJsonClient.Throwing(failure);
-
-            var e = await AsyncAssert.Throws<ProviderException>(() =>
-                Segmenter(http).Segment(VisionFixtures.Jpeg(640, 428), SegmentPrompt.ForText("pen"), CancellationToken.None));
-
-            Assert.That(e, Is.SameAs(failure));
-            Assert.That(_usage.Estimated, Has.Count.EqualTo(1));
             Assert.That(_usage.OpenReservations, Is.Zero);
         });
 
         [UnityTest]
-        public IEnumerator Segment_NoAnswerWithinTheTimeout_ThrowsTimeout() => UniTask.ToCoroutine(async () =>
+        public IEnumerator Segment_RejectedWithAStatus_IsMappedAndSettledAsUnbilled() => UniTask.ToCoroutine(async () =>
         {
-            var task = Segmenter(FakeMetaApiJsonClient.Hanging())
-                .Segment(VisionFixtures.Jpeg(640, 428), SegmentPrompt.ForText("pen"), CancellationToken.None);
+            _transport.Fail(new HttpFailureException(400, "{\"error\":{\"message\":\"w/h mismatch\"}}"));
+
+            var e = await AsyncAssert.Throws<ProviderException>(() =>
+                Segmenter().Segment(VisionFixtures.Jpeg(640, 428), SegmentPrompt.ForText("pen"), CancellationToken.None));
+
+            Assert.That((e.Kind, e.HttpStatus, e.Provider), Is.EqualTo((ProviderErrorKind.BadRequest, 400, MetaErrors.Provider)));
+            var estimate = _usage.Estimates.Single();
+            Assert.That((estimate.InputTokens, estimate.OutputTokens), Is.EqualTo((0L, 0L)));
+            Assert.That(_usage.Records, Is.Empty);
+        });
+
+        [UnityTest]
+        public IEnumerator Segment_ServerErrorStatus_IsAssumedBilled() => UniTask.ToCoroutine(async () =>
+        {
+            _transport.Fail(new HttpFailureException(503, "{\"error\":{\"message\":\"overloaded\"}}"));
+
+            var e = await AsyncAssert.Throws<ProviderException>(() =>
+                Segmenter().Segment(VisionFixtures.Jpeg(640, 428), SegmentPrompt.ForText("pen"), CancellationToken.None));
+
+            Assert.That(e.HttpStatus, Is.EqualTo(503));
+            Assert.That(_usage.Records.Single().Images, Is.EqualTo(1));
+            Assert.That(_usage.Estimates, Is.Empty);
+        });
+
+        [UnityTest]
+        public IEnumerator Segment_NoAnswerWithinTheTimeout_ThrowsTimeoutAndIsAssumedBilled() => UniTask.ToCoroutine(async () =>
+        {
+            _transport.Hang();
+            var task = Segmenter().Segment(VisionFixtures.Jpeg(640, 428), SegmentPrompt.ForText("pen"), CancellationToken.None);
 
             _clock.Advance(TimeSpan.FromSeconds(4.999));
             var before = task.Status;
@@ -181,38 +244,34 @@ namespace Jolly.Tests.EditMode.Vision
 
             Assert.That(before, Is.EqualTo(UniTaskStatus.Pending));
             var e = await AsyncAssert.Throws<ProviderException>(() => task);
-            Assert.That(e.Kind, Is.EqualTo(ProviderErrorKind.Timeout));
+            Assert.That((e.Kind, e.Provider), Is.EqualTo((ProviderErrorKind.Timeout, MetaErrors.Provider)));
+            Assert.That(_usage.Records.Single().Images, Is.EqualTo(1));
             Assert.That(_usage.OpenReservations, Is.Zero);
             Assert.That(_clock.PendingDelays, Is.Zero);
         });
 
         [UnityTest]
-        public IEnumerator Segment_CallerCancels_ThrowsOperationCanceledNotTimeout() => UniTask.ToCoroutine(async () =>
+        public IEnumerator Segment_CallerCancels_ThrowsOperationCanceledAndIsAssumedBilled() => UniTask.ToCoroutine(async () =>
         {
+            _transport.Hang();
             using var cts = new CancellationTokenSource();
-            var task = Segmenter(FakeMetaApiJsonClient.Hanging())
-                .Segment(VisionFixtures.Jpeg(640, 428), SegmentPrompt.ForText("pen"), cts.Token);
+            var task = Segmenter().Segment(VisionFixtures.Jpeg(640, 428), SegmentPrompt.ForText("pen"), cts.Token);
 
             cts.Cancel();
 
             await AsyncAssert.Throws<OperationCanceledException>(() => task);
+            Assert.That(_usage.Records.Single().Images, Is.EqualTo(1));
             Assert.That(_usage.OpenReservations, Is.Zero);
             Assert.That(_clock.PendingDelays, Is.Zero);
         });
 
-        SamSegmenter Segmenter(IMetaApiJsonClient http) => new(http, _usage, _clock, _log, Options);
-
-        static string Response(string status, string text) => new JObject
+        SamSegmenter Segmenter()
         {
-            ["id"] = "resp_test",
-            ["status"] = status,
-            ["error"] = status == "failed" ? new JObject { ["message"] = "backend unavailable" } : null,
-            ["output"] = new JArray(new JObject
-            {
-                ["type"] = "message",
-                ["content"] = new JArray(new JObject { ["type"] = "output_text", ["text"] = text }),
-            }),
-            ["usage"] = new JObject { ["images_processed"] = 1 },
-        }.ToString();
+            var secrets = new InMemorySecrets().With(SecretKeys.MetaApiKey, "fake-key");
+            var client = new MetaSseClient(_transport, new RetryExecutor(_clock, new FakeRandom(), _log), _clock);
+            return new SamSegmenter(new MetaApiEndpoint(secrets), client, _usage, _clock, _log, Options);
+        }
+
+        JObject SentBody() => JObject.Parse(Encoding.UTF8.GetString(_transport.Requests.Single().Body));
     }
 }
