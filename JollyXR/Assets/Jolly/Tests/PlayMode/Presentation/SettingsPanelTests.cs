@@ -52,6 +52,28 @@ namespace Jolly.Tests.PlayMode.Presentation
         }
 
         [Test]
+        public void Construct_BringsCorruptStoredValuesBackIntoRange()
+        {
+            _store.Stored = new UserPreferencesSnapshot { CaptionSize = 7, SpeechRate = 5f, Volume = float.NaN };
+
+            _panel.Construct(_localizer, _personas, _usage, _store, _clock);
+
+            Assert.That(_panel.Current.CaptionSize, Is.EqualTo(SettingsModel.MaxCaptionSize));
+            Assert.That(_panel.Current.SpeechRate, Is.EqualTo(SettingsModel.MaxRate));
+            Assert.That(_panel.Current.Volume, Is.EqualTo(1f));
+        }
+
+        [Test]
+        public void Model_Sanitize_SnapsOffGridValues()
+        {
+            var p = SettingsModel.Sanitize(new UserPreferencesSnapshot { CaptionSize = -1, SpeechRate = 0f, Volume = 0.33f });
+
+            Assert.That(p.CaptionSize, Is.Zero);
+            Assert.That(p.SpeechRate, Is.EqualTo(SettingsModel.MinRate));
+            Assert.That(p.Volume, Is.EqualTo(0.3f).Within(1e-5f));
+        }
+
+        [Test]
         public void Stepping_RaisesChangedWithANewSnapshot_AndPersistsIt()
         {
             var before = _panel.Current;

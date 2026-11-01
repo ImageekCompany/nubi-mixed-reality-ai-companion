@@ -54,7 +54,7 @@ namespace Jolly.Presentation
             _usageMeter = usage;
             _store = store;
             _clock = clock;
-            Current = store.Load();
+            Current = SettingsModel.Sanitize(store.Load());
 
             _personas.Build(personas.AvailableIds);
             _languages.Build(localizer.AvailableLanguageTags);

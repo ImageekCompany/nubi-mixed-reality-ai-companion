@@ -36,6 +36,17 @@ namespace Jolly.Presentation
             return next;
         }
 
+        /// <summary>Brings stored values (possibly stale or corrupt) back onto the stepper's grid and ranges.</summary>
+        public static UserPreferencesSnapshot Sanitize(UserPreferencesSnapshot s)
+        {
+            var defaults = new UserPreferencesSnapshot();
+            var next = Copy(s);
+            next.CaptionSize = Mathf.Clamp(s.CaptionSize, 0, MaxCaptionSize);
+            next.SpeechRate = float.IsFinite(s.SpeechRate) ? Snap(s.SpeechRate, RateStep, MinRate, MaxRate) : defaults.SpeechRate;
+            next.Volume = float.IsFinite(s.Volume) ? Snap(s.Volume, VolumeStep, 0f, 1f) : defaults.Volume;
+            return next;
+        }
+
         public static UserPreferencesSnapshot Copy(UserPreferencesSnapshot s) => new()
         {
             Seated = s.Seated,
