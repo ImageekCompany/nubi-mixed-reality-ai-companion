@@ -3,7 +3,6 @@ using System.Globalization;
 using System.Runtime.ExceptionServices;
 using System.Threading;
 using Cysharp.Threading.Tasks;
-using Cysharp.Threading.Tasks.Linq;
 using Jolly.Contracts;
 using Jolly.Net.WebSockets;
 
@@ -36,7 +35,7 @@ namespace Jolly.Providers.MetaApi.Asr
         public double SentSeconds => _uplink.SentSeconds;
 
         public async UniTask RunAsync(IUniTaskAsyncEnumerable<PcmChunk> audio, string handshake, Uri uri,
-                                      IAsyncWriter<TranscriptEvent> writer, CancellationToken ct)
+                                      ChannelWriter<TranscriptEvent> events, CancellationToken ct)
         {
             using var session = CancellationTokenSource.CreateLinkedTokenSource(ct);
             var started = _clock.Now;
@@ -48,7 +47,7 @@ namespace Jolly.Providers.MetaApi.Asr
                 Log(LogLevel.Info, "evt=asr.ack ms={0:F0} session={1}", (_clock.Now - started) * 1000, _sessionId);
 
                 SendAsync(audio, session).Forget();
-                await ReceiveUntilFinalAsync(writer, session.Token);
+                await ReceiveUntilFinalAsync(events, session.Token);
             }
             catch (OperationCanceledException) when (_uplinkFailure != null)
             {
@@ -85,7 +84,7 @@ namespace Jolly.Providers.MetaApi.Asr
             }
         }
 
-        async UniTask ReceiveUntilFinalAsync(IAsyncWriter<TranscriptEvent> writer, CancellationToken ct)
+        async UniTask ReceiveUntilFinalAsync(ChannelWriter<TranscriptEvent> events, CancellationToken ct)
         {
             string lastPartial = null;
             while (true)
@@ -99,13 +98,13 @@ namespace Jolly.Providers.MetaApi.Asr
                 {
                     Log(LogLevel.Info, "evt=asr.final ms_after_end={0:F0} audio_ms={1:F0}",
                         (_clock.Now - _uplink.EndStreamTime) * 1000, e.AudioMs);
-                    await writer.YieldAsync(new TranscriptEvent(TranscriptKind.Final, text, e.AudioMs));
+                    events.TryWrite(new TranscriptEvent(TranscriptKind.Final, text, e.AudioMs));
                     return;
                 }
                 if (text == lastPartial)
                     continue;
                 lastPartial = text;
-                await writer.YieldAsync(new TranscriptEvent(TranscriptKind.Partial, text, e.AudioMs));
+                events.TryWrite(new TranscriptEvent(TranscriptKind.Partial, text, e.AudioMs));
             }
         }
 

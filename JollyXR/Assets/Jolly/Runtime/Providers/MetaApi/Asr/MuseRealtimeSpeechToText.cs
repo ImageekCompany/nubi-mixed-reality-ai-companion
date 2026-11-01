@@ -1,16 +1,15 @@
 using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
-using Cysharp.Threading.Tasks.Linq;
 using Jolly.Contracts;
 using Jolly.Net.WebSockets;
 
 namespace Jolly.Providers.MetaApi.Asr
 {
     /// <summary>
-    /// <see cref="ISpeechToText"/> over Muse Voice Transcribe realtime (ADR-0005). The session starts when the stream is
-    /// first enumerated, so the caller enumerates at PTT press: the 1.0–2.9 s handshake measured on Quest then overlaps
-    /// the user speaking. Audio buffered in the source meanwhile goes out at once after the ack.
+    /// <see cref="ISpeechToText"/> over Muse Voice Transcribe realtime (ADR-0005). <see cref="Transcribe"/> connects at
+    /// once (<see cref="AsrSessionStream"/>), so a call at PTT press overlaps the 1.0–2.9 s handshake measured on Quest
+    /// with the user speaking. Audio buffered in the source meanwhile goes out at once after the ack.
     /// Fails with ProviderException: Unauthorized (no key, rejected key), BudgetExceeded, Timeout (no ack),
     /// BadRequest, RateLimited, Server, Network or Protocol.
     /// </summary>
@@ -36,14 +35,11 @@ namespace Jolly.Providers.MetaApi.Asr
 
         public IUniTaskAsyncEnumerable<TranscriptEvent> Transcribe(IUniTaskAsyncEnumerable<PcmChunk> audio, SttOptions options,
                                                                    CancellationToken ct) =>
-            UniTaskAsyncEnumerable.Create<TranscriptEvent>((writer, enumerationCt) => RunAsync(audio, options, writer, ct, enumerationCt));
+            AsrSessionStream.Start(_secrets, (key, events, token) => RunAsync(audio, options, key, events, token), ct);
 
-        async UniTask RunAsync(IUniTaskAsyncEnumerable<PcmChunk> audio, SttOptions options, IAsyncWriter<TranscriptEvent> writer,
-                               CancellationToken ct, CancellationToken enumerationCt)
+        async UniTask RunAsync(IUniTaskAsyncEnumerable<PcmChunk> audio, SttOptions options, string key,
+                               ChannelWriter<TranscriptEvent> events, CancellationToken ct)
         {
-            using var linked = CancellationTokenSource.CreateLinkedTokenSource(ct, enumerationCt);
-            if (!_secrets.TryGet(SecretKeys.MetaApiKey, out var key))
-                throw new ProviderException(MuseAsrErrors.Provider, ProviderErrorKind.Unauthorized, "META_API_KEY is missing.");
             var handshake = MuseAsrHandshake.Build(key, _options.Model, options);
             var billing = AsrBilling.Reserve(_meter, _options.Model, _options.ReserveUsd);
 
@@ -51,7 +47,7 @@ namespace Jolly.Providers.MetaApi.Asr
             var session = new MuseRealtimeSession(socket, _clock, _log, _options, options.SampleRate);
             try
             {
-                await session.RunAsync(audio, handshake, SessionUri(), writer, linked.Token);
+                await session.RunAsync(audio, handshake, SessionUri(), events, ct);
             }
             finally
             {

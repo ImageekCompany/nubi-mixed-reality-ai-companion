@@ -1,11 +1,13 @@
 using System;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using Jolly.Contracts;
 using Jolly.Providers.MetaApi.Asr;
 using Jolly.Testing;
 using NUnit.Framework;
+using UnityEngine.TestTools;
 
 namespace Jolly.Tests.EditMode.Asr
 {
@@ -197,6 +199,50 @@ namespace Jolly.Tests.EditMode.Asr
         }
 
         [Test]
+        public void Transcribe_ConnectsBeforeTheStreamIsEnumerated()
+        {
+            var stream = _stt.Transcribe(_audio.Reader.ReadAllAsync(), new SttOptions(), CancellationToken.None);
+
+            Assert.That(_socket.ConnectedUri, Is.Not.Null);
+            Assert.That(_socket.Sent.Single().Text, Does.Contain("\"accessToken\""));
+            _socket.Push(Ack);
+            _socket.Push(Transcript("hello", false));
+            _socket.Push(Transcript("hello there", true));
+
+            var events = new StreamCollector<TranscriptEvent>(stream);
+
+            Assert.That(events.Succeeded, Is.True);
+            Assert.That(events.Items.Select(e => e.Text), Is.EqualTo(new[] { "hello", "hello there" }));
+        }
+
+        [Test]
+        public void EnumerationCancelledEarly_AbortsTheSession()
+        {
+            using var reader = new CancellationTokenSource();
+            var events = new StreamCollector<TranscriptEvent>(
+                _stt.Transcribe(_audio.Reader.ReadAllAsync(), new SttOptions(), CancellationToken.None), reader.Token);
+            _socket.Push(Ack);
+
+            reader.Cancel();
+
+            Assert.That(events.Error, Is.InstanceOf<OperationCanceledException>());
+            Assert.That(_socket.IsDisposed, Is.True);
+            Assert.That(_meter.OpenReservations, Is.Zero);
+        }
+
+        [Test]
+        public void SessionError_BeforeAnyoneReads_ReportsNoUnobservedExceptionOnGarbageCollection()
+        {
+            FailSessionWithoutReadingIt();
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+
+            LogAssert.NoUnexpectedReceived();
+        }
+
+        [Test]
         public void Ack_StopsTheAckTimer()
         {
             var events = Transcribe();
@@ -295,6 +341,13 @@ namespace Jolly.Tests.EditMode.Asr
             _audio.Writer.TryWrite(PcmChunk.Rent(1280, 16000));
 
             Assert.That(Kind(events), Is.EqualTo(ProviderErrorKind.BadRequest));
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        void FailSessionWithoutReadingIt()
+        {
+            _stt.Transcribe(_audio.Reader.ReadAllAsync(), new SttOptions(), CancellationToken.None);
+            _socket.Push(AsrFixtures.Lines("realtime_errors.txt")[0]);
         }
 
         StreamCollector<TranscriptEvent> Transcribe(CancellationToken ct = default) =>

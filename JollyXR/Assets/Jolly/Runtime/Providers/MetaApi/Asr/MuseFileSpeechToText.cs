@@ -2,7 +2,6 @@ using System;
 using System.Buffers;
 using System.Threading;
 using Cysharp.Threading.Tasks;
-using Cysharp.Threading.Tasks.Linq;
 using Jolly.Contracts;
 
 namespace Jolly.Providers.MetaApi.Asr
@@ -33,23 +32,19 @@ namespace Jolly.Providers.MetaApi.Asr
 
         public IUniTaskAsyncEnumerable<TranscriptEvent> Transcribe(IUniTaskAsyncEnumerable<PcmChunk> audio, SttOptions options,
                                                                    CancellationToken ct) =>
-            UniTaskAsyncEnumerable.Create<TranscriptEvent>((writer, enumerationCt) => RunAsync(audio, options, writer, ct, enumerationCt));
+            AsrSessionStream.Start(_secrets, (key, events, token) => RunAsync(audio, options, key, events, token), ct);
 
-        async UniTask RunAsync(IUniTaskAsyncEnumerable<PcmChunk> audio, SttOptions options, IAsyncWriter<TranscriptEvent> writer,
-                               CancellationToken ct, CancellationToken enumerationCt)
+        async UniTask RunAsync(IUniTaskAsyncEnumerable<PcmChunk> audio, SttOptions options, string key,
+                               ChannelWriter<TranscriptEvent> events, CancellationToken ct)
         {
-            using var linked = CancellationTokenSource.CreateLinkedTokenSource(ct, enumerationCt);
-            if (!_secrets.TryGet(SecretKeys.MetaApiKey, out var key))
-                throw new ProviderException(MuseAsrErrors.Provider, ProviderErrorKind.Unauthorized, "META_API_KEY is missing.");
-
-            var (wav, seconds) = await RecordWavAsync(audio, options.SampleRate, linked.Token);
+            var (wav, seconds) = await RecordWavAsync(audio, options.SampleRate, ct);
             var boundary = "jolly" + Guid.NewGuid().ToString("N");
             var body = MuseTranscribeRequest.BuildBody(wav, _options.Model, options, boundary);
             var billing = AsrBilling.Reserve(_meter, _options.Model, _options.ReserveUsd);
             try
             {
-                var json = await PostWithTimeoutAsync(body, MuseTranscribeRequest.ContentType(boundary), key, linked.Token);
-                await writer.YieldAsync(MuseTranscribeRequest.ParseResponse(json));
+                var json = await PostWithTimeoutAsync(body, MuseTranscribeRequest.ContentType(boundary), key, ct);
+                events.TryWrite(MuseTranscribeRequest.ParseResponse(json));
             }
             finally
             {
