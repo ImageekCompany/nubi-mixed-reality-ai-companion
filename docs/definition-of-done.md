@@ -46,7 +46,7 @@ Flag provenance:
 - [ ] **Zero compiler warnings** in `Assets/Jolly/**`.
   - A `csc.rsp` containing `-warnaserror+` sits beside **each** `Jolly.*` asmdef (Unity reads `Assets/csc.rsp` for predefined assemblies and an asmdef-adjacent `csc.rsp` for that assembly; a `csc.rsp` in a folder without an asmdef is ignored). WP0 proves it on 6000.6 with one deliberate warning that must fail the build, then removes it.
   - No `#pragma warning disable` without a comment saying why.
-- [ ] No `async void` and no `Task`-returning methods in `Jolly.*`: `grep -rnE "async void|[^.]Task<|[^a-zA-Z.]Task " Assets/Jolly --include=*.cs` is empty, except test attributes.
+- [ ] No `async void` and no `Task`-returning methods in `Jolly.*`: `grep -rnE "async +void|(^|[^A-Za-z0-9_.])Task(<|[[:space:]])" Assets/Jolly --include=*.cs` is empty (the regex `tools/ci/test.sh` runs; `[^.]Task<` would also match `UniTask<`).
 - [ ] No `FindObjectOfType`/`FindFirstObjectByType`, no `static .* Instance` singletons, and no `Resources.Load` in `Jolly.*`.
 - [ ] No secret material in the repo: `git grep -nE "LLM_[0-9]+_|Bearer [A-Za-z0-9]"` is empty. `.env` and `secrets.json` are untracked. `Meta+Muse+Jolly*` is untracked.
 - [ ] Release builds contain no `JOLLY_DEBUG_CAPTURE` or `JOLLY_DEBUG_LOG` define (check `PlayerSettings` scripting defines in `build.log`).
