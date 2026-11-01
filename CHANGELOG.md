@@ -32,6 +32,11 @@ Each work package appends bullets under its own heading only (`docs/scope.md` §
 ### WP7
 
 ### WP8
+- Unity Localization set up: settings asset, locales `en` (default) and `pl`, the `UI` string table (en + pl), Addressables with `BuildWithPlayer`, and `LocaleVoiceMap.asset` (Polish: ASR bias only, no Wit voice).
+- `UnityLocalizer`: preloads tables at startup and on locale change, synchronous `Get` with key fallback and a warning, `evt=loc.ready` per table, static-event unsubscribe on `Dispose`.
+- Views in `Jolly.Presentation`: `CaptionView`, `MaskOverlayView` (`IMaskPresenter`, `Jolly/MaskOutline` fill + outline shader), `ToolBadgeView`, `LatencyHud`, `StatusIndicator` (`IStatusSink`) and `SettingsPanel` (`IUserPreferences`; caption size, speech rate, volume, seated, PTT hand, persona, language, clear memory, API usage), shipped as world-space prefabs.
+- TMP Essential Resources imported (needed by every TMP text).
+- 42 PlayMode tests under `Tests/PlayMode/Presentation` (localizer, caption timing, overlay placement, badges, HUD, status, settings).
 
 ### WP9
 
