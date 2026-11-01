@@ -219,3 +219,38 @@ Each work package appends bullets under its own heading only (`docs/scope.md` §
 - `ModelEventKind.TextDone` (Responses message item done) → `AgentEventKind.SpeechBreak` → the pipeline flushes the splitter, so a preamble without trailing whitespace is spoken before the tool call's arguments stream. Device: first text → sentence queued p50 112 → 0 ms; release → first audio p50 2,090 → 1,776 ms (n=12).
 - Launch: `PermissionGate` starts the camera manager a frame after the app graph and each scene manager on its own frame; `QuestVulkan.graphicsstate` re-recorded with the hand rig and depth occlusion (15 variants / 14 states). Worst launch frame 410 → ~283 ms; the rest is the Meta camera provider's start.
 - Tests: `MovementTools_DescriptionsSayTheyNeedTheUsersRequest`, `Instructions_MoveOnlyWhenAskedAndAnswerGreetingsInWords`, `StayedPut_*`, `MessageDone_EndsTheTextBeforeTheCallArgumentsStream`, `TextDone_IsASpeechBreakBeforeTheCallStarts`, `SpeechBreak_QueuesTheUnterminatedPreambleBeforeTheToolArrives`, `Run_SceneGranted_StartsTheCameraAndEachSceneManagerOnItsOwnFrame`.
+
+### Self-test SAM text tools and hand debounce (ADR-0033)
+- Device self-test scenarios `vision_highlight_part` ("Which part of the mug should I hold?": `highlight_part` must outline a part on the identify turn's own capture) and `vision_find_object` ("Nubi, where is my mug? Show me.": another tool degrades with its name, `TurnChecks.PreferredTool`), both on the bundled still. `MaskObserver` (through `Edges.WrapMasks`) and `TurnObserver` add `tool_to_mask_ms`, `tool_to_answer_audio_ms` and `found`.
+- Hand meshes show only after 200 ms of steady tracking: `HandTrackingMonitor` drives each hand renderer from `TrackingDebounce` instead of `XRHandMeshController`'s own show/hide; `evt=hands.tracked` logs the debounced state (38–56 flips per headless run → 3).
+
+### Latency turns and stale frames (ADR-0034)
+- `selftest.sh --turns N` pushes `{"turns":N}`; the app runs `LatencyTurnsScenario` (greeting, come here, vision, repeated) and `perf_idle` and reports n / p50 / p90 / max for release → first audio and each stage (`LatencySeries`). The flag is `adb push`ed; an unreadable flag runs the default list. Device: 20 turns p50 1,804 / p90 2,577 / max 2,737 ms (`751acba`).
+- Stale frames follow headset uptime, not the build: reboot before a demo (demo script, release checklist). Starting the camera manager on the scene's first frame was measured and reverted.
+
+### Tool descriptions and the tool-selection eval (ADR-0035)
+- `come_here` and `find_object` descriptions lead with when to call them; the tool rules say to call the movement tool in the turn the user asks; `look_at` sends object searches to `find_object`.
+- `[Explicit]` PlayMode `LiveEval` sends 20 text turns with the app's prompt and tool catalogue and writes the first-round tool calls as a table (`tools/eval/tool-selection.sh`; `tools/ci/test.sh` never runs it).
+
+### Local come-here guard (ADR-0036)
+- `ComeGuard`: a final of at most 6 words made only of come triggers and fillers ("Hi Nubi, come here.") runs the registered `come_here` before the model call, when the persona is offered it. `StopGuard` and `ComeGuard` share `ShortCommand`; triggers and fillers are `Crisis` table entries with en/pl fallbacks.
+- Self-test: `evt=llm.reply` per model round (tools, finish reason, first 120 characters; self-test only), `voice_come_here` says "Hi Nubi, come here." and reports `come_source` (guard/model).
+
+### Guard walk without a model round; `find_object` gaze (ADR-0037)
+- A guard walk ends the turn locally: `TurnPipeline` plays a `LineCategory.ComingOver` line (`coming_01..03`: "On my way!", "Coming!", "Coming right over!"; en/pl text, baked en clips) and calls no model. `TurnSpeech.ExpectClip` makes the clip's first sample the turn's first audio; `IOfflineResponder.Respond` returns the played line, and both sides are committed to memory. Unreachable targets and crisis words still go to the model.
+- A found `find_object` result says `"looking":true` and `"next"` (`FindObjectTool.NextStep`), so the model no longer adds a `look_at` round.
+- Self-test `voice_come_here` reports `llm_request` and degrades when a model request was sent or release → first audio is over 600 ms.
+
+### Hedged first event (ADR-0038)
+- `FirstEventHedge`: a voice or vision Responses request with no first event after `voiceHedgeSeconds` (2.5 s), or a fast retryable failure, gets an identical second request (same body and `prompt_cache_key`); the first leg to open wins and the other is aborted and settled with an input estimate. Both share the 4 s first-event deadline. The hedge reserves its own budget and is skipped when the cap refuses. `voiceAttempts` 2 → 1 (worst-case silence ~8 s → 4 s). Summarisation is unchanged.
+- SSE streams report time to first byte and first event (`IHttpTransport.StreamSse` first-byte callback, `MetaSseStream.TimeToFirstByte` / `TimeToFirstEvent`); logs `evt=llm.hedge` and `evt=llm.first_event`. A first-event timeout says "no byte" or "first byte at N ms".
+- Test: a stall on both legs ends in the hold line and the spoken Error line, end to end through the real `AgentLoop` and hedged `ResponsesChatModel` (`BothHedgeLegsStall_TheHoldLineThenTheErrorLineAreSpoken`).
+
+### Dark-room vision guard (ADR-0039)
+- `FrameLuma.Mean` on the grabbed frame: below `JollyConfig.visionMinMeanLuma` (25) `capture_and_identify` and `find_object` return `too_dark` without a SAM or Spark call, log `evt=vision.too_dark` and keep the last bright capture for `highlight_part`; a prompt rule has the model ask for light in one sentence. The self-test's still switch uses the same helper and threshold.
+
+### Acknowledgement only for questions (ADR-0040)
+- The Acknowledge clip ("Hmm!", "Good question.") is no longer queued at PTT release on every turn. It plays at the final, and only when `QuestionCue` says the final is a question (a '?' or a question opener after leading fillers; never a polite request like "can you…") and no guard handled it (stop, come walk, crisis). The demo's "Nubi, come here." now gets only its ComingOver line (it was "Good question. On my way!" on the headset). `ConversationTimings.AcknowledgeOnRelease` / `JollyConfig.acknowledgeOnRelease` → `AcknowledgeQuestions` / `acknowledgeQuestions`; `question.openers|requests|fillers` fallbacks in en and pl.
+
+### Docs
+- Demo script: mandatory problem voice-over, cost as a beat-5 overlay, a longer beat 2, reboot and greeting warm-up before beat 1, beat 1 as the guard walk with a canned line (ADR-0037, ADR-0040). README "A day with Nubi", "Living with it", current status and test counts; release checklist verification block for `36778c1`; device self-test reports for every change above (`docs/perf/selftest-report.md`).
