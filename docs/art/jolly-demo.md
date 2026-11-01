@@ -89,7 +89,8 @@ Unity assets:
 | height / agent radius / collider radius | 0.88 m / 0.24 m / 0.32 m |
 | contact shadow radius | (0.39, 0.31) |
 | locomotion, look and face tuning | Nubi's (Walk 0.49 m/s, Hop 0.90 m/s, ±16° / ±8° eyes; the pivots sit 0.30 m behind the eyes) |
-| line clips | `Lines/en/greeting_01` and `whoami_01..03` saying "Jolly", baked with Wit voice Charlie |
+| voice | `JollyVoice.asset`: Wit `Railey`, pitch 112, speed 105, default style, no sfx (brighter and higher than Nubi's Rubie, ~310–325 Hz; the only one of six auditioned voices that Wit transcribed without an error, including the name) |
+| line clips | All 32 English canned lines in `Lines/en/`, the named ones saying "Jolly", baked in that voice (its voice differs from the shared library's) |
 
 To regenerate the definition and its controller, copy the throwaway builder kept outside `Assets` at
 `tools/blender/out/jolly/unity-builder/` to `JollyXR/Assets/Jolly/Local/_Setup/Editor/`, then run:
