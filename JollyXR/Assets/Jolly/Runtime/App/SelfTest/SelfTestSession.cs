@@ -13,7 +13,7 @@ namespace Jolly.App.SelfTest
     /// The device self-test (requirements: self-checking pipeline). Compiled into every build but inert unless
     /// <c>persistentDataPath/selftest.json</c> exists or the launch intent carries the <c>selftest</c> extra. The flag is
     /// consumed at once, so the next normal launch is a normal app. It replaces only the edges a person would provide
-    /// (voice, microphone, a lit room, the network switch); everything between them runs for real.
+    /// (voice and the pinch, microphone, a lit room, the network switch); everything between them runs for real.
     /// </summary>
     public sealed class SelfTestSession
     {
@@ -32,6 +32,8 @@ namespace Jolly.App.SelfTest
         }
 
         public bool ForceOffline { get; set; }
+        /// <summary>The platform's own reachability check, ignoring <see cref="ForceOffline"/>.</summary>
+        public bool NetworkReachable => _realReachability();
         public ClipMicrophone Microphone { get; private set; }
         public ScriptedPushToTalk Voice { get; private set; }
         public SwitchableCameraSource Camera { get; private set; }
@@ -67,7 +69,7 @@ namespace Jolly.App.SelfTest
             edges.IsNetworkReachable = () => !ForceOffline && _realReachability();
             Microphone = new ClipMicrophone(edges.Microphone, foundation.Clock);
             edges.Microphone = Microphone;
-            Voice = new ScriptedPushToTalk(edges.Voice ?? scene.pushToTalk);
+            Voice = new ScriptedPushToTalk();
             edges.Voice = Voice;
             var wrap = edges.WrapCamera;
             var still = _assets.fallbackStill != null ? _assets.fallbackStill.bytes : Array.Empty<byte>();

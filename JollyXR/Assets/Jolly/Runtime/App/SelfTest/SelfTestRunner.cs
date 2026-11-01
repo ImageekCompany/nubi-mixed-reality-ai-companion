@@ -51,7 +51,11 @@ namespace Jolly.App.SelfTest
             try
             {
                 await _graph.WhenRunning.AttachExternalCancellation(ct);
-                await context.WaitUntil(() => _graph.Cloud.Connectivity.State == Connectivity.Online, 20, ct);
+                var connectivity = _graph.Cloud.Connectivity;
+                var initial = await connectivity.ProbeNow(ct);
+                f.Log.Write(LogLevel.Info, "selftest",
+                    $"evt=selftest.network reachable={_session.NetworkReachable} probe={initial}");
+                await context.WaitUntil(() => connectivity.State == Connectivity.Online, 20, ct);
                 foreach (var (name, run) in Scenarios)
                     results.Add(await RunOne(name, run, context, ct));
             }

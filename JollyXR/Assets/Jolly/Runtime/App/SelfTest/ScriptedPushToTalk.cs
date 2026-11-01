@@ -3,43 +3,27 @@ using Jolly.Contracts;
 
 namespace Jolly.App.SelfTest
 {
-    /// <summary>The scene's push-to-talk plus presses the self-test makes itself, so no one has to pinch.</summary>
-    public sealed class ScriptedPushToTalk : IVoiceActivation, IDisposable
+    /// <summary>
+    /// Push-to-talk pressed only by the self-test. The pinch detector is left out on purpose: with nobody wearing the
+    /// headset, hand tracking produced phantom press/release pairs that barged into the scripted turns (device run,
+    /// 2026-11-01).
+    /// </summary>
+    public sealed class ScriptedPushToTalk : IVoiceActivation
     {
-        readonly IVoiceActivation _inner;
-
-        public ScriptedPushToTalk(IVoiceActivation inner)
-        {
-            _inner = inner;
-            _inner.Pressed += RaisePressed;
-            _inner.Released += RaiseReleased;
-        }
-
-        bool _scriptedHeld;
-
-        public bool IsHeld => _scriptedHeld || _inner.IsHeld;
+        public bool IsHeld { get; private set; }
         public event Action Pressed;
         public event Action Released;
 
         public void Press()
         {
-            _scriptedHeld = true;
-            RaisePressed();
+            IsHeld = true;
+            Pressed?.Invoke();
         }
 
         public void Release()
         {
-            _scriptedHeld = false;
-            RaiseReleased();
+            IsHeld = false;
+            Released?.Invoke();
         }
-
-        public void Dispose()
-        {
-            _inner.Pressed -= RaisePressed;
-            _inner.Released -= RaiseReleased;
-        }
-
-        void RaisePressed() => Pressed?.Invoke();
-        void RaiseReleased() => Released?.Invoke();
     }
 }

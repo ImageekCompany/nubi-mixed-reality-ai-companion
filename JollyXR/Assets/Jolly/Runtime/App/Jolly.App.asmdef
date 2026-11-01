@@ -18,6 +18,7 @@
         "UniTask.Linq",
         "Unity.XR.CoreUtils",
         "Unity.XR.ARFoundation",
+        "Unity.XR.ARSubsystems",
         "Unity.XR.Interaction.Toolkit",
         "uLipSync.Runtime"
     ],
