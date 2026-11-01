@@ -35,7 +35,21 @@ namespace Jolly.Providers.Wit
                 ArrayPool<byte>.Shared.Return(buffer);
                 while (channel.Reader.TryRead(out var undelivered))
                     undelivered.Dispose();
+                ObserveCompletion(channel.Reader);
             }
+        }
+
+        /// <summary>
+        /// A channel faulted by <see cref="Send"/> keeps an ExceptionResultSource as its Completion; unawaited, its
+        /// finalizer reports the error to UniTaskScheduler as unobserved on a later GC. The reader already got it.
+        /// </summary>
+        static void ObserveCompletion(ChannelReader<PcmChunk> reader)
+        {
+            var completion = reader.Completion;
+            if (!completion.Status.IsCompleted())
+                return;
+            try { completion.GetAwaiter().GetResult(); }
+            catch (Exception) { }
         }
 
         static UnityWebRequest Create(string token, string body, WitDownloadHandler handler)
