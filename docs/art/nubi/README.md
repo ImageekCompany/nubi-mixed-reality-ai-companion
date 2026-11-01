@@ -147,7 +147,7 @@ Animation principles in `clips.py`:
   - Enable **Bake Axis Conversion**. Otherwise the `Nubi_Rig` child keeps a −90° X rotation that
     the Root bone compensates (visually correct either way).
   - Set **Loop Time** on Idle, Walk, Hop, Talk, Listen, Think and Sad.
-  - All of the above is set in code by `NubiModelPostprocessor` (`Editor/Character`, assembly `Jolly.Editor.Character`). Loop
+  - All of the above is set in code by `CharacterModelPostprocessor` (`Editor/Character`, assembly `Jolly.Editor.Character`), for any FBX with a sibling `<Model>_FacePresets.json` (`docs/characters.md`). Loop
     Time comes from `loopingClips` in `Nubi_FacePresets.json`, which this build writes from `clips.py`.
   - After a Blender rebuild, regenerate the derived assets (materials, `Nubi.controller`, `Nubi.prefab`):
     `Unity -batchmode -quit -projectPath JollyXR -executeMethod Jolly.Editor.Character.NubiPrefabBuilder.Build`
