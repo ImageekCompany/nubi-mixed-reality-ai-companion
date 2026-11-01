@@ -60,6 +60,8 @@ namespace Jolly.App
         public MaskOverlayView maskOverlay;
         public StatusIndicator status;
         public SettingsPanel settings;
+        [Tooltip("The floor ring under the user's ray where a tap sends Nubi (ADR-0044).")]
+        public MoveReticleView moveReticle;
         [Tooltip("Shows the settings panel on demand (ADR-0042); on the SettingsPanel object.")]
         public SettingsWindow settingsWindow;
         [Tooltip("The settings button on the left wrist, and what places it there.")]

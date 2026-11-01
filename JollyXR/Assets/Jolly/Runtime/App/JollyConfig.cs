@@ -95,6 +95,11 @@ namespace Jolly.App
                  "too_dark; the self-test switches to its bundled still below it too.")]
         public float visionMinMeanLuma = 25f;
 
+        [Header("Point and tap (ADR-0044)")]
+        [Tooltip("With the floor ring showing, a pinch released within this many seconds sends Nubi there; held longer it " +
+                 "talks. Words said meanwhile are kept: the microphone starts at the pinch.")]
+        public float tapMaxSeconds = 0.25f;
+
         [Header("Behaviour")]
         [Tooltip("Play a short canned acknowledgement at the final when it is a question for the model (ADR-0040).")]
         public bool acknowledgeQuestions = true;

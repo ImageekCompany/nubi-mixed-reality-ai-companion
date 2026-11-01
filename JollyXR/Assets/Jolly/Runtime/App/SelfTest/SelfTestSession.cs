@@ -15,7 +15,7 @@ namespace Jolly.App.SelfTest
     /// <c>persistentDataPath/selftest.json</c> exists (or, off-device, the <c>-selftest</c> argument is given). The flag is
     /// consumed at once, so the next normal launch is a normal app. There is deliberately no intent path on Android: the
     /// launcher activity is exported, so any app could start a paid, offline-forcing run; only adb can write the flag. It replaces only the edges a person would provide
-    /// (voice and the pinch, microphone, a lit room, the network switch); everything between them runs for real, except
+    /// (voice and the pinch, the pointing ray, microphone, a lit room, the network switch); everything between them runs for real, except
     /// the unprompted Space Setup offer, which would race the scripted turns. Memory
     /// starts empty in a scratch directory, so the user's summary never reaches a self-test request and the scripted
     /// turns never reach the user's memory.
@@ -46,6 +46,7 @@ namespace Jolly.App.SelfTest
         public bool NetworkReachable => _realReachability();
         public ClipMicrophone Microphone { get; private set; }
         public ScriptedPushToTalk Voice { get; private set; }
+        public ScriptedPointer Pointer { get; private set; }
         public SwitchableCameraSource Camera { get; private set; }
         public MaskObserver Masks { get; private set; }
         /// <summary>Started by the bootstrap so the launch is traced too; disposes itself when the app token cancels.</summary>
@@ -127,6 +128,8 @@ namespace Jolly.App.SelfTest
             edges.Microphone = Microphone;
             Voice = new ScriptedPushToTalk();
             edges.Voice = Voice;
+            Pointer = new ScriptedPointer();
+            edges.Pointer = Pointer;
             edges.OfferRoomScan = false;
             edges.ModelReplies = reply => ModelReplied?.Invoke(reply);
             var wrap = edges.WrapCamera;

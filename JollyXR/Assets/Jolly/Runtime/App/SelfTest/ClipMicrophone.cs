@@ -80,8 +80,12 @@ namespace Jolly.App.SelfTest
             }
         }
 
+        /// <summary>Every Start, armed or not: the pinch pre-roll (ADR-0044) starts the device too.</summary>
+        public int StartCount { get; private set; }
+
         public bool Start()
         {
+            StartCount++;
             if (!_armed)
                 return _real.Start();
             _armed = false;

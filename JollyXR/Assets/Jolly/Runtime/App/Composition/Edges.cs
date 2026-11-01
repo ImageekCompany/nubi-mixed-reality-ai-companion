@@ -26,8 +26,11 @@ namespace Jolly.App.Composition
         /// <summary>Null uses Wit (its HTTP client is internal to the adapter).</summary>
         public ITextToSpeech TextToSpeech { get; set; }
         public IMicrophoneDevice Microphone { get; set; }
-        /// <summary>Null uses the scene's pinch and controller push-to-talk.</summary>
+        /// <summary>Null uses the scene's pinch and controller push-to-talk. A replacement stands in for the pinch alone:
+        /// it still goes through the tap/hold split (ADR-0044).</summary>
         public IVoiceActivation Voice { get; set; }
+        /// <summary>Null uses the rig's hand and controller rays and the controller triggers (ADR-0044).</summary>
+        public IPointerInput Pointer { get; set; }
         /// <summary>Null uses the scene's streaming output on Nubi.</summary>
         public ISpeechOutput SpeechOutput { get; set; }
         public Func<ICameraFrameSource, ICameraFrameSource> WrapCamera { get; set; } = camera => camera;

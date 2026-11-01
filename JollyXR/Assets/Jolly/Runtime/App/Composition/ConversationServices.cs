@@ -29,7 +29,7 @@ namespace Jolly.App.Composition
         public static ConversationServices Build(Foundation f, JollyConfig config, CloudServices cloud, XrServices xr,
                                                  SpeechServices speech, PersonaRepository personas, ILocalizer localizer,
                                                  TranscriptAliases aliases, IUserPreferences preferences, ICharacterController character,
-                                                 IVoiceActivation voice, IMaskPresenter masks, IRoomScan room,
+                                                 IVoiceActivation voice, IAudioCapture microphone, IMaskPresenter masks, IRoomScan room,
                                                  RoomContext roomContext, Action<string> modelReplies, DisposableStack disposables)
         {
             var limits = new MemoryLimits();
@@ -46,7 +46,7 @@ namespace Jolly.App.Composition
                     ReplyObserved = modelReplies,
                 });
 
-            var listener = new TurnListener(speech.Microphone, cloud.SpeechToText, frames, aliases,
+            var listener = new TurnListener(microphone, cloud.SpeechToText, frames, aliases,
                 localizer, f.Events, f.Latency, f.Log, timings);
             var guards = new TurnGuards(new StopGuard(localizer), new ComeGuard(localizer), new SettingsGuard(localizer),
                 new CrisisGuard(localizer), new QuestionCue(localizer), character, tools, personas, preferences, f.Events, f.Log);

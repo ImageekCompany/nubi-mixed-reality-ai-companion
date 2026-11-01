@@ -40,6 +40,7 @@ namespace Jolly.App.Composition
         public XrServices Xr { get; private set; }
         public SpeechServices Speech { get; private set; }
         public RoomScanMonitor Room { get; private set; }
+        public PointServices Point { get; private set; }
         public ConversationServices Conversation { get; private set; }
         public IdleScheduler Idle { get; private set; }
         public LookTelemetry Look { get; private set; }
@@ -86,9 +87,9 @@ namespace Jolly.App.Composition
             var roomSettings = RoomSettingsFor(config, edges);
             Room = new RoomScanMonitor(Xr.SceneData, Xr.User, scene.nubi, f.Clock, f.Log, roomSettings,
                 InteractionLinePlayer.CanSpeak(f.Machine, Speech.Output));
-            var voice = edges.Voice ?? d.Add(new CompositeVoiceActivation(scene.pushToTalk, scene.controllerPushToTalk));
+            Point = PointServices.Build(f, config, scene, edges, Xr, Speech, d);
             Conversation = ConversationServices.Build(f, config, Cloud, Xr, Speech, Personas, Text,
-                TranscriptAliases.ForName(Text.Name, character.aliases), Preferences, scene.nubi, voice,
+                TranscriptAliases.ForName(Text.Name, character.aliases), Preferences, scene.nubi, Point.Voice, Point.Microphone,
                 edges.WrapMasks(scene.maskOverlay), Room, new RoomContext(Room, Xr.World, Xr.User, roomSettings),
                 edges.ModelReplies, d);
             d.Add(new StatusRelay(Cloud.Connectivity, scene.permissions, scene.status));
@@ -138,6 +139,7 @@ namespace Jolly.App.Composition
                 appCt).Forget();
             Loop("idle", Idle.RunAsync(IsIdle, appCt), appCt).Forget();
             Loop("room", Room.RunAsync(appCt), appCt).Forget();
+            Loop("point", EveryFrame(Point.Targeting.Tick, appCt), appCt).Forget();
             var conversation = Conversation.Controller.RunAsync(appCt);
             _running.TrySetResult();
             await conversation;
@@ -156,6 +158,15 @@ namespace Jolly.App.Composition
         public void Dispose() => _disposables.Dispose();
 
         bool IsIdle() => Foundation.Machine.State == ConversationState.Idle && !Speech.Output.IsPlaying;
+
+        static async UniTask EveryFrame(Action tick, CancellationToken ct)
+        {
+            while (true)
+            {
+                await UniTask.Yield(PlayerLoopTiming.Update, ct);
+                tick();
+            }
+        }
 
         async UniTaskVoid Loop(string name, UniTask loop, CancellationToken appCt)
         {

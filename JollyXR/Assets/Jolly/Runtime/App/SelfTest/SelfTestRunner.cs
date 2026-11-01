@@ -23,6 +23,8 @@ namespace Jolly.App.SelfTest
             (OfflineGreetingScenario.Name, OfflineGreetingScenario.Run),
             (GreetingScenario.Name, GreetingScenario.Run),
             (ComeHereScenario.Name, ComeHereScenario.Run),
+            // Free and local; after come_here, which has settled the room and stands the character in front of the user.
+            (TapToMoveScenario.Name, TapToMoveScenario.Run),
             (VisionScenario.Name, VisionScenario.Run),
             // Asks about a part of what the identify turn just saw, so it must follow it.
             (VisionPartScenario.Name, VisionPartScenario.Run),
