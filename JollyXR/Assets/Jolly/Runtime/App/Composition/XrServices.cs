@@ -31,6 +31,7 @@ namespace Jolly.App.Composition
                                        Func<ICameraFrameSource, ICameraFrameSource> wrapCamera, DisposableStack disposables)
         {
             var hands = new XrHandSource(scene.origin.transform);
+            scene.handMonitor.Construct(f.Log, f.Clock, scene.origin.transform);
             scene.userPose.Construct(scene.head, hands, scene.controllerAim, config.headPoseLeadSeconds);
             var permissions = new AndroidRuntimePermissions();
             scene.permissions.Construct(permissions, scene.cameraManager,
