@@ -9,6 +9,8 @@ EditorBuildSettings:
     path: Assets/Jolly/Scenes/Main.unity
     guid: 847fa99927f6a4254b25b827a06681ef
   m_configObjects:
+    com.unity.addressableassets: {fileID: 11400000, guid: f994abb2b04a14a5e969a32c8677db7b, type: 2}
+    com.unity.localization.settings: {fileID: 11400000, guid: 348668cc59027404c8321e762f822f12, type: 2}
     com.unity.xr.arfoundation.simulation_settings: {fileID: 11400000, guid: dace59ae1947e48f69c114112a275e9c, type: 2}
     com.unity.xr.management.loader_settings: {fileID: 11400000, guid: dbb22a5f768524fcdb9b8a1bc6d8ae4c, type: 2}
     com.unity.xr.openxr.settings4: {fileID: 11400000, guid: 7ff7e81ede8b54d62a88b29358bdd491, type: 2}
