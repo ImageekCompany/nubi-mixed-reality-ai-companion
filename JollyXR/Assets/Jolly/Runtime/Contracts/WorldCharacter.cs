@@ -135,6 +135,9 @@ namespace Jolly.Contracts
         /// where no NavMesh will reach (the fallback floor, ADR-0025). A running MoveTo completes Cancelled; Follow
         /// carries on from the new spot. A call before a pop has moved Nubi only retargets it.</summary>
         void Relocate(Vector3 floorPoint);
+        /// <summary>User: watch and face the user. At(point): look there for a short hold once standing still, then attend
+        /// the user again. None: no target of its own; the user is still attended during a conversation turn, while
+        /// following, or when near (ADR-0041). A new Listening state drops a held point.</summary>
         void LookAt(LookTarget target);
         UniTask PlayGesture(GestureId gesture, CancellationToken ct);
         void SetMood(Mood mood);

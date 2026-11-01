@@ -35,8 +35,12 @@ namespace Jolly.Character
         public float Weight => _weight;
         public LookAngles Angles => _angles;
 
-        /// <summary>Applies the look and returns the yaw (degrees) the body should still turn, 0 when none.</summary>
-        public float Apply(bool hasTarget, Vector3 targetWorld, bool suppressed, float deltaTime)
+        /// <summary>
+        /// Applies the look and returns the yaw (degrees) the body should still turn, 0 when none. With
+        /// <paramref name="face"/> the body turns past <see cref="LookSettings.faceUserBeyond"/>, else past
+        /// <see cref="LookSettings.bodyTurnBeyond"/>.
+        /// </summary>
+        public float Apply(bool hasTarget, Vector3 targetWorld, bool suppressed, float deltaTime, bool face = false)
         {
             RestoreAnimatedPose();
             var goal = hasTarget && !suppressed ? 1f : 0f;
@@ -47,7 +51,7 @@ namespace Jolly.Character
             {
                 LookAtSolver.Bearing(targetWorld - _bones.head.position, _body.forward, _body.up, out var yaw, out var pitch);
                 _angles = LookAtSolver.Solve(yaw, pitch, _settings);
-                bodyYaw = BodyTurn(yaw);
+                bodyYaw = BodyTurn(yaw, face ? _settings.faceUserBeyond : _settings.bodyTurnBeyond);
             }
             else
             {
@@ -73,10 +77,10 @@ namespace Jolly.Character
             }
         }
 
-        float BodyTurn(float yaw)
+        float BodyTurn(float yaw, float beyond)
         {
             var off = Mathf.Abs(yaw);
-            if (off > _settings.bodyTurnBeyond)
+            if (off > beyond)
                 _bodyTurning = true;
             else if (off < _settings.bodySettleWithin)
                 _bodyTurning = false;

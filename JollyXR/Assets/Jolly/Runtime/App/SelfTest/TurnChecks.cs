@@ -1,4 +1,7 @@
 using System.Collections.Generic;
+using System.Globalization;
+using Jolly.App.Adapters;
+using Jolly.Character;
 using Jolly.Core.Conversation;
 using Jolly.Core.Tools;
 
@@ -102,6 +105,45 @@ namespace Jolly.App.SelfTest
             }
             return guard ? model ? "guard+model" : "guard" : model ? "model" : "none";
         }
+
+        /// <summary>The body may face this far off the user's head while speaking (ADR-0041), degrees.</summary>
+        public const float MaxBodyYawOff = 25f;
+        /// <summary>The head may face this far off the user's head while speaking, degrees.</summary>
+        public const float MaxHeadYawOff = 15f;
+
+        /// <summary>
+        /// The character must face the user at the turn's first audio: past <see cref="MaxBodyYawOff"/> body or
+        /// <see cref="MaxHeadYawOff"/> head degrades. A turn whose tool still points the look at an object, or one with
+        /// <paramref name="check"/> false, is only recorded. <paramref name="sampled"/> is false when the turn logged no
+        /// evt=look.user.
+        /// </summary>
+        public static void Facing(ScenarioResult r, bool sampled, LookTelemetry.Sample s, bool check = true)
+        {
+            if (!sampled)
+            {
+                r.Metric("look", "none");
+                if (check)
+                    r.Degrade("no evt=look.user at first audio");
+                return;
+            }
+            r.Metric("look", Look(s.BodyYawOff, s.HeadYawOff) + " attending=" + s.Attending.ToString().ToLowerInvariant());
+            if (check && s.Attending != AttentionTarget.Point)
+                FacingWithin(r, s.BodyYawOff, s.HeadYawOff, "speaking");
+        }
+
+        /// <summary>Degrades past <see cref="MaxBodyYawOff"/> body or <see cref="MaxHeadYawOff"/> head.</summary>
+        public static void FacingWithin(ScenarioResult r, float bodyYawOff, float headYawOff, string when)
+        {
+            if (bodyYawOff > MaxBodyYawOff)
+                r.Degrade(string.Format(CultureInfo.InvariantCulture, "{0} with the body {1:0}° off the user (max {2:0}°)",
+                    when, bodyYawOff, MaxBodyYawOff));
+            if (headYawOff > MaxHeadYawOff)
+                r.Degrade(string.Format(CultureInfo.InvariantCulture, "{0} with the head {1:0}° off the user (max {2:0}°)",
+                    when, headYawOff, MaxHeadYawOff));
+        }
+
+        public static string Look(float bodyYawOff, float headYawOff) =>
+            string.Format(CultureInfo.InvariantCulture, "body={0:0.0} head={1:0.0}", bodyYawOff, headYawOff);
 
         /// <summary>NaN (no answer after the tool) fails.</summary>
         public static void ToolToAnswer(ScenarioResult r, double ms)

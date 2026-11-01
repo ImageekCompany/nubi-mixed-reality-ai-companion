@@ -51,5 +51,19 @@ namespace Jolly.Character
             var right = Vector3.Cross(up, flat);
             pitch = Vector3.SignedAngle(flat, direction, right);
         }
+
+        /// <summary>
+        /// Yaw (degrees, positive to the right) from <paramref name="forward"/> to <paramref name="direction"/>, both
+        /// flattened onto the plane of <paramref name="up"/>: a pitched or tilted forward does not count. 0 when either is
+        /// vertical.
+        /// </summary>
+        public static float Yaw(Vector3 forward, Vector3 direction, Vector3 up)
+        {
+            var from = Vector3.ProjectOnPlane(forward, up);
+            var to = Vector3.ProjectOnPlane(direction, up);
+            if (from.sqrMagnitude < 1e-8f || to.sqrMagnitude < 1e-8f)
+                return 0f;
+            return Vector3.SignedAngle(from, to, up);
+        }
     }
 }

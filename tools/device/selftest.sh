@@ -118,7 +118,10 @@ if [[ $PROFILE -eq 1 ]]; then
   done
 fi
 adb logcat -d -v time -s Unity:V > "$OUT/logcat.txt" || true
-grep -E "evt=(selftest|turn.latency)" "$OUT/logcat.txt" > "$OUT/selftest_events.txt" || true
+grep -E "evt=(selftest|turn.latency|look.user)" "$OUT/logcat.txt" > "$OUT/selftest_events.txt" || true
+# Facing the user at each turn's first audio (ADR-0041); the scenarios degrade past 25° body / 15° head.
+echo "[selftest] look at first audio (deg off the user's head):"
+grep -oE "evt=look.user .*" "$OUT/logcat.txt" | sed 's/^/  /' || echo "  none"
 # Compositor stale frames over the whole run (DoD §4: < 1%); the app cannot see these itself.
 # Only the app's own lines: the home shell logs VrApi too until the app takes over.
 APP_PID="$(grep -m1 -oE 'I/Unity +\( *[0-9]+\)' "$OUT/logcat.txt" | grep -oE '[0-9]+' || true)"
@@ -145,7 +148,8 @@ import json, sys
 r = json.load(open(sys.argv[1], encoding="utf-8"))
 keys = ["release_to_first_audio_ms", "tool_to_answer_audio_ms", "tool_to_mask_ms", "found", "similarity", "caption_ms", "silence_ms", "avg_fps", "p95_frame_ms",
         "draw_calls_max", "setpass_calls_max", "triangles_max", "system_memory_mb",
-        "gc_alloc_bytes_per_frame", "mean_luma", "frame", "navmesh", "come_source", "tools"]
+        "gc_alloc_bytes_per_frame", "mean_luma", "frame", "navmesh", "come_source", "tools", "look",
+        "look_after_arrival"]
 print(f"\nSelf-test on {r['device']} at {r['startedUtc']}")
 print(f"{'scenario':30} {'status':9} {'ms':>7}  key metrics")
 for s in r["scenarios"]:

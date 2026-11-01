@@ -10,8 +10,9 @@ namespace Jolly.Character
     public sealed class CharacterRig
     {
         CharacterRig(Animator animator, SkinnedMeshRenderer face, NubiRigBones bones, Transform jaw,
-                     Transform footLeft, Transform footRight, float footRestHeight)
+                     Transform footLeft, Transform footRight, float footRestHeight, Vector3 headForward)
         {
+            HeadForward = headForward;
             Animator = animator;
             Face = face;
             Bones = bones;
@@ -32,6 +33,8 @@ namespace Jolly.Character
         public bool HasFeet => FootLeft != null;
         /// <summary>Height of the lower foot above the model root in the bind pose, in model units (before scale).</summary>
         public float FootRestHeight { get; }
+        /// <summary>The head bone's local axis that points along the model's forward in the bind pose.</summary>
+        public Vector3 HeadForward { get; }
 
         public static bool TryBind(GameObject model, CharacterDefinition definition, out CharacterRig rig, out string error)
         {
@@ -84,7 +87,8 @@ namespace Jolly.Character
             else
                 footRestHeight = BindPoseFootHeight(definition.model.transform, names);
 
-            rig = new CharacterRig(animator, face, bones, jaw, footLeft, footRight, footRestHeight);
+            rig = new CharacterRig(animator, face, bones, jaw, footLeft, footRight, footRestHeight,
+                                   BindPoseHeadForward(definition.model.transform, names));
             error = null;
             return true;
         }
@@ -115,6 +119,16 @@ namespace Jolly.Character
             if (left == null || right == null)
                 return 0f;
             return Mathf.Min(asset.InverseTransformPoint(left.position).y, asset.InverseTransformPoint(right.position).y);
+        }
+
+        /// <summary>
+        /// From the model asset, like <see cref="BindPoseFootHeight"/>. The instance is the asset under the character root,
+        /// so the head's bind rotation relative to the character root is its world rotation in the asset.
+        /// </summary>
+        static Vector3 BindPoseHeadForward(Transform asset, RigBoneNames names)
+        {
+            var head = Find(asset, names.head);
+            return head == null ? Vector3.forward : Quaternion.Inverse(head.rotation) * Vector3.forward;
         }
 
         public static SkinnedMeshRenderer FindFace(GameObject model, string name)

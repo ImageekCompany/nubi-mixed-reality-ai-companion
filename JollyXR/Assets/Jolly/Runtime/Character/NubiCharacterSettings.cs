@@ -49,6 +49,15 @@ namespace Jolly.Character
         public float bodyTurnBeyond = 45f;
         [Tooltip("Body turning stops once the target is within this, deg.")]
         public float bodySettleWithin = 5f;
+        [Tooltip("Attending the user, the body turns to face them past this instead of bodyTurnBeyond, deg (ADR-0041).")]
+        public float faceUserBeyond = 15f;
+        [Tooltip("Top body yaw rate while turning in place toward a look target; it eases out over the last degrees, deg/s.")]
+        public float bodyTurnSpeed = 150f;
+        [Tooltip("Outside a conversation turn the character attends the user while they are within this, m.")]
+        public float attendWithin = 3f;
+        [Tooltip("A tool's look at a point holds this long once the character stands still; then it attends the user " +
+                 "again, s.")]
+        public float pointHoldSeconds = 2.5f;
         public float blendSeconds = 0.25f;
         [Range(0f, 1f)] public float chestShare = 0.2f;
         [Range(0f, 1f)] public float neckShare = 0.3f;

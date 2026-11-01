@@ -11,8 +11,8 @@ namespace Jolly.Character
     /// <summary>
     /// The companion's <see cref="ICharacterController"/>: a thin MonoBehaviour shell that orders the plain-C# parts per
     /// frame. Update: relocation pop → locomotion → body yaw → Animator parameters. The Animator then evaluates, and
-    /// LateUpdate layers the look-at on the animated bones, writes the face (clip preset/mood → lip-sync → blink) and
-    /// shapes the contact shadow from the animated feet.
+    /// LateUpdate layers the look-at on the animated bones (attending the user unless a tool's point holds, ADR-0041),
+    /// writes the face (clip preset/mood → lip-sync → blink) and shapes the contact shadow from the animated feet.
     /// Everything character-specific comes from its <see cref="CharacterDefinition"/>: the prefab ships Nubi's model and
     /// definition, and <see cref="TryUse"/> swaps in another before <see cref="Construct"/> (ADR-0026).
     /// Inert until <see cref="Construct"/> is called by the composition root.
@@ -51,6 +51,7 @@ namespace Jolly.Character
         FaceRenderer _faceRenderer;
         ContactShadow _shadow;
         LookTarget _lookTarget = LookTarget.User;
+        double _lookTargetSince;
         Mood _mood;
         ConversationState _conversation;
         bool _hasLookOverride;
@@ -70,6 +71,8 @@ namespace Jolly.Character
         public SkinnedMeshRenderer FaceMesh => _rig?.Face;
         /// <summary>Null until <see cref="Construct"/>, and when the character has no feet bones to follow.</summary>
         public ContactShadowRig ShadowRig { get; private set; }
+        /// <summary>What the look resolved to on the last frame.</summary>
+        public AttentionTarget Attending { get; private set; }
 
         /// <summary>
         /// Swaps in another character before <see cref="Construct"/>: instantiates its model under this root and binds
@@ -186,7 +189,12 @@ namespace Jolly.Character
             _popMoved = false;
         }
 
-        public void LookAt(LookTarget target) => _lookTarget = target;
+        /// <summary>A point holds for <see cref="LookSettings.pointHoldSeconds"/> of standing still, then the user again.</summary>
+        public void LookAt(LookTarget target)
+        {
+            _lookTarget = target;
+            _lookTargetSince = _clock?.Now ?? 0;
+        }
 
         public UniTask PlayGesture(GestureId gesture, CancellationToken ct) =>
             gesture == GestureId.LookAround ? LookAround(ct) : PlayClip(gesture, ct);
@@ -197,10 +205,33 @@ namespace Jolly.Character
             Constructed()._parameters.SetMood(mood);
         }
 
+        /// <summary>Listening drops a held point and a look-around sweep: the user is talking.</summary>
         public void SetConversationState(ConversationState state)
         {
             _conversation = state;
             Constructed()._parameters.SetConversationState(state);
+            if (state != ConversationState.Listening)
+                return;
+            if (_lookTarget.Kind == LookTargetKind.WorldPoint)
+                _lookTarget = LookTarget.User;
+            _lookAroundGeneration++;
+            _hasLookOverride = false;
+        }
+
+        /// <summary>
+        /// Unsigned yaw, degrees, from the body's facing and from the head's to the user's head; false before
+        /// <see cref="Construct"/>. The head's facing is its bind-pose forward carried by the animated, looked bone.
+        /// </summary>
+        public bool TryMeasureUser(out float bodyYawOff, out float headYawOff)
+        {
+            bodyYawOff = headYawOff = float.NaN;
+            if (!IsConstructed)
+                return false;
+            var head = _bones.head;
+            var toUser = _user.Head.position - head.position;
+            bodyYawOff = Mathf.Abs(LookAtSolver.Yaw(transform.forward, toUser, Vector3.up));
+            headYawOff = Mathf.Abs(LookAtSolver.Yaw(head.rotation * _rig.HeadForward, toUser, Vector3.up));
+            return true;
         }
 
         void Update()
@@ -224,9 +255,12 @@ namespace Jolly.Character
             var dt = Time.deltaTime;
             var thinking = _conversation == ConversationState.Thinking
                            || (_gestures.IsPlaying && _gestures.Current == GestureId.Think);
-            var bodyYaw = _look.Apply(TryResolveLookPoint(out var point), point, thinking, dt);
+            Attending = ResolveAttention(out var point);
+            var bodyYaw = _look.Apply(Attending != AttentionTarget.None, point, thinking, dt,
+                                      face: Attending == AttentionTarget.User);
             if (bodyYaw != 0f && !_locomotion.IsMoving)
-                TurnToward(Quaternion.AngleAxis(bodyYaw, Vector3.up) * transform.rotation, dt);
+                transform.rotation = Quaternion.AngleAxis(Attention.BodyTurnStep(bodyYaw, _settings.look.bodyTurnSpeed, dt),
+                                                          Vector3.up) * transform.rotation;
 
             _mouth.Step(_lipSync.Current, dt);
             _mixer.Mix(_expression.Select(_speed), MoodFace.For(_mood), _mouth, _blink.Tick(dt), dt);
@@ -273,26 +307,24 @@ namespace Jolly.Character
             }
         }
 
-        bool TryResolveLookPoint(out Vector3 point)
+        /// <summary>A look-around sweep first; a point's hold restarts while walking, so it counts from the arrival.</summary>
+        AttentionTarget ResolveAttention(out Vector3 point)
         {
-            point = default;
             if (_hasLookOverride)
             {
                 point = _lookOverride;
-                return true;
+                return AttentionTarget.Point;
             }
-            switch (_lookTarget.Kind)
-            {
-                case LookTargetKind.WorldPoint:
-                    point = _lookTarget.Point;
-                    return true;
-                case LookTargetKind.User:
-                    point = _user.Head.position;
-                    return true;
-                default:
-                    point = _user.Head.position;
-                    return _locomotion.Mode == LocomotionMode.Following;
-            }
+            if (_locomotion.IsMoving)
+                _lookTargetSince = _clock.Now;
+            var user = _user.Head.position;
+            var held = _clock.Now - _lookTargetSince < _settings.look.pointHoldSeconds;
+            var attention = Attention.Resolve(_lookTarget.Kind, held, _conversation != ConversationState.Idle,
+                                              _locomotion.Mode == LocomotionMode.Following,
+                                              Vector3.ProjectOnPlane(user - transform.position, Vector3.up).magnitude,
+                                              _settings.look);
+            point = attention == AttentionTarget.Point ? _lookTarget.Point : user;
+            return attention;
         }
 
         /// <summary>Shrinks to nothing, moves at the midpoint, grows back.</summary>

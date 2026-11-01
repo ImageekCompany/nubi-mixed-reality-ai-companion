@@ -1,4 +1,5 @@
 using Jolly.Character;
+using Jolly.Contracts;
 using NUnit.Framework;
 using UnityEngine;
 
@@ -68,6 +69,59 @@ namespace Jolly.Tests.PlayMode.Character
 
             Assert.That(yaw, Is.EqualTo(45f).Within(1e-3f));
             Assert.That(pitch, Is.EqualTo(-35.264f).Within(1e-2f));
+        }
+
+        [Test]
+        public void LookAtSolver_Yaw_IgnoresThePitchOfTheForward()
+        {
+            var pitchedForward = Quaternion.Euler(-50f, 0f, 0f) * Vector3.forward;
+
+            var yaw = LookAtSolver.Yaw(pitchedForward, new Vector3(1f, -0.3f, 1f), Vector3.up);
+
+            Assert.That(yaw, Is.EqualTo(45f).Within(1e-3f));
+        }
+
+        [TestCase(LookTargetKind.None, false, ConversationState.Speaking, AttentionTarget.User)]
+        [TestCase(LookTargetKind.None, false, ConversationState.Listening, AttentionTarget.User)]
+        [TestCase(LookTargetKind.None, false, ConversationState.Thinking, AttentionTarget.User)]
+        [TestCase(LookTargetKind.WorldPoint, true, ConversationState.Speaking, AttentionTarget.Point)]
+        [TestCase(LookTargetKind.WorldPoint, false, ConversationState.Speaking, AttentionTarget.User)]
+        [TestCase(LookTargetKind.User, false, ConversationState.Idle, AttentionTarget.User)]
+        public void Attention_Resolve_ConversationAttendsTheUserUnlessAPointHolds(
+            LookTargetKind requested, bool pointHeld, ConversationState state, AttentionTarget expected)
+        {
+            var far = Look.attendWithin + 5f;
+
+            var attention = Attention.Resolve(requested, pointHeld, state != ConversationState.Idle, false, far, Look);
+
+            Assert.That(attention, Is.EqualTo(expected));
+        }
+
+        [TestCase(1f, false, AttentionTarget.User)]
+        [TestCase(10f, false, AttentionTarget.None)]
+        [TestCase(10f, true, AttentionTarget.User)]
+        public void Attention_Resolve_IdleWithoutATarget_AttendsANearOrFollowedUser(float distance, bool following,
+                                                                                    AttentionTarget expected)
+        {
+            var attention = Attention.Resolve(LookTargetKind.None, false, false, following, distance, Look);
+
+            Assert.That(attention, Is.EqualTo(expected));
+        }
+
+        [Test]
+        public void Attention_BodyTurnStep_CapsAtTheTurnSpeed()
+        {
+            Assert.That(Attention.BodyTurnStep(-120f, 150f, 0.1f), Is.EqualTo(-15f).Within(1e-4f));
+        }
+
+        [Test]
+        public void Attention_BodyTurnStep_EasesOutAndNeverOvershoots()
+        {
+            var near = Attention.BodyTurnStep(10f, 150f, 0.1f);
+            var last = Attention.BodyTurnStep(1f, 150f, 0.1f);
+
+            Assert.That(near, Is.LessThan(15f).And.GreaterThan(0f));
+            Assert.That(last, Is.EqualTo(1f));
         }
 
         [Test]

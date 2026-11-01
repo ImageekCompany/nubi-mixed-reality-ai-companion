@@ -71,7 +71,8 @@ namespace Jolly.Tests.PlayMode.Character
         void PutUser(Vector3 floor) => _rig.User.Head = new Pose(floor + Vector3.up * 1.6f, Quaternion.identity);
 
         /// <summary>Runs the app's loop for scaledSeconds or until stopWhen holds: the clock follows game time, the
-        /// monitor polls every frame, and frames where Nubi moved faster than it can walk are counted as jumps.</summary>
+        /// monitor polls every frame, and frames where Nubi moved across the floor faster than it can walk are counted as
+        /// jumps.</summary>
         async UniTask Run(float scaledSeconds, Func<bool> stopWhen = null, Action<float> eachFrame = null)
         {
             var start = Time.time;
@@ -84,7 +85,8 @@ namespace Jolly.Tests.PlayMode.Character
                 _monitor.Tick();
                 await UniTask.Yield(PlayerLoopTiming.Update);
                 var position = _rig.Nubi.Position;
-                if (Vector3.Distance(last, position) > MaxWalkSpeed * Time.deltaTime + 0.02f)
+                // Flat: the agent settling 3 cm onto the NavMesh surface in a sub-millisecond frame is not a jump.
+                if (FlatDistance(last, position) > MaxWalkSpeed * Time.deltaTime + 0.02f)
                     _jumps++;
                 last = position;
             }

@@ -42,6 +42,7 @@ namespace Jolly.App.Composition
         public RoomScanMonitor Room { get; private set; }
         public ConversationServices Conversation { get; private set; }
         public IdleScheduler Idle { get; private set; }
+        public LookTelemetry Look { get; private set; }
         public SceneRefs Scene { get; private set; }
         /// <summary>Completes once permissions are settled and the loops have started.</summary>
         public UniTask WhenRunning => _running.Task;
@@ -91,6 +92,7 @@ namespace Jolly.App.Composition
                 edges.WrapMasks(scene.maskOverlay), Room, new RoomContext(Room, Xr.World, Xr.User, roomSettings),
                 edges.ModelReplies, d);
             d.Add(new StatusRelay(Cloud.Connectivity, scene.permissions, scene.status));
+            Look = d.Add(new LookTelemetry(f.Machine, scene.nubi, Xr.User, f.Log));
             d.Add(new SettingsRouter(scene.settings, Personas, Text, Conversation.Controller, f.Log, appCt));
             var offline = Speech.Offline;
             offline.CaptionStarted += f.Events.RaiseCaptionStarted;

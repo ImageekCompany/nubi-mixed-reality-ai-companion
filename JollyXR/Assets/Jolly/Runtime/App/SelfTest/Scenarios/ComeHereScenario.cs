@@ -12,7 +12,8 @@ namespace Jolly.App.SelfTest.Scenarios
     /// gives a fallback floor around the user (ADR-0025), so the walk passes on it and navmesh=fallback says so. Only
     /// with no walkable area at all is it degraded: the tool then answers 'unreachable' and the model explains it.
     /// The guard's walk answers with a canned line and no model round (ADR-0037): a model request, or first audio
-    /// later than <see cref="GuardFirstAudioBudgetMs"/> after release, degrades.
+    /// later than <see cref="GuardFirstAudioBudgetMs"/> after release, degrades. Its first audio plays as the walk
+    /// starts, so facing is checked once Nubi has arrived and turned to the user (ADR-0041), not at first audio.
     /// </summary>
     public static class ComeHereScenario
     {
@@ -21,12 +22,14 @@ namespace Jolly.App.SelfTest.Scenarios
         // The scan timeout (8 s after the scene permission) has normally passed by now; this covers a slow start.
         const double RoomSettleSeconds = 15;
         static readonly TimeSpan ArrivalWait = TimeSpan.FromSeconds(10);
+        /// <summary>A 180° turn in place takes about 1.5 s at bodyTurnSpeed.</summary>
+        const double FaceSettleSeconds = 3;
 
         public static async UniTask<ScenarioResult> Run(SelfTestContext c, CancellationToken ct)
         {
             var room = c.Graph.Room;
             await c.WaitUntil(() => room.Status != RoomScanStatus.Pending, RoomSettleSeconds, ct);
-            var r = await VoiceTurnScenario.Run(c, Name, c.Assets.comeHere, ToolNames.ComeHere, ct);
+            var r = await VoiceTurnScenario.Run(c, Name, c.Assets.comeHere, ToolNames.ComeHere, ct, checkFacing: false);
             var latency = c.Graph.Foundation.Latency;
             var firstAudio = latency.Between(LatencyMark.PttReleased, LatencyMark.FirstAudioPlayed);
             var modelCalled = !double.IsNaN(latency.Between(LatencyMark.PttReleased, LatencyMark.LlmRequestSent));
@@ -43,7 +46,15 @@ namespace Jolly.App.SelfTest.Scenarios
                 r.Degrade("no walkable floor (no Space Setup and no fallback floor): the tool answered without moving");
                 return r;
             }
-            r.Check(!outcome.IsTimeout && outcome.Result == MoveOutcome.Arrived, "Nubi did not walk to the user");
+            if (r.Check(!outcome.IsTimeout && outcome.Result == MoveOutcome.Arrived, "Nubi did not walk to the user"))
+            {
+                await c.WaitUntil(() => nubi.TryMeasureUser(out var b, out var h)
+                                        && b <= TurnChecks.MaxBodyYawOff && h <= TurnChecks.MaxHeadYawOff,
+                                  FaceSettleSeconds, ct);
+                nubi.TryMeasureUser(out var body, out var head);
+                r.Metric("look_after_arrival", TurnChecks.Look(body, head));
+                TurnChecks.FacingWithin(r, body, head, "arrived");
+            }
             if (modelCalled)
                 r.Degrade("the turn sent a model request although the guard's walk answers it locally");
             if (!(firstAudio <= GuardFirstAudioBudgetMs))
