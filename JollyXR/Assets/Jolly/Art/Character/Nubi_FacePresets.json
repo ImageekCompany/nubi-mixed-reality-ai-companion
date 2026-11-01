@@ -1,0 +1,44 @@
+{
+  "weightScale": "0..1 (multiply by 100 for SkinnedMeshRenderer.SetBlendShapeWeight)",
+  "presets": {
+    "Idle": {},
+    "Walk": {
+      "Smile": 0.3
+    },
+    "Hop": {
+      "Smile": 0.6
+    },
+    "Talk": {},
+    "Listen": {
+      "Smile": 0.35
+    },
+    "Think": {
+      "U": 0.6
+    },
+    "Wave": {
+      "Smile": 0.8
+    },
+    "Point": {
+      "Smile": 0.3,
+      "Wide_Eyes": 0.3
+    },
+    "Happy": {
+      "Smile": 1.0,
+      "Happy_Eyes": 1.0
+    },
+    "Nod": {
+      "Smile": 0.45
+    },
+    "ShakeHead": {
+      "Frown": 0.5
+    },
+    "Sad": {
+      "Frown": 1.0,
+      "Sad_Eyes": 1.0
+    },
+    "Surprised": {
+      "O": 1.0,
+      "Wide_Eyes": 1.0
+    }
+  }
+}
