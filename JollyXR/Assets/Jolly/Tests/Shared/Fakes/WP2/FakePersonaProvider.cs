@@ -3,10 +3,11 @@ using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using Jolly.Contracts;
+using Jolly.Core.Personas;
 
 namespace Jolly.Testing.Conversation
 {
-    public sealed class FakePersonaProvider : IPersonaProvider
+    public sealed class FakePersonaProvider : IPersonaProvider, IPersonaDirectory
     {
         readonly Dictionary<string, PersonaProfile> _profiles = new();
 
@@ -23,7 +24,9 @@ namespace Jolly.Testing.Conversation
         public IReadOnlyList<string> AvailableIds => new List<string>(_profiles.Keys);
         public string PendingSwitchId { get; private set; }
         public int ApplyCount { get; private set; }
+        public Dictionary<string, string> Greetings { get; } = new();
         public event Action<PersonaProfile> Changed;
+        public event Action SwitchRequested;
 
         public static PersonaProfile Profile(string id, bool persistMemory = true, bool crisisHandoff = false,
                                              string safetyNotice = null) => new()
@@ -37,6 +40,7 @@ namespace Jolly.Testing.Conversation
             if (!_profiles.ContainsKey(id))
                 return false;
             PendingSwitchId = id;
+            SwitchRequested?.Invoke();
             return true;
         }
 
@@ -50,5 +54,7 @@ namespace Jolly.Testing.Conversation
             Changed?.Invoke(profile);
             return UniTask.FromResult(true);
         }
+
+        public string GreetingFor(string id) => Greetings.TryGetValue(id, out var greeting) ? greeting : null;
     }
 }

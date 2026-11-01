@@ -10,7 +10,7 @@ namespace Jolly.Core.Personas
     /// Resolves <see cref="PersonaDefinition"/>s into <see cref="PersonaProfile"/>s for the current locale. A switch is only
     /// recorded by <see cref="RequestSwitch"/>; the controller applies it between turns (architecture §3).
     /// </summary>
-    public sealed class PersonaRepository : IPersonaProvider, IDisposable
+    public sealed class PersonaRepository : IPersonaProvider, IPersonaDirectory, IDisposable
     {
         public const string Table = "Personas";
 
@@ -36,12 +36,14 @@ namespace Jolly.Core.Personas
         public IReadOnlyList<string> AvailableIds => _ids;
         public string PendingSwitchId { get; private set; }
         public event Action<PersonaProfile> Changed;
+        public event Action SwitchRequested;
 
         public bool RequestSwitch(string id)
         {
             if (id == null || !_definitions.ContainsKey(id))
                 return false;
             PendingSwitchId = id;
+            SwitchRequested?.Invoke();
             return true;
         }
 
@@ -56,7 +58,6 @@ namespace Jolly.Core.Personas
             return UniTask.FromResult(true);
         }
 
-        /// <summary>The persona's localized greeting, or null when it has none.</summary>
         public string GreetingFor(string id) =>
             id != null && _definitions.TryGetValue(id, out var d) ? Text(d.GreetingKey) : null;
 

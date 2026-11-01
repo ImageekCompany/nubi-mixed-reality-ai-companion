@@ -62,7 +62,9 @@ namespace Jolly.Tests.EditMode.Core.Personas
         {
             using var personas = Create();
             var changed = 0;
+            var requested = 0;
             personas.Changed += _ => changed++;
+            personas.SwitchRequested += () => requested++;
 
             Assert.That(personas.RequestSwitch("guru"), Is.True);
             Assert.That(personas.RequestSwitch("pirate"), Is.False);
@@ -70,6 +72,7 @@ namespace Jolly.Tests.EditMode.Core.Personas
             Assert.That(personas.PendingSwitchId, Is.EqualTo("guru"));
             Assert.That(personas.Current.Id, Is.EqualTo("companion"));
             Assert.That(changed, Is.Zero);
+            Assert.That(requested, Is.EqualTo(1), "only an accepted request is announced");
         }
 
         [Test]
