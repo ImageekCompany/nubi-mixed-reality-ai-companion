@@ -34,6 +34,11 @@ JollyXR/Assets/Jolly/Local/
 JollyXR/Assets/Jolly/Local.meta
 docs/art/local/
 
+# Local-only Jolly demo skin derived from the source above (tools/blender/build_jolly.py, docs/art/jolly-demo.md):
+# FBX, textures, materials, prefab, definition and their .meta files. Never commit or publish.
+/JollyXR/Assets/Jolly/Art/Private/
+/JollyXR/Assets/Jolly/Art/Private.meta
+
 # Blender build outputs (regenerate with tools/blender/build_nubi.py)
 tools/blender/out/
 *.blend1
