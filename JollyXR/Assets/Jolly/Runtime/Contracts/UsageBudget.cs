@@ -20,8 +20,8 @@ namespace Jolly.Contracts
     /// <summary>
     /// Persisted, cross-session spend meter for the project's Meta API budget.
     /// Prices come from JollyConfig (per-model table); unknown models are priced at the most expensive known rate.
+    /// HardCapUsd is a per-device sub-budget of the project's $140; docs/api-spend.md is the project-wide ledger.
     /// </summary>
-    /// <summary>HardCapUsd is a per-device sub-budget of the project's $140; docs/api-spend.md is the project-wide ledger.</summary>
     public interface IApiUsageMeter : IDisposable
     {
         decimal SpentUsd { get; }

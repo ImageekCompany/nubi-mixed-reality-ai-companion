@@ -1,5 +1,6 @@
 using System;
 using System.Buffers;
+using Jolly.Audio.Resampling;
 using Jolly.Contracts;
 using UnityEngine;
 
@@ -7,7 +8,8 @@ namespace Jolly.Audio.Output
 {
     /// <summary>
     /// Converts a baked AudioClip (Decompress On Load, so GetData works) to one mono s16 chunk at the speech rate,
-    /// down-mixing and linearly resampling when needed. Main thread only.
+    /// down-mixing and, for an off-rate clip, resampling with the capture path's anti-aliased <see cref="Resampler"/>.
+    /// Main thread only.
     /// </summary>
     public static class ClipPcm
     {
@@ -15,40 +17,45 @@ namespace Jolly.Audio.Output
         {
             var channels = clip.channels;
             var frames = clip.samples;
-            var interleaved = ArrayPool<float>.Shared.Rent(frames * channels);
+            var pool = ArrayPool<float>.Shared;
+            var interleaved = pool.Rent(frames * channels);
+            float[] resampled = null;
             try
             {
                 // The rented array may be longer than the clip; Unity warns on every oversized read.
                 if (!clip.GetData(interleaved.AsSpan(0, frames * channels), 0))
                     throw new ArgumentException($"Cannot read samples of clip '{clip.name}'; import it as Decompress On Load.", nameof(clip));
 
-                var length = (int)((long)frames * targetSampleRate / clip.frequency);
+                DownMixInPlace(interleaved, frames, channels);
+                var resampler = new Resampler(clip.frequency, targetSampleRate);
+                resampled = pool.Rent(resampler.MaxOutputLength(frames));
+                var length = resampler.Process(interleaved.AsSpan(0, frames), resampled);
+
                 var chunk = PcmChunk.Rent(length, targetSampleRate);
-                var ratio = (double)clip.frequency / targetSampleRate;
-                for (var i = 0; i < length; i++)
-                {
-                    var position = i * ratio;
-                    var index = (int)position;
-                    var a = Mono(interleaved, index, channels);
-                    var b = index + 1 < frames ? Mono(interleaved, index + 1, channels) : a;
-                    var sample = a + (b - a) * (float)(position - index);
-                    chunk.Buffer[i] = (short)Math.Clamp((int)(sample * 32767f), short.MinValue, short.MaxValue);
-                }
+                Pcm16.FromFloat(resampled.AsSpan(0, length), chunk.Buffer);
                 return chunk;
             }
             finally
             {
-                ArrayPool<float>.Shared.Return(interleaved);
+                pool.Return(interleaved);
+                if (resampled != null)
+                    pool.Return(resampled);
             }
         }
 
-        static float Mono(float[] interleaved, int frame, int channels)
+        // Frame i is written to index i, which never passes the frame's own interleaved start (i * channels).
+        static void DownMixInPlace(float[] interleaved, int frames, int channels)
         {
-            var sum = 0f;
-            var at = frame * channels;
-            for (var c = 0; c < channels; c++)
-                sum += interleaved[at + c];
-            return sum / channels;
+            if (channels == 1)
+                return;
+            for (var frame = 0; frame < frames; frame++)
+            {
+                var sum = 0f;
+                var at = frame * channels;
+                for (var c = 0; c < channels; c++)
+                    sum += interleaved[at + c];
+                interleaved[frame] = sum / channels;
+            }
         }
     }
 }
