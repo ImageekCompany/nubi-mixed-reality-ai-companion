@@ -15,6 +15,10 @@ using NUnit.Framework;
 
 namespace Jolly.Tests.EditMode.Core.Conversation
 {
+    // WP3's Jolly.Testing fakes of the same names script ASR differently (partials only after the audio ends).
+    using FakeAudioCapture = Jolly.Testing.Conversation.FakeAudioCapture;
+    using ScriptedSpeechToText = Jolly.Testing.Conversation.ScriptedSpeechToText;
+
     /// <summary>The real controller, pipeline, state machine and memories over scripted voice, agent and speech fakes.</summary>
     sealed class ConversationFixture : IDisposable
     {
