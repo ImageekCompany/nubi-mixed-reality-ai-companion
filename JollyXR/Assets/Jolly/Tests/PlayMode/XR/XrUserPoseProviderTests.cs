@@ -80,5 +80,48 @@ namespace Jolly.Tests.PlayMode.XR
             Assert.That(latest.position.x, Is.EqualTo(1f).Within(1e-5f));
             Assert.That(_provider.TryGetHeadAt(start - 10.0, out _), Is.False);
         }
+
+        [UnityTest]
+        public IEnumerator TryGetHeadAt_WithPredictionLead_StampsPosesAtTheirDisplayTime()
+        {
+            var leading = new GameObject("leading");
+            leading.transform.SetParent(_root.transform);
+            var provider = leading.AddComponent<XrUserPoseProvider>();
+            provider.Construct(_head, _hands, headPoseLeadSeconds: 10.0);
+            yield return null;
+
+            Assert.That(provider.TryGetHeadAt(Time.realtimeSinceStartupAsDouble + 5.0, out _), Is.False,
+                "every recorded pose is predicted for 10 s after its frame");
+            Assert.That(provider.TryGetHeadAt(Time.realtimeSinceStartupAsDouble + 11.0, out _), Is.True);
+        }
+
+        [Test]
+        public void TryGetPointingRay_NoPointingHand_FallsBackToTheActiveControllerAim()
+        {
+            var aim = new GameObject("aim").transform;
+            aim.SetParent(_root.transform);
+            aim.SetPositionAndRotation(new Vector3(0.2f, 1.2f, 0f), Quaternion.Euler(0f, 90f, 0f));
+            _provider.Construct(_head, _hands, aim);
+            _hands.Set(Handedness.Right, HandPoses.Fist(Pose.identity));
+
+            Assert.That(_provider.TryGetPointingRay(out var ray), Is.True);
+            Assert.That(ray.origin, Is.EqualTo(aim.position));
+            Assert.That(Vector3.Angle(ray.direction, Vector3.right), Is.LessThan(1f));
+
+            aim.gameObject.SetActive(false);
+            Assert.That(_provider.TryGetPointingRay(out _), Is.False, "an inactive aim is an untracked controller");
+        }
+
+        [Test]
+        public void TryGetPointingRay_PointingHand_WinsOverTheControllerAim()
+        {
+            var aim = new GameObject("aim").transform;
+            aim.SetParent(_root.transform);
+            _provider.Construct(_head, _hands, aim);
+            _hands.Set(Handedness.Left, HandPoses.Pointing(new Pose(Vector3.one, Quaternion.Euler(0f, -90f, 0f))));
+
+            Assert.That(_provider.TryGetPointingRay(out var ray), Is.True);
+            Assert.That(Vector3.Angle(ray.direction, Vector3.left), Is.LessThan(1f));
+        }
     }
 }
