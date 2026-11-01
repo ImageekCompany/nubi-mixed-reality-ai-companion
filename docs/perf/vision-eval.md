@@ -21,7 +21,8 @@ Owner: WP4. Pass criterion and fallback: `docs/scope.md` §2 (R6). Budget: ≈ $
   its inclusive pixel box, and, when the hand is in view, the hand-ray point and the hand key points that
   `CameraMath.WorldToPixel` projected at capture time.
 - **Harness:** `tools/vision-eval/vision_eval.py` (stdlib Python). Per frame it runs every vision variant (streamed, as
-  the app does) and then three SAM calls with the app's request shape (`one_bit`, confidence, non-streaming):
+  the app does) and then three SAM calls with the app's request shape (`one_bit`, confidence, streamed; latency is
+  taken at `output_text.done` as `SamSegmenter` does):
   centre point (+ hand negatives), hand point (+ negatives) when annotated, and the first parsed noun phrase.
   A SAM **hit** is a returned box with IoU ≥ 0.5 against the annotated box.
 - **Privacy:** frames are real home imagery, so the harness refuses `-contributor` models (ADR-0004); `store:false`
