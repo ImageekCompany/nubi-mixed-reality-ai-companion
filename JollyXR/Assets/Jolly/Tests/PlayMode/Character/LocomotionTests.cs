@@ -6,6 +6,7 @@ using Cysharp.Threading.Tasks;
 using Jolly.Contracts;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.AI;
 using UnityEngine.TestTools;
 
 namespace Jolly.Tests.PlayMode.Character
@@ -68,6 +69,26 @@ namespace Jolly.Tests.PlayMode.Character
             Assert.That(await first, Is.EqualTo(MoveOutcome.Cancelled));
             Assert.That(await _rig.Nubi.WhenArrived(CancellationToken.None), Is.EqualTo(MoveOutcome.Arrived));
             Assert.That(Vector3.Distance(_rig.Nubi.Position, second), Is.LessThan(0.3f));
+        });
+
+        [UnityTest]
+        public IEnumerator TryStartMoveTo_AwaiterStopsOnCancelled_StopWins() => UniTask.ToCoroutine(async () =>
+        {
+            // Arrange
+            _rig.Nubi.TryStartMoveTo(Target, 0.15f, out _);
+            var reaction = StopWhenCancelled(_rig.Nubi.WhenArrived(CancellationToken.None));
+            await UniTask.DelayFrame(5);
+
+            // Act
+            _rig.Nubi.TryStartMoveTo(new Vector3(-1.5f, 0f, 1f), 0.15f, out _);
+            var second = _rig.Nubi.WhenArrived(CancellationToken.None);
+
+            // Assert
+            await reaction;
+            Assert.That(_rig.Nubi.Mode, Is.EqualTo(LocomotionMode.None));
+            Assert.That(_rig.Nubi.IsMoving, Is.False);
+            Assert.That(second.Status, Is.EqualTo(UniTaskStatus.Succeeded));
+            Assert.That(await second, Is.EqualTo(MoveOutcome.Cancelled));
         });
 
         [UnityTest]
@@ -147,6 +168,28 @@ namespace Jolly.Tests.PlayMode.Character
             Assert.That(_rig.Nubi.Mode, Is.EqualTo(LocomotionMode.Following));
             Assert.That(Vector3.Angle(_rig.Nubi.Forward, Vector3.forward), Is.LessThan(30f), "faces the user");
         });
+
+        [UnityTest]
+        public IEnumerator Follow_UserTwoMetresAwayStanding_WalksInsteadOfCatchingUp() => UniTask.ToCoroutine(async () =>
+        {
+            // Arrange
+            var agent = _rig.Nubi.GetComponent<NavMeshAgent>();
+            _rig.User.Head = new Pose(new Vector3(0f, 1.6f, 2f), Quaternion.identity);
+
+            // Act
+            _rig.Nubi.Follow(1.0f, 1.5f);
+            var moving = await CharacterTestRig.Until(() => _rig.Nubi.IsMoving, 1f);
+
+            // Assert
+            Assert.That(moving, Is.True);
+            Assert.That(agent.speed, Is.EqualTo(_rig.Nubi.Settings.locomotion.walkSpeed));
+        });
+
+        async UniTask StopWhenCancelled(UniTask<MoveOutcome> arrival)
+        {
+            if (await arrival == MoveOutcome.Cancelled)
+                _rig.Nubi.Stop();
+        }
     }
 }
 #endif

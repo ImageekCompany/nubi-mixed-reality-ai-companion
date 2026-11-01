@@ -49,11 +49,11 @@ namespace Jolly.Character
 
         public bool TryStartMoveTo(Vector3 target, float stopDistance, out float etaSeconds)
         {
-            Finish(MoveOutcome.Cancelled);
+            Halt();
             etaSeconds = 0f;
             if (!TryPlan(target, out var length))
             {
-                _command = Completed(MoveOutcome.Unreachable);
+                Supersede(LocomotionMode.None, Completed(MoveOutcome.Unreachable));
                 return false;
             }
 
@@ -62,8 +62,7 @@ namespace Jolly.Character
             _agent.SetPath(_path);
             etaSeconds = length / _s.walkSpeed;
             _deadline = _clock.Now + 2f * etaSeconds + _s.timeoutSlack;
-            _command = new UniTaskCompletionSource<MoveOutcome>();
-            Mode = LocomotionMode.MovingTo;
+            Supersede(LocomotionMode.MovingTo, new UniTaskCompletionSource<MoveOutcome>());
             return true;
         }
 
@@ -72,13 +71,12 @@ namespace Jolly.Character
 
         public void Follow(float distanceMin, float distanceMax)
         {
-            Finish(MoveOutcome.Cancelled);
+            Halt();
             _followMin = distanceMin;
             _followMax = distanceMax;
             _nextRepath = 0d;
             _hasFollowGoal = false;
-            _command = new UniTaskCompletionSource<MoveOutcome>();
-            Mode = LocomotionMode.Following;
+            Supersede(LocomotionMode.Following, new UniTaskCompletionSource<MoveOutcome>());
         }
 
         public void Stop() => Finish(MoveOutcome.Cancelled);
@@ -124,7 +122,7 @@ namespace Jolly.Character
             if (!TryPlan(goal, out _))
                 return;
 
-            var far = (user - self).sqrMagnitude > _s.catchUpDistance * _s.catchUpDistance;
+            var far = Vector3.ProjectOnPlane(user - self, Vector3.up).sqrMagnitude > _s.catchUpDistance * _s.catchUpDistance;
             _agent.speed = far ? _s.catchUpSpeed : _s.walkSpeed;
             _agent.stoppingDistance = FollowStopDistance;
             _agent.SetPath(_path);
@@ -132,12 +130,22 @@ namespace Jolly.Character
             _hasFollowGoal = true;
         }
 
-        /// <summary>State first, then the result: awaiters continue synchronously inside TrySetResult.</summary>
+        /// <summary>State first, then the result: awaiters continue synchronously inside TrySetResult and may issue
+        /// the next command, which must not be overwritten afterwards.</summary>
         void Finish(MoveOutcome outcome)
         {
             Mode = LocomotionMode.None;
             Halt();
             _command.TrySetResult(outcome);
+        }
+
+        /// <inheritdoc cref="Finish"/>
+        void Supersede(LocomotionMode mode, UniTaskCompletionSource<MoveOutcome> next)
+        {
+            var previous = _command;
+            _command = next;
+            Mode = mode;
+            previous.TrySetResult(MoveOutcome.Cancelled);
         }
 
         void Halt()
