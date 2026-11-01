@@ -23,6 +23,7 @@ Each work package appends bullets under its own heading only (`docs/scope.md` §
 - `ResponsesChatModel : IChatModel` on `POST /v1/responses` (`store:false`, encrypted-reasoning replay, flat tools, `UserImage` → `input_image` data URL); every request reserves budget and is settled once with actual usage or an abort estimate.
 - `Core/Usage`: `PriceTable` (unknown model → most expensive rates) and persisted `ApiUsageMeter` with reservations, estimates, 2 s debounced atomic saves and `Flush`.
 - Recorded Responses SSE fixtures (contributor model, synthetic prompts, ≈ $0.0004) plus hand-written `response.failed`/`error` fixtures; `RecordingUsageMeter` fake.
+- Review fixes: SSE decode buffer sized for a carried-over surrogate pair; the meter refuses a second settle and moves an unreadable `usage.json` to `usage.json.bad`; null or mistyped stream fields map to `ProviderException`; abort estimates bill input once per attempt not refused with a status; a completed stream is read to its end instead of aborted.
 
 ### WP2
 
