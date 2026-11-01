@@ -137,6 +137,9 @@ namespace Jolly.Core.Conversation
                         _speech.Append(e.Text);
                         break;
                     case AgentEventKind.ToolStarted:
+                        // The preamble often ends without trailing whitespace, so the splitter would hold it and glue the
+                        // next round's first sentence onto it ("On my way!Here I am."). Speak it now (architecture §5.1).
+                        _speech.Finish();
                         toolsRunning++;
                         _machine.Fire(ConversationTrigger.ToolStarted);
                         _events.RaiseToolStarted(e.CallId, e.ToolName);
