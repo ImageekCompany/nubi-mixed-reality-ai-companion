@@ -16,6 +16,10 @@ namespace Jolly.Contracts
         public Vector2Int Resolution { get; }
         public CameraIntrinsics Scaled(float s) => new(FocalLength * s, PrincipalPoint * s,
             new Vector2Int(Mathf.RoundToInt(Resolution.x * s), Mathf.RoundToInt(Resolution.y * s)));
+        /// <summary>Camera-space direction (z = 1) through a top-left-origin pixel. The camera pose has +Y = image up,
+        /// so pixel y flips (ADR-0017). The one projection CameraMath and the mask overlay share (ADR-0018).</summary>
+        public Vector3 PixelToCameraDir(Vector2 px) =>
+            new((px.x - PrincipalPoint.x) / FocalLength.x, -(px.y - PrincipalPoint.y) / FocalLength.y, 1f);
     }
 
     /// <summary>One captured frame, already converted to the requested size. Pixels live in the frame source's buffer;

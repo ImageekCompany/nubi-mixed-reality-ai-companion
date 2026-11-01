@@ -14,9 +14,8 @@ namespace Jolly.Presentation
         public static Pose Place(RectInt box, CameraIntrinsics intrinsics, Pose camera, float distanceMeters, out Vector2 size)
         {
             var f = intrinsics.FocalLength;
-            var c = intrinsics.PrincipalPoint;
             var centre = new Vector2(box.x + box.width * 0.5f, box.y + box.height * 0.5f);
-            var direction = new Vector3((centre.x - c.x) / f.x, -(centre.y - c.y) / f.y, 1f);
+            var direction = intrinsics.PixelToCameraDir(centre);
             var depth = distanceMeters / direction.magnitude;
 
             size = new Vector2(box.width / f.x * depth, box.height / f.y * depth);
