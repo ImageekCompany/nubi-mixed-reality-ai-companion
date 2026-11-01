@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using Jolly.Character;
 using UnityEditor;
@@ -12,7 +11,8 @@ namespace Jolly.Editor.Character
 {
     /// <summary>
     /// Regenerates every derived Nubi asset from Nubi.fbx: materials (remapped into the model import), the Animator
-    /// controller and Nubi.prefab. Deterministic, so a rebuild after a Blender change is one command:
+    /// controller and Nubi.prefab, the character shell every other character swaps its model into (ADR-0026). The
+    /// definition's values are kept. Deterministic, so a rebuild after a Blender change is one command:
     /// <c>Unity -batchmode -quit -projectPath JollyXR -executeMethod Jolly.Editor.Character.NubiPrefabBuilder.Build</c>.
     /// </summary>
     public static class NubiPrefabBuilder
@@ -38,13 +38,34 @@ namespace Jolly.Editor.Character
             RemapModelMaterials(("M_Nubi_Skin", skin), ("M_Nubi_Gloss", gloss));
 
             var model = Load<GameObject>(NubiAssetPaths.Model);
-            var settings = new NubiCharacterSettings();
-            var controller = NubiAnimatorBuilder.Build(model, LoadClips(), settings.locomotion);
-            SavePrefab(model, controller, blob);
+            var definition = UpsertDefinition(model);
+            var controller = CharacterAnimatorBuilder.Build(definition, NubiAssetPaths.Controller, NubiAssetPaths.UpperBodyMask);
+            SavePrefab(model, definition, controller, blob);
             AssetDatabase.SaveAssets();
         }
 
-        static void SavePrefab(GameObject model, RuntimeAnimatorController controller, Material blobShadow)
+        /// <summary>
+        /// The definition holds Nubi's tuning, so a rebuild keeps every value in it and only re-points the generated
+        /// references. A missing one is created with the contract defaults, which are Nubi's.
+        /// </summary>
+        static CharacterDefinition UpsertDefinition(GameObject model)
+        {
+            var definition = AssetDatabase.LoadAssetAtPath<CharacterDefinition>(NubiAssetPaths.Definition);
+            if (definition == null)
+            {
+                definition = ScriptableObject.CreateInstance<CharacterDefinition>();
+                definition.id = "nubi";
+                definition.displayName = "Nubi";
+                AssetDatabase.CreateAsset(definition, NubiAssetPaths.Definition);
+            }
+            definition.model = model;
+            definition.facePresets = Load<TextAsset>(NubiAssetPaths.FacePresets);
+            EditorUtility.SetDirty(definition);
+            return definition;
+        }
+
+        static void SavePrefab(GameObject model, CharacterDefinition definition, RuntimeAnimatorController controller,
+                               Material blobShadow)
         {
             var root = new GameObject("Nubi");
             try
@@ -61,9 +82,12 @@ namespace Jolly.Editor.Character
                 face.skinnedMotionVectors = false;
 
                 var agent = AddAgent(root);
-                AddCollider(root);
-                AddBlobShadow(root, blobShadow);
-                Bind(root.AddComponent<NubiCharacterController>(), animator, agent, face, instance.transform);
+                var capsule = root.AddComponent<CapsuleCollider>();
+                var shadow = AddBlobShadow(root, blobShadow);
+                CharacterBody.Apply(definition, instance.transform, agent, capsule, shadow);
+                if (!CharacterRig.TryBind(instance, definition, out _, out var error))
+                    throw new InvalidOperationException($"Nubi.fbx does not bind to its definition: {error}.");
+                Bind(root.AddComponent<NubiCharacterController>(), definition, instance, agent, capsule, shadow);
                 PrefabUtility.SaveAsPrefabAsset(root, NubiAssetPaths.Prefab);
             }
             finally
@@ -76,8 +100,6 @@ namespace Jolly.Editor.Character
         static NavMeshAgent AddAgent(GameObject root)
         {
             var agent = root.AddComponent<NavMeshAgent>();
-            agent.radius = 0.22f;
-            agent.height = 0.9f;
             agent.speed = 0.6f;
             agent.acceleration = 3f;
             agent.angularSpeed = 0f;
@@ -88,15 +110,7 @@ namespace Jolly.Editor.Character
             return agent;
         }
 
-        static void AddCollider(GameObject root)
-        {
-            var capsule = root.AddComponent<CapsuleCollider>();
-            capsule.center = new Vector3(0f, 0.45f, 0f);
-            capsule.radius = 0.3f;
-            capsule.height = 0.9f;
-        }
-
-        static void AddBlobShadow(GameObject root, Material material)
+        static Transform AddBlobShadow(GameObject root, Material material)
         {
             var quad = GameObject.CreatePrimitive(PrimitiveType.Quad);
             Object.DestroyImmediate(quad.GetComponent<Collider>());
@@ -104,48 +118,23 @@ namespace Jolly.Editor.Character
             quad.transform.SetParent(root.transform, false);
             quad.transform.localPosition = new Vector3(0f, 0.003f, 0.02f);
             quad.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
-            quad.transform.localScale = new Vector3(0.62f, 0.56f, 1f);
             var renderer = quad.GetComponent<MeshRenderer>();
             renderer.sharedMaterial = material;
             renderer.shadowCastingMode = ShadowCastingMode.Off;
             renderer.receiveShadows = false;
+            return quad.transform;
         }
 
-        static void Bind(NubiCharacterController controller, Animator animator, NavMeshAgent agent,
-                         SkinnedMeshRenderer face, Transform model)
+        static void Bind(NubiCharacterController controller, CharacterDefinition definition, GameObject model,
+                         NavMeshAgent agent, CapsuleCollider capsule, Transform shadow)
         {
             var so = new SerializedObject(controller);
-            so.FindProperty("_animator").objectReferenceValue = animator;
+            so.FindProperty("_definition").objectReferenceValue = definition;
+            so.FindProperty("_model").objectReferenceValue = model;
             so.FindProperty("_agent").objectReferenceValue = agent;
-            so.FindProperty("_faceMesh").objectReferenceValue = face;
-            so.FindProperty("_facePresets").objectReferenceValue = Load<TextAsset>(NubiAssetPaths.FacePresets);
-            so.FindProperty("_bones.chest").objectReferenceValue = Find(model, "Chest");
-            so.FindProperty("_bones.neck").objectReferenceValue = Find(model, "Neck");
-            so.FindProperty("_bones.head").objectReferenceValue = Find(model, "Head");
-            so.FindProperty("_bones.eyeLeft").objectReferenceValue = Find(model, "Eye_L");
-            so.FindProperty("_bones.eyeRight").objectReferenceValue = Find(model, "Eye_R");
+            so.FindProperty("_collider").objectReferenceValue = capsule;
+            so.FindProperty("_contactShadow").objectReferenceValue = shadow;
             so.ApplyModifiedPropertiesWithoutUndo();
-        }
-
-        static Transform Find(Transform root, string name)
-        {
-            var bone = FindOrNull(root, name);
-            if (bone == null)
-                throw new InvalidOperationException($"Nubi.fbx has no '{name}' bone.");
-            return bone;
-        }
-
-        static Transform FindOrNull(Transform root, string name)
-        {
-            if (root.name == name)
-                return root;
-            foreach (Transform child in root)
-            {
-                var found = FindOrNull(child, name);
-                if (found != null)
-                    return found;
-            }
-            return null;
         }
 
         static Material UpsertMaterial(string path, string shaderName, Action<Material> configure)
@@ -173,17 +162,6 @@ namespace Jolly.Editor.Character
             foreach (var (source, target) in remaps)
                 importer.AddRemap(new AssetImporter.SourceAssetIdentifier(typeof(Material), source), target);
             importer.SaveAndReimport();
-        }
-
-        static Dictionary<string, AnimationClip> LoadClips()
-        {
-            var clips = new Dictionary<string, AnimationClip>();
-            foreach (var asset in AssetDatabase.LoadAllAssetsAtPath(NubiAssetPaths.Model))
-            {
-                if (asset is AnimationClip clip && !clip.name.StartsWith("__preview__", StringComparison.Ordinal))
-                    clips[clip.name] = clip;
-            }
-            return clips;
         }
 
         static T Load<T>(string path) where T : Object

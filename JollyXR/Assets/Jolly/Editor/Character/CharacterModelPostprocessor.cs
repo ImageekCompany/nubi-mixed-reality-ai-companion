@@ -7,17 +7,31 @@ using UnityEngine;
 namespace Jolly.Editor.Character
 {
     /// <summary>
-    /// Import settings for Nubi.fbx live in code, not in its .meta (docs/art/nubi/README.md, Unity notes): Generic
-    /// rig, baked axis conversion (otherwise Nubi_Rig keeps a −90° X that Root compensates), bones kept as
-    /// GameObjects for the look-at, and Loop Time on exactly the clips the Blender build marks as loops.
+    /// Import settings for character models live in code, not in their .meta (docs/art/nubi/README.md, Unity notes;
+    /// docs/characters.md). A model is a character model when a <c>&lt;Model&gt;_FacePresets.json</c> sits next to it,
+    /// as the Blender builds write it. Generic rig, baked axis conversion (otherwise the rig object keeps a −90° X that
+    /// Root compensates), bones kept as GameObjects for the look-at, and Loop Time on exactly the clips the build marks
+    /// as loops.
     /// </summary>
-    public sealed class NubiModelPostprocessor : AssetPostprocessor
+    public sealed class CharacterModelPostprocessor : AssetPostprocessor
     {
+        public const string FacePresetsSuffix = "_FacePresets.json";
+
         public override uint GetVersion() => 1;
+
+        /// <summary>The face-preset file of a character model, or null when the asset is not one.</summary>
+        public static string FacePresetsFor(string modelPath)
+        {
+            if (!modelPath.EndsWith(".fbx", StringComparison.OrdinalIgnoreCase))
+                return null;
+            var presets = Path.Combine(Path.GetDirectoryName(modelPath) ?? "",
+                                       Path.GetFileNameWithoutExtension(modelPath) + FacePresetsSuffix).Replace('\\', '/');
+            return File.Exists(presets) ? presets : null;
+        }
 
         void OnPreprocessModel()
         {
-            if (assetPath != NubiAssetPaths.Model)
+            if (FacePresetsFor(assetPath) == null)
                 return;
             var importer = (ModelImporter)assetImporter;
             importer.bakeAxisConversion = true;
@@ -34,10 +48,11 @@ namespace Jolly.Editor.Character
 
         void OnPreprocessAnimation()
         {
-            if (assetPath != NubiAssetPaths.Model)
+            var presets = FacePresetsFor(assetPath);
+            if (presets == null)
                 return;
-            context.DependsOnSourceAsset(NubiAssetPaths.FacePresets);
-            var looping = JsonUtility.FromJson<FacePresetFile>(File.ReadAllText(NubiAssetPaths.FacePresets)).loopingClips
+            context.DependsOnSourceAsset(presets);
+            var looping = JsonUtility.FromJson<FacePresetFile>(File.ReadAllText(presets)).loopingClips
                           ?? Array.Empty<string>();
 
             var importer = (ModelImporter)assetImporter;

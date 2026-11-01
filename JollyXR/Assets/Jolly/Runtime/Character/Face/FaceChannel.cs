@@ -1,6 +1,9 @@
 namespace Jolly.Character
 {
-    /// <summary>Nubi_Mesh blendshapes the face layers drive (docs/art/nubi/README.md, Specs).</summary>
+    /// <summary>
+    /// Canonical face channels the face layers drive. Each character's definition maps them onto its own blendshapes
+    /// or jaw (<see cref="FaceChannelBinding"/>); Nubi's shape keys carry exactly these names.
+    /// </summary>
     public enum FaceChannel
     {
         Silence, A, I, U, E, O,
@@ -12,7 +15,7 @@ namespace Jolly.Character
     {
         public const int Count = 13;
 
-        /// <summary>Blendshape names, indexed by <see cref="FaceChannel"/>.</summary>
+        /// <summary>Canonical channel names, indexed by <see cref="FaceChannel"/>: face presets and definitions use them.</summary>
         public static readonly string[] ShapeNames =
         {
             "sil", "A", "I", "U", "E", "O",

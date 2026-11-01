@@ -8,6 +8,7 @@ namespace Jolly.Editor.Character
 
         const string Content = "Assets/Jolly/Content/Character/Nubi/";
         public const string Prefab = Content + "Nubi.prefab";
+        public const string Definition = Content + "NubiCharacter.asset";
         public const string Controller = Content + "Animator/Nubi.controller";
         public const string UpperBodyMask = Content + "Animator/NubiUpperBody.mask";
         public const string SkinMaterial = Content + "Materials/M_Nubi_Skin.mat";

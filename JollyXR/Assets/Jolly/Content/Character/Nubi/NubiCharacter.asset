@@ -1,0 +1,143 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 640058d78976e4928a5d327a2cd7bcd7, type: 3}
+  m_Name: NubiCharacter
+  m_EditorClassIdentifier: Jolly.Character::Jolly.Character.CharacterDefinition
+  id: nubi
+  displayName: Nubi
+  nameKey: 
+  model: {fileID: 919132149155446097, guid: 636a5a7644956419d8e0b373d5bd178c, type: 3}
+  animatorController: {fileID: 9100000, guid: 6c51f746d6aff4681a611776dca8c69e, type: 2}
+  avatar: {fileID: 0}
+  clips: []
+  facePresets: {fileID: 4900000, guid: 5dbd089ec334d431485906dab8c2ef0c, type: 3}
+  faceMesh: 
+  face:
+  - channel: sil
+    blendShapes:
+    - name: sil
+      weight: 1
+    jawOpen: 0
+  - channel: A
+    blendShapes:
+    - name: A
+      weight: 1
+    jawOpen: 0
+  - channel: I
+    blendShapes:
+    - name: I
+      weight: 1
+    jawOpen: 0
+  - channel: U
+    blendShapes:
+    - name: U
+      weight: 1
+    jawOpen: 0
+  - channel: E
+    blendShapes:
+    - name: E
+      weight: 1
+    jawOpen: 0
+  - channel: O
+    blendShapes:
+    - name: O
+      weight: 1
+    jawOpen: 0
+  - channel: Smile
+    blendShapes:
+    - name: Smile
+      weight: 1
+    jawOpen: 0
+  - channel: Frown
+    blendShapes:
+    - name: Frown
+      weight: 1
+    jawOpen: 0
+  - channel: Blink_L
+    blendShapes:
+    - name: Blink_L
+      weight: 1
+    jawOpen: 0
+  - channel: Blink_R
+    blendShapes:
+    - name: Blink_R
+      weight: 1
+    jawOpen: 0
+  - channel: Happy_Eyes
+    blendShapes:
+    - name: Happy_Eyes
+      weight: 1
+    jawOpen: 0
+  - channel: Wide_Eyes
+    blendShapes:
+    - name: Wide_Eyes
+      weight: 1
+    jawOpen: 0
+  - channel: Sad_Eyes
+    blendShapes:
+    - name: Sad_Eyes
+      weight: 1
+    jawOpen: 0
+  jaw:
+    bone: 
+    openRotation: {x: 0, y: 0, z: 0}
+  bones:
+    chest: Chest
+    neck: Neck
+    head: Head
+    eyeLeft: Eye_L
+    eyeRight: Eye_R
+    upperBody: Spine
+  scale: 1
+  height: 0.9
+  agentRadius: 0.22
+  colliderRadius: 0.3
+  contactShadowRadius: {x: 0.31, y: 0.28}
+  tuning:
+    locomotion:
+      walkSpeed: 0.6
+      catchUpSpeed: 1.2
+      catchUpDistance: 2.5
+      acceleration: 3
+      sampleRadius: 0.5
+      turnSpeed: 240
+      timeoutSlack: 3
+      followRepathInterval: 0.25
+      followRepathDistance: 0.3
+      walkClipSpeed: 0.49
+      hopClipSpeed: 0.9
+      hopAbove: 0.65
+      minPlaybackRate: 0.7
+      maxPlaybackRate: 1.5
+    look:
+      eyeYawMax: 16
+      eyePitchMax: 8
+      eyeLead: 10
+      headYawMax: 40
+      headPitchMax: 20
+      bodyTurnBeyond: 45
+      bodySettleWithin: 5
+      blendSeconds: 0.25
+      chestShare: 0.2
+      neckShare: 0.3
+    face:
+      presetFadeSeconds: 0.15
+      mouthAttackSeconds: 0.06
+      mouthReleaseSeconds: 0.09
+      blinkIntervalMin: 2
+      blinkIntervalMax: 6
+      doubleBlinkChance: 0.15
+      doubleBlinkGap: 0.12
+      blinkCloseSeconds: 0.06
+      blinkHoldSeconds: 0.03
+      blinkOpenSeconds: 0.09
+      happyEyesBlinkSuppress: 0.5
