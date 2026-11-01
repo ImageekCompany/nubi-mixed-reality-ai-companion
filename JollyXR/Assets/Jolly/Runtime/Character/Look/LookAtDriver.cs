@@ -6,12 +6,18 @@ namespace Jolly.Character
     /// Turns Chest → Neck → Head, then the eyes, toward a world point on top of the animated pose (call after the
     /// Animator has evaluated). Rotations are about the body's own up/right axes, so they hold whatever the bones'
     /// local axes are. Blends in and out over <see cref="LookSettings.blendSeconds"/>.
+    /// The look is relative, so it must start from the animated pose every frame: a bone still holding exactly what
+    /// the last <see cref="Apply"/> wrote was not rewritten by the Animator (culled offscreen, or a bone no clip keys),
+    /// and is put back to its pre-look rotation first instead of turning further each frame.
     /// </summary>
     public sealed class LookAtDriver
     {
         readonly NubiRigBones _bones;
         readonly Transform _body;
         readonly LookSettings _settings;
+        readonly Transform[] _chain;
+        readonly Quaternion[] _animated;
+        readonly Quaternion[] _written;
         LookAngles _angles;
         float _weight;
         bool _bodyTurning;
@@ -21,6 +27,9 @@ namespace Jolly.Character
             _bones = bones;
             _body = body;
             _settings = settings;
+            _chain = new[] { bones.chest, bones.neck, bones.head, bones.eyeLeft, bones.eyeRight };
+            _animated = new Quaternion[_chain.Length];
+            _written = new Quaternion[_chain.Length];
         }
 
         public float Weight => _weight;
@@ -29,6 +38,7 @@ namespace Jolly.Character
         /// <summary>Applies the look and returns the yaw (degrees) the body should still turn, 0 when none.</summary>
         public float Apply(bool hasTarget, Vector3 targetWorld, bool suppressed, float deltaTime)
         {
+            RestoreAnimatedPose();
             var goal = hasTarget && !suppressed ? 1f : 0f;
             _weight = Mathf.MoveTowards(_weight, goal, deltaTime / Mathf.Max(_settings.blendSeconds, 1e-3f));
 
@@ -46,7 +56,21 @@ namespace Jolly.Character
 
             if (_weight > 0f)
                 Pose(_angles, _weight);
+            for (var i = 0; i < _chain.Length; i++)
+                _written[i] = _chain[i].localRotation;
             return bodyYaw;
+        }
+
+        void RestoreAnimatedPose()
+        {
+            for (var i = 0; i < _chain.Length; i++)
+            {
+                var bone = _chain[i];
+                if (bone.localRotation.Equals(_written[i]))
+                    bone.localRotation = _animated[i];
+                else
+                    _animated[i] = bone.localRotation;
+            }
         }
 
         float BodyTurn(float yaw)
