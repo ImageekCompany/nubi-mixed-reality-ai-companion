@@ -18,5 +18,6 @@
 | [0014](0014-localization.md) | Unity Localization, with a locale → ASR/TTS map | accepted |
 | [0015](0015-json-and-wire-parsing.md) | Newtonsoft (bundled), reader-based parsing on hot paths | accepted |
 | [0016](0016-review-revision-2026-11-01.md) | Pre-freeze contract revision after the architecture reviews | accepted |
+| [0017](0017-integration-deviations-wp1-wp10.md) | Deviations accepted when merging WP1–WP10 | accepted |
 
 Review findings and their accept/reject decisions: [review-log.md](review-log.md).

@@ -30,15 +30,16 @@ Root: `JollyXR/Assets/Jolly/`. All runtime asmdefs set `autoReferenced: false`. 
 | `Jolly.Integrations.ULipSync` | `Runtime/Integrations/ULipSync` | Contracts, `uLipSync.Runtime` | `ULipSyncDriver` (wraps the `uLipSync` component's `onLipSyncUpdate` → `MouthShape`). |
 | `Jolly.XR` | `Runtime/XR` | Contracts, `UniTask`, `Unity.XR.ARFoundation`, `Unity.XR.ARSubsystems`, `Unity.XR.CoreUtils`, `Unity.XR.Hands`, `Unity.XR.Interaction.Toolkit`, `Unity.InputSystem`, `Unity.AI.Navigation` | Portable OpenXR layer: `PermissionGate`, `PinchPushToTalk`, `XrUserPoseProvider`, `ArWorldQuery` (Depth raycast + collider raycast + NavMesh sampling), `ArSpatialAnchors`, `FloorNavMeshBuilder`, `SceneOccluders`, `Interaction/` (gaze-dwell, open-palm with the copied `StaticHandGesture` sample, poke detectors), `EditorStillFrameSource` (Editor/Link `ICameraFrameSource` from fixture images). No Meta-specific types. |
 | `Jolly.XR.MetaQuest` | `Runtime/XR.MetaQuest` | Contracts, Jolly.XR, `UniTask`, `Unity.XR.MetaOpenXR`, `Unity.XR.ARFoundation`, `Unity.XR.ARSubsystems` | `MetaPassthroughFrameSource` (`MetaOpenXRCameraSubsystem` CPU image), `Camera2Extrinsics` (JNI via `AndroidJavaObject`). The only assembly that names `UnityEngine.XR.OpenXR.Features.Meta`. |
-| `Jolly.Character` | `Runtime/Character` | Contracts, `UniTask`, `Unity.Animation.Rigging` | `NubiCharacterController` (NavMeshAgent from the built-in AI module), `LookAtDriver` (MultiAimConstraint weights), `GestureDriver`, `BlinkDriver`, `MouthShapeDriver`, `MoodDriver`. |
+| `Jolly.Character` | `Runtime/Character` | Contracts, `UniTask` | `NubiCharacterController` (NavMeshAgent from the built-in AI module), `LookAtDriver` (procedural bone look-at, ADR-0017), `GestureDriver`, `BlinkDriver`, `MouthShapeDriver`, `MoodDriver`. |
 | `Jolly.Localization` | `Runtime/Localization` | Contracts, `UniTask`, `UniTask.Addressables`, `Unity.ResourceManager`, `Unity.Localization` | `UnityLocalizer`, `LocaleVoiceMapAsset`. Awaiting `AsyncOperationHandle` needs `UniTask.Addressables` (its `UNITASK_ADDRESSABLE_SUPPORT` define is on because Addressables is installed) and `Unity.ResourceManager` for the type. |
 | `Jolly.Presentation` | `Runtime/Presentation` | Contracts, `UniTask`, `Unity.TextMeshPro`, `UnityEngine.UI`, `Unity.Localization` | `CaptionView`, `MaskOverlayView` (`IMaskPresenter`), `ToolBadgeView`, `LatencyHud`, `StatusIndicator` (`IStatusSink`), `SettingsPanel` (`IUserPreferences`). Views only: no service logic. |
 | `Jolly.App` | `Runtime/App` | everything above | `JollyBootstrap` (composition root), `JollyConfig` ScriptableObject, `PersonaProfileAsset` ScriptableObject, platform provider selection. |
 | `Jolly.Editor.Build` | `Editor/Build` (exists) | XR management/OpenXR/MetaOpenXR/Hands/URP/Addressables editor asmdefs | `QuestBuild.BuildApk` (CI entry point; builds Addressables content first, see §10), `QuestProjectSetup` (player and XR settings, `com.nubi.companion`), `NubiManifestRequirements`. |
+| `Jolly.Editor.Character` | `Editor/Character` (Editor platform only) | Character, Contracts | `NubiModelPostprocessor`, `NubiAnimatorBuilder`, `NubiPrefabBuilder`, `NubiAssetPaths` (ADR-0017). |
 | `Jolly.Editor` | `Editor/Tools` (Editor platform only) | App, Core, Contracts, Providers.Wit | `CannedLineBaker`, persona and asset validators. |
 | `Jolly.Testing` | `Tests/Shared` (`defineConstraints: ["UNITY_INCLUDE_TESTS"]`) | Contracts, Core, `UniTask` | Hand-written fakes under `Fakes/WPn/`: `FakeClock`, `ScriptedChatModel`, `ScriptedSpeechToText`, `FakeTextToSpeech`, `FakeFrameSource`, `RecordingCharacterController`, `InMemorySecrets`, and others. Never used by runtime code. |
 | `Jolly.Tests.EditMode` | `Tests/EditMode` (Editor only) | Contracts, Core, Net, Providers.*, Audio, Testing, `UnityEngine.TestRunner`, `UnityEditor.TestRunner`, `nunit.framework.dll` | Pure logic and parser tests, `CameraMath`, the asmdef-graph test. |
-| `Jolly.Tests.PlayMode` | `Tests/PlayMode` | the above plus App, Character, Presentation, XR | Scene and e2e tests with fakes. |
+| `Jolly.Tests.PlayMode` | `Tests/PlayMode` | the above plus App, Character, Editor.Character, Presentation, Localization, XR | Scene and e2e tests with fakes. |
 
 The asmdef names above (`Unity.XR.MetaOpenXR`, `Unity.XR.ARFoundation`, `Unity.XR.ARSubsystems`, `Unity.XR.Hands`, `Unity.XR.Interaction.Toolkit`, `Unity.AI.Navigation`, `Unity.Localization`, `Unity.Animation.Rigging`, `Unity.TextMeshPro`, `UnityEngine.UI`, `UnityEngine.TestRunner`, `UnityEditor.TestRunner`, `uLipSync.Runtime`, `UniTask`, `UniTask.Linq`, `UniTask.Addressables`) were read from the package asmdefs. `Unity.XR.CoreUtils`, `Unity.InputSystem` and `Unity.ResourceManager` were read from `JollyXR/Library/PackageCache`. `Newtonsoft.Json.dll` has `isExplicitlyReferenced: 0`, so asmdefs with `overrideReferences:false` get it automatically. The existing throwaway `Jolly.Spikes*` assemblies (`Assets/Spikes`) are deleted once WP5 lands.
 
@@ -225,7 +226,7 @@ sequenceDiagram
   Running SAM and Spark in parallel is only possible because the first prompt never waits for Spark.
 - **Vision call.** `muse-spark-1.3` (LiveUser), `reasoning.effort:"minimal"`, persona instructions + safety text + the format rule, camera content declared untrusted. Live on `pen_640.jpg` (2026-11-01): minimal → first text 1.51 s, total 1.61 s; low → first text 2.44 s. The JSON reply format measured earlier took 2.9–3.8 s to first token and could not be spoken until complete.
 - **Pixel to world** (`xr-stack.md` §2.5):
-  - `dirCam = ((px-cx)/fx, (py-cy)/fy, 1)`, using intrinsics already scaled to the encoded image (`CameraMath`, Core/Spatial, EditMode-tested).
+  - `dirCam = ((px-cx)/fx, -(py-cy)/fy, 1)`, using intrinsics already scaled to the encoded image (`CameraMath`, Core/Spatial, EditMode-tested). Pixels are top-left origin and `CameraPoseWorld` is a Unity pose with +Y = image up, hence the minus (ADR-0017); `MaskPlacement` uses the same sign.
   - `camPose` is the head pose at acquisition multiplied by the Camera2 `LENS_POSE_*` extrinsic.
   - `IWorldQuery.TryRaycast`: `ARRaycastManager.Raycast(Ray, List<ARRaycastHit>, TrackableType.Depth)` (meta-openxr supports only `Depth`; any mask without it returns zero hits, `MetaOpenXRRaycastSubsystem.cs:136,232`), then `Physics.Raycast` against plane/box colliders on `NavGeometry`.
   - Fallback when there is no hit: place at 0.6 m along the centroid ray.
@@ -284,14 +285,14 @@ graph LR
   Lip[ILipSyncDriver.Current] --> Mouth[MouthShapeDriver → mouth blendshapes A/I/U/E/O]
   CC --> Agent[NavMeshAgent on runtime-baked floor]
   CC --> Anim[Animator params]
-  CC --> Rig[MultiAimConstraint head/eyes weights]
-  Floor[FloorNavMeshBuilder: Floor ARPlane MeshCollider + ARBoundingBox BoxColliders with NavMeshModifier Not Walkable → NavMeshSurface.BuildNavMesh / UpdateNavMesh] --> Agent
+  CC --> Look[LookAtDriver: chest/neck/head then eyes, after the Animator]
+  Floor[FloorNavMeshBuilder: Floor ARPlane MeshCollider + ARBoundingBox BoxColliders as Not Walkable sources → NavMeshBaker: NavMeshBuilder.BuildNavMeshData] --> Agent
 ```
 
 - **NavMesh.**
-  - `NavMeshSurface.useGeometry = PhysicsColliders`, layer `NavGeometry` (API verified, ai.navigation 2.0.15).
-  - Every `ARBoundingBox` collider carries a `NavMeshModifier` with `overrideArea` = Not Walkable (`NavMeshModifier.cs:52`), so furniture only carves the floor and box tops never bake as walkable islands. `TrySampleWalkable` also drops samples more than 0.1 m above the floor plane.
-  - Build once when the first Floor plane appears. `UpdateNavMesh(data)` is throttled to once every 2 s on trackable changes.
+  - `NavMeshBaker` collects the plane and box colliders on layer `NavGeometry` as `NavMeshBuildSource`s and bakes with `NavMeshBuilder.BuildNavMeshData` using its own agent settings (radius 0.15 m, height 0.7 m, climb 0.04 m). `NavMeshSurface` is not used: it takes the project's Humanoid agent (0.5 m radius), which erases a living room (ADR-0017).
+  - Every `ARBoundingBox` source gets area Not Walkable, so furniture only carves the floor and box tops never bake as walkable islands. `TrySampleWalkable` also drops samples more than 0.1 m above the floor plane.
+  - Build once when the first Floor plane appears; rebuilds are throttled to once every 2 s on trackable changes.
   - **Permissions:** `ARPlaneManager`, `ARBoundingBoxManager` and `ARRaycastManager` ship **disabled**. Their subsystems start without `USE_SCENE` and only log errors, and the raycast subsystem's `Start()` latches `XR_ERROR_PERMISSION_INSUFFICIENT` (`MetaOpenXRRaycastSubsystem.cs:72-90`). `PermissionGate` enables them after `USE_SCENE` is granted (`xr-stack.md` §2.3).
   - **Occlusion (should):** `SceneOccluders` gives the same plane and box meshes a depth-only material, so Nubi is hidden behind real furniture. Full depth occlusion is evaluated only against R3's perf budget.
   - In the Editor, AR Foundation XR Simulation (`Unity.XR.Simulation` ships in ARF 6.6.2) supplies planes.
@@ -309,12 +310,12 @@ graph LR
   - Unreachable target: point toward it and return `unreachable`.
   - Seated mode (`IUserPreferences.Seated`): `walk_to` and `follow_user` are not offered to the model, and the instructions say the user is seated.
 - **Animator parameters** (hashed once with `Animator.StringToHash`):
-  - `Speed` (float, agent speed / max)
+  - `Speed` (float, m/s; the clip playback rate is a separate `LocomotionRate`, clamped 0.7–1.5×)
   - `Listening`, `Thinking`, `Talking` (bool)
   - `Mood` (int)
   - `GestureId` (int) + `Gesture` (trigger)
   The walk is a procedural waddle: hip bob and sway on top of the Speed blend, with TwoBoneIK feet (`character.md` §2.2.9B). Gestures are authored clips with an upper-body avatar mask.
-- **Look-at.** `MultiAimConstraint` weight blend (0.25 s) toward the user head (default), a world point (a pointed or seen object), or none. The head is clamped to ±70° yaw; the body turns beyond that.
+- **Look-at.** Procedural, applied after the Animator (ADR-0017): chest, neck and head turn first and the eyes add only the last ~10° (±16° yaw, ±8° pitch), toward the user head (default), a world point (a pointed or seen object), or none. The head is clamped to ±40° yaw; the body turns in place beyond 45°. It blends out while Thinking.
 - **Mouth and blink.**
   - `MouthShapeDriver` maps `MouthShape` {A,I,U,E,O,volume} onto 6 mouth blendshapes (`sil, aa, E, I, O, U` per `character.md` §2.2.7), smoothed with 60 ms attack and 90 ms release.
   - Blink uses an eyelid or eye-scale blendshape at random intervals of 2–6 s, with double blinks 15% of the time.
@@ -386,7 +387,8 @@ Verified live on 2026-11-01 (`api-spend.md`).
 | `response.function_call_arguments.delta` / `.done` | Arguments are accumulated |
 | `response.output_item.done` | For a `function_call` item, this emits the complete ToolCall |
 | `response.completed` | `usage.input_tokens`, `input_tokens_details.cached_tokens`, `output_tokens`, `output_tokens_details.reasoning_tokens` |
-| `response.failed`, `response.incomplete`, `error` | Mapped to `ProviderException` |
+| `response.failed`, `error` | Mapped to `ProviderException` |
+| `response.incomplete` | A normal `Completed` with `FinishReason.Length` (or `Incomplete`); the partial text may already have been spoken (ADR-0017) |
 | `[DONE]` | Ends the stream |
 
 **Replay.** The next round's `input` = previous input + every output item verbatim (including `reasoning` items with `encrypted_content`) + `{"type":"function_call_output","call_id","output"}` per call. This was verified live: turn 2 continued correctly. Reasoning items stay in memory only until the turn ends and are never persisted.
