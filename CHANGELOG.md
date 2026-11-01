@@ -117,3 +117,10 @@ Each work package appends bullets under its own heading only (`docs/scope.md` §
 - An empty vision answer speaks the hold-closer line instead of ending the turn silently; the ASR stream reports success at its first item; "Nobi" is aliased to "Nubi".
 - Self-test: adb-only trigger (no intent extra), render counters and a 71.5 fps floor in `perf_idle`, Wit-synthesised voice clips, compositor stale-frame share in `selftest.sh`, install retry. Release players no longer capture stack traces for Info logs, and canned clips no longer warn.
 - README, demo script, THIRD_PARTY and the self-test report updated from three device runs (release → first audio p50 1.57 s over 9 turns, barge-in silence 28–54 ms, 72.0 fps idle, 12 draw calls).
+
+### Controller push-to-talk
+- `ControllerPushToTalk` (`IVoiceActivation`): hold A or X on a Touch controller to talk. Two code-defined Input System actions bound to the Touch layouts by name (`<OculusTouchController|QuestTouchPlusController|QuestProTouchController>{LeftHand|RightHand}/primaryButton`), so neither XRI's `Activate` nor any hand device (Hand Interaction profile, a pinch reported as a trigger, the KHR simple controller's `PrimaryButton` select) can press past the pinch gating. A side whose hand is tracked is in hand mode and its button is ignored, as in `XRInputModalityManager` (ADR-0019).
+- `CompositeVoiceActivation` (Core): one push-to-talk over the pinch and the controller, held while either is held; a second source neither re-presses nor releases early. `AppGraph` builds it when `Edges.Voice` is null.
+- `PinchPushToTalk` is hands only: the empty `controllerTalk` action reference is gone from the component and `Main.unity`, which gains `SceneRefs.controllerPushToTalk`.
+- Tests: `InputTestFixture` PlayMode tests on the real OpenXR layouts (A/X, trigger/grip/B/Y, hand devices, tracked-hand gate, disable) and EditMode tests for the composite. `Jolly.Tests.PlayMode` references `Unity.InputSystem.TestFramework` and `Unity.XR.OpenXR`.
+- README: Controls section; the "no controller push-to-talk" limitation is replaced by "unverified on the headset".

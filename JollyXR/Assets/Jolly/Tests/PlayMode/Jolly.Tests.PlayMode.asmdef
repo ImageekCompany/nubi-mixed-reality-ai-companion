@@ -24,6 +24,8 @@
         "Unity.XR.Hands",
         "Unity.XR.Interaction.Toolkit",
         "Unity.InputSystem",
+        "Unity.InputSystem.TestFramework",
+        "Unity.XR.OpenXR",
         "Unity.AI.Navigation",
         "Unity.Localization",
         "Unity.TextMeshPro",

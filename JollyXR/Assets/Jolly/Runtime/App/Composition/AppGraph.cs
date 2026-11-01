@@ -3,6 +3,7 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using Jolly.App.Adapters;
 using Jolly.Contracts;
+using Jolly.Core.Conversation;
 using Jolly.Core.Offline;
 using Jolly.Core.Personas;
 using Jolly.Localization;
@@ -68,12 +69,14 @@ namespace Jolly.App.Composition
             Cloud = CloudServices.Build(f, config, edges, d);
             Xr = XrServices.Build(f, config, scene, edges.WrapCamera, d);
             scene.pushToTalk.Construct(Xr.Hands, f.Clock, scene.head, Preferences);
+            scene.controllerPushToTalk.Construct(Xr.Hands);
             Speech = SpeechServices.Build(f, config, scene, edges, Cloud.TextToSpeech, Localizer, Preferences, d);
             scene.nubi.Construct(Xr.User, Speech.LipSync, f.Clock, f.Random);
             BindViews(scene);
 
+            var voice = edges.Voice ?? d.Add(new CompositeVoiceActivation(scene.pushToTalk, scene.controllerPushToTalk));
             Conversation = ConversationServices.Build(f, config, Cloud, Xr, Speech, Personas, Localizer, Preferences,
-                scene.nubi, edges.Voice ?? scene.pushToTalk, scene.maskOverlay, d);
+                scene.nubi, voice, scene.maskOverlay, d);
             d.Add(new StatusRelay(Cloud.Connectivity, scene.permissions, scene.status));
             d.Add(new SettingsRouter(scene.settings, Personas, Localizer, Conversation.Controller, f.Log, appCt));
             var offline = Speech.Offline;

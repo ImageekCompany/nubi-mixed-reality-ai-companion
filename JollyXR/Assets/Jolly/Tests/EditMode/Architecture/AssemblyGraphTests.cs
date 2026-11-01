@@ -58,7 +58,8 @@ namespace Jolly.Tests.EditMode.Architecture
             ["Jolly.Testing"] = With("Jolly.Contracts", "Jolly.Core", "Jolly.Net", UniTask),
             ["Jolly.Tests.EditMode"] = EditModeTests,
             ["Jolly.Tests.PlayMode"] = With(EditModeTests, "Jolly.App", "Jolly.Character", "Jolly.Editor.Character", "Jolly.Presentation", "Jolly.Localization", "Jolly.XR",
-                XrPackages, "Unity.Localization", "Unity.TextMeshPro", "UnityEngine.UI", "Jolly.Integrations.ULipSync", "uLipSync.Runtime"),
+                XrPackages, "Unity.InputSystem.TestFramework", "Unity.XR.OpenXR", "Unity.Localization", "Unity.TextMeshPro", "UnityEngine.UI",
+                "Jolly.Integrations.ULipSync", "uLipSync.Runtime"),
         };
 
         static readonly HashSet<string> RuntimeAssemblies = new(JollyRuntime.Append("Jolly.App"));

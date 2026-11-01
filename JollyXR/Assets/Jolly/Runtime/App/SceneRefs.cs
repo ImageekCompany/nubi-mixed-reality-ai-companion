@@ -25,6 +25,7 @@ namespace Jolly.App
         public Transform controllerAim;
         public XrUserPoseProvider userPose;
         public PinchPushToTalk pushToTalk;
+        public ControllerPushToTalk controllerPushToTalk;
         public PermissionGate permissions;
         public FloorNavMeshBuilder floor;
         public InteractionSignals interactionSignals;
