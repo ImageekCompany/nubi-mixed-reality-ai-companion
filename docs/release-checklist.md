@@ -1,10 +1,23 @@
 # Release checklist
 
-Audit of [`definition-of-done.md`](definition-of-done.md) on `main` at `3f35562`, 2026-11-01 (09:00–09:35 local, UTC+1). Raw outputs are in `artifacts/` (git-ignored).
+Audit of [`definition-of-done.md`](definition-of-done.md). The per-item tables below were written on `main` at `3f35562` (2026-11-01, 09:00–09:35 local, UTC+1); the dated blocks above them re-verify later commits, newest first, and the latest is `main` at `36778c1` (tests re-run on `678887c`, which changes only docs since). Where a table cell cites an older number, it says which block supersedes it. Raw outputs are in `artifacts/` (git-ignored).
 
 Legend: ✅ met, with evidence · ⚠️ partial · ❌ not met · 🧑 needs a human (headset wearer, video, portal, or an owner decision).
 
-**Totals: 24 DoD items: 16 ✅, 5 ⚠️, 3 ❌/🧑. Release-audit extras: 4 ✅, 1 🧑.**
+**Totals (recounted after the `36778c1` block): 24 DoD items: 16 ✅, 5 ⚠️, 3 ❌/🧑. Release-audit extras: 4 ✅, 1 🧑.**
+
+## Verification of `main` at `36778c1` (2026-11-01, 15:22–15:28 UTC)
+
+After round 1 (`f311081`, three runs), the tool-selection eval and description change (ADR-0035) and the local come-here guard (ADR-0036). Details in [`perf/selftest-report.md`](perf/selftest-report.md) "Local come-here guard and reply log (36778c1)" and "Round 1 verification of main (f311081)", and [`perf/tool-selection-eval.md`](perf/tool-selection-eval.md). These lines supersede the `751acba` block and the per-item table where they differ.
+
+- **1.1 / 1.2 / 2.1:** `tools/ci/test.sh` on `678887c` (same code as `36778c1`) → EditMode 1081/1081, PlayMode 379/379 plus 1 skipped (`ToolSelectionEval`, an `[Explicit]` live eval), content validation passed, pure logic coverage 92.7 % (threshold 91.6 %), all `Jolly.*` runtime 84.6 %, no `warning CS`.
+- **3.1:** `tools/ci/build.sh` → IL2CPP ARM64 release, 60 MB, `QuestBuild` 0 errors / 5 warnings.
+- **4.1:** 72.0 fps idle, p95 13.9 ms, 14 draw calls, 556–559 MB. Worst launch frame 279–287 ms. Stale frames over the whole run **2.06–2.68 %** on a headset not rebooted since the morning (uptime 1 h 14 min), against 1.22–1.63 % in the `f311081` runs; consistent with ADR-0034 (stale frames follow uptime; reboot before a demo). ⚠️ 🧑
+- **5.1:** the 20-turn numbers of the `751acba` block stand (p50 1,804 ms, p90 2,577 ms). In these three runs release → first audio was 1,541–4,707 ms over 13 answered turns; greetings 2.4–4.7 s, and 3.0–3.3 s in all three `f311081` runs. ⚠️ 🧑
+- **Come here (demo beat 1):** the model skipped `come_here` in 2 of 3 `f311081` runs and the text eval found it on 2 of 5 come phrasings at `minimal`, before and after the description change. With `ComeGuard`, the walk started locally in 3 of 3 runs and Nubi arrived each time; `voice_come_here` was still DEGRADED twice (first audio 2,235 / 2,138 ms) and FAILed once (the Responses request timed out twice, no spoken reply).
+- **Vision tools:** `find_object` was chosen for "where is my mug? Show me." in 3 of 3 runs (2 of 3 on `f311081`); twice the model added a `look_at` round (tool start → answer 3.0–4.9 s). `highlight_part` FAILed once: the model called `capture_and_identify` again.
+- **7.4:** 33 ADRs, 0001–0026 and 0030–0036 (0027–0029 unused), all `accepted`.
+- **7.5 / spend:** these runs $0.079 and the eval $0.053; `api-spend.md` total ≤ $1.79 (row sum $1.782). This docs pass spent nothing.
 
 ## Stale-frame cause and 20-turn latency on `751acba` (2026-11-01, 14:05–14:37 UTC)
 
@@ -44,8 +57,8 @@ After the occlusion, room-awareness, character-swap, Jolly pipeline and device-f
 
 | # | Item | State | Evidence |
 |---|---|---|---|
-| 1.1 | EditMode exit 0; Core/Net/Providers/Audio covered; each WP's required tests exist | ✅ | `tools/ci/test.sh` → `[test] EditMode total=927 passed=927 failed=0 skipped=0 inconclusive=0`, exit 0, 60 s wall for the whole script (branch `feat/coverage-gate`, 2026-11-01). Coverage is now measured (`com.unity.testtools.codecoverage` 1.3.0, EditMode + PlayMode merged) and gated by `tools/ci/coverage.sh`. Line coverage before → after the 23 new tests: Core 96.7 → 97.7 %, Providers.MetaApi 94.9 → 96.2 %, Audio 89.3 %, Net 61.9 → 62.5 %, Providers.Wit 60.8 %; **pure logic 92.7 → 93.6 % (5,949/6,357 lines), threshold 91.6 %**; all `Jolly.*` runtime 83.7 → 84.3 %. Net and Wit are low because their UnityWebRequest/WebSocket shells are untestable without the network; thread-pool code reads 0 % (DoD §1). **On `main` after merging `fix/turn-gc` and `feat/coverage-gate`** (2026-11-01): EditMode 942/942, PlayMode 216/216, pure logic **92.2 % (6,066/6,578)**, still above 91.6 %; Net 57.0 % and Providers.Wit 56.5 % fell because ADR-0023's socket/TLS upgrade and Wit warm-up are network shells. All `Jolly.*` runtime 83.2 %. |
-| 1.2 | PlayMode exit 0 incl. E2E voice turn, barge-in, `capture_and_identify`, offline path, `NoGcAllocInSteadyStateIdle` | ✅ | `[test] PlayMode total=216 passed=216 failed=0`. The tests exist: `VoiceTurn_ListensThinksCallsTheToolAndSpeaksWithCaptions`, `BargeIn_SilencesWithin…`, `CaptureAndIdentify_SegmentsTheStillFrameAndSpeaksTheVisionAnswer`, `Offline_PressPlaysACannedLineWithoutTheCloud`, `NoGcAllocInSteadyStateIdle`. |
+| 1.1 | EditMode exit 0; Core/Net/Providers/Audio covered; each WP's required tests exist | ✅ | *Superseded by the `36778c1` block: EditMode 1081/1081, pure logic 92.7 %.* `tools/ci/test.sh` → `[test] EditMode total=927 passed=927 failed=0 skipped=0 inconclusive=0`, exit 0, 60 s wall for the whole script (branch `feat/coverage-gate`, 2026-11-01). Coverage is now measured (`com.unity.testtools.codecoverage` 1.3.0, EditMode + PlayMode merged) and gated by `tools/ci/coverage.sh`. Line coverage before → after the 23 new tests: Core 96.7 → 97.7 %, Providers.MetaApi 94.9 → 96.2 %, Audio 89.3 %, Net 61.9 → 62.5 %, Providers.Wit 60.8 %; **pure logic 92.7 → 93.6 % (5,949/6,357 lines), threshold 91.6 %**; all `Jolly.*` runtime 83.7 → 84.3 %. Net and Wit are low because their UnityWebRequest/WebSocket shells are untestable without the network; thread-pool code reads 0 % (DoD §1). **On `main` after merging `fix/turn-gc` and `feat/coverage-gate`** (2026-11-01): EditMode 942/942, PlayMode 216/216, pure logic **92.2 % (6,066/6,578)**, still above 91.6 %; Net 57.0 % and Providers.Wit 56.5 % fell because ADR-0023's socket/TLS upgrade and Wit warm-up are network shells. All `Jolly.*` runtime 83.2 %. |
+| 1.2 | PlayMode exit 0 incl. E2E voice turn, barge-in, `capture_and_identify`, offline path, `NoGcAllocInSteadyStateIdle` | ✅ | *Superseded by the `36778c1` block: PlayMode 379/379 plus the skipped explicit eval.* `[test] PlayMode total=216 passed=216 failed=0`. The tests exist: `VoiceTurn_ListensThinksCallsTheToolAndSpeaksWithCaptions`, `BargeIn_SilencesWithin…`, `CaptureAndIdentify_SegmentsTheStillFrameAndSpeaksTheVisionAnswer`, `Offline_PressPlaysACannedLineWithoutTheCloud`, `NoGcAllocInSteadyStateIdle`. |
 | 1.3 | No test hits the network unless `[Category("Live")]` | ✅ | No `Live` tests exist. `grep -rnE "new (UnityWebRequest\|ClientWebSocket\|HttpClient)" Tests` is empty; the three test files that contain URLs assert them against `FakeHttpTransport` / `FakeWebSocket`. |
 
 ## 2. Code quality gates
@@ -57,14 +70,14 @@ After the occlusion, room-awareness, character-swap, Jolly pipeline and device-f
 | 2.3 | No `FindObjectOfType`/`FindFirstObjectByType`/singletons/`Resources.Load` | ✅ | `test.sh` static gate passed. |
 | 2.4 | No secret material; `.env`, `secrets.json`, `Meta+Muse+Jolly*` untracked | ✅ | `git grep -nE "LLM_[0-9]+_\|Bearer [A-Za-z0-9]"` hits only synthetic keys in `Tests/` (the DoD line now excludes `Tests/`); empty outside. `git check-ignore` matches `.env`, `StreamingAssets/secrets*.json*`, `Meta+Muse+Jolly*`. See also extra A below. |
 | 2.5 | Release builds have no `JOLLY_DEBUG_CAPTURE` / `JOLLY_DEBUG_LOG` | ✅ | `ProjectSettings.asset` has `scriptingDefineSymbols: {}`; the `test.sh` gate passed. `build.log` does not print defines, so the evidence is the settings file the build used, not the log. |
-| 2.6 | asmdef graph matches `architecture.md` §2, enforced by a test | ✅ | `Tests/EditMode/Architecture/AssemblyGraphTests.cs`, part of the 942 passing. |
+| 2.6 | asmdef graph matches `architecture.md` §2, enforced by a test | ✅ | `Tests/EditMode/Architecture/AssemblyGraphTests.cs`, part of the 1081 passing EditMode tests (`36778c1` block). |
 | 2.7 | `unity-architect-reviewer` pass leaves no open critical items | ✅ | Post-merge audit (Unity architecture, security, quality) at `a078010`; every finding is fixed or explicitly deferred in `decisions/review-log.md` "Post-merge audit" and ADR-0022. Not re-run on the two fix commits since. |
 
 ## 3. Build
 
 | # | Item | State | Evidence |
 |---|---|---|---|
-| 3.1 | Exit 0, APK exists, no `error CS`, no `Jolly.*` warnings | ✅ | `tools/ci/build.sh` → `[QuestBuild] Result=Succeeded errors=0 warnings=2`, `artifacts/Nubi.apk` 58 MB, `[build] OK`, 53 s. `error CS` count in `build.log`: 0. The 2 report warnings are not from `Jolly.*` (no `Assets/Jolly` diagnostics). |
+| 3.1 | Exit 0, APK exists, no `error CS`, no `Jolly.*` warnings | ✅ | *Superseded by the `36778c1` block: 60 MB, 0 errors / 5 warnings.* `tools/ci/build.sh` → `[QuestBuild] Result=Succeeded errors=0 warnings=2`, `artifacts/Nubi.apk` 58 MB, `[build] OK`, 53 s. `error CS` count in `build.log`: 0. The 2 report warnings are not from `Jolly.*` (no `Assets/Jolly` diagnostics). |
 | 3.2 | `adb install -r` on Quest 3 succeeds; app launches into passthrough | ⚠️ 🧑 | `selftest.sh` installed and launched it on `2G0YC1ZF7P090N` (Horizon OS v209); the live camera frame was read (`frame=live`, `mean_luma=26.4`). That passthrough is actually *displayed* needs someone to look through the headset. |
 | 3.3 | Localized string and a `LineClips` clip resolve in the player | ✅ | Device logcat: `evt=loc.ready table=Lines lang=en entries=33` (also UI 50, Personas 13, Crisis 3); `offline_greeting` PASS plays a canned clip (`caption_ms=13.8`). |
 | 3.4 | Permission flow on a fresh install (prompts once; deny camera → passthrough + `camera_unavailable`; deny scene → `unreachable`) | ❌ 🧑 | Not run: the self-test grants all three with `pm grant`. Needs a wearer to answer the system prompts after `adb uninstall com.nubi.companion`. |
@@ -74,13 +87,13 @@ After the occlusion, room-awareness, character-swap, Jolly pipeline and device-f
 
 | # | Item | State | Evidence |
 |---|---|---|---|
-| 4.1 | All rows met, or deviations documented with a mitigation | ⚠️ 🧑 | This run (`perf_idle`, 30 s): **72.0 fps**, p95 13.9 ms, draw calls 15, SetPass 12, triangles 29,426, system memory 516 MB, idle GC gate passes. Compositor stale frames over the whole run **1.06 %** (includes the ~320 ms launch hitch; turns-only was 0.55–0.99 % in the perf pass). **GC per turn** (fix/turn-gc, ADR-0023, 3 development-player runs): p50 3.9 KB/frame, was 14.5; still **over** in `barge_in` (5.9–6.4 KB, two ASR sessions; Mono allocates 16 KB per TLS read) and in one of three `voice_come_here` windows (4.6 KB). **Unmeasured:** CPU main-thread p95 (Profiler), `app_rss_MB`, 10-min stale frames, 30-min thermal, battery. These need an OVR Metrics + Profiler session on a development build. |
+| 4.1 | All rows met, or deviations documented with a mitigation | ⚠️ 🧑 | *Superseded by the `751acba` and `36778c1` blocks: the launch frame is 279–287 ms (the ~320 ms below predates ADR-0032), stale frames follow headset uptime, and `app_rss_MB` is measured (642–643 MB).* This run (`perf_idle`, 30 s): **72.0 fps**, p95 13.9 ms, draw calls 15, SetPass 12, triangles 29,426, system memory 516 MB, idle GC gate passes. Compositor stale frames over the whole run **1.06 %** (includes the ~320 ms launch hitch; turns-only was 0.55–0.99 % in the perf pass). **GC per turn** (fix/turn-gc, ADR-0023, 3 development-player runs): p50 3.9 KB/frame, was 14.5; still **over** in `barge_in` (5.9–6.4 KB, two ASR sessions; Mono allocates 16 KB per TLS read) and in one of three `voice_come_here` windows (4.6 KB). **Unmeasured:** CPU main-thread p95 (Profiler), `app_rss_MB`, 10-min stale frames, 30-min thermal, battery. These need an OVR Metrics + Profiler session on a development build. |
 
 ## 5. Latency
 
 | # | Item | State | Evidence |
 |---|---|---|---|
-| 5.1 | p50 targets met over 20 consecutive LiveUser turns, or the gap is in an ADR | ⚠️ 🧑 | Perf pass (ADR-0019): release → first audio p50 1.44 s over 16 turns; ASR p50 208 ms; first text p50 0.84 s; barge-in 28–54 ms; mask 0.72–1.13 s; vision answer p50 2.24 s. **This audit run** (4 online turns, release → first audio): 3,150 / 2,221 / 1,550 / 1,915 ms, p50 ≈ 2.07 s, **over** 2.0 s; turn 2's first text took 2.49 s after ASR final. **fix/turn-gc** (3 development runs, 12 turns): p50 1.75 s, first turn 1.72–1.85 s (was 2.18–3.76 s); the Wit connection is now opened at launch, and the cold first turn was otherwise model reasoning time. The DoD's 20-consecutive-turn run with a wearer on Wi-Fi has not been done. |
+| 5.1 | p50 targets met over 20 consecutive LiveUser turns, or the gap is in an ADR | ⚠️ 🧑 | *Superseded by the `751acba` block: 20 consecutive turns without a wearer, p50 1,804 ms, p90 2,577 ms.* Perf pass (ADR-0019): release → first audio p50 1.44 s over 16 turns; ASR p50 208 ms; first text p50 0.84 s; barge-in 28–54 ms; mask 0.72–1.13 s; vision answer p50 2.24 s. **This audit run** (4 online turns, release → first audio): 3,150 / 2,221 / 1,550 / 1,915 ms, p50 ≈ 2.07 s, **over** 2.0 s; turn 2's first text took 2.49 s after ASR final. **fix/turn-gc** (3 development runs, 12 turns): p50 1.75 s, first turn 1.72–1.85 s (was 2.18–3.76 s); the Wit connection is now opened at launch, and the cold first turn was otherwise model reasoning time. The DoD's 20-consecutive-turn run with a wearer on Wi-Fi has not been done. |
 
 ## 6. End-to-end demo
 
@@ -95,8 +108,8 @@ After the occlusion, room-awareness, character-swap, Jolly pipeline and device-f
 | 7.1 | README sections (pitch + theme quote, hero user, diagram, Meta tooling, quick start, privacy, budget/meter, limitations, ADR index, test commands) | ✅ | All present. Fixed in this audit: test counts (891/207 → 904/216), the Status "as of" line, "under $1" → "about $1", and the Device User Data sentence that `architecture.md` §11 said the README had. The 42 relative links resolve (extra D). |
 | 7.2 | `THIRD_PARTY.md` complete | ✅ | Every non-module package in `Packages/manifest.json` is listed at its exact version; UniTask, uLipSync commit pin, glTFast, Newtonsoft, SAM License (`LICENSE-SAM.txt`), CC BY 3.0 pen, CC0 mug, Wit clip terms, Piper (not shipped), Meta SDKs (not used) are covered. |
 | 7.3 | `CHANGELOG.md` with per-WP entries under 0.1.0 | ⚠️ | Keep a Changelog format with WP0–WP11 and the fix sections, but all under `[Unreleased]`; no `0.1.0` section is cut. Cut it at submission. |
-| 7.4 | ADRs 0001–0016 present, none "proposed"; changes superseded | ✅ | 0001–0022 present, all `accepted`. ADR-0003 reads "accepted (pending on-device spike R1)": the pipeline half of R1 passed, the extrinsics marker test is still open (see 4.1/3.2). |
-| 7.5 | `api-spend.md` up to date, total ≤ $140 | ✅ | Row added for this run ($0.012, app meter). Sum of the rows $0.991; total restated as ≤ $1.00 (it read ≤ $1.02, above the row sum). |
+| 7.4 | ADRs 0001–0016 present, none "proposed"; changes superseded | ✅ | 0001–0026 and 0030–0036 present (33; 0027–0029 unused), all `accepted`. ADR-0003 reads "accepted (pending on-device spike R1)": the pipeline half of R1 passed, the extrinsics marker test is still open (see 4.1/3.2). |
+| 7.5 | `api-spend.md` up to date, total ≤ $140 | ✅ | Paid calls since 02:00 UTC are itemised row by row; the research phase before that is one estimated row (≤ $0.50). Sum of the rows $1.782; total stated as ≤ $1.79 of $140 (`36778c1` block). |
 | 7.6 | Demo video ≤ 2:45, uploaded, linked in README | ❌ 🧑 | README line 12: "link added at submission". |
 
 ## Release-audit extras
