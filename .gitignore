@@ -36,3 +36,6 @@ __pycache__/
 
 # On-device spike captures (camera frames / mic audio from the developer's home)
 docs/research/samples/device/
+
+# CI outputs (tools/ci): test results, logs, APKs
+artifacts/
