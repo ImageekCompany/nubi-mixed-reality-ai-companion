@@ -42,7 +42,7 @@ The canned lines are the same text in both cuts, with `{name}` filled from the s
 All **UNVERIFIED** until seen on the headset:
 
 - `tools/device/build.sh --character jolly` builds, and logcat shows `evt=character.selected id=jolly` at launch (ADR-0026 says this was never checked on the headset).
-- **ASR of the name.** `JollyCharacter.asset` lists the aliases "Jolie" and "Jollie" only. Say "Jolly, come here." five times and read the live caption and `evt=asr.final`: if Muse Voice Transcribe hears "jelly", "Holly" or "Charlie", the come-here guard does not match and beat 1 falls to the model (slower, may not walk). Adding aliases is a change to a local asset, owned by the lead, not this doc.
+- **ASR of the name.** `JollyCharacter.asset` (local) lists the aliases Jolie, Jollie, Jelly, Jolli, Joly and Jolley; they turn into "Jolly" in the caption. Since ADR-0043 the come-here guard also takes any one word set off by punctuation as the name ("Holly, come here." matches; "Holly come here" without a comma does not). Say "Jolly, come here." five times and read the live caption, `evt=asr.final` and `evt=guard.come`: a caption showing a mishearing that is not a real name goes into the local alias list.
 - The caption reads "Jolly", not an alias, in the live partial.
 - The greeting and the who-are-you lines play the Jolly clips (Railey voice, says "Jolly"), never Nubi's.
 - Beat 2 vision answer: the persona prompt says the name from `{name}`; check the answer never calls itself Nubi.

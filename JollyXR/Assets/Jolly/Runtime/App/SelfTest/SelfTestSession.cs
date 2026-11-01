@@ -122,6 +122,8 @@ namespace Jolly.App.SelfTest
             };
             foreach (var utterance in utterances)
                 Microphone.Prepare(utterance.clip);
+            foreach (var entry in _assets.comeHereByCharacter)
+                Microphone.Prepare(entry.utterance.clip);
             edges.Microphone = Microphone;
             Voice = new ScriptedPushToTalk();
             edges.Voice = Voice;

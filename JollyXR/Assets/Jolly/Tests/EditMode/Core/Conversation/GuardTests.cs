@@ -111,6 +111,34 @@ namespace Jolly.Tests.EditMode.Core.Conversation
             Assert.That(guard.Matches(transcript), Is.EqualTo(expected));
         }
 
+        [TestCase("Hi, newbie. newbie. Come here.", true)]
+        [TestCase("Hi Nubi, come here.", true)]
+        [TestCase("Jelly, come here!", true)]
+        [TestCase("Come here, Holly.", true)]
+        [TestCase("Hi Jolly, come here.", true)]
+        [TestCase("Come here.", true)]
+        [TestCase("Holly come here", false)]
+        [TestCase("Hi Holly Jelly, come here.", false)]
+        [TestCase("Wait, come here and look at this.", false)]
+        [TestCase("don't come here", false)]
+        public void ComeGuard_OtherCharacter_TakesTheNameAsHeardWhenItStandsApart(string transcript, bool expected)
+        {
+            // Jolly's table, and transcripts as live ASR punctuates a name it did not know: the self-test's
+            // "Hi Nubi, come here." for Jolly came back as "Hi, newbie. newbie. Come here." and went to the model.
+            var localizer = new FakeLocalizer()
+                .With(GuardTables.Table, GuardTables.ComeTriggers, "come here|come to me")
+                .With(GuardTables.Table, GuardTables.ComeFillers, "jolly|please|hi|hey|hello");
+
+            Assert.That(new ComeGuard(localizer).Matches(transcript), Is.EqualTo(expected));
+        }
+
+        [TestCase("Jelly, stop!", true)]
+        [TestCase("Wait, what is this?", false)]
+        public void StopGuard_TakesTheNameAsHeardWhenItStandsApart(string transcript, bool expected)
+        {
+            Assert.That(new StopGuard(new FakeLocalizer()).Matches(transcript), Is.EqualTo(expected));
+        }
+
         [Test]
         public void ComeGuard_UsesLocalizedTableForCurrentLanguage()
         {

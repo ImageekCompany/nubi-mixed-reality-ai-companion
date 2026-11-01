@@ -17,8 +17,19 @@ namespace Jolly.App.SelfTest
             public string expectedText;
         }
 
+        /// <summary>A line for one character only: it says that character's name.</summary>
+        [Serializable]
+        public sealed class CharacterUtterance
+        {
+            [Tooltip("CharacterDefinition.id")]
+            public string characterId;
+            public Utterance utterance = new();
+        }
+
         public Utterance greeting = new();
         public Utterance comeHere = new();
+        [Tooltip("The come-here line for a character other than the one comeHere names; the rest use comeHere.")]
+        public CharacterUtterance[] comeHereByCharacter = Array.Empty<CharacterUtterance>();
         public Utterance whatIsThis = new();
         [Tooltip("Asks for a long answer, so there is speech to interrupt.")]
         public Utterance longAnswer = new();
@@ -28,5 +39,16 @@ namespace Jolly.App.SelfTest
         public Utterance findObject = new();
         [Tooltip("JPEG bytes (.bytes) of a CC-licensed still, see Content/SelfTest/ATTRIBUTION.md.")]
         public TextAsset fallbackStill;
+
+        /// <summary>The character's own come-here line if there is one, else <see cref="comeHere"/>.</summary>
+        public Utterance ComeHereFor(string characterId)
+        {
+            foreach (var entry in comeHereByCharacter)
+            {
+                if (entry != null && entry.utterance?.clip != null && entry.characterId == characterId)
+                    return entry.utterance;
+            }
+            return comeHere;
+        }
     }
 }

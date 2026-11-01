@@ -41,6 +41,7 @@
 | [0040](0040-acknowledge-questions-only.md) | The acknowledgement plays at the final and only for a question the guards left to the model; commands and guard walks get none | accepted |
 | [0041](0041-attend-to-the-user.md) | The character attends the user in every conversation turn and when near: body faces them past 15°, a tool's look at a point holds 2.5 s, `evt=look.user` per turn | accepted |
 | [0042](0042-settings-on-demand.md) | Settings on demand: hidden at launch; wrist button, left menu button or "open settings"; placed once in front, world-locked; closes on X, talk, 20 s idle; side views pulled into the recorded frame | accepted |
+| [0043](0043-name-as-heard-in-local-guards.md) | Local guards take one unknown word set apart by punctuation as the name as heard; `voice_come_here` plays the selected character's own line | accepted |
 
 Numbers 0027–0029 are unused and were not reserved on a dropped branch: no commit on any branch (`git log --all`) adds or mentions an ADR with those numbers.
 

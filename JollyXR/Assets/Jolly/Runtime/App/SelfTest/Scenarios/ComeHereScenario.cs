@@ -14,6 +14,9 @@ namespace Jolly.App.SelfTest.Scenarios
     /// The guard's walk answers with a canned line and no model round (ADR-0037): a model request, or first audio
     /// later than <see cref="GuardFirstAudioBudgetMs"/> after release, degrades. Its first audio plays as the walk
     /// starts, so facing is checked once Nubi has arrived and turned to the user (ADR-0041), not at first audio.
+    /// The clip is the selected character's own come-here line when the assets have one (ADR-0043). A clip that names
+    /// another character is a test artefact, not a user: its model path is reported as <c>guard=name_mismatch</c>
+    /// instead of degrading, while the walk, the transcript and the first-audio budget are still checked.
     /// </summary>
     public static class ComeHereScenario
     {
@@ -29,11 +32,13 @@ namespace Jolly.App.SelfTest.Scenarios
         {
             var room = c.Graph.Room;
             await c.WaitUntil(() => room.Status != RoomScanStatus.Pending, RoomSettleSeconds, ct);
-            var r = await VoiceTurnScenario.Run(c, Name, c.Assets.comeHere, ToolNames.ComeHere, ct, checkFacing: false);
+            var nubi = c.Graph.Scene.nubi;
+            var utterance = c.Assets.ComeHereFor(nubi.Definition != null ? nubi.Definition.id : null);
+            var namesOther = !SaysName(utterance.expectedText, c.Graph.Text.Name);
+            var r = await VoiceTurnScenario.Run(c, Name, utterance, ToolNames.ComeHere, ct, checkFacing: false);
             var latency = c.Graph.Foundation.Latency;
             var firstAudio = latency.Between(LatencyMark.PttReleased, LatencyMark.FirstAudioPlayed);
             var modelCalled = !double.IsNaN(latency.Between(LatencyMark.PttReleased, LatencyMark.LlmRequestSent));
-            var nubi = c.Graph.Scene.nubi;
             var area = c.Graph.Xr.World.WalkableArea;
             var outcome = await nubi.WhenArrived(ct).TimeoutWithoutException(ArrivalWait);
             r.Metric("navmesh", area.ToString().ToLowerInvariant()).Metric("room", room.Status.ToString())
@@ -55,11 +60,19 @@ namespace Jolly.App.SelfTest.Scenarios
                 r.Metric("look_after_arrival", TurnChecks.Look(body, head));
                 TurnChecks.FacingWithin(r, body, head, "arrived");
             }
+            if (modelCalled && namesOther)
+            {
+                r.Metric("guard", "name_mismatch");
+                return r;
+            }
             if (modelCalled)
                 r.Degrade("the turn sent a model request although the guard's walk answers it locally");
             if (!(firstAudio <= GuardFirstAudioBudgetMs))
                 r.Degrade("first audio over the 600 ms budget of a guard walk");
             return r;
         }
+
+        static bool SaysName(string text, string name) =>
+            text != null && text.IndexOf(name, StringComparison.OrdinalIgnoreCase) >= 0;
     }
 }

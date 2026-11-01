@@ -76,7 +76,14 @@ namespace Jolly.Editor.Tools.Validators
                 problems.Add("JollyBootstrap.selfTestAssets is not set");
                 return;
             }
-            foreach (var u in new[] { assets.greeting, assets.comeHere, assets.whatIsThis, assets.longAnswer })
+            var utterances = new List<SelfTestAssets.Utterance> { assets.greeting, assets.comeHere, assets.whatIsThis, assets.longAnswer };
+            foreach (var entry in assets.comeHereByCharacter)
+            {
+                if (string.IsNullOrWhiteSpace(entry.characterId))
+                    problems.Add("a SelfTestAssets.comeHereByCharacter entry has no character id");
+                utterances.Add(entry.utterance);
+            }
+            foreach (var u in utterances)
             {
                 if (u.clip == null || string.IsNullOrWhiteSpace(u.expectedText))
                     problems.Add("a self-test utterance has no clip or expected text");
