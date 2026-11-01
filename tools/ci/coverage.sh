@@ -15,7 +15,7 @@ OUT="$ROOT/artifacts/coverage-summary.txt"
 PURE_LOGIC=(Jolly.Core Jolly.Net Jolly.Providers.MetaApi Jolly.Providers.Wit Jolly.Audio)
 # Measured EditMode + PlayMode value minus 2 points; raise it with the measurement, never lower it
 # to make a run pass. History in docs/release-checklist.md item 1.1.
-THRESHOLD=90.7
+THRESHOLD=91.6
 
 if [[ ! -s "$SUMMARY" ]]; then
   echo "[coverage] FAIL: no summary at $SUMMARY" >&2
