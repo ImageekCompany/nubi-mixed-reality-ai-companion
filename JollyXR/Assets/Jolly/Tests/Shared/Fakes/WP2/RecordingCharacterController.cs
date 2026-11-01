@@ -20,6 +20,7 @@ namespace Jolly.Testing.Conversation
         public float MoveStopDistance { get; private set; }
         public (float min, float max)? FollowRange { get; private set; }
         public int StopCount { get; private set; }
+        public List<Vector3> Relocations { get; } = new();
         public LookTarget? LastLook { get; private set; }
         public List<GestureId> Gestures { get; } = new();
         public Mood? LastMood { get; private set; }
@@ -48,6 +49,13 @@ namespace Jolly.Testing.Conversation
         {
             StopCount++;
             Mode = LocomotionMode.None;
+        }
+
+        /// <summary>Records the target and moves there at once (no pop).</summary>
+        public void Relocate(Vector3 floorPoint)
+        {
+            Relocations.Add(floorPoint);
+            Position = floorPoint;
         }
 
         public void LookAt(LookTarget target) => LastLook = target;

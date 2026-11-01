@@ -20,6 +20,8 @@ namespace Jolly.Character
         public float timeoutSlack = 3f;
         public float followRepathInterval = 0.25f;
         public float followRepathDistance = 0.3f;
+        [Tooltip("Relocate: Nubi shrinks away for half of this, moves, and grows back for the other half, s.")]
+        public float relocatePopSeconds = 0.4f;
 
         [Header("Clip playback (docs/art/nubi/README.md, Unity notes)")]
         [Tooltip("Root speed the Walk clip matches at 1x, m/s.")]

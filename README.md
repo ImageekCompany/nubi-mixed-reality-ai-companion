@@ -286,7 +286,7 @@ As of `main` after `fix/audit` (2026-11-01).
 ## Known limitations
 
 - **Walking is unverified on a real floor.** The test room has no Space Setup. `come_here` now walks on the fallback disc there (ADR-0024), but walking on a scanned floor and to real furniture (`go_to_surface`) is tested only in PlayMode on a simulated room.
-- **Without Space Setup, Nubi only knows the floor near you.** The fallback is a 1.5 m disc around the user at the tracking-origin floor height; it does not know about a chair inside it. Re-reading planes after Space Setup by restarting the plane and box managers is unverified on the headset.
+- **Without Space Setup, Nubi only knows the floor near you.** The fallback is a 1.5 m disc around the user at the tracking-origin floor height, stretched over to Nubi (up to 4 m); it does not know about a chair inside it. Re-reading planes after Space Setup by restarting the plane and box managers is unverified on the headset.
 - **No perching.** Nubi stops at the edge of the couch or table and faces it; it cannot climb onto furniture (no NavMesh links or climb clips).
 - **Real furniture does not hide Nubi.** Depth occlusion (Should 3) is not built.
 - **Interaction triggers and the pinch are unverified with a wearer.** With nobody wearing the headset, hand tracking produced phantom pinches, so the self-test drives push-to-talk itself.

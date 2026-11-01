@@ -833,6 +833,10 @@ namespace Jolly.Contracts
         void Follow(float distanceMin, float distanceMax);
         /// <summary>Halts locomotion immediately (StopGuard, stop tool, Settings).</summary>
         void Stop();
+        /// <summary>Moves Nubi to floorPoint without walking, hidden by a short shrink-and-grow pop: for when it is left
+        /// where no NavMesh will reach (the fallback floor, ADR-0024). A running MoveTo completes Cancelled; Follow
+        /// carries on from the new spot. A call before a pop has moved Nubi only retargets it.</summary>
+        void Relocate(Vector3 floorPoint);
         void LookAt(LookTarget target);
         UniTask PlayGesture(GestureId gesture, CancellationToken ct);
         void SetMood(Mood mood);

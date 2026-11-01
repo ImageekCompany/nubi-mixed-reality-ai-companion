@@ -81,6 +81,23 @@ namespace Jolly.Character
 
         public void Stop() => Finish(MoveOutcome.Cancelled);
 
+        /// <summary>Puts the agent at point without walking. A running move ends Cancelled, since its path started
+        /// elsewhere; follow mode re-plans at once. With no NavMesh at point yet, the agent waits disabled there and
+        /// <see cref="EnsureOnNavMesh"/> attaches it on the next plan.</summary>
+        public void Relocate(Vector3 point)
+        {
+            if (Mode == LocomotionMode.MovingTo)
+                Finish(MoveOutcome.Cancelled);
+            Halt();
+            if (!OnNavMesh || !_agent.Warp(point))
+            {
+                _agent.enabled = false;
+                _agent.transform.position = point;
+            }
+            _hasFollowGoal = false;
+            _nextRepath = 0d;
+        }
+
         public void Tick(Vector3 userPosition)
         {
             if (Mode == LocomotionMode.MovingTo)

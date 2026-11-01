@@ -10,8 +10,12 @@ namespace Jolly.Core.Config
         public TimeSpan PollInterval { get; set; } = TimeSpan.FromSeconds(0.5);
         public bool FallbackFloor { get; set; } = true;
         public float FallbackRadius { get; set; } = 1.5f;
+        /// <summary>Disc around Nubi that, with the user's disc, makes the walkable hull when Nubi stands outside it.</summary>
+        public float FallbackCharacterRadius { get; set; } = 0.5f;
+        /// <summary>The hull stretches to Nubi only this far from the user; beyond it Nubi pops back next to the user.</summary>
+        public float FallbackMaxSpan { get; set; } = 4f;
         public int FallbackSegments { get; set; } = 24;
-        /// <summary>The disc is rebuilt around the user once they are this far from its centre.</summary>
+        /// <summary>The area is rebuilt around the user once they are this far from its centre (or Nubi is outside it).</summary>
         public float FallbackRecenterDistance { get; set; } = 0.5f;
         /// <summary>Speak the Space Setup offer once per session when the room turns out unscanned.</summary>
         public bool OfferScan { get; set; } = true;

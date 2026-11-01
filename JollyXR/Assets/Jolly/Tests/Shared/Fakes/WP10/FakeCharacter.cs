@@ -37,6 +37,7 @@ namespace Jolly.Testing.Offline
         public UniTask<MoveOutcome> WhenArrived(CancellationToken ct) => UniTask.FromResult(MoveOutcome.Arrived);
         public void Follow(float distanceMin, float distanceMax) => Mode = LocomotionMode.Following;
         public void Stop() => Mode = LocomotionMode.None;
+        public void Relocate(Vector3 floorPoint) => Position = floorPoint;
         public void LookAt(LookTarget target) => _looks.Add(target);
 
         public UniTask PlayGesture(GestureId gesture, CancellationToken ct)

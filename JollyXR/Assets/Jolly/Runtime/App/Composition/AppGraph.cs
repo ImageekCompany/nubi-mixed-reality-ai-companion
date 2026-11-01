@@ -78,7 +78,7 @@ namespace Jolly.App.Composition
             BindViews(scene);
 
             var roomSettings = RoomSettingsFor(config, edges);
-            Room = new RoomScanMonitor(Xr.SceneData, Xr.User, f.Clock, f.Log, roomSettings,
+            Room = new RoomScanMonitor(Xr.SceneData, Xr.User, scene.nubi, f.Clock, f.Log, roomSettings,
                 InteractionLinePlayer.CanSpeak(f.Machine, Speech.Output));
             var voice = edges.Voice ?? d.Add(new CompositeVoiceActivation(scene.pushToTalk, scene.controllerPushToTalk));
             Conversation = ConversationServices.Build(f, config, Cloud, Xr, Speech, Personas, Localizer, Preferences,

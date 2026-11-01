@@ -89,14 +89,15 @@ Legend: ✅ met, with evidence · ⚠️ partial · ❌ not met · 🧑 needs a 
 
 ## Room awareness device checks (ADR-0024, `feat/mr-room-awareness`)
 
-Not run: the headset was owned by another task. Automated cover: EditMode (detector timeout, fallback disc, surface targets, room line, tool argument validation) and PlayMode (fallback disc NavMesh, `go_to_surface` with the real Nubi on a simulated room). Each check below needs a wearer; record the logcat lines (`adb logcat -s Unity | grep "evt=room"`) as evidence.
+Not run: the headset was owned by another task. Automated cover: EditMode (detector timeout, fallback disc, surface targets, room line, tool argument validation) and PlayMode (fallback disc NavMesh; the real Nubi walking to the user after the area moved 1.5 m and 3 m, following across re-centres, and popping back past 4 m; `go_to_surface` with the real Nubi on a simulated room). Each check below needs a wearer; record the logcat lines (`adb logcat -s Unity | grep "evt=room"`) as evidence.
 
-**A. Unscanned room: fallback disc** (erase Space Setup for the room first: Settings → Physical space → Space Setup → clear, or use a new room)
+**A. Unscanned room: fallback area** (erase Space Setup for the room first: Settings → Physical space → Space Setup → clear, or use a new room)
 1. Launch with all permissions granted. Within ~8 s logcat shows `evt=room.status status=Unscanned` then `evt=room.degraded walkable=fallback radius_m=1.5`.
 2. Look down: Nubi stands on the real floor (feet not sinking or floating). If it floats or sinks, the XR Origin is not in Floor tracking mode or the Quest floor height is wrong; `evt=room.fallback_floor_unavailable` means the origin mode was not Floor.
-3. "Nubi, come here": Nubi walks to about 1 m in front of you, faces you, no `unreachable`. Step 1–2 m away and repeat: the disc follows you (`evt=room.fallback_floor_moved` at Debug), Nubi comes again.
-4. "Follow me", walk slowly around a 2 m circle: Nubi follows without freezing or teleporting more than once per re-centre; note any visible hitch when the disc rebuilds (OVR Metrics stale frames).
-5. Self-test in the same room: `voice_come_here` reports `PASS navmesh=fallback walk=Arrived`.
+3. "Nubi, come here": Nubi walks to about 1 m in front of you, faces you, no `unreachable`. With Nubi standing still, step 1.5 m and then 3 m away and repeat: the area stretches from you to Nubi (`evt=room.fallback_floor_moved` at Debug), Nubi walks the whole way to you each time, never `unreachable` and never jumping.
+4. "Follow me", walk slowly around a 2 m circle: Nubi follows without freezing and without any teleport; note any visible hitch when the area rebuilds (OVR Metrics stale frames).
+5. Say "stop", walk more than 4 m away from Nubi: once, Nubi shrinks away and pops back about 1 m from you on its side (`evt=room.character_returned from_m=…`), then "come here" works.
+6. Self-test in the same room: `voice_come_here` reports `PASS navmesh=fallback walk=Arrived`.
 
 **B. Space Setup prompt flow** (same unscanned room, normal launch, not the self-test)
 1. Stay idle: once, and only once per launch, Nubi says the `room_scan_01` line with lip-sync and a caption. It must not interrupt a reply in progress.

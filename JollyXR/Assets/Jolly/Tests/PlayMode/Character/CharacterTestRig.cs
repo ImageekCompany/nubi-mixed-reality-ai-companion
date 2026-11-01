@@ -15,7 +15,8 @@ namespace Jolly.Tests.PlayMode.Character
     /// <summary>
     /// A 10 × 10 m floor with a disconnected 3 × 3 m island at x = 20, baked by the production NavMeshBaker, and the real Nubi prefab
     /// constructed with fakes. Time runs at <see cref="TimeScale"/>× so walks take a fraction of real time. Furniture added
-    /// with <see cref="AddFurniture"/> is baked as Not Walkable, like a Space Setup bounding box.
+    /// with <see cref="AddFurniture"/> is baked as Not Walkable, like a Space Setup bounding box. Without the floor
+    /// (<see cref="Create"/> floor: false) the test brings its own NavMesh.
     /// </summary>
     sealed class CharacterTestRig : IDisposable
     {
@@ -25,10 +26,10 @@ namespace Jolly.Tests.PlayMode.Character
         readonly NavMeshBaker _navMesh = new();
         readonly GameObject _floor;
 
-        CharacterTestRig(ILipSyncDriver lipSync)
+        CharacterTestRig(ILipSyncDriver lipSync, bool floor)
         {
             Time.timeScale = TimeScale;
-            _floor = BuildFloor();
+            _floor = floor ? BuildFloor() : null;
             var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(NubiAssetPaths.Prefab);
             Assert(prefab != null, $"missing {NubiAssetPaths.Prefab}");
             Nubi = Object.Instantiate(prefab).GetComponent<NubiCharacterController>();
@@ -56,14 +57,16 @@ namespace Jolly.Tests.PlayMode.Character
             _navMesh.Rebuild(0);
         }
 
-        public static CharacterTestRig Create(ILipSyncDriver lipSync = null) => new(lipSync ?? new ScriptedLipSync());
+        public static CharacterTestRig Create(ILipSyncDriver lipSync = null, bool floor = true) =>
+            new(lipSync ?? new ScriptedLipSync(), floor);
 
         public void Dispose()
         {
             if (Nubi != null)
                 Object.Destroy(Nubi.gameObject);
             _navMesh.Dispose();
-            Object.Destroy(_floor);
+            if (_floor != null)
+                Object.Destroy(_floor);
             Time.timeScale = 1f;
         }
 
