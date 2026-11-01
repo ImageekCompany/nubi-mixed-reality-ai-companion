@@ -40,7 +40,13 @@ namespace Jolly.Tests.PlayMode.XR
         sealed class StartCounter : MonoBehaviour
         {
             public int Starts;
-            void OnEnable() => Starts++;
+            public int StartFrame = -1;
+
+            void OnEnable()
+            {
+                Starts++;
+                StartFrame = Time.frameCount;
+            }
         }
 
         GameObject _root;
@@ -111,6 +117,25 @@ namespace Jolly.Tests.PlayMode.XR
 
             Assert.That(thrown, Is.True);
             Assert.That(_camera.enabled, Is.False);
+        });
+
+        [UnityTest]
+        public IEnumerator Run_SceneGranted_StartsTheCameraAndEachSceneManagerOnItsOwnFrame() => UniTask.ToCoroutine(async () =>
+        {
+            // Arrange: on the Quest these starts together made one 410-436 ms launch frame (selftest-report.md, 4d228c8).
+            var boxes = _root.AddComponent<StartCounter>();
+            boxes.enabled = false;
+            _gate.Construct(_permissions, _camera, new Behaviour[] { _planes, null, boxes });
+            _permissions.GrantOnRequest.Add(XrPermissions.HeadsetCamera);
+            _permissions.GrantOnRequest.Add(XrPermissions.UseScene);
+
+            // Act
+            await _gate.Run(CancellationToken.None);
+
+            // Assert
+            Assert.That(new[] { _camera.enabled, _planes.enabled, boxes.enabled }, Is.All.True);
+            Assert.That(new[] { _camera.StartFrame, _planes.StartFrame, boxes.StartFrame }, Is.Unique);
+            Assert.That(_gate.SceneGranted, Is.True);
         });
 
         [UnityTest]

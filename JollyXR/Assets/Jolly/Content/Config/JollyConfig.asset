@@ -80,6 +80,10 @@ MonoBehaviour:
     softEdges: 1
     sceneMeshFallback: 1
     depthStaleSeconds: 0.5
+  roomScanTimeoutSeconds: 8
+  fallbackFloor: 1
+  fallbackFloorRadius: 1.5
+  offerRoomScan: 1
   acknowledgeOnRelease: 1
   headPoseLeadSeconds: 0
   minimumLogLevel: 1
