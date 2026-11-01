@@ -4,10 +4,10 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using Jolly.Contracts;
 
-namespace Jolly.Tests.PlayMode.Presentation
+namespace Jolly.Testing
 {
     /// <summary>Returns "[lang] key" so tests can see both the key and the language a view asked for.</summary>
-    sealed class FakeLocalizer : ILocalizer
+    public sealed class FakeLocalizer : ILocalizer
     {
         public string LanguageTag { get; private set; } = "en";
         public LocaleVoiceProfile Voice => new() { LanguageTag = LanguageTag };

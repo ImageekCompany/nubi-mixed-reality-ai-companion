@@ -1,9 +1,9 @@
 using System;
 using Jolly.Contracts;
 
-namespace Jolly.Tests.PlayMode.Presentation
+namespace Jolly.Testing
 {
-    sealed class FakeConversationEvents : IConversationEvents
+    public sealed class FakeConversationEvents : IConversationEvents
     {
         public event Action<ConversationState, ConversationState> StateChanged;
         public event Action<string> UserPartial;
