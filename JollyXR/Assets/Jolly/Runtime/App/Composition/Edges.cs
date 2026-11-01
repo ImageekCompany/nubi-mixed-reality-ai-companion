@@ -35,14 +35,15 @@ namespace Jolly.App.Composition
         public static Edges ForPlayer()
         {
             var paths = AppPaths.ForPlayer();
+            var http = new HttpTransport();
             return new Edges
             {
                 Paths = paths,
                 Secrets = SecretsFactory.Create(paths),
                 IsNetworkReachable = () => Application.internetReachability != NetworkReachability.NotReachable,
-                Http = new HttpTransport(),
+                Http = http,
                 WebSockets = provider => new ClientWebSocketConnection(provider),
-                HttpStatus = new UnityWebRequestStatusClient(),
+                HttpStatus = new TransportStatusClient(http),
                 Microphone = new UnityMicrophone(),
             };
         }
