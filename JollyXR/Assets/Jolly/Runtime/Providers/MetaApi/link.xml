@@ -1,0 +1,3 @@
+<linker>
+    <!-- Types of Jolly.Providers.MetaApi reached only by reflection (ADR-0015). -->
+</linker>

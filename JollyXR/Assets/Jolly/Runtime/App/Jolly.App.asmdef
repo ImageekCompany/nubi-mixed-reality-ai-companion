@@ -1,0 +1,29 @@
+{
+    "name": "Jolly.App",
+    "rootNamespace": "Jolly.App",
+    "references": [
+        "Jolly.Contracts",
+        "Jolly.Core",
+        "Jolly.Net",
+        "Jolly.Providers.MetaApi",
+        "Jolly.Providers.Wit",
+        "Jolly.Audio",
+        "Jolly.Integrations.ULipSync",
+        "Jolly.XR",
+        "Jolly.XR.MetaQuest",
+        "Jolly.Character",
+        "Jolly.Localization",
+        "Jolly.Presentation",
+        "UniTask",
+        "UniTask.Linq"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

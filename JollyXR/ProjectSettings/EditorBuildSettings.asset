@@ -6,8 +6,8 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Spikes/DeviceSpike.unity
-    guid: 50fe9b726ba3d47c3a3f861c83909fcb
+    path: Assets/Jolly/Scenes/Main.unity
+    guid: 847fa99927f6a4254b25b827a06681ef
   m_configObjects:
     com.unity.xr.arfoundation.simulation_settings: {fileID: 11400000, guid: dace59ae1947e48f69c114112a275e9c, type: 2}
     com.unity.xr.management.loader_settings: {fileID: 11400000, guid: dbb22a5f768524fcdb9b8a1bc6d8ae4c, type: 2}

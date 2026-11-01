@@ -1,0 +1,22 @@
+{
+    "name": "Jolly.XR.MetaQuest",
+    "rootNamespace": "Jolly.XR.MetaQuest",
+    "references": [
+        "Jolly.Contracts",
+        "Jolly.XR",
+        "UniTask",
+        "UniTask.Linq",
+        "Unity.XR.MetaOpenXR",
+        "Unity.XR.ARFoundation",
+        "Unity.XR.ARSubsystems"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

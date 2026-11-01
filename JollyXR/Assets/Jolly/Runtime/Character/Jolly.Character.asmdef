@@ -1,0 +1,19 @@
+{
+    "name": "Jolly.Character",
+    "rootNamespace": "Jolly.Character",
+    "references": [
+        "Jolly.Contracts",
+        "UniTask",
+        "UniTask.Linq",
+        "Unity.Animation.Rigging"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

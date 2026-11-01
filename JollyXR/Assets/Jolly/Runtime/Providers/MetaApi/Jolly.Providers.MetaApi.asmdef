@@ -1,0 +1,19 @@
+{
+    "name": "Jolly.Providers.MetaApi",
+    "rootNamespace": "Jolly.Providers.MetaApi",
+    "references": [
+        "Jolly.Contracts",
+        "Jolly.Net",
+        "UniTask",
+        "UniTask.Linq"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

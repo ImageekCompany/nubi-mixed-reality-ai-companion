@@ -1,0 +1,21 @@
+{
+    "name": "Jolly.Localization",
+    "rootNamespace": "Jolly.Localization",
+    "references": [
+        "Jolly.Contracts",
+        "UniTask",
+        "UniTask.Linq",
+        "UniTask.Addressables",
+        "Unity.ResourceManager",
+        "Unity.Localization"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

@@ -1,0 +1,18 @@
+{
+    "name": "Jolly.Net",
+    "rootNamespace": "Jolly.Net",
+    "references": [
+        "Jolly.Contracts",
+        "UniTask",
+        "UniTask.Linq"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
