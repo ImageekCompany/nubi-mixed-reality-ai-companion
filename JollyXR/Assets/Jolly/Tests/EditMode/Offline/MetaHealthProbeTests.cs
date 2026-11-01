@@ -52,7 +52,7 @@ namespace Jolly.Tests.EditMode.Offline
             _unauthorized = 0;
         }
 
-        MetaHealthProbe Create(string baseUrl = "https://api.meta.ai")
+        MetaHealthProbe Create(string baseUrl = "https://api.meta.ai/v1")
         {
             var probe = new MetaHealthProbe(_http, _secrets, _clock, _log, baseUrl);
             probe.Unauthorized += () => _unauthorized++;
@@ -65,8 +65,8 @@ namespace Jolly.Tests.EditMode.Offline
             return ping.GetAwaiter().GetResult();
         }
 
-        [TestCase("https://api.meta.ai")]
-        [TestCase("https://api.meta.ai/")]
+        [TestCase("https://api.meta.ai/v1")]
+        [TestCase("https://api.meta.ai/v1/")]
         public void Ping_GetsModelsWithTheBearerKey(string baseUrl)
         {
             var probe = Create(baseUrl);
