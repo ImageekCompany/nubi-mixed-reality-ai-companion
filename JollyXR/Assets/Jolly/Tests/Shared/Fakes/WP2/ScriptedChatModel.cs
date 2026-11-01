@@ -60,6 +60,13 @@ namespace Jolly.Testing.Conversation
                 return this;
             }
 
+            /// <summary>The message item is done (Responses <c>response.output_item.done</c>).</summary>
+            public Round TextDone()
+            {
+                _steps.Add((w, ct) => w.YieldAsync(new ModelEvent(ModelEventKind.TextDone)));
+                return this;
+            }
+
             public Round Call(string callId, string name, string argsJson = "{}")
             {
                 _calls++;

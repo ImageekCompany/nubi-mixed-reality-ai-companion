@@ -78,6 +78,18 @@ namespace Jolly.Tests.EditMode.Core.Conversation
         }
 
         [Test]
+        public void SpeechBreak_QueuesTheUnterminatedPreambleBeforeTheToolArrives()
+        {
+            _f.Agent.Say("Let me check").SpeechBreak().Hold().ToolStarted("capture_and_identify")
+                    .ToolCompleted("capture_and_identify");
+
+            _f.Talk("What is this");
+
+            Assert.That(_f.Queue.Enqueued.Select(e => e.sentence), Is.EqualTo(new[] { "Let me check" }));
+            _f.Agent.Release();
+        }
+
+        [Test]
         public void EmptyFinal_ReturnsToIdleWithoutCallingTheAgent()
         {
             _f.Talk("  ");

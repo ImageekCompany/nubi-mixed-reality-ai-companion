@@ -171,7 +171,11 @@ namespace Jolly.Providers.MetaApi.Chat
                 case "message":
                     var text = MessageText(item);
                     if (text.Length > 0)
+                    {
                         _items.Add(ConversationItem.Assistant(text));
+                        // A preamble ends without whitespace; this lets it be spoken before the call's arguments stream.
+                        output.Add(new ModelEvent(ModelEventKind.TextDone));
+                    }
                     return;
                 default:
                     // reasoning (with encrypted_content) and anything newer: replayed verbatim within the turn.

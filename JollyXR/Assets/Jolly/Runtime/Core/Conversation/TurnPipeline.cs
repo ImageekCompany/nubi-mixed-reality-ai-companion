@@ -136,6 +136,9 @@ namespace Jolly.Core.Conversation
                     case AgentEventKind.SpeechDelta:
                         _speech.Append(e.Text);
                         break;
+                    case AgentEventKind.SpeechBreak:
+                        _speech.Finish();
+                        break;
                     case AgentEventKind.ToolStarted:
                         // The preamble often ends without trailing whitespace, so the splitter would hold it and glue the
                         // next round's first sentence onto it ("On my way!Here I am."). Speak it now (architecture §5.1).

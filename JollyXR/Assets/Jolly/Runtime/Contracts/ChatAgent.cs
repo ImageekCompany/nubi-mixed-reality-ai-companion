@@ -62,14 +62,14 @@ namespace Jolly.Contracts
         public UsageRecord Usage { get; set; }
     }
 
-    public enum ModelEventKind { Started, TextDelta, ToolCall, Completed }
+    public enum ModelEventKind { Started, TextDelta, ToolCall, Completed, TextDone }
 
     public readonly struct ModelEvent
     {
         public ModelEvent(ModelEventKind kind, string text = null, ToolCallRequest toolCall = null, ModelTurnResult result = null)
         { Kind = kind; Text = text; ToolCall = toolCall; Result = result; }
         public ModelEventKind Kind { get; }
-        public string Text { get; }                 // TextDelta
+        public string Text { get; }                 // TextDelta; TextDone: none, the text item ended (a call may follow)
         public ToolCallRequest ToolCall { get; }    // ToolCall: emitted once its arguments are complete
         public ModelTurnResult Result { get; }      // Completed: always the last event
     }
@@ -95,7 +95,7 @@ namespace Jolly.Contracts
 
     /// <summary>Delayed: a model round has sent no first event yet within <c>AgentSettings.HoldLineAfter</c> (a slow
     /// server or a first-event timeout and retry); the pipeline fills the silence with a hold line. Carries no data.</summary>
-    public enum AgentEventKind { SpeechDelta, ToolStarted, ToolCompleted, Completed, Failed, Delayed }
+    public enum AgentEventKind { SpeechDelta, ToolStarted, ToolCompleted, Completed, Failed, Delayed, SpeechBreak }
 
     public readonly struct AgentEvent
     {

@@ -23,6 +23,9 @@ namespace Jolly.Testing.Conversation
 
         public ScriptedAgentLoop Say(string text) => Add(new AgentEvent(AgentEventKind.SpeechDelta, text));
 
+        /// <summary>The model's text item ended: speak what is buffered.</summary>
+        public ScriptedAgentLoop SpeechBreak() => Add(new AgentEvent(AgentEventKind.SpeechBreak));
+
         public ScriptedAgentLoop ToolStarted(string name, string callId = "call_1") =>
             Add(new AgentEvent(AgentEventKind.ToolStarted, toolName: name, callId: callId));
 

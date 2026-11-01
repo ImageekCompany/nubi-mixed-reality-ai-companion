@@ -64,6 +64,18 @@ namespace Jolly.Tests.EditMode.Chat
         }
 
         [Test]
+        public void MessageDone_EndsTheTextBeforeTheCallArgumentsStream()
+        {
+            // The preamble has no trailing whitespace, so without this it waited for the whole call (235 ms on the
+            // Quest for a vision call, selftest-report.md 4d228c8).
+            var kinds = Reduce("responses_commentary_tool").Select(e => e.Kind).ToList();
+
+            Assert.That(kinds.Count(k => k == ModelEventKind.TextDone), Is.EqualTo(1));
+            Assert.That(kinds.IndexOf(ModelEventKind.TextDone), Is.GreaterThan(kinds.LastIndexOf(ModelEventKind.TextDelta)));
+            Assert.That(kinds.IndexOf(ModelEventKind.TextDone), Is.LessThan(kinds.IndexOf(ModelEventKind.ToolCall)));
+        }
+
+        [Test]
         public void ParallelCalls_EmitBothCallsInOrderWithDistinctIds()
         {
             var events = Reduce("responses_parallel_tools");

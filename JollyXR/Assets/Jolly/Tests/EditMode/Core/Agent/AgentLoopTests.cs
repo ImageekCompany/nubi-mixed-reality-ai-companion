@@ -68,6 +68,19 @@ namespace Jolly.Tests.EditMode.Core.Agent
         }
 
         [Test]
+        public void TextDone_IsASpeechBreakBeforeTheCallStarts()
+        {
+            _f.Tool("look_at");
+            _f.Model.Enqueue().Text("Let me look").TextDone().Call("c1", "look_at");
+            _f.Model.Enqueue().Text("A mug.");
+
+            var run = _f.Run();
+
+            AgentFixture.Completed(run);
+            Assert.That(AgentFixture.Describe(run.Items), Does.StartWith("say:Let me look SpeechBreak start:look_at"));
+        }
+
+        [Test]
         public void Instructions_MoveOnlyWhenAskedAndAnswerGreetingsInWords()
         {
             _f.Tool(ToolNames.ComeHere);

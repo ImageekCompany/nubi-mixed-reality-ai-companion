@@ -170,6 +170,9 @@ namespace Jolly.Core.Agent
                             _latency.Mark(turnId, LatencyMark.LlmFirstText);
                             events.Append(e.Text);
                             break;
+                        case ModelEventKind.TextDone:
+                            events.Write(new AgentEvent(AgentEventKind.SpeechBreak));
+                            break;
                         case ModelEventKind.ToolCall:
                             tools.Start(e.ToolCall);
                             break;
