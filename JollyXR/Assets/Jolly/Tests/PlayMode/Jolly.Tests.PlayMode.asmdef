@@ -15,6 +15,7 @@
         "Jolly.App",
         "Jolly.Character",
         "Jolly.Presentation",
+        "Jolly.Localization",
         "Jolly.XR",
         "Unity.XR.ARFoundation",
         "Unity.XR.ARSubsystems",
