@@ -22,6 +22,8 @@ FACE_PRESETS = {
     "ShakeHead": {"Frown": 0.5},
     "Sad": {"Frown": 1.0, "Sad_Eyes": 1.0},
     "Surprised": {"O": 1.0, "Wide_Eyes": 1.0},
+    "Shrug": {"Smile": 0.25, "Wide_Eyes": 0.35},
+    "Stretch": {"O": 0.7, "Happy_Eyes": 1.0},      # a yawn
 }
 
 

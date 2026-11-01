@@ -75,7 +75,7 @@ derived from the Jolly mesh. Meta's name and logo are not used as branding.
 | Bones (22) | `Root, Hips, Spine, Chest, Neck, Head, Sprout_1, Sprout_2, Eye_L/R, UpperArm/LowerArm/Hand_L/R, UpperLeg/LowerLeg/Foot_L/R` |
 | Skinning | Analytic per-part weights (each part blends only along its own chain). 0 unweighted verts, ≤ 4 influences, all normalised |
 | Shape keys | Visemes `sil, A, I, U, E, O`; expressions `Smile, Frown`; eyes `Blink_L, Blink_R, Happy_Eyes, Wide_Eyes, Sad_Eyes` |
-| Clips (30 fps) | Loops: `Idle` (100 f), `Walk` (20 f, in place, 0.49 m/s), `Hop` (16 f, in place, 0.90 m/s), `Talk` (60), `Listen` (90), `Think` (90), `Sad` (90). One-shots: `Wave` (60), `Point` (45, ends holding the point), `Happy` (36, hop), `Nod` (30), `ShakeHead` (36), `Surprised` (40) |
+| Clips (30 fps) | Loops: `Idle` (100 f), `Walk` (20 f, in place, 0.49 m/s), `Hop` (16 f, in place, 0.90 m/s), `Talk` (60), `Listen` (90), `Think` (90), `Sad` (90). One-shots: `Wave` (60), `Point` (45, ends holding the point), `Happy` (36, hop), `Nod` (30), `ShakeHead` (36), `Surprised` (40), `Shrug` (40), `Stretch` (60, a yawn; idle wake-up) |
 
 FBX facts, checked by re-import and by dumping the FBX tree:
 
@@ -164,6 +164,7 @@ Animation principles in `clips.py`:
   | Listen | Smile 0.35 | ShakeHead | Frown 0.5 |
   | Think | U 0.6 | Sad | Frown 1, Sad_Eyes 1 |
   | Wave | Smile 0.8 | Surprised | O 1, Wide_Eyes 1 |
+  | Shrug | Smile 0.25, Wide_Eyes 0.35 | Stretch | O 0.7, Happy_Eyes 1 |
 
   The clip contact sheets render with these presets applied, so they show the intended result.
 - **Grounding:** in passthrough Nubi floats without a contact shadow. Add a blob-shadow decal under
