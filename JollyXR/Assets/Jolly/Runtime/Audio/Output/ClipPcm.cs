@@ -13,11 +13,14 @@ namespace Jolly.Audio.Output
     /// </summary>
     public static class ClipPcm
     {
+        // Clip-sized scratch kept between canned lines; ArrayPool.Shared reallocated it on Quest (ADR-0023).
+        static readonly ArrayPool<float> Scratch = ArrayPool<float>.Create();
+
         public static PcmChunk ToChunk(AudioClip clip, int targetSampleRate)
         {
             var channels = clip.channels;
             var frames = clip.samples;
-            var pool = ArrayPool<float>.Shared;
+            var pool = Scratch;
             var interleaved = pool.Rent(frames * channels);
             float[] resampled = null;
             try
