@@ -5,6 +5,43 @@ Device: Quest 3 `2G0YC1ZF7P090N`, Horizon OS v209. Build: `tools/ci/build.sh` (I
 Nobody wore the headset. The room was dim (camera mean luma 23–45 of 255) and had no Space Setup. Command: `tools/device/selftest.sh` (headless: `prox_close`, `guardian_pause 1`, 16 MiB logcat buffer; all restored afterwards).
 Raw outputs (`selftest_results.json`, `logcat.txt`, `vrapi.txt`) are under `artifacts/selftest/`, which is git-ignored.
 
+## Cartoon voice merged, character voices, device-regression fixes (3e99cb5)
+
+`main` after the `feat/cartoon-voice` merge (`1b50bca`), the voice on `CharacterDefinition` (`1ad725f`), the greeting fix (`b87028a`), the text-done speech break (`5fee08e`) and the launch changes (`b504f60`, `3e99cb5`). `tools/ci/test.sh` (EditMode 1050/1050, PlayMode 332/332, pure logic 92.6 %, 0 `warning CS`), `tools/ci/build.sh` (IL2CPP ARM64 release, 59 MB, `QuestBuild` 0 errors, SHA-256 `91be93a11668…`), then `tools/device/selftest.sh` three times (13:30, 13:32, 13:34 UTC). Then `tools/device/build.sh --character jolly` (64 MB, `[CharacterSceneProcessor] … character=jolly local=1`) and one self-test (13:37 UTC). The default build was reinstalled afterwards (installed APK SHA-256 matches) and `guardian_pause` read back 0. Same dim room (mean luma 16–19, vision used the bundled still), no Space Setup. Before these, one development run re-recorded the pipeline collection and three release runs of `b504f60` (managers staggered, camera still on the graph's frame) are listed as "b504f60".
+
+| Scenario | Run 1 | Run 2 | Run 3 | Jolly |
+|---|---|---|---|---|
+| `offline_greeting` | PASS, caption 15 ms | PASS, 14 ms | PASS, 13 ms | PASS, 27 ms (Jolly's own line, Railey) |
+| `voice_greeting` | DEGRADED, 2,972 ms, no tool | DEGRADED, 2,026 ms, no tool | DEGRADED, 2,346 ms, no tool | DEGRADED, 2,346 ms, no tool, "I'm Jolly, your friendly little companion…" |
+| `voice_come_here` | PASS, 1,999 ms, `walk=Arrived` (+ `play_gesture`) | PASS, 1,680 ms | DEGRADED, 2,181 ms | DEGRADED, 2,166 ms |
+| `vision_capture_and_identify` | **FAIL**: the Spark vision call failed (`llm.failed kind=Network status=0`), still; tool → answer audio 2,055 ms, mask 794 ms | DEGRADED (still); 1,608 ms, mask 626 ms | DEGRADED (still); 1,917 ms, mask 614 ms | DEGRADED (still); 1,806 ms, mask 1,349 ms |
+| `barge_in` | PASS, silence 55 ms | PASS, 33 ms | PASS, 50 ms | PASS, 49 ms |
+| `perf_idle` | PASS, 72.0 fps, p95 13.9 ms, 17 draw / 15 SetPass, 33,744 tris, 545 MB | PASS, 72.0 fps, 17 / 15, 33,744, 543 MB | PASS, 72.0 fps, 17 / 15, 33,744, 546 MB | PASS, 72.0 fps, 17 / 15, 33,432, 567 MB |
+| Overall, spend | FAIL, $0.0168 | DEGRADED, $0.0109 | DEGRADED, $0.0121 | DEGRADED, $0.0138 |
+
+| Metric | Target | 3e99cb5 (3 runs) | b504f60 (3 runs) | 4d228c8 (3 runs) |
+|---|---|---|---|---|
+| Release → first audio, online turns | p50 ≤ 2.0 s | p50 **1,776**, 1,282–2,971 ms (n=12) | p50 1,998, 942–3,578 (n=12) | p50 2,090, 1,459–3,971 (n=12) |
+| Request → first event / first event → first text | — | 402–1,470 (p50 968) / 0–930 (p50 368) ms | 388–1,847 / 26–1,527 ms | 429–1,220 / 195–1,943 ms |
+| First text → first sentence queued | — | 0–68 ms (p50 0) | 0–55 ms (p50 0) | 41–235 ms (p50 112) |
+| First sentence queued → first audio | — | 94–416 ms (p50 205) | 98–390 ms (p50 194) | 97–399 ms (p50 147) |
+| Greeting turns that called a movement tool | 0 | **0 of 3** (Jolly 0 of 1) | 0 of 3 | 2 of 3 (4 of 7 in the last three reports) |
+| Worst launch frame | ≤ ~100 ms | **282, 285, 284 ms** (Jolly 284) | 325, 330, 327 ms | 410, 403, 410 ms |
+| Stale frames, launch (to first scenario + 2 s) | — | 90, 96, 92 frames | 82, 90, 86 | 96, 100, 98 |
+| Stale frames, turns / idle / whole run | < 1 % | 1.70 / 0.92 / 2.79, 2.07 / 1.30 / 3.24, 1.48 / 1.16 / 2.85 % | 0.73 / 0.25 / 1.82, 1.10 / 0.45 / 2.24, 1.31 / 0.49 / 2.31 % | 0.67 / 0.04 / 1.95, 0.69 / 0.22 / 2.16, 0.79 / 0.21 / 2.22 % |
+| Idle draw / SetPass / triangles / memory | ≤ 200 / ≤ 60 / ≤ 300k / — | 17 / 15 / 33.7k / 543–546 MB | 17 / 15 / 33.7k / 543–546 MB | 17 / 15 / 33.7k / 540–543 MB |
+
+Findings:
+
+- **The greeting no longer walks.** "Hi Nubi, who are you?" called no tool in 7 of 7 runs on the new prompt (development, b504f60 ×3, 3e99cb5 ×3) and in the Jolly run, against 4 of 7 before. The static rules say to move only when asked, `come_here` / `follow_user` say they need the user's request, and the companion prompt offers movement "when the person asks". `voice_come_here` still calls `come_here` in every run. The self-test now degrades a greeting that starts a movement tool (`TurnChecks.StayedPut`).
+- **Release → first audio p50 1,776 ms (n=12) on the final build, 1,991 ms over all 24 turns of both builds.** The measured client-side win is first text → sentence queued: p50 112 → 0 ms (max 235 → 68 ms), from speaking a preamble when the Responses message item ends (`TextDone` → `SpeechBreak`) instead of after the tool call's arguments, and the greeting losing its tool round. The rest is model time (request → first event + reasoning before the first text, 0.4–2.4 s) and varies run to run; the p50 sits right at the budget, so n=12 does not prove it stays under it. Prompt caching already works: the first turn of a launch is cached except right after a prompt change (`cached=0` on the first run of a new build, 1,777 of 1,813 tokens otherwise), and request size grew only with the context block and history, which come after the cached prefix. No request trimming was done: cached tokens are not where the time goes.
+- **Launch worst frame 410 → 282–285 ms; the ~100 ms target is not reached.** Cause, from the frame-spike lines and the log lines inside the spike (development run 13:15:48): one frame held the app-graph build, the AR camera manager start (Meta's `AndroidCameraManager` finding and opening both Camera2 streams, 130 ms, plus ~150 ms before its first log line), every scene manager start including the occlusion manager, and the depth texture creation. `PermissionGate` now starts the camera one frame after the graph is built and each scene manager on its own frame; the old pipeline collection predated the hand rig and occlusion (no hand, depth-occluder or depth-preprocessing pipelines), so it was re-recorded (15 variants / 14 states, was 10 / 9). What remains is the camera manager's own start, one synchronous call into the Meta OpenXR provider that also creates the passthrough layer, so it cannot be deferred or split from app code. The launch window still has ~90 stale frames (the launch is spread over more, shorter frames).
+- **Stale frames rose during this session in turns and idle, not only at launch** (idle 0.04–0.22 % in the 4d228c8 runs, 0.25–0.49 % in b504f60, 0.92–1.30 % here, 2.21 % in the Jolly run, which was last). The app's main thread had no frame over 28 ms during `perf_idle` in any of these runs, and app GPU time in idle rose run by run in the same session (4.4 → 4.7 → 5.0 ms, GPU 0.39 → 0.43) at the same clock levels, with nothing drawn differently. speculation: compositor-side (passthrough, headset warm after ~12 back-to-back runs, 37–38 °C); a run on a cooled headset would separate it from the build.
+- **Vision call network failure (run 1).** The Spark vision request failed with `kind=Network status=0` after SAM had returned (784 ms); the scenario FAILs as it should since 6cd06e6, and the agent still answered 2.1 s after the tool start. No other run saw it. speculation: transient Wi-Fi or server reset.
+- **Jolly speaks with its own voice.** `--character jolly` selects Jolly (`evt=character.selected id=jolly`), the offline greeting is its own clip, and all live speech uses its `VoiceProfile` (Wit Railey, pitch 112, speed 105) through `PersonaRepository`, including the launch Wit warm-up (`warmup.tts status=200`, 452 ms). First sentence → audio was 291–319 ms in that run (n=4), against p50 205 ms for Nubi; speculation: Railey's first chunk, too few turns to tell.
+
+Spend: 8 runs (development, 3 × b504f60, 3 × 3e99cb5, Jolly), app meter $0.104; `api-spend.md` has the row.
+
 ## Final verification of main (4d228c8)
 
 `tools/ci/test.sh` (EditMode 1030/1030, PlayMode 312/312, pure logic 92.6 %, 0 `warning CS`), `tools/ci/build.sh` (IL2CPP ARM64 release, 59 MB, `QuestBuild` 0 errors / 2 warnings, SHA-256 `b6dd6e49…`), installed, `push-secrets.sh`, then `tools/device/selftest.sh` three times (11:43, 11:45, 11:46 UTC). Then `tools/device/build.sh --character jolly` (63 MB, `[CharacterSceneProcessor] … character=jolly local=1`) and one self-test (11:49 UTC). The default build was reinstalled afterwards (installed APK SHA-256 matches) and `guardian_pause` read back 0. Same dim room (mean luma 16–19, vision used the bundled still), no Space Setup.
