@@ -1,19 +1,19 @@
-#if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
 using System.IO;
+using Jolly.Character;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.Rendering;
 using Object = UnityEngine.Object;
 
-namespace Jolly.Character.Authoring
+namespace Jolly.Editor.Character
 {
     /// <summary>
     /// Regenerates every derived Nubi asset from Nubi.fbx: materials (remapped into the model import), the Animator
     /// controller and Nubi.prefab. Deterministic, so a rebuild after a Blender change is one command:
-    /// <c>Unity -batchmode -quit -projectPath JollyXR -executeMethod Jolly.Character.Authoring.NubiPrefabBuilder.Build</c>.
+    /// <c>Unity -batchmode -quit -projectPath JollyXR -executeMethod Jolly.Editor.Character.NubiPrefabBuilder.Build</c>.
     /// </summary>
     public static class NubiPrefabBuilder
     {
@@ -195,4 +195,3 @@ namespace Jolly.Character.Authoring
         }
     }
 }
-#endif

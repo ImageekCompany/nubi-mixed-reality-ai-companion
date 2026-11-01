@@ -1,10 +1,10 @@
-#if UNITY_EDITOR
 using System;
 using System.IO;
+using Jolly.Character;
 using UnityEditor;
 using UnityEngine;
 
-namespace Jolly.Character.Authoring
+namespace Jolly.Editor.Character
 {
     /// <summary>
     /// Import settings for Nubi.fbx live in code, not in its .meta (docs/art/nubi/README.md, Unity notes): Generic
@@ -48,4 +48,3 @@ namespace Jolly.Character.Authoring
         }
     }
 }
-#endif

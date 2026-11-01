@@ -1,11 +1,5 @@
-#if UNITY_EDITOR
-namespace Jolly.Character.Authoring
+namespace Jolly.Editor.Character
 {
-    /// <summary>
-    /// Editor-only asset locations. The authoring code lives in Jolly.Character behind UNITY_EDITOR because the
-    /// architecture's asmdef table has no character editor assembly, and the default editor assembly cannot see
-    /// Jolly.Character (autoReferenced: false).
-    /// </summary>
     public static class NubiAssetPaths
     {
         public const string Model = "Assets/Jolly/Art/Character/Nubi.fbx";
@@ -26,4 +20,3 @@ namespace Jolly.Character.Authoring
             System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(assetPath) ?? ".");
     }
 }
-#endif

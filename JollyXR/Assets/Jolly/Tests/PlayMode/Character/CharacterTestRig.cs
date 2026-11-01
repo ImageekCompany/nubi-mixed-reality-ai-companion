@@ -2,8 +2,8 @@
 using System;
 using Cysharp.Threading.Tasks;
 using Jolly.Character;
-using Jolly.Character.Authoring;
 using Jolly.Contracts;
+using Jolly.Editor.Character;
 using Jolly.Testing;
 using Unity.AI.Navigation;
 using UnityEditor;

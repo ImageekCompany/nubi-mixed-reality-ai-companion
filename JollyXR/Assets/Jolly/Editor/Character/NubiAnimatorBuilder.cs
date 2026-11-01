@@ -1,13 +1,13 @@
-#if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
+using Jolly.Character;
 using Jolly.Contracts;
 using UnityEditor;
 using UnityEditor.Animations;
 using UnityEngine;
 using P = Jolly.Character.NubiAnimatorParameters;
 
-namespace Jolly.Character.Authoring
+namespace Jolly.Editor.Character
 {
     /// <summary>
     /// Generates Nubi.controller (architecture §5.5). Base: Locomotion blend tree (Idle/Walk/Hop by Speed, playback
@@ -157,4 +157,3 @@ namespace Jolly.Character.Authoring
         }
     }
 }
-#endif

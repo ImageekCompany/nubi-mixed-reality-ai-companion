@@ -2,7 +2,7 @@
 using System.IO;
 using System.Linq;
 using Jolly.Character;
-using Jolly.Character.Authoring;
+using Jolly.Editor.Character;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
