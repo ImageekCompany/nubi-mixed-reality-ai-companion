@@ -30,6 +30,12 @@ Each work package appends bullets under its own heading only (`docs/scope.md` §
 ### WP6
 
 ### WP7
+- `WitTextToSpeech`: raw Wit `/synthesize` (`audio/raw`, 24 kHz s16le) over `UnityWebRequest` with a pooled 32 KB `DownloadHandlerScript` buffer; `WitPcmChunker` carries odd bytes across HTTP chunks; 3 s first-chunk and 3 s inter-chunk timeouts on `IClock` (`PcmStreamTimeout`), surfaced as `ProviderException(Timeout)`; HTTP status mapping; English only (`Supports`).
+- `StreamingSpeechOutput`: clip-less `AudioSource` fed from `OnAudioFilterRead`. `SpeechRingPlayer` (audio thread: SPSC ring, exact integer-ratio linear resampling 24 kHz → output rate, 20 ms flush fade, block RMS) + `SpeechOutput` (main thread: per-call prefetch, strict call-order writes, `FirstSamplePlayed` and completion from the consumed position, `Flush` cancels every pending `Play`/`PlayClip`).
+- `AmplitudeLipSyncDriver`: RMS → mouth "A", instant attack, closed within 100 ms of silence.
+- `SentenceSplitter` (terminators + closers, abbreviations/initials, decimals, newline, 60-char first chunk on a comma, 120-char comma/space split, 240 cap, `。`) and `SpeechQueue` (prefetch depth 1, user speech rate clamp 50–200, `Clear` on barge-in, `WhenDrained` never hangs after a flush, `SpokenSoFar`, `SentenceStarted`/`SentenceFailed`).
+- `CannedLines : ICannedLines` (no repeat of the category's last 5 picks, localized text with English fallback, clip via the `ILineClipSource` port) and `CannedLineCatalog` (31 English lines over every `LineCategory`).
+- `CannedLineBaker` (editor menu + batch method) bakes the catalog through the runtime Wit client; 31 English lines baked to `Content/Audio/Lines/en` with Wit voice `Charlie` (Decompress On Load, ADPCM, mono).
 
 ### WP8
 

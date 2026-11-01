@@ -35,5 +35,6 @@ Rows before 2026-11-01 02:00 (research phase, `docs/research/*.md`) were not ite
 | 2026-11-01 | architect (review pass): vision streaming with `LABEL\|PHRASE` header on CC-BY `pen_640.jpg`, effort minimal vs low (first text 1.51 s / 2.44 s) | muse-spark-1.3 | 2 | in 846 / out 709 | 0.004 |
 | 2026-11-01 | xr-engineer: device spike runs 3–6 (script end-to-end check + mic-stall repro) — ASR WS ~8 short sessions, no vision/SAM | muse-voice-transcribe-1.0 | ~8 | ~40 s audio | 0.002 |
 | 2026-11-01 | verifier: device spike re-run (run3-verify, non-paid) — ASR WS ×2 (Wit TTS 4.3 s + mic 3 s); no vision/SAM | muse-voice-transcribe-1.0 | 2 | ~7.4 s audio | 0.0004 |
+| 2026-11-01 | WP7: canned-line bake (`CannedLineBaker`, 31 lines + 1 timed-out retry) and `/voices` listing | Wit.ai (not Meta API budget) | 33 | ~1.9k chars | 0.00 |
 
 Running total (est.): **≤ $0.53**
