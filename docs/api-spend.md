@@ -47,4 +47,6 @@ Rows before 2026-11-01 02:00 (research phase, `docs/research/*.md`) were not ite
 
 | 2026-11-01 | acknowledgement only for questions (ADR-0040): 1 device self-test run of the default release build `0f2cef4` (app meter 0.0218) | muse-spark-1.3, sam-3.1, muse-voice-transcribe-1.0 (+ Wit, free) | ~7 Spark calls, 3 SAM, ~6 ASR sessions | 3 images; ~15 s audio | 0.022 |
 
-Running total (est.): **≤ $1.96** (sum of the rows: 1.962)
+| 2026-11-01 | attend to the user (ADR-0041): 1 device self-test run of the `--character jolly` release build `f27ea04` (app meter 0.0267) | muse-spark-1.3, sam-3.1, muse-voice-transcribe-1.0 (+ Wit, free) | ~8 Spark calls, 2 SAM, ~6 ASR sessions | 2 images; ~15 s audio | 0.027 |
+
+Running total (est.): **≤ $1.99** (sum of the rows: 1.989)

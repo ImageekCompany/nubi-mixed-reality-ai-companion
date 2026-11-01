@@ -39,6 +39,7 @@
 | [0038](0038-hedged-first-event.md) | A voice request with no first event after 2.5 s is hedged with an identical second request; the sequential voice retry is dropped | accepted |
 | [0039](0039-dark-room-vision-guard.md) | A camera frame below mean luma 25 skips SAM and Spark (`too_dark`); the model asks for light in one sentence | accepted |
 | [0040](0040-acknowledge-questions-only.md) | The acknowledgement plays at the final and only for a question the guards left to the model; commands and guard walks get none | accepted |
+| [0041](0041-attend-to-the-user.md) | The character attends the user in every conversation turn and when near: body faces them past 15°, a tool's look at a point holds 2.5 s, `evt=look.user` per turn | accepted |
 
 Numbers 0027–0029 are unused and were not reserved on a dropped branch: no commit on any branch (`git log --all`) adds or mentions an ADR with those numbers.
 
