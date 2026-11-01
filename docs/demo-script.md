@@ -8,7 +8,8 @@ Rule for recording: record a beat only after 10 consecutive clean runs of all si
 
 - **Room.** A lit living room, Space Setup done in *this* room, and a sofa or table that Nubi has to walk around. The floor must be clear for about 3 m.
 - **Headset.** Charged above 80 %, release APK installed (`tools/device/install-run.sh artifacts/Nubi.apk`), and `secrets.json` pushed (`tools/device/push-secrets.sh`).
-- **Warm-up turn.** After launch, do one throwaway voice turn (any question), then Settings → Clear memory. The first turn after launch opens cold ASR and TTS connections; across five self-test runs it took 1.5–2.8 s to first audio, against 1.1–1.9 s for later turns, so beat 1 must not be that turn.
+- **Reboot the headset (ADR-0034)** before the session; the measured post-reboot runs idled 20 min after it. Stale frames follow the headset's uptime, not the build: after 4 days of uptime idle dropped 5.0 % of frames, after a reboot 0.23–0.32 % (`docs/perf/selftest-report.md` "Stale frames are device state…").
+- **Warm-up turn.** After launch, say one throwaway greeting ("Hi Nubi, who are you?"), then Settings → Clear memory. The first turn after launch opens cold ASR and TTS connections, and a greeting is the slowest turn type anyway (a full spoken answer): to first audio it took 3.0–3.3 s in the three `f311081` runs and 2.4–4.7 s in the three `36778c1` runs, against 1.0–3.5 s for the other `f311081` turns, and greetings were p50 2,362 ms even mid-session in the 20-turn run (`751acba`). Beat 1 must be neither the first turn nor a greeting.
 - **App state.** Settings → Clear memory. Persona: Companion. Caption size: largest. Check the usage meter and write down its starting value.
 - **Capture.** The capture method was decided in the R1 check (Quest system recorder, or scrcpy / MQDH cast as the fallback): ________. Record the passthrough and app layers together, plus a separate room-mic track for the voice-over.
 - **Network.** Home Wi-Fi, with the headset's quick-settings Wi-Fi toggle within reach for beat 5.
@@ -19,10 +20,10 @@ Rule for recording: record a beat only after 10 consecutive clean runs of all si
 | t | Beat | Shot | You say / do | Nubi does (what must be visible) | Meta tooling on screen |
 |---|---|---|---|---|---|
 | 0:00–0:10 | Cold open | Wide MR shot of the room. Nubi idles on the floor, blinks, and turns its head toward you. | Title card: **"Nubi: a companion that can see your world."** | Idle, blink, look-at | — |
-| 0:10–0:40 | **1. Come here** | First-person view. Pinch-hold. | "Hi Nubi, come here." Release. | The live caption reads "Nubi", not "newbie". An acknowledgement sound plays. The answer starts within 2 s with lip-sync and a caption. Nubi walks *around* the furniture and stops about 1 m in front of you. | Muse Voice Transcribe (live partials), Spark badge, `come_here` badge, latency HUD |
+| 0:10–0:40 | **1. Come here** | First-person view. Pinch-hold. | "Nubi, come here." Release. | The live caption reads "Nubi", not "newbie". An acknowledgement sound plays. The walk starts at once: the local guard calls `come_here` before the model (ADR-0036; it matches "Hi Nubi, come here." too). The spoken answer follows with lip-sync and a caption in about 2 s (2.1–2.2 s in the `36778c1` runs). Nubi walks *around* the furniture and stops about 1 m in front of you. | Muse Voice Transcribe (live partials), Spark badge, `come_here` badge, latency HUD |
 | 0:40–1:15 | **2. What is this?** | Pick up the remote, hold it at chest height, point at it with the other hand. Pinch-hold. | "What is this, and which button turns it on?" | The mask outline appears on the real remote within 2 s and the answer is spoken as it streams. Then `highlight_part("power button")` outlines the actual button on the same capture. Nubi looks at the remote. Two SAM prompt types on screen: a pointed object, then a text-prompted part. | `capture_and_identify` + `highlight_part` badges, **SAM 3.1** + **Spark** badges, mask outlines |
 | 1:15–1:35 | **3. Follow me / Stop** | Wider shot. Walk about 3 m. | "Follow me." Walk. Then: "Stop." | Nubi follows at 1–1.5 m, then stops *immediately* on "Stop" (handled on the device, before any model call). | `follow_user` badge, `stop` badge |
-| 1:35–1:55 | **4. Barge-in** | Medium shot. | "Tell me everything about this remote." Pinch in the middle of a sentence. | The audio fades out in ≤ 150 ms and Nubi switches to listening (self-test: silent in 27–53 ms). | Latency HUD shows the barge-in |
+| 1:35–1:55 | **4. Barge-in** | Medium shot. | "Tell me everything about this remote." Pinch in the middle of a sentence. | The audio fades out in ≤ 150 ms and Nubi switches to listening (self-test: silent in 28–55 ms over the `751acba`, `f311081` and `36778c1` runs). | Latency HUD shows the barge-in |
 | 1:55–2:22 | **5. Offline** | Show the Wi-Fi toggle going off in quick settings. Pinch. | "Are you there?" *Optional, only once a wearer has confirmed it on the headset:* hold an open palm toward Nubi. Turn Wi-Fi back on and pinch: "Thanks, Nubi!" | An offline line plays from the baked clip with lip-sync. Idle animations carry on. (Optional: the palm triggers a greeting line.) After Wi-Fi returns, the next turn is online. | Status indicator: Offline → Online |
 | 2:22–2:34 | **6. Cost** | Open Settings → usage. Cut to `docs/api-spend.md` on a monitor. | VO: "Every call is metered against a hard cap. This session cost ___." | The usage meter matches the ledger within 10 %. | Usage meter |
 | 2:34–2:45 | Close | Architecture card (README voice-turn diagram), repo URL. | VO: "Open source. OpenXR. Built on Muse Spark, SAM 3.1 and Muse Voice Transcribe." | Nubi waves | — |
@@ -38,7 +39,7 @@ Rule for recording: record a beat only after 10 consecutive clean runs of all si
 
 Use at most two, and only if the tier has shipped and passed 10 clean runs. Each one replaces the matching amount of time from beats 3–5, never from 1 or 2.
 
-- "Nubi, where are my glasses?" → `find_object` highlights every pair in view, and Nubi walks to the nearest one.
+- "Nubi, where are my glasses?" → `find_object` highlights every pair in view, and Nubi looks at the nearest one (it does not walk). Device: the model chose `find_object` for "where is my mug? Show me." in 3 of 3 `36778c1` runs (2 of 3 on `f311081`), but twice it added a `look_at` round, so the answer came 3.0–4.9 s after the tool start; all on the bundled still image, never in a lit room. Rehearse it before using it.
 - "Come here," then pinch while Nubi is walking: the talking stops and the walk carries on (a barge-in never cancels locomotion; not yet seen on a scanned floor).
 - "Remember this place as the sofa." Walk away, then "Walk to the sofa."
 - "Switch to Guru." → Nubi greets you at once in the new voice and style.
@@ -69,10 +70,11 @@ The finals format (length, Q&A, in-headset or cast) is **UNVERIFIED** (`docs/res
 - [ ] Pack: headset, charger, USB-C cable (data), laptop with adb + scrcpy, the TV remote, backup objects (moka pot), a printed copy of this runbook, and the demo video on the laptop and on a USB stick.
 
 ### At the venue (30 min before)
+- [ ] Reboot the headset (ADR-0034) now, before launching the app (the measured post-reboot runs idled 20 min after it).
 - [ ] Wi-Fi: join the venue network, run a speed test, and fall back to the phone hotspot if latency looks poor. Keep the hotspot on and paired as a second network.
 - [ ] Space Setup in the demo area. Clear 3 m of floor. Make sure there is enough light for the passthrough camera (the camera frames were black in a dark room).
 - [ ] Casting works (MQDH cast or scrcpy) and shows the passthrough *and* Nubi.
-- [ ] Launch the app and do one online turn and one capture of the remote. This also warms the ASR and TTS connections.
+- [ ] Launch the app and do one greeting turn ("Hi Nubi, who are you?") and one capture of the remote. This warms the ASR and TTS connections, and the slow greeting answer is spent before beat 1.
 - [ ] Settings → Clear memory, Companion persona, large captions.
 - [ ] Turn on Do Not Disturb, and check there is no pending system update.
 
