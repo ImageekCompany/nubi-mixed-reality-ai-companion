@@ -98,12 +98,14 @@ namespace Jolly.Tests.EditMode.Offline
         }
 
         [Test]
-        public void Respond_ForOffline_NeverRepeatsALineWithinTheLastFive()
+        public void Respond_ForOffline_InterleavesCategoriesSoFewLinesNeverRepeatWithinTheLastFive()
         {
-            for (var i = 0; i < 5; i++)
+            // 3 Offline lines alone would repeat 3 picks apart; only the alternation spaces them 6 apart.
+            for (var i = 0; i < 3; i++)
+                _lines.Add(LineCategory.Offline, "offline." + i, _clip);
+            for (var i = 0; i < 2; i++)
             {
-                _lines.Add(LineCategory.Offline, "offline." + i, _clip)
-                      .Add(LineCategory.WhoAmI, "whoami." + i, _clip)
+                _lines.Add(LineCategory.WhoAmI, "whoami." + i, _clip)
                       .Add(LineCategory.Greeting, "greeting." + i, _clip);
             }
             var spoken = new List<string>();
