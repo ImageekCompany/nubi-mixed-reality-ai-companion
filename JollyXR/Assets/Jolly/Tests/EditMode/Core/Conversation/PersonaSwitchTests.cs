@@ -91,6 +91,70 @@ namespace Jolly.Tests.EditMode.Core.Conversation
         }
 
         [Test]
+        public void SafetyNotice_IsCaptionedEvenWhenTtsNeverPlaysIt()
+        {
+            _f.Personas.RequestSwitch("psychologist");
+            _f.Queue.PlayNext();
+
+            _f.Queue.DrainUnplayed();
+
+            Assert.That(_f.Captions, Is.EqualTo(new[] { "Hello, I am here to listen.", "I am not a therapist." }));
+            Assert.That(_f.State, Is.EqualTo(ConversationState.Idle));
+        }
+
+        [Test]
+        public void SwitchWithoutNetwork_GivesTheCannedSafetyNotice()
+        {
+            _f.Connectivity.State = Connectivity.Offline;
+
+            _f.Personas.RequestSwitch("psychologist");
+
+            Assert.That(_f.Offline.Categories, Is.EqualTo(new[] { LineCategory.SafetyNotice }));
+            Assert.That(_f.Queue.Enqueued, Is.Empty);
+            Assert.That(_f.State, Is.EqualTo(ConversationState.Idle));
+        }
+
+        [Test]
+        public void StartingInAPersonaWithASafetyNotice_GivesItWithoutAGreeting()
+        {
+            _f.Dispose();
+            _f = new ConversationFixture("en", FakePersonaProvider.Profile("psychologist", persistMemory: false,
+                safetyNotice: "I am not a therapist."));
+            _f.Personas.Greetings["psychologist"] = "Hello, I am here to listen.";
+
+            _f.Start();
+
+            Assert.That(_f.Queue.Enqueued.Select(e => e.sentence), Is.EqualTo(new[] { "I am not a therapist." }));
+            _f.Queue.Drain();
+            Assert.That(_f.Captions, Is.EqualTo(new[] { "I am not a therapist." }));
+            Assert.That(_f.State, Is.EqualTo(ConversationState.Idle));
+        }
+
+        [Test]
+        public void StartingInAPersonaWithoutASafetyNotice_SaysNothing()
+        {
+            Assert.That(_f.Queue.Enqueued, Is.Empty);
+            Assert.That(_f.State, Is.EqualTo(ConversationState.Idle));
+        }
+
+        [Test]
+        public void SaveFailure_StillSwitches_AndLaterTurnsKeepSaving()
+        {
+            System.IO.Directory.CreateDirectory(System.IO.Path.Combine(_f.Directory, "conversation.companion.json"));
+
+            _f.Personas.RequestSwitch("guru");
+            _f.Queue.Drain();
+            _f.Agent.Say("Hi.");
+            _f.Talk("hello");
+            _f.Queue.Drain();
+
+            Assert.That(_f.Log.Contains(LogLevel.Error, "evt=memory.save_failed"), Is.True);
+            Assert.That(_f.Personas.Current.Id, Is.EqualTo("guru"));
+            Assert.That(_f.Personas.PendingSwitchId, Is.Null);
+            Assert.That(System.IO.File.Exists(System.IO.Path.Combine(_f.Directory, "conversation.guru.json")), Is.True);
+        }
+
+        [Test]
         public void PressDuringTheGreeting_BargesIn()
         {
             _f.Personas.RequestSwitch("guru");

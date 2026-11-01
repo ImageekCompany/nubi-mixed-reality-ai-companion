@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using Jolly.Contracts;
@@ -9,7 +10,8 @@ namespace Jolly.Core.Conversation
     /// <summary>
     /// Turns a turn's speech deltas into queued sentences and the speech side of the state machine: SpeechQueued per
     /// sentence, FirstAudio + caption when a sentence's first sample plays, SpeechDrained when the queue empties. When the
-    /// locale has no TTS voice, sentences become captions only (architecture §10).
+    /// locale has no TTS voice, sentences become captions only (architecture §10). It also keeps what this turn has said, for
+    /// the agent's interrupted commit: the queue's own record spans turns and is wiped by the barge-in's Clear.
     /// </summary>
     public sealed class TurnSpeech : IDisposable
     {
@@ -20,8 +22,10 @@ namespace Jolly.Core.Conversation
         readonly ConversationEvents _events;
         readonly ILatencyTracker _latency;
         readonly Dictionary<int, string> _awaitingFirstSample = new();
+        readonly StringBuilder _spoken = new();
         int _nextUtteranceId;
         int _turnId;
+        int _mustCaptionId;
         VoiceSpec _voice;
         bool _ttsAvailable;
         CancellationToken _ct;
@@ -45,6 +49,8 @@ namespace Jolly.Core.Conversation
         {
             _splitter.Flush();
             _awaitingFirstSample.Clear();
+            _spoken.Clear();
+            _mustCaptionId = 0;
             _drain = null;
             _turnId = turnId;
             _voice = voice;
@@ -61,21 +67,39 @@ namespace Jolly.Core.Conversation
 
         public void Finish() => Speak(_splitter.Flush());
 
+        /// <summary>
+        /// Speaks <paramref name="text"/> as one utterance after whatever is buffered. Its caption follows its first sample
+        /// like any other, but if the queue drains without playing it (TTS failed) it is captioned then (the persona safety
+        /// notice must be shown).
+        /// </summary>
+        public void SpeakEnsuringCaption(string text)
+        {
+            Finish();
+            _mustCaptionId = Speak(text);
+        }
+
+        /// <summary>Sentences captioned or started playing since <see cref="Begin"/>, in order.</summary>
+        public string SpokenThisTurn => _spoken.ToString();
+
+        /// <summary>A barge-in: a first sample that arrives after the flush belongs to silenced audio.</summary>
+        public void Cancel() => _awaitingFirstSample.Clear();
+
         /// <summary>Completes once everything queued in this turn has played (at once when nothing is queued).</summary>
         public UniTask WhenIdle() => _drain?.Task ?? UniTask.CompletedTask;
 
         public void Dispose() => _output.FirstSamplePlayed -= OnFirstSamplePlayed;
 
-        void Speak(string sentence)
+        /// <summary>The utterance id, or 0 when there was nothing to say or it was only captioned.</summary>
+        int Speak(string sentence)
         {
             sentence = sentence?.Trim();
             if (string.IsNullOrEmpty(sentence))
-                return;
+                return 0;
             var id = NextUtteranceId();
             if (!_ttsAvailable)
             {
-                _events.RaiseCaptionStarted(id, sentence);
-                return;
+                Caption(id, sentence);
+                return 0;
             }
             _awaitingFirstSample[id] = sentence;
             _latency.Mark(_turnId, LatencyMark.FirstSentenceQueued);
@@ -83,6 +107,7 @@ namespace Jolly.Core.Conversation
             _queue.Enqueue(sentence, _voice, id);
             if (_drain == null)
                 WatchDrain().Forget();
+            return id;
         }
 
         async UniTaskVoid WatchDrain()
@@ -92,7 +117,11 @@ namespace Jolly.Core.Conversation
             if (_drain == drain)
                 _drain = null;
             if (!cancelled)
+            {
+                if (_awaitingFirstSample.Remove(_mustCaptionId, out var unplayed))
+                    Caption(_mustCaptionId, unplayed);
                 _machine.Fire(ConversationTrigger.SpeechDrained);
+            }
             drain.TrySetResult();
         }
 
@@ -102,6 +131,12 @@ namespace Jolly.Core.Conversation
                 return;
             _latency.Mark(_turnId, LatencyMark.FirstAudioPlayed);
             _machine.Fire(ConversationTrigger.FirstAudio);
+            Caption(utteranceId, sentence);
+        }
+
+        void Caption(int utteranceId, string sentence)
+        {
+            _spoken.Append(sentence).Append(' ');
             _events.RaiseCaptionStarted(utteranceId, sentence);
         }
     }

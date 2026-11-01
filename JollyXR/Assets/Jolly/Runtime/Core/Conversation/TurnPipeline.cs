@@ -16,7 +16,6 @@ namespace Jolly.Core.Conversation
         readonly TurnGuards _guards;
         readonly TurnSpeech _speech;
         readonly IAgentLoop _agent;
-        readonly ISpeechQueue _queue;
         readonly IOfflineResponder _offline;
         readonly IPersonaProvider _personas;
         readonly ConversationStateMachine _machine;
@@ -25,8 +24,9 @@ namespace Jolly.Core.Conversation
         readonly ILocalizer _localizer;
         readonly ILog _log;
         readonly ConversationTimings _timings;
+        readonly Func<string> _spokenThisTurn;
 
-        public TurnPipeline(TurnListener listener, TurnGuards guards, TurnSpeech speech, IAgentLoop agent, ISpeechQueue queue,
+        public TurnPipeline(TurnListener listener, TurnGuards guards, TurnSpeech speech, IAgentLoop agent,
                             IOfflineResponder offline, IPersonaProvider personas, ConversationStateMachine machine,
                             ConversationEvents events, ILatencyTracker latency, ILocalizer localizer, ILog log,
                             ConversationTimings timings)
@@ -35,7 +35,6 @@ namespace Jolly.Core.Conversation
             _guards = guards;
             _speech = speech;
             _agent = agent;
-            _queue = queue;
             _offline = offline;
             _personas = personas;
             _machine = machine;
@@ -44,6 +43,7 @@ namespace Jolly.Core.Conversation
             _localizer = localizer;
             _log = log;
             _timings = timings;
+            _spokenThisTurn = () => _speech.SpokenThisTurn;
         }
 
         public bool CanListen => _listener.CanListen;
@@ -91,13 +91,27 @@ namespace Jolly.Core.Conversation
             EndSpeakingTurn(turnId);
         }
 
-        /// <summary>Unprompted speech from Idle in the current persona's voice (the greeting after a persona switch).</summary>
-        public async UniTask Announce(int turnId, string text, CancellationToken turnCt)
+        /// <summary>
+        /// Unprompted speech from Idle in the current persona's voice: a greeting, then the safety notice, which is captioned
+        /// even if TTS fails (either may be null). Without the network for TTS the notice is the canned SafetyNotice line
+        /// instead and the greeting is dropped.
+        /// </summary>
+        public async UniTask Announce(int turnId, string greeting, string notice, bool online, CancellationToken turnCt)
         {
             _latency.BeginTurn(turnId);
             _machine.Fire(ConversationTrigger.Announce);
+            if (!online)
+            {
+                if (!string.IsNullOrEmpty(notice))
+                    await _offline.Respond(LineCategory.SafetyNotice, _speech.NextUtteranceId(), turnCt);
+                EndSpeakingTurn(turnId);
+                return;
+            }
             BeginSpeech(turnId, turnCt);
-            _speech.Append(text);
+            if (!string.IsNullOrEmpty(greeting))
+                _speech.Append(greeting);
+            if (!string.IsNullOrEmpty(notice))
+                _speech.SpeakEnsuringCaption(notice);
             await FinishSpeaking(turnId, turnCt);
         }
 
@@ -115,7 +129,7 @@ namespace Jolly.Core.Conversation
             BeginSpeech(turn.TurnId, ct);
             var toolsRunning = 0;
             ProviderException failure = null;
-            await foreach (var e in _agent.RunTurn(turn, () => _queue.SpokenSoFar, ct).WithCancellation(ct))
+            await foreach (var e in _agent.RunTurn(turn, _spokenThisTurn, ct).WithCancellation(ct))
             {
                 switch (e.Kind)
                 {

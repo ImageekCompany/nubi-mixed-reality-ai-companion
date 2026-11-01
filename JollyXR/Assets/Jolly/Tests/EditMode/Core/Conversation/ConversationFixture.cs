@@ -63,12 +63,13 @@ namespace Jolly.Tests.EditMode.Core.Conversation
             var listener = new TurnListener(Mic, Stt, frames, TranscriptAliases.Default, Localizer, Events, latency, Log, Timings);
             var guards = new TurnGuards(new StopGuard(Localizer), new CrisisGuard(Localizer), Character);
             var speech = new TurnSpeech(Queue, new FakeSentenceSplitter(), Output, Machine, Events, latency);
-            var pipeline = new TurnPipeline(listener, guards, speech, Agent, Queue, Offline, Personas, Machine, Events, latency,
+            var pipeline = new TurnPipeline(listener, guards, speech, Agent, Offline, Personas, Machine, Events, latency,
                 Localizer, Log, Timings);
             var switcher = new PersonaSwitcher(Personas, Personas, Memory, Character, Log);
             var keeper = new MemoryKeeper(Memory, Scene, Model, Personas, Log);
             Controller = new ConversationController(Voice, new TurnRouter(Connectivity, Usage), pipeline,
-                new BargeInCoordinator(Output, Queue, latency), Machine, switcher, keeper, Clock, Log, Timings);
+                new BargeInCoordinator(Output, Queue, speech, latency), Machine, switcher, keeper, Localizer, Clock, Log,
+                Timings);
             _disposables.Add(speech);
             _disposables.Add(new ConversationStateRelay(Machine, Events, Character));
             _disposables.Add(Camera);

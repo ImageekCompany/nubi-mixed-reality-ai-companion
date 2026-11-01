@@ -168,6 +168,53 @@ namespace Jolly.Tests.EditMode.Core.Conversation
         }
 
         [Test]
+        public void Acknowledge_IsSkippedWhenTheTurnEndedBeforeTheRelease()
+        {
+            _f.Timings.AcknowledgeOnRelease = true;
+            _f.Stt.Failure = new ProviderException("stt", ProviderErrorKind.Server, "scripted");
+            _f.Voice.Press();
+            _f.Mic.Last.Stop();
+            Assert.That(_f.State, Is.EqualTo(ConversationState.Idle), "ASR failed while still pinching");
+
+            _f.Voice.Release();
+
+            Assert.That(_f.Offline.Categories, Is.Empty);
+        }
+
+        [Test]
+        public void OfflinePressWhileSpeaking_GetsAFullSpeakingLimit()
+        {
+            _f.Agent.Say("Long answer. ").Hold();
+            _f.Talk();
+            _f.Queue.PlayNext();
+            _f.Advance(59);
+            _f.Connectivity.State = Connectivity.Offline;
+            _f.Offline.Hold = true;
+
+            _f.Voice.Press();
+            _f.Advance(2);
+
+            Assert.That(_f.Log.Contains(LogLevel.Warning, "evt=watchdog"), Is.False);
+            Assert.That(_f.State, Is.EqualTo(ConversationState.Speaking));
+            _f.Offline.Release();
+            Assert.That(_f.State, Is.EqualTo(ConversationState.Idle));
+        }
+
+        [Test]
+        public void LocaleChangeMidTurn_EndsTheTurn()
+        {
+            _f.Agent.Say("Hello there. ").Hold();
+            _f.Talk();
+            _f.Queue.PlayNext();
+
+            Sync.Run(_f.Localizer.SetLanguage("pl", default));
+
+            Assert.That(_f.State, Is.EqualTo(ConversationState.Idle));
+            Assert.That(_f.Output.Flushes, Is.EqualTo(1));
+            Assert.That(_f.Agent.InterruptedSpoken, Is.EqualTo("Hello there. "));
+        }
+
+        [Test]
         public void TurnEnd_SavesConversationMemory()
         {
             _f.Agent.Say("Hi.");

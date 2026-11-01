@@ -6,7 +6,8 @@ namespace Jolly.Core.Conversation
 {
     /// <summary>
     /// The shape of WP7's <c>SpeechQueue</c> (contracts §9) as a port, so the turn pipeline builds and tests without it.
-    /// WP7's class implements it unchanged.
+    /// WP7's class implements it unchanged; its <c>SpokenSoFar</c> is left out because it spans turns (TurnSpeech keeps the
+    /// per-turn record).
     /// </summary>
     public interface ISpeechQueue
     {
@@ -14,8 +15,6 @@ namespace Jolly.Core.Conversation
         /// <summary>Completes when nothing is queued or playing; also completes after <see cref="Clear"/>.</summary>
         UniTask WhenDrained(CancellationToken ct);
         void Clear();
-        /// <summary>Text of the sentences that have started playing since the last Clear (for the interrupted commit).</summary>
-        string SpokenSoFar { get; }
     }
 
     /// <summary>The shape of WP7's <c>SentenceSplitter</c> (contracts §9) as a port.</summary>

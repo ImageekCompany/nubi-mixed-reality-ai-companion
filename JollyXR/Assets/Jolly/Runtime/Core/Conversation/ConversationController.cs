@@ -8,8 +8,9 @@ namespace Jolly.Core.Conversation
 {
     /// <summary>
     /// The thin conversation loop (architecture §3, §5.2, §6): maps PTT presses to routed turns, barges in on a busy turn,
-    /// owns <c>sessionCts</c> and <c>turnCts</c>, runs the state watchdogs, keeps memory after each turn, and applies a
-    /// pending persona switch once the conversation is Idle with no turn running. Main thread only.
+    /// owns <c>sessionCts</c> (renewed on a persona switch or locale change) and <c>turnCts</c> (cancelled when its turn
+    /// ends), runs the state watchdogs, keeps memory after each turn, applies a pending persona switch once the
+    /// conversation is Idle with no turn running, and gives the persona's safety notice at startup. Main thread only.
     /// </summary>
     public sealed class ConversationController : IDisposable
     {
@@ -21,6 +22,7 @@ namespace Jolly.Core.Conversation
         readonly PersonaSwitcher _personas;
         readonly MemoryKeeper _memory;
         readonly TurnWatchdog _watchdog;
+        readonly ILocalizer _localizer;
         readonly ILog _log;
         CancellationToken _appCt;
         CancellationTokenSource _sessionCts;
@@ -33,7 +35,8 @@ namespace Jolly.Core.Conversation
 
         public ConversationController(IVoiceActivation voice, TurnRouter router, TurnPipeline pipeline,
                                       BargeInCoordinator bargeIn, ConversationStateMachine machine, PersonaSwitcher personas,
-                                      MemoryKeeper memory, IClock clock, ILog log, ConversationTimings timings)
+                                      MemoryKeeper memory, ILocalizer localizer, IClock clock, ILog log,
+                                      ConversationTimings timings)
         {
             _voice = voice;
             _router = router;
@@ -42,6 +45,7 @@ namespace Jolly.Core.Conversation
             _machine = machine;
             _personas = personas;
             _memory = memory;
+            _localizer = localizer;
             _log = log;
             _watchdog = new TurnWatchdog(clock, timings, OnWatchdog);
         }
@@ -50,18 +54,23 @@ namespace Jolly.Core.Conversation
         public async UniTask RunAsync(CancellationToken appCt)
         {
             _appCt = appCt;
-            _sessionCts = CancellationTokenSource.CreateLinkedTokenSource(appCt);
-            await _memory.Load(appCt);
-            _voice.Pressed += OnPressed;
-            _voice.Released += OnReleased;
-            _machine.Changed += OnStateChanged;
-            _personas.Requested += OnSwitchRequested;
             try
             {
-                TryApplySwitch();
+                _sessionCts = CancellationTokenSource.CreateLinkedTokenSource(appCt);
+                await _memory.Load(appCt);
+                _voice.Pressed += OnPressed;
+                _voice.Released += OnReleased;
+                _machine.Changed += OnStateChanged;
+                _personas.Requested += OnSwitchRequested;
+                _localizer.Changed += OnLocaleChanged;
+                if (!TryApplySwitch())
+                    Announce(null, _personas.SafetyNotice);
                 var stopped = new UniTaskCompletionSource();
                 using (appCt.Register(() => stopped.TrySetResult()))
                     await stopped.Task;
+            }
+            catch (OperationCanceledException) when (appCt.IsCancellationRequested)
+            {
             }
             finally
             {
@@ -81,6 +90,7 @@ namespace Jolly.Core.Conversation
             _voice.Released -= OnReleased;
             _machine.Changed -= OnStateChanged;
             _personas.Requested -= OnSwitchRequested;
+            _localizer.Changed -= OnLocaleChanged;
             _watchdog.Dispose();
             Interrupt();
             _sessionCts?.Cancel();
@@ -108,6 +118,8 @@ namespace Jolly.Core.Conversation
                 _machine.Fire(ConversationTrigger.OfflinePttPressed);
                 Run(_turnId, cts, _pipeline.RunOffline(_turnId, TurnRouter.LineFor(route), cts.Token)).Forget();
             }
+            // An offline press while Speaking stays in Speaking and raises no Changed; the new turn still gets a full limit.
+            _watchdog.Enter(_machine.State);
         }
 
         void OnReleased()
@@ -130,11 +142,35 @@ namespace Jolly.Core.Conversation
         void OnWatchdog(ConversationState state)
         {
             _log.Write(LogLevel.Warning, "conversation", $"evt=watchdog state={state} turn={_turnId}");
+            Abort();
+        }
+
+        void Abort()
+        {
             Interrupt();
             _machine.Fire(ConversationTrigger.Watchdog);
         }
 
-        /// <summary>The source stays alive until its turn has finished, so late cleanup never meets a disposed token.</summary>
+        /// <summary>The rest of a turn would be in the old language (architecture §5.2).</summary>
+        void OnLocaleChanged()
+        {
+            if (_disposed)
+                return;
+            Abort();
+            RenewSession();
+        }
+
+        void RenewSession()
+        {
+            _sessionCts.Cancel();
+            _sessionCts.Dispose();
+            _sessionCts = CancellationTokenSource.CreateLinkedTokenSource(_appCt);
+        }
+
+        /// <summary>
+        /// The source stays alive until its turn has finished, so late cleanup never meets a disposed token; it is then
+        /// cancelled, which ends work that outlived the turn (an acknowledgement waiting for a release).
+        /// </summary>
         CancellationTokenSource NewTurn()
         {
             _turnCts = CancellationTokenSource.CreateLinkedTokenSource(_sessionCts.Token);
@@ -162,6 +198,7 @@ namespace Jolly.Core.Conversation
             {
                 if (_turnCts == cts)
                     _turnCts = null;
+                cts.Cancel();
                 cts.Dispose();
             }
             if (turnId != _turnId || _disposed)
@@ -185,13 +222,12 @@ namespace Jolly.Core.Conversation
         async UniTaskVoid ApplySwitch()
         {
             _switching = true;
-            string announcement;
+            bool applied;
             try
             {
-                _sessionCts.Cancel();
-                _sessionCts.Dispose();
-                _sessionCts = CancellationTokenSource.CreateLinkedTokenSource(_appCt);
-                announcement = await _personas.ApplyPending(_appCt);
+                RenewSession();
+                await _memory.Save(_appCt);
+                applied = await _personas.ApplyPending(_appCt);
             }
             catch (OperationCanceledException)
             {
@@ -206,10 +242,17 @@ namespace Jolly.Core.Conversation
             {
                 _switching = false;
             }
-            if (string.IsNullOrEmpty(announcement) || _disposed || _machine.State != ConversationState.Idle)
+            if (applied && !_disposed && _machine.State == ConversationState.Idle)
+                Announce(_personas.Greeting, _personas.SafetyNotice);
+        }
+
+        void Announce(string greeting, string notice)
+        {
+            if (string.IsNullOrEmpty(greeting) && string.IsNullOrEmpty(notice))
                 return;
             var cts = NewTurn();
-            Run(_turnId, cts, _pipeline.Announce(_turnId, announcement, cts.Token)).Forget();
+            var online = _router.CanSynthesize;
+            Run(_turnId, cts, _pipeline.Announce(_turnId, greeting, notice, online, cts.Token)).Forget();
         }
     }
 }

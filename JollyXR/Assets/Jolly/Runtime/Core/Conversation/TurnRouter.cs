@@ -29,6 +29,9 @@ namespace Jolly.Core.Conversation
             };
         }
 
+        /// <summary>Wit TTS needs the network, not the Meta key or budget.</summary>
+        public bool CanSynthesize => _connectivity.State != Connectivity.Offline;
+
         public static LineCategory LineFor(TurnRoute route) => route switch
         {
             TurnRoute.Unauthorized => LineCategory.Error,

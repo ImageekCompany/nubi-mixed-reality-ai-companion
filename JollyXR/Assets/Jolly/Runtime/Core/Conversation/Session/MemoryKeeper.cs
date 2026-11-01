@@ -28,10 +28,25 @@ namespace Jolly.Core.Conversation
             _log = log;
         }
 
+        /// <summary>A store that cannot be read (I/O or access error) is logged and starts empty.</summary>
         public async UniTask Load(CancellationToken ct)
         {
-            await _conversation.Load(_personas.Current.Id, null, ct);
-            await _scene.Load(ct);
+            try
+            {
+                await _conversation.Load(_personas.Current.Id, null, ct);
+            }
+            catch (Exception e) when (e is not OperationCanceledException)
+            {
+                _log.Write(LogLevel.Error, "memory", "evt=memory.load_failed store=conversation", e);
+            }
+            try
+            {
+                await _scene.Load(ct);
+            }
+            catch (Exception e) when (e is not OperationCanceledException)
+            {
+                _log.Write(LogLevel.Error, "memory", "evt=memory.load_failed store=scene", e);
+            }
         }
 
         public async UniTask AfterTurn(CancellationToken ct)

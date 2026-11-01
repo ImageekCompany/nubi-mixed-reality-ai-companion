@@ -5,18 +5,21 @@ namespace Jolly.Core.Conversation
 {
     /// <summary>
     /// Silences a turn (architecture §5.2): cancel the turn token first, so no late audio is queued, then flush the output
-    /// and clear the speech queue. The interrupted memory commit is the agent loop's job.
+    /// and clear the speech queue, forgetting first samples still in flight. The interrupted memory commit is the agent
+    /// loop's job.
     /// </summary>
     public sealed class BargeInCoordinator
     {
         readonly ISpeechOutput _output;
         readonly ISpeechQueue _queue;
+        readonly TurnSpeech _speech;
         readonly ILatencyTracker _latency;
 
-        public BargeInCoordinator(ISpeechOutput output, ISpeechQueue queue, ILatencyTracker latency)
+        public BargeInCoordinator(ISpeechOutput output, ISpeechQueue queue, TurnSpeech speech, ILatencyTracker latency)
         {
             _output = output;
             _queue = queue;
+            _speech = speech;
             _latency = latency;
         }
 
@@ -34,6 +37,7 @@ namespace Jolly.Core.Conversation
                 turnCts.Cancel();
             _output.Flush();
             _queue.Clear();
+            _speech.Cancel();
         }
     }
 }

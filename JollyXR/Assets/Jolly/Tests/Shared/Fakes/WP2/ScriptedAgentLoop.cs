@@ -18,6 +18,7 @@ namespace Jolly.Testing.Conversation
 
         public List<UserTurn> Turns { get; } = new();
         public string InterruptedSpoken { get; private set; }
+        public Func<string> SpokenSoFar { get; private set; }
         public int Waiting => _gates.Count;
 
         public ScriptedAgentLoop Say(string text) => Add(new AgentEvent(AgentEventKind.SpeechDelta, text));
@@ -43,6 +44,7 @@ namespace Jolly.Testing.Conversation
         public IUniTaskAsyncEnumerable<AgentEvent> RunTurn(UserTurn turn, Func<string> spokenSoFar, CancellationToken ct)
         {
             Turns.Add(turn);
+            SpokenSoFar = spokenSoFar;
             var script = new List<AgentEvent?>(_script);
             _script.Clear();
             return UniTaskAsyncEnumerable.Create<AgentEvent>(async (writer, enumeratorCt) =>

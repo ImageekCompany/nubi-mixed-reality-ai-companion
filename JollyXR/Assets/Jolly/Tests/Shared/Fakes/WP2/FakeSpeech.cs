@@ -23,13 +23,13 @@ namespace Jolly.Testing.Conversation
     }
 
     /// <summary>
-    /// Records sentences. <see cref="PlayNext"/> starts the oldest unplayed one (raising its first sample), and
-    /// <see cref="Drain"/> plays everything and completes <see cref="WhenDrained"/>.
+    /// Records sentences. <see cref="PlayNext"/> starts the oldest unplayed one (raising its first sample),
+    /// <see cref="Drain"/> plays everything and completes <see cref="WhenDrained"/>, and <see cref="DrainUnplayed"/>
+    /// completes it without playing the rest (TTS failed).
     /// </summary>
     public sealed class RecordingSpeechQueue : ISpeechQueue
     {
         readonly FakeSpeechOutput _output;
-        readonly StringBuilder _spoken = new();
         UniTaskCompletionSource _drained;
         int _played;
 
@@ -38,7 +38,6 @@ namespace Jolly.Testing.Conversation
         public List<(string sentence, VoiceSpec voice, int utteranceId)> Enqueued { get; } = new();
         public int Clears { get; private set; }
         public int Pending => Enqueued.Count - _played;
-        public string SpokenSoFar => _spoken.ToString();
 
         public void Enqueue(string sentence, VoiceSpec voice, int utteranceId) => Enqueued.Add((sentence, voice, utteranceId));
 
@@ -54,21 +53,24 @@ namespace Jolly.Testing.Conversation
         {
             Clears++;
             _played = Enqueued.Count;
-            _spoken.Clear();
             Complete();
         }
 
         public void PlayNext()
         {
-            var (sentence, _, id) = Enqueued[_played++];
-            _spoken.Append(sentence).Append(' ');
-            _output.RaiseFirstSample(id);
+            _output.RaiseFirstSample(Enqueued[_played++].utteranceId);
         }
 
         public void Drain()
         {
             while (Pending > 0)
                 PlayNext();
+            Complete();
+        }
+
+        public void DrainUnplayed()
+        {
+            _played = Enqueued.Count;
             Complete();
         }
 

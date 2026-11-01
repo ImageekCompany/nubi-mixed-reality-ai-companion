@@ -1,4 +1,7 @@
+using System.Collections.Generic;
 using System.IO;
+using System.Threading;
+using Cysharp.Threading.Tasks;
 using Jolly.Contracts;
 using Jolly.Core.Config;
 using Jolly.Core.Conversation;
@@ -70,6 +73,24 @@ namespace Jolly.Tests.EditMode.Core.Conversation
         }
 
         [Test]
+        public void LoadFailure_IsLoggedAndTheSceneStillLoads()
+        {
+            var anchors = new FakeSpatialAnchors();
+            var path = Path.Combine(_dir, "scene.json");
+            var saved = new SceneMemory(path, anchors, new FakeClock(), new MemoryLimits(), _log);
+            var anchorId = anchors.CreateAndSave(default, default).GetAwaiter().GetResult();
+            saved.RememberPlace(new PlaceRecord { Name = "desk", AnchorId = anchorId });
+            Sync.Run(saved.Save(default));
+            var scene = new SceneMemory(path, anchors, new FakeClock(), new MemoryLimits(), _log);
+            var keeper = new MemoryKeeper(new UnreadableConversationMemory(), scene, _model, new FakePersonaProvider(), _log);
+
+            Sync.Run(keeper.Load(default));
+
+            Assert.That(_log.Contains(LogLevel.Error, "evt=memory.load_failed store=conversation"), Is.True);
+            Assert.That(scene.TryGetPlace("desk", out _), Is.True);
+        }
+
+        [Test]
         public void SaveFailure_IsLoggedNotThrown()
         {
             Directory.CreateDirectory(Path.Combine(_dir, "conversation.companion.json"));
@@ -84,6 +105,18 @@ namespace Jolly.Tests.EditMode.Core.Conversation
             for (var i = 0; i < 9; i++)
                 _memory.CommitTurn(new[] { ConversationItem.User("question " + i), ConversationItem.Assistant("answer " + i) });
             Assert.That(_memory.NeedsSummarization, Is.True);
+        }
+
+        sealed class UnreadableConversationMemory : IConversationMemory
+        {
+            public string Summary => string.Empty;
+            public IReadOnlyList<ConversationItem> Recent { get; } = new List<ConversationItem>();
+            public bool NeedsSummarization => false;
+            public void CommitTurn(IReadOnlyList<ConversationItem> items) { }
+            public UniTask Summarize(IChatModel model, CancellationToken ct) => UniTask.CompletedTask;
+            public UniTask Load(string personaId, string carrySummary, CancellationToken ct) => throw new IOException("unreadable");
+            public UniTask Save(CancellationToken ct) => UniTask.CompletedTask;
+            public void Clear() { }
         }
     }
 }

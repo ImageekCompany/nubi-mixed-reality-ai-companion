@@ -27,11 +27,41 @@ namespace Jolly.Tests.EditMode.Core.Conversation
 
             Assert.That(_f.State, Is.EqualTo(ConversationState.Listening));
             Assert.That(_f.Agent.InterruptedSpoken, Is.EqualTo("First sentence. "),
-                "the agent commits what was spoken before the queue is cleared");
+                "the turn's spoken record survives the queue clear");
             Assert.That(_f.Output.Flushes, Is.EqualTo(1));
             Assert.That(_f.Queue.Clears, Is.EqualTo(1));
             Assert.That(_f.Mic.Sessions.Count, Is.EqualTo(2));
             Assert.That(_f.Log.Contains(LogLevel.Info, "BargeIn="), Is.True);
+        }
+
+        [Test]
+        public void SpokenRecord_CoversOnlyTheCurrentTurn()
+        {
+            _f.Agent.Say("First answer.");
+            _f.Talk("one");
+            _f.Queue.Drain();
+            _f.Agent.Say("Second answer. ").Hold();
+
+            _f.Talk("two");
+            Assert.That(_f.Agent.SpokenSoFar(), Is.Empty);
+            _f.Queue.PlayNext();
+
+            Assert.That(_f.Agent.SpokenSoFar(), Is.EqualTo("Second answer. "));
+        }
+
+        [Test]
+        public void FirstSampleOfFlushedSpeech_ArrivingAfterTheBargeIn_IsIgnored()
+        {
+            _f.Agent.Say("One. Two.").Hold();
+            _f.Talk();
+            _f.Queue.PlayNext();
+            _f.Voice.Press();
+
+            _f.Output.RaiseFirstSample(_f.Queue.Enqueued[1].utteranceId);
+
+            Assert.That(_f.Captions, Is.EqualTo(new[] { "One." }));
+            Assert.That(_f.Machine.SpeechPending, Is.False);
+            Assert.That(_f.State, Is.EqualTo(ConversationState.Listening));
         }
 
         [Test]
