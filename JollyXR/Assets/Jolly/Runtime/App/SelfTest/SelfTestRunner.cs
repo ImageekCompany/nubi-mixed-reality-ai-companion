@@ -20,7 +20,7 @@ namespace Jolly.App.SelfTest
         static readonly (string Name, Scenario Run)[] Scenarios =
         {
             (OfflineGreetingScenario.Name, OfflineGreetingScenario.Run),
-            ("voice_greeting", (c, ct) => VoiceTurnScenario.Run(c, "voice_greeting", c.Assets.greeting, null, ct)),
+            (GreetingScenario.Name, GreetingScenario.Run),
             (ComeHereScenario.Name, ComeHereScenario.Run),
             (VisionScenario.Name, VisionScenario.Run),
             (BargeInScenario.Name, BargeInScenario.Run),

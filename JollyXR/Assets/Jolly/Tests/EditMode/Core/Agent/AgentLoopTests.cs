@@ -68,6 +68,18 @@ namespace Jolly.Tests.EditMode.Core.Agent
         }
 
         [Test]
+        public void Instructions_MoveOnlyWhenAskedAndAnswerGreetingsInWords()
+        {
+            _f.Tool(ToolNames.ComeHere);
+            _f.Model.Enqueue().Text("Hi!");
+
+            AgentFixture.Completed(_f.Run("Hi Nubi, who are you?"));
+
+            Assert.That(_f.Model.Requests[0].Instructions,
+                        Does.Contain("Move only when the user asks you to").And.Contain("greeting"));
+        }
+
+        [Test]
         public void SeatedMode_AddsSeatedRuleAndWithholdsWalkTo()
         {
             _f.Tool(ToolNames.WalkTo);

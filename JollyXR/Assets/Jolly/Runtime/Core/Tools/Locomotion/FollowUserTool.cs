@@ -19,7 +19,8 @@ namespace Jolly.Core.Tools
         }
 
         public ToolDefinition Definition { get; } = new(ToolNames.FollowUser,
-            "Start following the user around at a comfortable distance until told to stop or sent elsewhere.",
+            "Start following the user around at a comfortable distance until told to stop or sent elsewhere; " +
+            "only when the user asks you to follow them.",
             ToolSchemas.Empty, TimeSpan.FromSeconds(1), ToolConcurrency.Locomotion);
 
         public UniTask<ToolResult> Execute(IToolArguments args, ToolContext context, CancellationToken ct)

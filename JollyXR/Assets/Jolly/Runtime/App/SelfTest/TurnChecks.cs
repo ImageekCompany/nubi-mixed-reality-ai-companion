@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Jolly.Core.Tools;
 
 namespace Jolly.App.SelfTest
 {
@@ -46,6 +47,22 @@ namespace Jolly.App.SelfTest
                 return;
             r.Check(Contains(completed, expected),
                 Contains(completed, expected + TurnObserver.FailedSuffix) ? expected + " failed" : expected + " did not complete");
+        }
+
+        /// <summary>
+        /// A turn that asked for no movement must not walk: the greeting called come_here in 4 of 7 release runs
+        /// (selftest-report.md, 4d228c8). Degrades, because the reply itself was fine.
+        /// </summary>
+        public static void StayedPut(ScenarioResult r, IReadOnlyList<string> started)
+        {
+            foreach (var name in started)
+            {
+                if (name is ToolNames.ComeHere or ToolNames.WalkTo or ToolNames.GoToSurface or ToolNames.FollowUser)
+                {
+                    r.Degrade($"moved without being asked ({name})");
+                    return;
+                }
+            }
         }
 
         /// <summary>NaN (no answer after the tool) fails.</summary>

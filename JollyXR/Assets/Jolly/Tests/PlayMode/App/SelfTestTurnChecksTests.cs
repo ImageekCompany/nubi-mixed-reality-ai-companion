@@ -108,6 +108,27 @@ namespace Jolly.Tests.PlayMode.App
         }
 
         [Test]
+        public void StayedPut_GreetingThatWalked_DegradesWithTheTool()
+        {
+            var r = new ScenarioResult("t");
+
+            TurnChecks.StayedPut(r, new[] { "play_gesture", "come_here" });
+
+            Assert.That(r.Status, Is.EqualTo(ScenarioStatus.Degraded));
+            Assert.That(r.Notes, Is.EqualTo(new[] { "moved without being asked (come_here)" }));
+        }
+
+        [Test]
+        public void StayedPut_GestureOnly_Passes()
+        {
+            var r = new ScenarioResult("t");
+
+            TurnChecks.StayedPut(r, new[] { "play_gesture", "look_at" });
+
+            Assert.That(r.Status, Is.EqualTo(ScenarioStatus.Pass));
+        }
+
+        [Test]
         public void ToolToAnswer_OverTheBudget_Degrades()
         {
             var r = new ScenarioResult("t");

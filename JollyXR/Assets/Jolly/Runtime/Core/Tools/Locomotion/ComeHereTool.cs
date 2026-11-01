@@ -23,7 +23,9 @@ namespace Jolly.Core.Tools
             _settings = settings;
         }
 
-        public ToolDefinition Definition { get; } = new(ToolNames.ComeHere, "Walk to the user and face them.",
+        public ToolDefinition Definition { get; } = new(ToolNames.ComeHere,
+            "Walk to the user and face them, only when the user asks you to come to them or closer (\"come here\"); " +
+            "never for a greeting, an introduction or small talk.",
             ToolSchemas.Empty, TimeSpan.FromSeconds(3), ToolConcurrency.Locomotion);
 
         public UniTask<ToolResult> Execute(IToolArguments args, ToolContext context, CancellationToken ct)
