@@ -73,6 +73,13 @@ namespace Jolly.Testing.Conversation
                 return this;
             }
 
+            /// <summary>Like <see cref="Gate"/> but deaf to the token, so a cancel lands only after Release (a later frame).</summary>
+            public Round Stall()
+            {
+                _steps.Add((w, ct) => _gate.Task);
+                return this;
+            }
+
             public Round Fail(ProviderErrorKind kind = ProviderErrorKind.Server)
             {
                 _steps.Add((w, ct) => throw new ProviderException("scripted", kind, "scripted failure"));

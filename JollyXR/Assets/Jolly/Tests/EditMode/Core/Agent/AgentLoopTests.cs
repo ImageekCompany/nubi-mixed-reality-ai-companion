@@ -266,6 +266,37 @@ namespace Jolly.Tests.EditMode.Core.Agent
         }
 
         [Test]
+        public void Cancel_ObservedOnALaterFrame_CommitsWhatWasSpokenWhenTheTokenFired()
+        {
+            var round = _f.Model.Enqueue().Text("Sure, ").Stall();
+            using var cts = new CancellationTokenSource();
+            _f.Spoken = "Sure,";
+            var run = _f.Run(ct: cts.Token);
+
+            cts.Cancel();
+            _f.Spoken = "";
+            round.Release();
+
+            Assert.That(run.Status, Is.EqualTo(UniTaskStatus.Canceled));
+            Assert.That(_f.Memory.Recent.Last().Text, Is.EqualTo("Sure, [interrupted]"));
+        }
+
+        [Test]
+        public void UnexpectedException_StillCommitsTheTurn()
+        {
+            _f.Tool("look_at");
+            _f.Model.Enqueue().Text("Hm").Call("c1", "look_at");
+            _f.Spoken = "Hm";
+
+            var run = _f.Run("hello");
+
+            Assert.Throws<InvalidOperationException>(() => run.Completion.GetAwaiter().GetResult(),
+                "the second round is unscripted, so Stream throws");
+            Assert.That(_f.MemoryKinds(), Is.EqualTo("UserText,ToolCall,ToolResult,AssistantText"));
+            Assert.That(_f.Memory.Recent.Last().Text, Is.EqualTo("Hm [interrupted]"));
+        }
+
+        [Test]
         public void Cancel_DuringSecondRound_KeepsFinishedRoundsAndDropsReasoning()
         {
             _f.Tool("look_at");

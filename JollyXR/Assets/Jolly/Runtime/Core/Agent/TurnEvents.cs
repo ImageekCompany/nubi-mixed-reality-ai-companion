@@ -1,4 +1,3 @@
-using System;
 using Cysharp.Threading.Tasks;
 using Jolly.Contracts;
 
@@ -27,6 +26,6 @@ namespace Jolly.Core.Agent
                 Write(new AgentEvent(AgentEventKind.SpeechDelta, delta));
         }
 
-        public void Complete(Exception error = null) => _channel.Writer.TryComplete(error);
+        public void Complete() => _channel.Writer.TryComplete();
     }
 }

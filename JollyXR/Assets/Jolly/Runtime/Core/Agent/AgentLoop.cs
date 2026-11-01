@@ -51,7 +51,9 @@ namespace Jolly.Core.Agent
                 using var linked = CancellationTokenSource.CreateLinkedTokenSource(ct, enumeratorCt);
                 var events = new TurnEvents();
                 var drive = Drive(turn, spokenSoFar, events, linked.Token);
-                // Not cancellable: the reader ends only once Drive has committed memory and completed the channel.
+                // Not cancellable: the reader ends only once Drive has committed memory and completed the channel. Drive
+                // rethrows a cancel or an unexpected error here rather than through the channel, whose faulted completion
+                // nobody awaits.
                 await foreach (var e in events.Reader.ReadAllAsync())
                     await writer.YieldAsync(e);
                 await drive;
@@ -61,7 +63,10 @@ namespace Jolly.Core.Agent
         {
             var transcript = new TurnTranscript(turn.Text);
             ToolRoundExecutor open = null;
-            Exception error = null;
+            // A barge-in clears the speech queue right after cancelling, while the cancel reaches this method only once the
+            // model request aborts (a later frame), so what was spoken is read when the token fires.
+            string spokenAtCancel = null;
+            using var onCancel = ct.Register(() => spokenAtCancel = spokenSoFar());
             try
             {
                 var persona = _personas.Current;
@@ -102,32 +107,34 @@ namespace Jolly.Core.Agent
                 _memory.CommitTurn(transcript.ForCommit());
                 events.Write(new AgentEvent(AgentEventKind.Completed));
             }
-            catch (OperationCanceledException e)
+            catch (OperationCanceledException)
             {
-                error = e;
-                CommitInterrupted(transcript, spokenSoFar, open);
+                CommitInterrupted(transcript, spokenAtCancel, spokenSoFar, open);
+                throw;
             }
             catch (ProviderException e)
             {
                 _log.Write(LogLevel.Warning, "agent", $"evt=agent.failed kind={e.Kind} status={e.HttpStatus} req={e.RequestId}");
-                CommitInterrupted(transcript, spokenSoFar, open);
+                CommitInterrupted(transcript, null, spokenSoFar, open);
                 events.Write(new AgentEvent(AgentEventKind.Failed, error: e));
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                error = e;
+                CommitInterrupted(transcript, null, spokenSoFar, open);
+                throw;
             }
             finally
             {
-                events.Complete(error);
+                events.Complete();
             }
         }
 
-        void CommitInterrupted(TurnTranscript transcript, Func<string> spokenSoFar, ToolRoundExecutor open)
+        void CommitInterrupted(TurnTranscript transcript, string spokenAtCancel, Func<string> spokenSoFar,
+                               ToolRoundExecutor open)
         {
             try
             {
-                _memory.CommitTurn(transcript.ForInterruptedCommit(spokenSoFar(), open));
+                _memory.CommitTurn(transcript.ForInterruptedCommit(spokenAtCancel ?? spokenSoFar(), open));
             }
             catch (Exception e)
             {
