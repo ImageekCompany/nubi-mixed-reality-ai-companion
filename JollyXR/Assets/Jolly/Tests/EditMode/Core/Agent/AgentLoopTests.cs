@@ -394,5 +394,49 @@ namespace Jolly.Tests.EditMode.Core.Agent
 
             Assert.That(model, Is.EqualTo(ScriptedChatModel.Model));
         }
+
+        [Test]
+        public void ReplyObserver_GetsEachRoundsToolsFinishAndTextAndTheLogHasThem()
+        {
+            // Arrange
+            var replies = new System.Collections.Generic.List<string>();
+            _f.Settings.ReplyObserved = replies.Add;
+            _f.Tool("come_here");
+            _f.Model.Enqueue().Text("On my \"way\"!\n").Call("c1", "come_here");
+            _f.Model.Enqueue().Text("Here I am.");
+
+            // Act
+            AgentFixture.Completed(_f.Run());
+
+            // Assert
+            Assert.That(replies, Is.EqualTo(new[]
+            {
+                "round=0 tools=come_here finish=ToolCalls text=\"On my 'way'! \"",
+                "round=1 tools=none finish=Stop text=\"Here I am.\"",
+            }));
+            Assert.That(_f.Log.Contains(LogLevel.Info, "evt=llm.reply turn=1 round=1 tools=none finish=Stop"), Is.True);
+        }
+
+        [Test]
+        public void ReplyObserver_KeepsTheFirst120Characters()
+        {
+            string reply = null;
+            _f.Settings.ReplyObserved = r => reply = r;
+            _f.Model.Enqueue().Text(new string('a', 100)).Text(new string('b', 100));
+
+            AgentFixture.Completed(_f.Run());
+
+            Assert.That(reply, Is.EqualTo("round=0 tools=none finish=Stop text=\"" + new string('a', 100) + new string('b', 20) + "\""));
+        }
+
+        [Test]
+        public void NoReplyObserver_LogsNoReplyText()
+        {
+            _f.Model.Enqueue().Text("private words");
+
+            AgentFixture.Completed(_f.Run());
+
+            Assert.That(_f.Log.Contains(LogLevel.Info, "llm.reply"), Is.False);
+        }
     }
 }

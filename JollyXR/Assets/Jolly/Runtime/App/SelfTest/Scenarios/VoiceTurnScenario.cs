@@ -34,6 +34,7 @@ namespace Jolly.App.SelfTest.Scenarios
              .Metric("asr_final_to_llm_text_ms", latency.Between(LatencyMark.AsrFinal, LatencyMark.LlmFirstText))
              .Metric("reply", string.Join(" ", c.Observer.Captions))
              .Metric("tools", string.Join(",", c.Observer.ToolsCompleted))
+             .Metric("llm_reply", string.Join(" | ", c.Observer.Replies))
              .Metric("states", c.Observer.StatePath());
 
             r.Check(idle, "did not return to Idle within 40 s");

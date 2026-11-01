@@ -84,6 +84,26 @@ namespace Jolly.Tests.PlayMode.App
         }
 
         [Test]
+        public void ToolCallIds_ParallelToToolsStarted()
+        {
+            _events.RaiseToolStarted("guard_come_here", "come_here");
+            _events.RaiseToolStarted("c1", "come_here");
+
+            Assert.That(_observer.ToolCallIds, Is.EqualTo(new[] { "guard_come_here", "c1" }));
+        }
+
+        [Test]
+        public void Replies_AreRecordedUntilReset()
+        {
+            _observer.RecordReply("round=0 tools=none finish=Stop text=\"Hi!\"");
+
+            Assert.That(_observer.Replies, Is.EqualTo(new[] { "round=0 tools=none finish=Stop text=\"Hi!\"" }));
+            _observer.Reset();
+            Assert.That(_observer.Replies, Is.Empty);
+            Assert.That(_observer.ToolCallIds, Is.Empty);
+        }
+
+        [Test]
         public void MaskObserver_RecordsTheLastShowAndForwardsIt()
         {
             var inner = new RecordingMaskPresenter();

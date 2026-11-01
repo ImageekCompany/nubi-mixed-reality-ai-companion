@@ -216,5 +216,16 @@ namespace Jolly.Tests.PlayMode.App
                 "capture_and_identify failed", "tool start → answer audio over the 2.5 s budget",
             }));
         }
+
+        [TestCase(new[] { "come_here" }, new[] { "guard_come_here" }, "guard")]
+        [TestCase(new[] { "come_here", "come_here" }, new[] { "guard_come_here", "call_1" }, "guard+model")]
+        [TestCase(new[] { "play_gesture", "come_here" }, new[] { "call_1", "call_2" }, "model")]
+        [TestCase(new[] { "play_gesture" }, new[] { "call_1" }, "none")]
+        [TestCase(new string[0], new string[0], "none")]
+        public void ComeHereSource_SaysWhetherTheGuardOrTheModelStartedTheWalk(string[] started, string[] callIds,
+                                                                              string expected)
+        {
+            Assert.That(TurnChecks.ComeHereSource(started, callIds), Is.EqualTo(expected));
+        }
     }
 }

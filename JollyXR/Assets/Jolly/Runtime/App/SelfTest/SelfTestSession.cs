@@ -52,6 +52,8 @@ namespace Jolly.App.SelfTest
         public FrameSpikeLog Frames { get; private set; }
         /// <summary>Null unless a turn profile was requested (<see cref="TurnProfileCapture"/>).</summary>
         public TurnProfileCapture Profile { get; private set; }
+        /// <summary>Each model round's summary while the session runs (<see cref="Edges.ModelReplies"/>).</summary>
+        public event Action<string> ModelReplied;
 
         /// <summary>Null in normal use. Otherwise rewires <paramref name="edges"/> and returns the armed session.</summary>
         public static SelfTestSession TryStart(Edges edges, SelfTestAssets assets, Foundation foundation, SceneRefs scene)
@@ -124,6 +126,7 @@ namespace Jolly.App.SelfTest
             Voice = new ScriptedPushToTalk();
             edges.Voice = Voice;
             edges.OfferRoomScan = false;
+            edges.ModelReplies = reply => ModelReplied?.Invoke(reply);
             var wrap = edges.WrapCamera;
             var still = _assets.fallbackStill != null ? _assets.fallbackStill.bytes : Array.Empty<byte>();
             edges.WrapCamera = live => Camera = new SwitchableCameraSource(wrap(live),

@@ -18,5 +18,11 @@ namespace Jolly.Core.Config
         public TimeSpan HoldLineRepeat { get; set; } = TimeSpan.FromSeconds(4);
         /// <summary>From <c>InstallIdentity.LoadOrCreateSafetyIdentifier</c>; sent as the Responses <c>safety_identifier</c>.</summary>
         public string SafetyIdentifier { get; set; }
+        /// <summary>
+        /// Device self-test only (ADR-0036): each model round as <c>round= tools= finish= text="…"</c> with the first 120
+        /// characters of the reply, also logged as <c>evt=llm.reply</c>. Null in normal use, so model text never reaches
+        /// the log (architecture §11 Logging): the self-test's turns are scripted clips, not a person.
+        /// </summary>
+        public Action<string> ReplyObserved { get; set; }
     }
 }

@@ -136,7 +136,7 @@ import json, sys
 r = json.load(open(sys.argv[1], encoding="utf-8"))
 keys = ["release_to_first_audio_ms", "tool_to_answer_audio_ms", "tool_to_mask_ms", "found", "similarity", "caption_ms", "silence_ms", "avg_fps", "p95_frame_ms",
         "draw_calls_max", "setpass_calls_max", "triangles_max", "system_memory_mb",
-        "gc_alloc_bytes_per_frame", "mean_luma", "frame", "navmesh", "tools"]
+        "gc_alloc_bytes_per_frame", "mean_luma", "frame", "navmesh", "come_source", "tools"]
 print(f"\nSelf-test on {r['device']} at {r['startedUtc']}")
 print(f"{'scenario':30} {'status':9} {'ms':>7}  key metrics")
 for s in r["scenarios"]:
@@ -145,6 +145,9 @@ for s in r["scenarios"]:
     print(f"{s['name']:30} {s['status']:9} {s['durationMs']:>7.0f}  {shown}")
     for note in s["notes"]:
         print(f"{'':41}- {note}")
+    # The model's own words explain a missed or unexpected tool call (ADR-0036).
+    if s["status"] != "PASS" and m.get("llm_reply"):
+        print(f"{'':41}  llm: {m['llm_reply']}")
 for s in r["scenarios"]:
     m = s["metrics"]
     if "turns" not in m:

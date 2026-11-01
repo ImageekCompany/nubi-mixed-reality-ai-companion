@@ -17,7 +17,7 @@ MonoBehaviour:
     expectedText: Hi Nubi, who are you?
   comeHere:
     clip: {fileID: 8300000, guid: ed23e112867a54890910cd6e73ef5ba0, type: 3}
-    expectedText: Nubi, come here.
+    expectedText: Hi Nubi, come here.
   whatIsThis:
     clip: {fileID: 8300000, guid: 56855dc3e5c814b0a8672e5368101de9, type: 3}
     expectedText: What is this, and how do I use it?

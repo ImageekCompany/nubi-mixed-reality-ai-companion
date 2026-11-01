@@ -31,6 +31,10 @@ namespace Jolly.App.SelfTest
         /// <summary><see cref="IClock.Now"/> at each caption's first played sample, parallel to <see cref="Captions"/>.</summary>
         public List<double> CaptionTimes { get; } = new();
         public List<string> ToolsStarted { get; } = new();
+        /// <summary>Parallel to <see cref="ToolsStarted"/>.</summary>
+        public List<string> ToolCallIds { get; } = new();
+        /// <summary>Each model round's summary (<c>evt=llm.reply</c>), from <see cref="RecordReply"/>.</summary>
+        public List<string> Replies { get; } = new();
         public List<string> ToolsCompleted { get; } = new();
         public string UserFinal { get; private set; }
         public double FirstCaptionAt { get; private set; } = double.NaN;
@@ -43,6 +47,8 @@ namespace Jolly.App.SelfTest
             Captions.Clear();
             CaptionTimes.Clear();
             ToolsStarted.Clear();
+            ToolCallIds.Clear();
+            Replies.Clear();
             ToolsCompleted.Clear();
             _toolStartedTimes.Clear();
             _toolCompletedTimes.Clear();
@@ -79,6 +85,8 @@ namespace Jolly.App.SelfTest
 
         public string StatePath() => string.Join(">", States);
 
+        public void RecordReply(string reply) => Replies.Add(reply);
+
         public void Dispose()
         {
             _events.StateChanged -= OnState;
@@ -109,6 +117,7 @@ namespace Jolly.App.SelfTest
             if (ToolsStarted.Count == 0)
                 FirstToolStartedAt = _clock.Now;
             ToolsStarted.Add(name);
+            ToolCallIds.Add(callId);
             _toolStartedTimes.Add(_clock.Now);
         }
 

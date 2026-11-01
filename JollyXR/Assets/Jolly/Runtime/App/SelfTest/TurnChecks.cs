@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Jolly.Core.Conversation;
 using Jolly.Core.Tools;
 
 namespace Jolly.App.SelfTest
@@ -81,6 +82,25 @@ namespace Jolly.App.SelfTest
                     return;
                 }
             }
+        }
+
+        /// <summary>
+        /// Who started come_here: "guard" (the local ComeGuard), "model", "guard+model" (the model restarted the walk
+        /// despite the note) or "none". <paramref name="callIds"/> is parallel to <paramref name="started"/>.
+        /// </summary>
+        public static string ComeHereSource(IReadOnlyList<string> started, IReadOnlyList<string> callIds)
+        {
+            bool guard = false, model = false;
+            for (var i = 0; i < started.Count; i++)
+            {
+                if (started[i] != ToolNames.ComeHere)
+                    continue;
+                if (callIds[i] == TurnGuards.ComeHereCallId)
+                    guard = true;
+                else
+                    model = true;
+            }
+            return guard ? model ? "guard+model" : "guard" : model ? "model" : "none";
         }
 
         /// <summary>NaN (no answer after the tool) fails.</summary>

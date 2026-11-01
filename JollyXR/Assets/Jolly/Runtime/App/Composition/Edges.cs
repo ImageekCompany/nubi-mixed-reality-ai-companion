@@ -35,6 +35,9 @@ namespace Jolly.App.Composition
         /// <summary>Whether Nubi may speak the one unprompted Space Setup offer (ADR-0025). Off unless a person is there
         /// to hear it: scripted runs would have it race their turns.</summary>
         public bool OfferRoomScan { get; set; }
+        /// <summary>Each model round's reply summary (<c>AgentSettings.ReplyObserved</c>). Null unless the device self-test
+        /// set it: model text is logged only for scripted runs (ADR-0036).</summary>
+        public Action<string> ModelReplies { get; set; }
 
         public static Edges ForPlayer()
         {

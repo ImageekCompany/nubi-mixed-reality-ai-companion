@@ -53,6 +53,7 @@ namespace Jolly.App.SelfTest
             var results = new List<ScenarioResult>(scenarios.Length);
             using var observer = new TurnObserver(f.Events, f.Clock);
             var context = new SelfTestContext(_session, _assets, _graph, observer);
+            _session.ModelReplied += observer.RecordReply;
             try
             {
                 await _graph.WhenRunning.AttachExternalCancellation(ct);
@@ -77,6 +78,7 @@ namespace Jolly.App.SelfTest
             }
             finally
             {
+                _session.ModelReplied -= observer.RecordReply;
                 _session.Profile?.End();
             }
 

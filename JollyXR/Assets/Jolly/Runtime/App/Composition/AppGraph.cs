@@ -88,7 +88,8 @@ namespace Jolly.App.Composition
             var voice = edges.Voice ?? d.Add(new CompositeVoiceActivation(scene.pushToTalk, scene.controllerPushToTalk));
             Conversation = ConversationServices.Build(f, config, Cloud, Xr, Speech, Personas, Text,
                 TranscriptAliases.ForName(Text.Name, character.aliases), Preferences, scene.nubi, voice,
-                edges.WrapMasks(scene.maskOverlay), Room, new RoomContext(Room, Xr.World, Xr.User, roomSettings), d);
+                edges.WrapMasks(scene.maskOverlay), Room, new RoomContext(Room, Xr.World, Xr.User, roomSettings),
+                edges.ModelReplies, d);
             d.Add(new StatusRelay(Cloud.Connectivity, scene.permissions, scene.status));
             d.Add(new SettingsRouter(scene.settings, Personas, Text, Conversation.Controller, f.Log, appCt));
             var offline = Speech.Offline;

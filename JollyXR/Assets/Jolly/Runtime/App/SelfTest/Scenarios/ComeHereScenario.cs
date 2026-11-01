@@ -7,7 +7,8 @@ using Jolly.Core.Tools;
 namespace Jolly.App.SelfTest.Scenarios
 {
     /// <summary>
-    /// "Nubi, come here" must reach the come_here tool and get Nubi walking. Without Space Setup the room-scan flow
+    /// "Hi Nubi, come here", the demo's opening line, must start come_here and get Nubi walking, from the local
+    /// ComeGuard or the model (ADR-0036); come_source says which. Without Space Setup the room-scan flow
     /// gives a fallback floor around the user (ADR-0025), so the walk passes on it and navmesh=fallback says so. Only
     /// with no walkable area at all is it degraded: the tool then answers 'unreachable' and the model explains it.
     /// </summary>
@@ -28,7 +29,8 @@ namespace Jolly.App.SelfTest.Scenarios
             var outcome = await nubi.WhenArrived(ct).TimeoutWithoutException(ArrivalWait);
             r.Metric("navmesh", area.ToString().ToLowerInvariant()).Metric("room", room.Status.ToString())
              .Metric("walk", outcome.IsTimeout ? "still_walking" : outcome.Result.ToString())
-             .Metric("nubi_mode", nubi.Mode.ToString());
+             .Metric("nubi_mode", nubi.Mode.ToString())
+             .Metric("come_source", TurnChecks.ComeHereSource(c.Observer.ToolsStarted, c.Observer.ToolCallIds));
             if (area == WalkableArea.None)
             {
                 r.Degrade("no walkable floor (no Space Setup and no fallback floor): the tool answered without moving");

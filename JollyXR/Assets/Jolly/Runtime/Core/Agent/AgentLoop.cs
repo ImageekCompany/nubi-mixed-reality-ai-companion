@@ -189,6 +189,12 @@ namespace Jolly.Core.Agent
             if (result == null)
                 throw new ProviderException("agent", ProviderErrorKind.Protocol, "model stream ended without Completed");
             _events.RaiseModelCallCompleted(result.Usage.Model, (_clock.Now - sentAt) * 1000.0);
+            if (_settings.ReplyObserved != null)
+            {
+                var reply = ReplySummary.Format(round, result);
+                _log.Write(LogLevel.Info, "agent", $"evt=llm.reply turn={turnId} {reply}");
+                _settings.ReplyObserved(reply);
+            }
             return result;
         }
 
