@@ -12,6 +12,13 @@ namespace Jolly.Tests.EditMode.Core.Personas
     {
         static readonly CancellationToken None = CancellationToken.None;
         FakeLocalizer _localizer;
+        PerLanguageVoice _characterVoice;
+
+        sealed class PerLanguageVoice : ICharacterVoice
+        {
+            public readonly Dictionary<string, VoiceSpec> Voices = new();
+            public VoiceSpec VoiceFor(string languageTag) => Voices[languageTag].Copy();
+        }
 
         [SetUp]
         public void SetUp()
@@ -24,6 +31,9 @@ namespace Jolly.Tests.EditMode.Core.Personas
                 .With(PersonaRepository.Table, "guru.greeting", "Peace. I am here.")
                 .With(PersonaRepository.Table, "psychologist.notice", "I am not a therapist.")
                 .With("pl", PersonaRepository.Table, "companion.prompt", "Jesteś ciepłym towarzyszem.");
+            _characterVoice = new PerLanguageVoice();
+            _characterVoice.Voices["en"] = new VoiceSpec { VoiceId = "Rubie", Speed = 100, Pitch = 110 };
+            _characterVoice.Voices["pl"] = new VoiceSpec { VoiceId = "Polish", Speed = 100, Pitch = 100 };
         }
 
         static PersonaDefinition Definition(string id, bool persist = true, string notice = null) => new()
@@ -31,14 +41,14 @@ namespace Jolly.Tests.EditMode.Core.Personas
             Id = id, DisplayNameKey = id + ".name", SystemPromptKey = id + ".prompt", SafetyNoticeKey = notice,
             GreetingKey = id + ".greeting", AllowedTools = new[] { "stop" }, PersistMemory = persist,
             DefaultMood = Mood.Happy,
-            Voices = new Dictionary<string, VoiceSpec> { ["en"] = new() { VoiceId = id + "-en", Speed = 90 } },
+            Delivery = id == "guru" ? new VoiceDelivery { Style = "soft", SpeedPercent = 90, PitchPercent = 92 } : null,
         };
 
         PersonaRepository Create() => new(new[]
         {
             Definition("companion"), Definition("guru"),
             Definition("psychologist", persist: false, notice: "psychologist.notice"),
-        }, "companion", _localizer);
+        }, "companion", _localizer, _characterVoice);
 
         [Test]
         public void Current_IsTheDefaultResolvedForTheLocale()
@@ -51,7 +61,8 @@ namespace Jolly.Tests.EditMode.Core.Personas
             Assert.That(p.DisplayName, Is.EqualTo("Companion"));
             Assert.That(p.SystemPrompt, Is.EqualTo("You are a warm companion."));
             Assert.That(p.SafetyNotice, Is.Null);
-            Assert.That(p.Voice.VoiceId, Is.EqualTo("companion-en"));
+            Assert.That(p.Voice.VoiceId, Is.EqualTo("Rubie"), "the character's voice");
+            Assert.That(p.Voice.Pitch, Is.EqualTo(110));
             Assert.That(p.AllowedTools, Is.EqualTo(new[] { "stop" }));
             Assert.That(p.PersistMemory, Is.True);
             Assert.That(p.DefaultMood, Is.EqualTo(Mood.Happy));
@@ -94,6 +105,27 @@ namespace Jolly.Tests.EditMode.Core.Personas
         }
 
         [Test]
+        public void ApplySwitch_SpeaksTheCharactersVoiceWithThePersonasDelivery()
+        {
+            using var personas = Create();
+
+            Sync.Run(personas.ApplySwitch("guru", None));
+
+            var voice = personas.Current.Voice;
+            Assert.That(voice.VoiceId, Is.EqualTo("Rubie"));
+            Assert.That(voice.Style, Is.EqualTo("soft"));
+            Assert.That(voice.Speed, Is.EqualTo(90));
+            Assert.That(voice.Pitch, Is.EqualTo(101));
+        }
+
+        [Test]
+        public void Constructor_WithoutCharacterVoice_Throws()
+        {
+            Assert.Throws<System.ArgumentNullException>(() =>
+                new PersonaRepository(new[] { Definition("companion") }, "companion", _localizer, null));
+        }
+
+        [Test]
         public void ApplySwitch_UnknownId_ReturnsFalse()
         {
             using var personas = Create();
@@ -103,7 +135,7 @@ namespace Jolly.Tests.EditMode.Core.Personas
         }
 
         [Test]
-        public void LocaleChange_ReResolvesCurrentAndFallsBackToLocaleVoice()
+        public void LocaleChange_ReResolvesCurrentWithTheCharactersVoiceForThatLanguage()
         {
             using var personas = Create();
             var changed = 0;
@@ -112,7 +144,7 @@ namespace Jolly.Tests.EditMode.Core.Personas
             Sync.Run(_localizer.SetLanguage("pl", None));
 
             Assert.That(personas.Current.SystemPrompt, Is.EqualTo("Jesteś ciepłym towarzyszem."));
-            Assert.That(personas.Current.Voice.VoiceId, Is.EqualTo("Charlie"), "no pl override: the locale's TTS voice");
+            Assert.That(personas.Current.Voice.VoiceId, Is.EqualTo("Polish"));
             Assert.That(changed, Is.EqualTo(1));
         }
 

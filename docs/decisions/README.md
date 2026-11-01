@@ -29,5 +29,6 @@
 | [0025](0025-mr-room-awareness.md) | Room awareness: Space Setup offer, fallback floor, real furniture | accepted |
 | [0026](0026-swappable-characters-and-local-demo-skins.md) | Swappable characters: a definition asset per character, local demo skins that never reach git | accepted |
 | [0030](0030-hands-interaction-rig.md) | Hand-tracked XR rig: the XRI Hands Interaction Demo rig variant | accepted |
+| [0031](0031-character-voice-profile.md) | Character voice as data (`VoiceProfile`, persona delivery); Nubi speaks as Wit Rubie, pitch 110 | accepted |
 
 Review findings and their accept/reject decisions: [review-log.md](review-log.md).

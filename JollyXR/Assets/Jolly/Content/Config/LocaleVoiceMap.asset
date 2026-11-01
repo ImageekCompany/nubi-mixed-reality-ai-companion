@@ -17,16 +17,8 @@ MonoBehaviour:
     asrLanguageBias: English
     replyLanguageName: English
     ttsAvailable: 1
-    ttsVoiceId: Charlie
-    ttsStyle: 
-    ttsSpeed: 100
-    ttsPitch: 100
   - languageTag: pl
     asrLanguageBias: Polish
     replyLanguageName: Polish
     ttsAvailable: 0
-    ttsVoiceId: Charlie
-    ttsStyle: 
-    ttsSpeed: 100
-    ttsPitch: 100
   _fallbackLanguageTag: en

@@ -445,7 +445,7 @@ Scene context sent to the model has the form `Seen recently: obj_3 white enamel 
 Fields:
 - `id`
 - display name, system prompt, greeting and optional safety notice: entries `{id}.name`, `{id}.prompt`, `{id}.greeting`, `{id}.safety` of the `Personas` string table (en, pl), resolved by `PersonaRepository` for the current locale
-- `voiceOverrides` (per-locale `VoiceSpec`: Wit voice name, speed 50–200, pitch 25–200, style)
+- voice delivery: `voiceStyle` (empty keeps the character's), `voiceSpeedPercent`, `voicePitchPercent`, applied to the character's voice by `VoiceDelivery` (ADR-0031). The voice itself is the character's `VoiceProfile` (`JollyConfig.characterVoice`), so personas never name a Wit voice
 - `allowedTools` (string[])
 - `persistMemory`, `crisisHandoff`, `defaultMood`, `accentColor`
 
@@ -464,8 +464,8 @@ Psychologist (shown to users as **Listener**; the id stays `psychologist`):
   - `Personas` (system prompts)
   Clips: `LineClipLibrary` (`Content/Config/LineClips.asset`, AudioClip per language and line key) instead of a `LineClips` asset table (ADR-0018).
 - Startup locale: the system language if available, otherwise `en`.
-- `LocaleVoiceMapAsset` maps locale code → `LocaleVoiceProfile {AsrLanguageBias, TtsVoice, TtsAvailable}`:
-  - `en` → ASR `"English"`, Wit `Charlie` (or `Cartoon Kid`, chosen in WP7).
+- `LocaleVoiceMapAsset` maps locale code → `LocaleVoiceProfile {AsrLanguageBias, TtsAvailable, ReplyLanguageName}`. The Wit voice per language comes from the character's `VoiceProfile` (ADR-0031):
+  - `en` → ASR `"English"`; Nubi speaks Wit `Rubie`, pitch 110 (audition: `research/voice.md` §11).
   - `pl` → ASR `"Polish"` (verified live), **TtsAvailable=false**. The Wit `/voices` call for our app listed only `en_US`, `en_CA` and `en_GB` voices (live, 2026-11-01). Polish replies are therefore captions-only, plus Piper-baked (CC0 `pl_PL-gosia`) canned lines.
 - `UnityLocalizer` subscribes to `LocalizationSettings.SelectedLocaleChanged` (static event, verified) and unsubscribes in `Dispose`. At startup and on each locale change it awaits `StringDatabase.PreloadTables(...)` (`LocalizedDatabase.cs:470`, an `AsyncOperationHandle`, awaited through `UniTask.Addressables`); `ILocalizer.Get` then calls the synchronous `GetLocalizedString(table, entry)` (`LocalizedStringDatabase.cs:146`).
 - **Player build.** Localization tables are Addressables content. Addressables 2.11.2 defaults `BuildAddressablesWithPlayerBuild` to `PreferencesValue`, an EditorPrefs value that differs per machine (`AddressableAssetSettings.cs:2047`, `AddressablesPlayerBuildProcessor.cs:156-168`). WP8 sets the settings asset to `BuildWithPlayer`, and `QuestBuild.BuildApk` also calls `AddressableAssetSettings.BuildPlayerContent()` before `BuildPipeline.BuildPlayer`, so no machine can ship an APK without tables.

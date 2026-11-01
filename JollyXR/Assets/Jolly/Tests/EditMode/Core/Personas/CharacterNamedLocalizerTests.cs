@@ -10,6 +10,11 @@ namespace Jolly.Tests.EditMode.Core.Personas
     {
         FakeLocalizer _inner;
 
+        sealed class DefaultVoice : ICharacterVoice
+        {
+            public VoiceSpec VoiceFor(string languageTag) => new();
+        }
+
         [SetUp]
         public void SetUp()
         {
@@ -77,7 +82,7 @@ namespace Jolly.Tests.EditMode.Core.Personas
 
             // Act
             using var personas = new PersonaRepository(new[] { definition }, "companion",
-                                                       new CharacterNamedLocalizer(_inner, "Jolly"));
+                                                       new CharacterNamedLocalizer(_inner, "Jolly"), new DefaultVoice());
             var first = personas.Current.SystemPrompt;
             Sync.Run(personas.ApplySwitch("companion", default));
 

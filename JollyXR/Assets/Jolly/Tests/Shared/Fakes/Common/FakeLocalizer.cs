@@ -37,7 +37,7 @@ namespace Jolly.Testing
             _voices[languageTag] = new LocaleVoiceProfile
             {
                 LanguageTag = languageTag, AsrLanguageBias = asrBias, TtsAvailable = ttsAvailable,
-                ReplyLanguageName = replyLanguage, TtsVoice = new VoiceSpec { VoiceId = "Charlie" },
+                ReplyLanguageName = replyLanguage,
             };
             return this;
         }

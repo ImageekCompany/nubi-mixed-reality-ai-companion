@@ -17,11 +17,71 @@ namespace Jolly.Tests.EditMode.Speech
         }
 
         [Test]
+        public void Body_NubiVoice_IsTheAuditionedRequest()
+        {
+            var body = WitProtocol.SynthesizeBody("Hey!", new VoiceSpec { VoiceId = "Rubie", Speed = 100, Pitch = 110 });
+
+            Assert.That(body, Is.EqualTo("{\"q\":\"Hey!\",\"voice\":\"Rubie\",\"speed\":100,\"pitch\":110}"));
+        }
+
+        [Test]
         public void Body_WithStyle_IncludesIt()
         {
             var body = WitProtocol.SynthesizeBody("Hi", new VoiceSpec { VoiceId = "Rebecca", Style = "soft" });
 
-            Assert.That(body, Does.Contain("\"style\":\"soft\""));
+            Assert.That(body, Is.EqualTo("{\"q\":\"Hi\",\"voice\":\"Rebecca\",\"style\":\"soft\",\"speed\":100,\"pitch\":100}"));
+        }
+
+        [TestCase(null)]
+        [TestCase("")]
+        public void Body_WithoutStyle_OmitsTheKey(string style)
+        {
+            var body = WitProtocol.SynthesizeBody("Hi", new VoiceSpec { Style = style });
+
+            Assert.That(body, Does.Not.Contain("\"style\""));
+        }
+
+        [Test]
+        public void Body_WithoutEffect_SendsPlainTextAndNoGain()
+        {
+            var body = WitProtocol.SynthesizeBody("Hi <3", new VoiceSpec { VoiceId = "Rubie", SfxCharacter = "", SfxEnvironment = null });
+
+            Assert.That(body, Is.EqualTo("{\"q\":\"Hi <3\",\"voice\":\"Rubie\",\"speed\":100,\"pitch\":100}"),
+                "Wit ignores gain, and text outside SSML must not be XML-escaped");
+        }
+
+        [Test]
+        public void Body_SfxCharacter_WrapsTheTextInSsml()
+        {
+            var body = WitProtocol.SynthesizeBody("Hi.", new VoiceSpec { VoiceId = "Charlie", SfxCharacter = "chipmunk" });
+
+            Assert.That(body, Does.StartWith(
+                "{\"q\":\"<speak><sfx character=\\\"chipmunk\\\">Hi.</sfx></speak>\",\"voice\":\"Charlie\","));
+        }
+
+        [Test]
+        public void Body_SfxEnvironment_WrapsTheTextInSsml()
+        {
+            var body = WitProtocol.SynthesizeBody("Hi.", new VoiceSpec { SfxEnvironment = "room" });
+
+            Assert.That(body, Does.StartWith("{\"q\":\"<speak><sfx environment=\\\"room\\\">Hi.</sfx></speak>\","));
+        }
+
+        [Test]
+        public void Body_BothSfx_PutCharacterBeforeEnvironment()
+        {
+            var body = WitProtocol.SynthesizeBody("Hi.", new VoiceSpec { SfxCharacter = "robot", SfxEnvironment = "radio" });
+
+            Assert.That(body, Does.Contain("<sfx character=\\\"robot\\\" environment=\\\"radio\\\">Hi.</sfx>"));
+        }
+
+        [Test]
+        public void Body_Ssml_EscapesMarkupButKeepsApostrophes()
+        {
+            var body = WitProtocol.SynthesizeBody("Tom & Jerry <3 \"you're\"", new VoiceSpec { SfxCharacter = "a\"b" });
+
+            Assert.That(body, Does.Contain(
+                "<sfx character=\\\"a&quot;b\\\">Tom &amp; Jerry &lt;3 &quot;you're&quot;</sfx>"));
         }
 
         [Test]

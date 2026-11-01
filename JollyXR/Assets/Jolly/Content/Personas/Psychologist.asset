@@ -14,12 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Jolly.App::Jolly.App.PersonaProfileAsset
   id: psychologist
   hasSafetyNotice: 1
-  voices:
-  - languageTag: en
-    voiceId: Charlie
-    style: 
-    speed: 92
-    pitch: 100
+  voiceStyle: 
+  voiceSpeedPercent: 92
+  voicePitchPercent: 100
   allowedTools:
   - look_at
   - come_here

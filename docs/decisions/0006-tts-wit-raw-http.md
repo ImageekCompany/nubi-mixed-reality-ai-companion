@@ -16,7 +16,7 @@
   - Cancellation aborts the request.
 - The SpeechQueue keeps at most 2 in-flight requests (current + prefetch).
 - Text per request is ≤ 240 characters.
-- Voice and speed come from the persona and locale.
+- Voice and speed come from the persona and locale. (Superseded by ADR-0031: the voice comes from the character's `VoiceProfile`, personas only scale it.)
 - **Canned lines:** baked at dev time through the same client into WAV assets (`CannedLineBaker`), so the offline voice matches the online one. Polish canned lines are baked with Piper `pl_PL-gosia` (CC0) outside the build.
 
 ## Consequences

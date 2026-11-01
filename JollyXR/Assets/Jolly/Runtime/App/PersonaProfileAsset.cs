@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using Jolly.Contracts;
 using Jolly.Core.Personas;
 using UnityEngine;
@@ -13,20 +12,15 @@ namespace Jolly.App
     [CreateAssetMenu(menuName = "Jolly/Persona", fileName = "Persona")]
     public sealed class PersonaProfileAsset : ScriptableObject
     {
-        [Serializable]
-        public sealed class VoiceOverride
-        {
-            public string languageTag = "en";
-            public string voiceId = "Charlie";
-            [Tooltip("Empty = provider default.")]
-            public string style = "";
-            [Range(50, 200)] public int speed = 100;
-            [Range(25, 200)] public int pitch = 100;
-        }
-
         public string id;
         public bool hasSafetyNotice;
-        public VoiceOverride[] voices = Array.Empty<VoiceOverride>();
+        [Header("Voice: how this persona speaks in the character's voice (ADR-0031)")]
+        [Tooltip("Empty keeps the character's style.")]
+        public string voiceStyle = "";
+        [Tooltip("Percent of the character's Wit speed.")]
+        [Range(50, 150)] public int voiceSpeedPercent = 100;
+        [Tooltip("Percent of the character's Wit pitch.")]
+        [Range(50, 150)] public int voicePitchPercent = 100;
         [Tooltip("Empty offers every tool.")]
         public string[] allowedTools = Array.Empty<string>();
         public bool persistMemory = true;
@@ -43,14 +37,6 @@ namespace Jolly.App
 
         public PersonaDefinition ToDefinition()
         {
-            var byLanguage = new Dictionary<string, VoiceSpec>(voices.Length, StringComparer.OrdinalIgnoreCase);
-            foreach (var v in voices)
-            {
-                byLanguage[v.languageTag] = new VoiceSpec
-                {
-                    VoiceId = v.voiceId, Style = string.IsNullOrEmpty(v.style) ? null : v.style, Speed = v.speed, Pitch = v.pitch,
-                };
-            }
             return new PersonaDefinition
             {
                 Id = id,
@@ -58,7 +44,12 @@ namespace Jolly.App
                 SystemPromptKey = PromptKey,
                 GreetingKey = GreetingKey,
                 SafetyNoticeKey = hasSafetyNotice ? SafetyKey : null,
-                Voices = byLanguage,
+                Delivery = new VoiceDelivery
+                {
+                    Style = string.IsNullOrEmpty(voiceStyle) ? null : voiceStyle,
+                    SpeedPercent = voiceSpeedPercent,
+                    PitchPercent = voicePitchPercent,
+                },
                 AllowedTools = allowedTools.Length == 0 ? null : allowedTools,
                 PersistMemory = persistMemory,
                 DefaultMood = defaultMood,

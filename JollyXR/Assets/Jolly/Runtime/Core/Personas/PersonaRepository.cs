@@ -17,10 +17,13 @@ namespace Jolly.Core.Personas
         readonly Dictionary<string, PersonaDefinition> _definitions = new(StringComparer.Ordinal);
         readonly List<string> _ids = new();
         readonly ILocalizer _localizer;
+        readonly ICharacterVoice _characterVoice;
 
-        public PersonaRepository(IReadOnlyList<PersonaDefinition> definitions, string defaultId, ILocalizer localizer)
+        public PersonaRepository(IReadOnlyList<PersonaDefinition> definitions, string defaultId, ILocalizer localizer,
+                                 ICharacterVoice characterVoice)
         {
             _localizer = localizer;
+            _characterVoice = characterVoice ?? throw new ArgumentNullException(nameof(characterVoice));
             foreach (var d in definitions)
             {
                 _definitions.Add(d.Id, d);
@@ -83,9 +86,8 @@ namespace Jolly.Core.Personas
 
         VoiceSpec VoiceFor(PersonaDefinition d)
         {
-            if (d.Voices != null && d.Voices.TryGetValue(_localizer.LanguageTag, out var voice))
-                return voice;
-            return _localizer.Voice?.TtsVoice ?? new VoiceSpec();
+            var voice = _characterVoice.VoiceFor(_localizer.LanguageTag);
+            return d.Delivery != null ? d.Delivery.ApplyTo(voice) : voice;
         }
 
         /// <summary>Null for a null key or a missing entry (ILocalizer returns the key itself when missing).</summary>

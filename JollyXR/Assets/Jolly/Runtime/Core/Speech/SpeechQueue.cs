@@ -15,8 +15,6 @@ namespace Jolly.Core.Speech
     public sealed class SpeechQueue : ISpeechQueue, IDisposable
     {
         const int MaxInFlight = 2;
-        const int MinWitSpeed = 50;
-        const int MaxWitSpeed = 200;
 
         sealed class Item
         {
@@ -121,10 +119,12 @@ namespace Jolly.Core.Speech
 
         VoiceSpec WithUserRate(VoiceSpec voice)
         {
-            var speed = Math.Clamp((int)Math.Round(voice.Speed * _preferences.Current.SpeechRate), MinWitSpeed, MaxWitSpeed);
+            var speed = Math.Clamp((int)Math.Round(voice.Speed * _preferences.Current.SpeechRate), VoiceSpec.MinSpeed, VoiceSpec.MaxSpeed);
             if (speed == voice.Speed)
                 return voice;
-            return new VoiceSpec { VoiceId = voice.VoiceId, Style = voice.Style, Pitch = voice.Pitch, Speed = speed };
+            var scaled = voice.Copy();
+            scaled.Speed = speed;
+            return scaled;
         }
 
         void Pump()

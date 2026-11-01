@@ -14,12 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Jolly.App::Jolly.App.PersonaProfileAsset
   id: mentor
   hasSafetyNotice: 0
-  voices:
-  - languageTag: en
-    voiceId: Charlie
-    style: 
-    speed: 100
-    pitch: 100
+  voiceStyle: 
+  voiceSpeedPercent: 100
+  voicePitchPercent: 100
   allowedTools: []
   persistMemory: 1
   crisisHandoff: 0
