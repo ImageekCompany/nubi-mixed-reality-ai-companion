@@ -109,7 +109,7 @@ namespace Jolly.Tests.EditMode.Speech
         }
 
         [Test]
-        public void Clear_OnBargeIn_CancelsInFlightRequestsAndDropsPending()
+        public void Clear_CancelsInFlightTokensAndDropsPending()
         {
             _queue.Enqueue("One.", Voice(), 1);
             _queue.Enqueue("Two.", Voice(), 2);
@@ -167,6 +167,47 @@ namespace Jolly.Tests.EditMode.Speech
 
             Assert.That(afterClear, Is.EqualTo("One."));
             Assert.That(_queue.SpokenSoFar, Is.Empty);
+        }
+
+        [Test]
+        public void FirstSamplePlayed_SentencesSharingAnUtteranceId_CaptionInPlayOrder()
+        {
+            var started = new List<(int, string)>();
+            _queue.SentenceStarted += (id, text) => started.Add((id, text));
+            _queue.Enqueue("One.", Voice(), 5);
+            _queue.Enqueue("Two.", Voice(), 5);
+
+            _output.StartPlaying(5);
+            _output.Finish(5);
+            _output.StartPlaying(5);
+
+            Assert.That(started, Is.EqualTo(new[] { (5, "One."), (5, "Two.") }));
+            Assert.That(_queue.SpokenSoFar, Is.EqualTo("One. Two."));
+        }
+
+        [Test]
+        public void FirstSamplePlayed_AfterOutputFlush_DoesNotCaptionDroppedSentences()
+        {
+            var started = new List<(int, string)>();
+            _queue.SentenceStarted += (id, text) => started.Add((id, text));
+            _queue.Enqueue("One.", Voice(), 1);
+            _queue.Enqueue("Two.", Voice(), 2);
+            _queue.Enqueue("Three.", Voice(), 3);
+            _output.Flush();
+
+            _output.StartPlaying(3);
+
+            Assert.That(started, Is.Empty);
+            Assert.That(_queue.SpokenSoFar, Is.Empty);
+        }
+
+        [Test]
+        public void Enqueue_LongerThanTheTtsLimit_ThrowsWithoutSynthesizing()
+        {
+            var sentence = new string('a', _tts.MaxCharacters + 1);
+
+            Assert.Throws<ArgumentException>(() => _queue.Enqueue(sentence, Voice(), 1));
+            Assert.That(_tts.Requests, Is.Empty);
         }
 
         [Test]

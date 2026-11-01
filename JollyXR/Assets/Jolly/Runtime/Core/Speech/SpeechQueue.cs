@@ -17,19 +17,21 @@ namespace Jolly.Core.Speech
         const int MinWitSpeed = 50;
         const int MaxWitSpeed = 200;
 
-        readonly struct Item
+        sealed class Item
         {
             public Item(string text, VoiceSpec voice, int utteranceId) { Text = text; Voice = voice; UtteranceId = utteranceId; }
             public string Text { get; }
             public VoiceSpec Voice { get; }
             public int UtteranceId { get; }
+            public bool Started { get; set; }
         }
 
         readonly ITextToSpeech _tts;
         readonly ISpeechOutput _output;
         readonly IUserPreferences _preferences;
         readonly Queue<Item> _pending = new();
-        readonly Dictionary<int, string> _unstarted = new();
+        /// <summary>Items handed to the output, in Play-call order, which is also the order the output plays them.</summary>
+        readonly List<Item> _playing = new(MaxInFlight);
         readonly StringBuilder _spoken = new();
         CancellationTokenSource _cts = new();
         UniTaskCompletionSource _drained;
@@ -58,10 +60,16 @@ namespace Jolly.Core.Speech
         /// </summary>
         public string SpokenSoFar => _spoken.ToString();
 
+        /// <summary>
+        /// Utterance ids need not be unique: captions follow play order. Longer than
+        /// <see cref="ITextToSpeech.MaxCharacters"/> throws; split with <see cref="SentenceSplitter"/> first.
+        /// </summary>
         public void Enqueue(string sentence, VoiceSpec voice, int utteranceId)
         {
             if (_disposed || string.IsNullOrWhiteSpace(sentence))
                 return;
+            if (sentence.Length > _tts.MaxCharacters)
+                throw new ArgumentException($"Sentence is {sentence.Length} characters; the TTS takes at most {_tts.MaxCharacters}.", nameof(sentence));
             if (_resetSpokenOnEnqueue)
             {
                 _spoken.Clear();
@@ -69,7 +77,6 @@ namespace Jolly.Core.Speech
             }
 
             _pending.Enqueue(new Item(sentence, WithUserRate(voice), utteranceId));
-            _unstarted[utteranceId] = sentence;
             Pump();
         }
 
@@ -81,7 +88,10 @@ namespace Jolly.Core.Speech
             return _drained.Task.AttachExternalCancellation(ct);
         }
 
-        /// <summary>Cancels in-flight synthesis and playback and drops queued sentences.</summary>
+        /// <summary>
+        /// Cancels in-flight synthesis, stops tracking playback and drops queued sentences. Audio already buffered in the
+        /// output keeps playing; silencing it is <see cref="ISpeechOutput.Flush"/> (the barge-in coordinator calls both).
+        /// </summary>
         public void Clear()
         {
             _generation++;
@@ -91,7 +101,7 @@ namespace Jolly.Core.Speech
             cancelled.Dispose();
             _inFlight = 0;
             _pending.Clear();
-            _unstarted.Clear();
+            _playing.Clear();
             _resetSpokenOnEnqueue = true;
             SignalIfDrained();
         }
@@ -121,7 +131,9 @@ namespace Jolly.Core.Speech
             while (_inFlight < MaxInFlight && _pending.Count > 0)
             {
                 _inFlight++;
-                Speak(_pending.Dequeue(), _generation, _cts.Token).Forget();
+                var item = _pending.Dequeue();
+                _playing.Add(item);
+                Speak(item, _generation, _cts.Token).Forget();
             }
         }
 
@@ -145,7 +157,7 @@ namespace Jolly.Core.Speech
             {
                 if (generation == _generation)
                 {
-                    _unstarted.Remove(item.UtteranceId);
+                    _playing.Remove(item);
                     _inFlight--;
                     Pump();
                     SignalIfDrained();
@@ -164,12 +176,19 @@ namespace Jolly.Core.Speech
 
         void OnFirstSamplePlayed(int utteranceId)
         {
-            if (!_unstarted.Remove(utteranceId, out var sentence))
+            foreach (var item in _playing)
+            {
+                if (item.Started)
+                    continue;
+                if (item.UtteranceId != utteranceId)
+                    return;
+                item.Started = true;
+                if (_spoken.Length > 0)
+                    _spoken.Append(' ');
+                _spoken.Append(item.Text);
+                SentenceStarted?.Invoke(utteranceId, item.Text);
                 return;
-            if (_spoken.Length > 0)
-                _spoken.Append(' ');
-            _spoken.Append(sentence);
-            SentenceStarted?.Invoke(utteranceId, sentence);
+            }
         }
     }
 }
