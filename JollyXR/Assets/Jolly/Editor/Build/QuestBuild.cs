@@ -58,6 +58,9 @@ namespace Jolly.Editor.Build
             if (HasArg("-nubiDevelopment"))
                 options |= BuildOptions.Development;
 
+            if (!AddressablesContentBuild.Run())
+                return false;
+
             Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(output)) ?? ".");
             EditorUserBuildSettings.buildAppBundle = false;
 
