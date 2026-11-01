@@ -26,6 +26,7 @@ from nubi import config as C  # noqa: E402
 from nubi import geometry as G  # noqa: E402
 from nubi import faces, rig, shapes, texture, animation, validate, export, previews  # noqa: E402
 from nubi import render as R  # noqa: E402
+from nubi.clips import CLIPS  # noqa: E402
 
 REPO = Path(__file__).resolve().parents[2]
 UNITY_CHARACTER_DIR = REPO / "JollyXR" / "Assets" / "Jolly" / "Art" / "Character"
@@ -127,7 +128,7 @@ def main():
 
     bpy.context.scene.frame_set(0)
     export.export_fbx(str(FBX_PATH), mesh, arm)
-    faces.write_json(str(FACE_PRESETS_PATH), report["shape_keys"])
+    faces.write_json(str(FACE_PRESETS_PATH), report["shape_keys"], CLIPS)
     export.save_blend(str(BLEND_PATH))
 
     if not args.no_render:
