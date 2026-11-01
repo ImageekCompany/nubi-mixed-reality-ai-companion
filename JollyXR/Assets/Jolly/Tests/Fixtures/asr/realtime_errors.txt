@@ -1,0 +1,4 @@
+{"type":"error","message":"Unauthorized: the credential presented in the handshake was not accepted","sessionId":"voyager/duplex/0","errorType":"authentication_error","errorCode":"invalid_api_key"}
+{"type":"error","message":"You must specify the 'audioEncoding' attribute","sessionId":"voyager/duplex/1","errorParam":"audioEncoding"}
+{"type":"error","message":"Malformed handshake request","sessionId":"voyager/duplex/2"}
+{"type":"error","message":"Audio processing backlog too large","sessionId":"voyager/duplex/3"}

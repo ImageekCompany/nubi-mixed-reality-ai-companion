@@ -1,0 +1,223 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e9620f8c34305754d8cc9a7e49e852d9, type: 3}
+  m_Name: UI_pl
+  m_EditorClassIdentifier: Unity.Localization::UnityEngine.Localization.Tables.StringTable
+  m_LocaleId:
+    m_Code: pl
+  m_SharedData: {fileID: 11400000, guid: 489c9b8e0bb904f43ade3af7bd9f84cd, type: 2}
+  m_Metadata:
+    m_Items: []
+  m_TableData:
+  - m_Id: 368041984
+    m_Localized: Ustawienia
+    m_Metadata:
+      m_Items: []
+  - m_Id: 376430592
+    m_Localized: "Rozmiar napis\xF3w"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 376430593
+    m_Localized: "Ma\u0142e"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 376430594
+    m_Localized: "\u015Arednie"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624896
+    m_Localized: "Du\u017Ce"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624897
+    m_Localized: Tempo mowy
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624898
+    m_Localized: "G\u0142o\u015Bno\u015B\u0107"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624899
+    m_Localized: "Tryb siedz\u0105cy"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624900
+    m_Localized: "W\u0142."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624901
+    m_Localized: "Wy\u0142."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624902
+    m_Localized: "Gest m\xF3wienia"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624903
+    m_Localized: "Dowolna r\u0119ka"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624904
+    m_Localized: "Dominuj\u0105ca r\u0119ka"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624905
+    m_Localized: "Osobowo\u015B\u0107"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624906
+    m_Localized: "J\u0119zyk"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624907
+    m_Localized: "Wyczy\u015B\u0107 pami\u0119\u0107"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624908
+    m_Localized: "Dotknij ponownie, aby wyczy\u015Bci\u0107"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624909
+    m_Localized: "Zu\u017Cycie API"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624910
+    m_Localized: Towarzysz
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624911
+    m_Localized: Mentor
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624912
+    m_Localized: Guru
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624913
+    m_Localized: Psycholog
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624914
+    m_Localized: English
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624915
+    m_Localized: Polski
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624916
+    m_Localized: "Brak klucza API lub klucz nieprawid\u0142owy"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624917
+    m_Localized: "Offline: tylko kr\xF3tkie odpowiedzi"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624918
+    m_Localized: "Niestabilne po\u0142\u0105czenie"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624919
+    m_Localized: "Wyczerpano bud\u017Cet API"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624920
+    m_Localized: "Kamera niedost\u0119pna"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624921
+    m_Localized: "Mikrofon niedost\u0119pny"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624922
+    m_Localized: "Id\u0119"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624923
+    m_Localized: "Pod\u0105\u017Cam"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624924
+    m_Localized: "Podchodz\u0119"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624925
+    m_Localized: "Patrz\u0119"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624926
+    m_Localized: "Rozpoznaj\u0119"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624927
+    m_Localized: Szukam
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624928
+    m_Localized: "Wskazuj\u0119 cz\u0119\u015B\u0107"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624929
+    m_Localized: "Zapami\u0119tuj\u0119 miejsce"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624930
+    m_Localized: Stop
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624931
+    m_Localized: Gest
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624932
+    m_Localized: "Zmiana osobowo\u015Bci"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624933
+    m_Localized: "w toku\u2026"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624934
+    m_Localized: gotowe
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624935
+    m_Localized: "b\u0142\u0105d"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624936
+    m_Localized: "Op\xF3\u017Anienia (ms)"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624937
+    m_Localized: "Puszczenie \u2192 pierwszy d\u017Awi\u0119k"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624938
+    m_Localized: "Puszczenie \u2192 transkrypcja"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624939
+    m_Localized: "Transkrypcja \u2192 pierwszy tekst"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624940
+    m_Localized: "Zdanie \u2192 pierwszy bajt TTS"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624941
+    m_Localized: "Puszczenie \u2192 maska"
+    m_Metadata:
+      m_Items: []
+  references:
+    version: 2
+    RefIds: []

@@ -4,8 +4,7 @@
     "references": [
         "Jolly.Contracts",
         "UniTask",
-        "UniTask.Linq",
-        "Unity.Animation.Rigging"
+        "UniTask.Linq"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

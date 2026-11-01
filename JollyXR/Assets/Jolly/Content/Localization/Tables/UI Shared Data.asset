@@ -1,0 +1,228 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b11a58205ec3474ca216360e9fa74a8, type: 3}
+  m_Name: UI Shared Data
+  m_EditorClassIdentifier: Unity.Localization::UnityEngine.Localization.Tables.SharedTableData
+  m_TableCollectionName: UI
+  m_TableCollectionNameGuidString: 489c9b8e0bb904f43ade3af7bd9f84cd
+  m_Entries:
+  - m_Id: 368041984
+    m_Key: settings.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 376430592
+    m_Key: settings.caption_size
+    m_Metadata:
+      m_Items: []
+  - m_Id: 376430593
+    m_Key: settings.size.small
+    m_Metadata:
+      m_Items: []
+  - m_Id: 376430594
+    m_Key: settings.size.medium
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624896
+    m_Key: settings.size.large
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624897
+    m_Key: settings.speech_rate
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624898
+    m_Key: settings.volume
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624899
+    m_Key: settings.seated
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624900
+    m_Key: settings.on
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624901
+    m_Key: settings.off
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624902
+    m_Key: settings.ptt_hand
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624903
+    m_Key: settings.ptt.either
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624904
+    m_Key: settings.ptt.dominant
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624905
+    m_Key: settings.persona
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624906
+    m_Key: settings.language
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624907
+    m_Key: settings.clear_memory
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624908
+    m_Key: settings.clear_memory.confirm
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624909
+    m_Key: settings.usage
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624910
+    m_Key: persona.companion
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624911
+    m_Key: persona.mentor
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624912
+    m_Key: persona.guru
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624913
+    m_Key: persona.psychologist
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624914
+    m_Key: language.en
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624915
+    m_Key: language.pl
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624916
+    m_Key: status.api_key_missing
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624917
+    m_Key: status.offline
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624918
+    m_Key: status.degraded
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624919
+    m_Key: status.budget_reached
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624920
+    m_Key: status.camera_unavailable
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624921
+    m_Key: status.mic_unavailable
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624922
+    m_Key: tool.walk_to
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624923
+    m_Key: tool.follow_user
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624924
+    m_Key: tool.come_here
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624925
+    m_Key: tool.look_at
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624926
+    m_Key: tool.capture_and_identify
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624927
+    m_Key: tool.find_object
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624928
+    m_Key: tool.highlight_part
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624929
+    m_Key: tool.remember_place
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624930
+    m_Key: tool.stop
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624931
+    m_Key: tool.play_gesture
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624932
+    m_Key: tool.set_persona
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624933
+    m_Key: badge.running
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624934
+    m_Key: badge.ok
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624935
+    m_Key: badge.failed
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624936
+    m_Key: hud.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624937
+    m_Key: hud.release_to_audio
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624938
+    m_Key: hud.asr_final
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624939
+    m_Key: hud.llm_first_text
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624940
+    m_Key: hud.tts_first_byte
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624941
+    m_Key: hud.mask_shown
+    m_Metadata:
+      m_Items: []
+  m_Metadata:
+    m_Items: []
+  m_KeyGenerator:
+    rid: 8066298800339419160
+  references:
+    version: 2
+    RefIds:
+    - rid: 8066298800339419160
+      type: {class: DistributedUIDGenerator, ns: UnityEngine.Localization.Tables, asm: Unity.Localization}
+      data:
+        m_CustomEpoch: 1793496346077

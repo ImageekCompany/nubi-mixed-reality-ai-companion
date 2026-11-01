@@ -1,12 +1,46 @@
 """FBX (Unity) and .blend outputs."""
 
+import datetime
+import hashlib
 import os
 from contextlib import contextmanager
 
 import bpy
-from io_scene_fbx import fbx_utils
+from io_scene_fbx import export_fbx_bin, fbx_utils
 
 SHAPE_KEY_FBX_PROPS = fbx_utils.AnimationCurveNodeWrapper.kinds["SHAPE_KEY"][2]
+FIXED_FBX_TIME = datetime.datetime(2026, 1, 1)
+
+
+def _stable_hash(key):
+    return int.from_bytes(hashlib.blake2b(repr(key).encode(), digest_size=8).digest(), "little") >> 1
+
+
+@contextmanager
+def _deterministic_fbx():
+    """Makes two builds byte-identical, so a rebuild neither churns the LFS object nor leaks the build machine:
+    - object UUIDs come from the builtin hash(), which is salted per process (PYTHONHASHSEED); a module-global
+      `hash` shadows the builtin inside fbx_utils only
+    - the header stamps datetime.now()
+    - the texture FileName is the absolute path of the build checkout; only the relative path is written"""
+    header, vid_path = export_fbx_bin.fbx_header_elements, export_fbx_bin._gen_vid_path
+
+    def fixed_header(root, scene_data, time=None):
+        return header(root, scene_data, FIXED_FBX_TIME)
+
+    def relative_vid_path(img, scene_data):
+        _, rel = vid_path(img, scene_data)
+        return rel, rel
+
+    fbx_utils.hash = _stable_hash
+    export_fbx_bin.fbx_header_elements = fixed_header
+    export_fbx_bin._gen_vid_path = relative_vid_path
+    try:
+        yield
+    finally:
+        del fbx_utils.hash
+        export_fbx_bin.fbx_header_elements = header
+        export_fbx_bin._gen_vid_path = vid_path
 
 
 @contextmanager
@@ -42,7 +76,7 @@ def export_fbx(path, mesh_obj, arm_obj):
     mesh_obj.select_set(True)
     arm_obj.select_set(True)
     bpy.context.view_layer.objects.active = arm_obj
-    with _without_shape_key_curves():
+    with _without_shape_key_curves(), _deterministic_fbx():
         _export(path)
 
 

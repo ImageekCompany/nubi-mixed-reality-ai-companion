@@ -113,7 +113,7 @@ namespace Jolly.Contracts
         /// <summary>
         /// Runs one user turn: up to 4 model rounds, executing tool calls as they stream in.
         /// Buffers the turn's items and commits them once with IConversationMemory.CommitTurn when the turn ends.
-        /// On cancellation it still commits: the user text, the assistant text actually spoken (SpeechQueue.SpokenSoFar)
+        /// On cancellation it still commits: the user text, the assistant text actually spoken (spokenSoFar, read when ct fires)
         /// plus " [interrupted]", and {"error":"interrupted"} for every ToolCall without a ToolResult
         /// (Responses rejects an orphan function_call with 400 "No tool output found", live 2026-11-01).
         /// Provider failures surface as a Failed event; cancellation then throws OperationCanceledException.

@@ -22,15 +22,21 @@ FACE_PRESETS = {
     "ShakeHead": {"Frown": 0.5},
     "Sad": {"Frown": 1.0, "Sad_Eyes": 1.0},
     "Surprised": {"O": 1.0, "Wide_Eyes": 1.0},
+    "Shrug": {"Smile": 0.25, "Wide_Eyes": 0.35},
+    "Stretch": {"O": 0.7, "Happy_Eyes": 1.0},      # a yawn
 }
 
 
-def write_json(path, shape_keys):
+def write_json(path, shape_keys, clips):
+    """Arrays of objects rather than maps, so Unity's JsonUtility reads it at runtime and in the
+    importer. `loopingClips` is the single source of the Loop Time flags the Unity importer sets."""
     unknown = {k for preset in FACE_PRESETS.values() for k in preset} - set(shape_keys)
     if unknown:
         raise ValueError(f"face presets use missing shape keys: {sorted(unknown)}")
     os.makedirs(os.path.dirname(path), exist_ok=True)
     doc = {"weightScale": "0..1 (multiply by 100 for SkinnedMeshRenderer.SetBlendShapeWeight)",
-           "presets": FACE_PRESETS}
+           "loopingClips": [c.name for c in clips if c.loop],
+           "presets": [{"clip": clip, "weights": [{"shape": k, "weight": w} for k, w in preset.items()]}
+                       for clip, preset in FACE_PRESETS.items()]}
     with open(path, "w") as fh:
         fh.write(json.dumps(doc, indent=2) + "\n")

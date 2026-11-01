@@ -14,7 +14,9 @@
         "UnityEngine.TestRunner",
         "Jolly.App",
         "Jolly.Character",
+        "Jolly.Editor.Character",
         "Jolly.Presentation",
+        "Jolly.Localization",
         "Jolly.XR",
         "Unity.XR.ARFoundation",
         "Unity.XR.ARSubsystems",
@@ -25,8 +27,7 @@
         "Unity.AI.Navigation",
         "Unity.Localization",
         "Unity.TextMeshPro",
-        "UnityEngine.UI",
-        "Unity.Animation.Rigging"
+        "UnityEngine.UI"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

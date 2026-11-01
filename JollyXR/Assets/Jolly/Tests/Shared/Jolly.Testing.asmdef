@@ -4,6 +4,7 @@
     "references": [
         "Jolly.Contracts",
         "Jolly.Core",
+        "Jolly.Net",
         "UniTask",
         "UniTask.Linq"
     ],

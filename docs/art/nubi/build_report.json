@@ -39,7 +39,9 @@
     "Nod",
     "ShakeHead",
     "Sad",
-    "Surprised"
+    "Surprised",
+    "Shrug",
+    "Stretch"
   ],
   "uv_coverage": 0.56,
   "blink_closed_ratio": {
@@ -132,6 +134,20 @@
       "ok": true
     },
     "Surprised": {
+      "arms_in_body": 0.0,
+      "feet_overlap": 0.0,
+      "worst_frame": 0,
+      "worst_arm": null,
+      "ok": true
+    },
+    "Shrug": {
+      "arms_in_body": 0.0,
+      "feet_overlap": 0.0,
+      "worst_frame": 0,
+      "worst_arm": null,
+      "ok": true
+    },
+    "Stretch": {
       "arms_in_body": 0.0,
       "feet_overlap": 0.0,
       "worst_frame": 0,

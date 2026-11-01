@@ -1,0 +1,6 @@
+{"type":"speechStart","audioProcessedMs":0,"turnId":0}
+{"type":"transcript","transcript":"What","final":false,"audioProcessedMs":560}
+{"type":"transcript","transcript":"What is this object?","final":false,"audioProcessedMs":1520}
+{"type":"speechEnd","audioProcessedMs":1020,"turnId":0}
+{"type":"speechComplete","audioProcessedMs":1020,"turnId":0,"transcript":"What is this object?"}
+{"type":"transcript","transcript":"","final":true,"audioProcessedMs":6000}

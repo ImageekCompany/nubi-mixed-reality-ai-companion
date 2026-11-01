@@ -1,0 +1,59 @@
+event: response.created
+data: {"response":{"background":false,"created_at":1793495750.0,"error":null,"id":"resp_6ae692c607ecc85b306e41e1","incomplete_details":null,"instructions":"You are Nubi, a friendly mixed-reality companion. Be brief.","max_output_tokens":1024,"model":"muse-spark-1.3-contributor","object":"response","output":[],"parallel_tool_calls":true,"reasoning":{"effort":"minimal"},"service_tier":"auto","status":"in_progress","store":false,"temperature":1.0,"tool_choice":"auto","tools":[{"description":"Walk Nubi to a named place.","name":"walk_to","parameters":{"additionalProperties":false,"properties":{"place":{"maxLength":64,"type":"string"}},"required":["place"],"type":"object"},"type":"function"},{"description":"Look through the headset camera at what the user is showing and answer the question about it.","name":"capture_and_identify","parameters":{"additionalProperties":false,"properties":{"question":{"maxLength":200,"type":"string"}},"required":["question"],"type":"object"},"type":"function"}],"top_logprobs":0,"top_p":1.0,"truncation":"disabled"},"sequence_number":0,"type":"response.created"}
+
+event: response.in_progress
+data: {"response":{"background":false,"created_at":1793495750.0,"error":null,"id":"resp_6ae692c607ecc85b306e41e1","incomplete_details":null,"instructions":"You are Nubi, a friendly mixed-reality companion. Be brief.","max_output_tokens":1024,"model":"muse-spark-1.3-contributor","object":"response","output":[],"parallel_tool_calls":true,"reasoning":{"effort":"minimal"},"service_tier":"auto","status":"in_progress","store":false,"temperature":1.0,"tool_choice":"auto","tools":[{"description":"Walk Nubi to a named place.","name":"walk_to","parameters":{"additionalProperties":false,"properties":{"place":{"maxLength":64,"type":"string"}},"required":["place"],"type":"object"},"type":"function"},{"description":"Look through the headset camera at what the user is showing and answer the question about it.","name":"capture_and_identify","parameters":{"additionalProperties":false,"properties":{"question":{"maxLength":200,"type":"string"}},"required":["question"],"type":"object"},"type":"function"}],"top_logprobs":0,"top_p":1.0,"truncation":"disabled"},"sequence_number":1,"type":"response.in_progress"}
+
+event: response.output_item.added
+data: {"item":{"id":"rs_6ae692c607ecc85b306e41e1:rs_01a194ad55e474c984f751205df7b3c7","status":"in_progress","summary":[],"type":"reasoning"},"output_index":0,"sequence_number":2,"type":"response.output_item.added"}
+
+event: response.output_item.done
+data: {"item":{"encrypted_content":"Q-PaDgGm8ApBi4I4_nZO73e7jHIbVpPPv6grsUDuY3grycxYVqpEB4ZJksGEfQwoHOOVPiwXruWMmZTOnOKu_-mD0xKrMyx0jUOzvDusKGDbqjbNfCeYPBsVzaeo7ycEFV6DncBZikuzxjKEUU5jo4PFqCAKJMgBbq4RdO_5Bmesw7jcNU2soEXiCpv1fV9PzQW13ncxxRNmcVNCG2magEp3dyCWSL42FwC8bzlivqGWjPfNAC5sZRs8YvUCdV0mvUsynJuoGojI7YXRE2d-qzbLXisWZhlQDwVs2zNgnY8xAn-0Jn0t8_wmx6xwk7qS2M-5z5g9ENFzJRVlKR8VK2oGPvKA1vYhyY159uf_vOUTXrv737PfTxcnzSCZs3H_IZEi8z5txiIvu88aufBxN-1hwUJLSE3hAfeIWMc3MwJXM0hRm5Z-9UR3mfMCo8voJBFnacs916ytoXRk5XQyVZIgcL-l-PymaHiQPZO3Za3qNUUGaCXTqJvz_KVLpDoMX7-yGW0Vk4JFAyKbfJRahJUIjM10ecdqGWtyb-XkfYdQ-RB3-Bm-5uhcZHIoyYychuyV_kOk0JchUgqR45_5Skj9P_xR40sWiYgsBVZ9aWailG1HcKgvs9FtGcLi6WX56WipQotDbJruflvek-RG246Guc8YM0a9amyNzpJellvxKkZ5D5g5uqKuuyUNEDtSqFzChfHrAHBHX0IVYLnkbWjH-CNABkOrkJgZAHQKKWJW9Q8WpvSTRdIn_hfw08EMElM-rcWrLU2J_GJLrYjK5NwRGvKZi_AQtjTc1T6B-tVFKaNkMqIjbQQctRDgkX4i4WYphrIsAdUt56GekSoxdpLEwZGdHE-MfAs6tO0dSwJOmtvtKkVgxI0Vq95_TxnyRq70kxkaTykuthr4Gor0I44AWPRL9uR8ZX0y-QqUW3sjyhM9fLPxr1IIAwH_GNxPzDc8SeUUXBUgWtVDpvq7F4rB96N2SFxBIQbTUPWPiglcKbztvS5dfCCDkiOl8pwuzm5WIbdTbcLwV9wnzHjB4MtGXea1LsHfO4T9Jp8Hn73TqyJ5b_VFpfRJY119YWQxRr2CLE9cs3b3qM3U595ha_xXxALMhNBObOEeg4k1OzyfdBrYEam6iRVsIiNTQghGWuWrK5vQSe71wPPcCBu_Jy--y-yrJMpPPZJR9BOW61_gqHAZpJlRnN0ybLn-EsmdBfa6Lh6tL0TqqOH89P5jzaloO1kd6qOR6Ch0KN9YOQKEKtU1-swWYKign-Exmc6SM-KN0twL2KQgZTPxXrjUgB3O976JUiMLEpmXwBnaKQkA7DYpWxqHdTBmNxcYPAga78ML_z58ANbk23IG_RgKtzrGZEk-QCrVvoIlBJjgPnAz9L-QuPWr70dMGM1QpwCC3c9lSOKdp5saP-2bmg","id":"rs_6ae692c607ecc85b306e41e1:rs_01a194ad55e474c984f751205df7b3c7","status":"completed","summary":[],"type":"reasoning"},"output_index":0,"sequence_number":3,"type":"response.output_item.done"}
+
+event: response.output_item.added
+data: {"item":{"content":[],"id":"rs_01a194ad574573819b778cf269730b5c","phase":"commentary","role":"assistant","status":"in_progress","type":"message"},"output_index":1,"sequence_number":4,"type":"response.output_item.added"}
+
+event: response.content_part.added
+data: {"content_index":0,"item_id":"rs_01a194ad574573819b778cf269730b5c","output_index":1,"part":{"annotations":[],"logprobs":[],"text":"","type":"output_text"},"sequence_number":5,"type":"response.content_part.added"}
+
+event: response.output_text.delta
+data: {"content_index":0,"delta":"Doing both at once — heading to the sofa and checking your mug.","item_id":"rs_01a194ad574573819b778cf269730b5c","logprobs":[],"output_index":1,"sequence_number":6,"type":"response.output_text.delta"}
+
+event: response.output_text.done
+data: {"content_index":0,"item_id":"rs_01a194ad574573819b778cf269730b5c","logprobs":[],"output_index":1,"sequence_number":7,"text":"Doing both at once — heading to the sofa and checking your mug.","type":"response.output_text.done"}
+
+event: response.content_part.done
+data: {"content_index":0,"item_id":"rs_01a194ad574573819b778cf269730b5c","output_index":1,"part":{"annotations":[],"logprobs":[],"text":"Doing both at once — heading to the sofa and checking your mug.","type":"output_text"},"sequence_number":8,"type":"response.content_part.done"}
+
+event: response.output_item.done
+data: {"item":{"content":[{"annotations":[],"logprobs":[],"text":"Doing both at once — heading to the sofa and checking your mug.","type":"output_text"}],"id":"rs_01a194ad574573819b778cf269730b5c","phase":"commentary","role":"assistant","status":"completed","type":"message"},"output_index":1,"sequence_number":9,"type":"response.output_item.done"}
+
+event: response.output_item.added
+data: {"item":{"arguments":"","call_id":"call_01a194ad57e377b0b2f61d993401f38e","id":"fc_01a194ad57e377b0b2f61d993401f38e","name":"walk_to","status":"in_progress","type":"function_call"},"output_index":2,"sequence_number":10,"type":"response.output_item.added"}
+
+event: response.function_call_arguments.delta
+data: {"delta":"{\"place\":\"sofa\"}","item_id":"fc_01a194ad57e377b0b2f61d993401f38e","output_index":2,"sequence_number":11,"type":"response.function_call_arguments.delta"}
+
+event: response.output_item.added
+data: {"item":{"arguments":"","call_id":"call_01a194ad58bf73a483b760fa2d3707cc","id":"fc_01a194ad58bf73a483b760fa2d3707cc","name":"capture_and_identify","status":"in_progress","type":"function_call"},"output_index":3,"sequence_number":12,"type":"response.output_item.added"}
+
+event: response.function_call_arguments.delta
+data: {"delta":"{\"question\":\"What is this mug the user is holding?\"}","item_id":"fc_01a194ad58bf73a483b760fa2d3707cc","output_index":3,"sequence_number":13,"type":"response.function_call_arguments.delta"}
+
+event: response.function_call_arguments.done
+data: {"arguments":"{\"place\":\"sofa\"}","item_id":"fc_01a194ad57e377b0b2f61d993401f38e","name":"walk_to","output_index":2,"sequence_number":14,"type":"response.function_call_arguments.done"}
+
+event: response.output_item.done
+data: {"item":{"arguments":"{\"place\":\"sofa\"}","call_id":"call_01a194ad57e377b0b2f61d993401f38e","id":"fc_01a194ad57e377b0b2f61d993401f38e","name":"walk_to","status":"completed","type":"function_call"},"output_index":2,"sequence_number":15,"type":"response.output_item.done"}
+
+event: response.function_call_arguments.done
+data: {"arguments":"{\"question\":\"What is this mug the user is holding?\"}","item_id":"fc_01a194ad58bf73a483b760fa2d3707cc","name":"capture_and_identify","output_index":3,"sequence_number":16,"type":"response.function_call_arguments.done"}
+
+event: response.output_item.done
+data: {"item":{"arguments":"{\"question\":\"What is this mug the user is holding?\"}","call_id":"call_01a194ad58bf73a483b760fa2d3707cc","id":"fc_01a194ad58bf73a483b760fa2d3707cc","name":"capture_and_identify","status":"completed","type":"function_call"},"output_index":3,"sequence_number":17,"type":"response.output_item.done"}
+
+event: response.completed
+data: {"response":{"background":false,"completed_at":1793495751.0,"created_at":1793495750.0,"error":null,"id":"resp_6ae692c607ecc85b306e41e1","incomplete_details":null,"instructions":"You are Nubi, a friendly mixed-reality companion. Be brief.","max_output_tokens":1024,"model":"muse-spark-1.3-contributor","object":"response","output":[{"encrypted_content":"Q-PaDgEx0hyJqvWLgl1cuIK8nZKttPveNDJXmcsp7bC_YODBM5VmqwxmJH8YbcBC0I1zIatV5cOXoE9-h5TddikrsH3JRAHS7gexQz0onKLNFHPJwnou8cWgNJ-0VTcoTptVy8k8mpL8MkKCkgU1USh-lIRyd1tIb-stnaIJ5y6VbZNeRRQfEZ126KatDxej7U_eNv_sDBTo9G-IgSwcUK8ZoyzibWwj5rHryylpt6lwwofdR3onj1MOnNqe7rVL-nR07BZD8z_sPxCmD-_3Fgvt0trjraraoeAXhfI0sn46yLlIiJamDT-hwUgg1Mfvt-YgjdA8jYOcjHbZNWK-nTf72k9N7JUU3Pg-fcDoUo4Cxaqch9ED71F9z1aLu3fvycVa7cS2GkvgNxwCdPwhCK1-A0jdFwXHsVsSXoeFjNwSyPrx2u8xqQ_5IhDMnKANHsRG2pk4C8c5kbiiTDZ88vAfVuHwzt5UP6PwrGjwNO7EAi7DGndDOXDbwxjJo2V-y0Rdot2YJW-VpScgddj4puAKWeHiFV1lpuzMaePZYvvDOshfjrvzLMElkK-C-iDf23xTBqPkQnFJZU4pXnsKLPA9IOMBaVc7w2QII1LdycJrUSXeFn2P-VzLTPU3j6spAPOM-Sol8TXVDzM2eD2A0GwMM2RaxohRkdqOjFk9TrJoNsth1HLCGnASHCzcbAaVfnN0wc4ZnqqyTCoIxI-Q9vj6U9bHTfxOeSBVCIhw-tuodZEAssOG0C-pu9tZHCMVP-BN210K2fKRedtOIqJE111gZrcc2AjQP5g2yA6wyzRDMTYXPIgG7R9ufXEc9j1REJppt3GP6frMpHhhA0LHFfQjpbieRc77ste0Mfwgvntj62lFVjNEP4VQwXsfJTAkeKKSOWrCor_kp_a8mknhTV0YFjjwtjK97BsnYl2FtJYHhgtXWMKaXRhAqpizTr0ImIAz2GGou8Qd_pkWJpVgSo4PGa4iec1DxvZ0Ejlf3QlrjkiZ2ieXg4P6xSlPW9Voex-pqw11Lwr6S5PyTe6bMcSrboXw2cF2r9hVKBbVBrRtf4kqWsfLw2fiQvplQsExo7uqBB40huceMrnCJIfMt-65a01zv-CZ-Ew-m3xRwnWbMPWV_ViXWTK3qKraBDAooRtORZm56_UIklQiENRYamq23-1WG6f0XTMgxOGtcosFmtVbIiScCKrMcDovQYJehxD6ZHjz4m_tBPK0kBXilIY6nijUMOIzsUY8_FbfKM3RleqRoLMTp7OnBludPRp2A3oOTqOebwuTWGFxVtLanwSTKmQIRqaPCcW3rmIjgR_DZ_-iFBsijTmrcXjTMricTG9zvsrwPkR2qxZqwcDu3k_XYT_xZM1j8pATRVhflVPS_k8vjKyhpewk2hDiygY_wD-1PtTRiBLOha_GDA","id":"rs_6ae692c607ecc85b306e41e1:rs_01a194ad55e474c984f751205df7b3c7","status":"completed","summary":[],"type":"reasoning"},{"content":[{"annotations":[],"logprobs":[],"text":"Doing both at once — heading to the sofa and checking your mug.","type":"output_text"}],"id":"rs_01a194ad574573819b778cf269730b5c","phase":"commentary","role":"assistant","status":"completed","type":"message"},{"arguments":"{\"place\":\"sofa\"}","call_id":"call_01a194ad57e377b0b2f61d993401f38e","id":"fc_01a194ad57e377b0b2f61d993401f38e","name":"walk_to","status":"completed","type":"function_call"},{"arguments":"{\"question\":\"What is this mug the user is holding?\"}","call_id":"call_01a194ad58bf73a483b760fa2d3707cc","id":"fc_01a194ad58bf73a483b760fa2d3707cc","name":"capture_and_identify","status":"completed","type":"function_call"}],"parallel_tool_calls":true,"reasoning":{"effort":"minimal"},"service_tier":"auto","status":"completed","store":false,"temperature":1.0,"tool_choice":"auto","tools":[{"description":"Walk Nubi to a named place.","name":"walk_to","parameters":{"additionalProperties":false,"properties":{"place":{"maxLength":64,"type":"string"}},"required":["place"],"type":"object"},"type":"function"},{"description":"Look through the headset camera at what the user is showing and answer the question about it.","name":"capture_and_identify","parameters":{"additionalProperties":false,"properties":{"question":{"maxLength":200,"type":"string"}},"required":["question"],"type":"object"},"type":"function"}],"top_logprobs":0,"top_p":1.0,"truncation":"disabled","usage":{"input_tokens":644,"input_tokens_details":{"cached_tokens":0},"output_tokens":177,"output_tokens_details":{"reasoning_tokens":46},"total_tokens":821}},"sequence_number":18,"type":"response.completed"}
+
+data: [DONE]
+

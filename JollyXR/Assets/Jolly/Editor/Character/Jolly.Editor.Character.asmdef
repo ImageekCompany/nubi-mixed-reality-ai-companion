@@ -1,0 +1,19 @@
+{
+    "name": "Jolly.Editor.Character",
+    "rootNamespace": "Jolly.Editor.Character",
+    "references": [
+        "Jolly.Character",
+        "Jolly.Contracts"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

@@ -47,6 +47,7 @@ namespace Jolly.Editor.Build
             ARSessionFeature.featureId,
             ARCameraFeature.featureId,
             ARPlaneFeature.featureId,
+            ARBoundingBoxFeature.featureId,
             ARRaycastFeature.featureId,
             ARAnchorFeature.featureId,
             DisplayUtilitiesFeature.featureId,

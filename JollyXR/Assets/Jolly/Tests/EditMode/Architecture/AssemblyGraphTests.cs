@@ -41,7 +41,7 @@ namespace Jolly.Tests.EditMode.Architecture
             ["Jolly.XR"] = With("Jolly.Contracts", UniTask, XrPackages),
             ["Jolly.XR.MetaQuest"] = With("Jolly.Contracts", "Jolly.XR", UniTask,
                 "Unity.XR.MetaOpenXR", "Unity.XR.ARFoundation", "Unity.XR.ARSubsystems"),
-            ["Jolly.Character"] = With("Jolly.Contracts", UniTask, "Unity.Animation.Rigging"),
+            ["Jolly.Character"] = With("Jolly.Contracts", UniTask),
             ["Jolly.Localization"] = With("Jolly.Contracts", UniTask,
                 "UniTask.Addressables", "Unity.ResourceManager", "Unity.Localization"),
             ["Jolly.Presentation"] = With("Jolly.Contracts", UniTask, "Unity.TextMeshPro", "UnityEngine.UI", "Unity.Localization"),
@@ -52,11 +52,12 @@ namespace Jolly.Tests.EditMode.Architecture
                 "Unity.XR.OpenXR.Features.MetaQuestSupport", "Unity.XR.MetaOpenXR", "Unity.XR.Hands",
                 "Unity.RenderPipelines.Core.Runtime", "Unity.RenderPipelines.Universal.Runtime",
             },
+            ["Jolly.Editor.Character"] = new[] { "Jolly.Character", "Jolly.Contracts" },
             ["Jolly.Editor"] = With("Jolly.App", "Jolly.Core", "Jolly.Contracts", "Jolly.Providers.Wit", UniTask),
-            ["Jolly.Testing"] = With("Jolly.Contracts", "Jolly.Core", UniTask),
+            ["Jolly.Testing"] = With("Jolly.Contracts", "Jolly.Core", "Jolly.Net", UniTask),
             ["Jolly.Tests.EditMode"] = EditModeTests,
-            ["Jolly.Tests.PlayMode"] = With(EditModeTests, "Jolly.App", "Jolly.Character", "Jolly.Presentation", "Jolly.XR",
-                XrPackages, "Unity.Localization", "Unity.TextMeshPro", "UnityEngine.UI", "Unity.Animation.Rigging"),
+            ["Jolly.Tests.PlayMode"] = With(EditModeTests, "Jolly.App", "Jolly.Character", "Jolly.Editor.Character", "Jolly.Presentation", "Jolly.Localization", "Jolly.XR",
+                XrPackages, "Unity.Localization", "Unity.TextMeshPro", "UnityEngine.UI"),
         };
 
         static readonly HashSet<string> RuntimeAssemblies = new(JollyRuntime.Append("Jolly.App"));
