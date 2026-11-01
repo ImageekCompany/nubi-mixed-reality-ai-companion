@@ -46,6 +46,7 @@ namespace Jolly.Audio.Capture
             {
                 _log.Write(LogLevel.Error, "mic", "evt=mic.start_failed");
                 _channel.Writer.TryComplete(new InvalidOperationException("The microphone did not start."));
+                ObserveCompletion();
                 return;
             }
             _resampler = new Resampler(device.SampleRate, targetSampleRate);
@@ -131,6 +132,17 @@ namespace Jolly.Audio.Capture
             IsCapturing = false;
             _device.Stop();
             _channel.Writer.TryComplete(error);
+        }
+
+        /// <summary>
+        /// A channel faulted before anything read it keeps an ExceptionResultSource as its Completion; nobody awaits
+        /// that, so its finalizer would publish the error to UniTaskScheduler as unobserved on a later GC. The
+        /// reader of <see cref="Chunks"/> still gets the error.
+        /// </summary>
+        void ObserveCompletion()
+        {
+            try { _channel.Reader.Completion.GetAwaiter().GetResult(); }
+            catch (InvalidOperationException) { }
         }
     }
 }

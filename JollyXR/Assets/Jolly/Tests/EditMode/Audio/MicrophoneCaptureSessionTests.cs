@@ -1,9 +1,11 @@
 using System;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using Jolly.Audio.Capture;
 using Jolly.Contracts;
 using Jolly.Testing;
 using NUnit.Framework;
+using UnityEngine.TestTools;
 
 namespace Jolly.Tests.EditMode.Audio
 {
@@ -175,6 +177,25 @@ namespace Jolly.Tests.EditMode.Audio
 
             Assert.That(chunks.Error, Is.InstanceOf<InvalidOperationException>());
             Assert.That(session.IsCapturing, Is.False);
+        }
+
+        [Test]
+        public void Start_WhenTheDeviceRefuses_ReportsNoUnobservedExceptionOnGarbageCollection()
+        {
+            StartRefusedSessionAndDropIt();
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+
+            LogAssert.NoUnexpectedReceived();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        void StartRefusedSessionAndDropIt()
+        {
+            var device = new FakeMicrophoneDevice(24000, 24000) { RefuseStart = true };
+            Start(device, 24000).Dispose();
         }
 
         MicrophoneCaptureSession Start(FakeMicrophoneDevice device, int targetRate) =>
