@@ -26,7 +26,8 @@ namespace Jolly.Core.Tools
         }
 
         public ToolDefinition Definition { get; } = new(ToolNames.HighlightPart,
-            "Highlight a part of an object seen this session, e.g. 'handle' of obj_3.",
+            "Highlight a part of an object seen this session, e.g. 'handle' of obj_3. " +
+            "Use it when the user asks which part or button to use.",
             Schema, TimeSpan.FromSeconds(6), ToolConcurrency.Exclusive);
 
         public async UniTask<ToolResult> Execute(IToolArguments args, ToolContext context, CancellationToken ct)

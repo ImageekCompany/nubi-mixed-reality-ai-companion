@@ -26,5 +26,6 @@ Rows before 2026-11-01 02:00 (research phase, `docs/research/*.md`) were not ite
 | 2026-11-01 | perf-latency: vision latency probes from the dev Mac (app vision prompt; dark device frame, `mug_640.jpg`, darkened `pen_640.jpg`; 1.3 vs 1.2, prompt variants, no-tools line); 2 of them lost their printout to a script bug | muse-spark-1.3, muse-spark-1.2 | 9 | in ~0.8–1.0k / out ~250–440 each | 0.03 |
 | 2026-11-01 | perf-latency: prompt caching probes, app-shaped 2,718-token request with 11 synthetic tools, with and without `prompt_cache_key` | muse-spark-1.3 | 4 | in 2,718 / out ~90–150 each | 0.016 |
 | 2026-11-01 | perf-latency: 11 device self-test runs (4 development, 2 baseline, 4 after, 1 verification; app meter 0.0211 + 0.0209 + 0.0292 + 0.0242 + 0.0226 + 0.0182 + 0.0166 + 0.0305 + 0.0247 + 0.0226 + 0.0123) | muse-spark-1.3, sam-3.1, muse-voice-transcribe-1.0 (+ Wit, free) | ~70 Spark calls, 10 SAM, ~50 ASR sessions | ~11 images; ~2 min audio | 0.243 |
+| 2026-11-01 | fix/llm-memory: summary diagnosis (old prompt @300 → `incomplete`, 188 reasoning; new prompt @1024 ×2 → completed; final prompt streamed + `prompt_cache_key`, recorded as `responses_summary` fixture) and prompt-cache order A/B (4 calls, all `cached_tokens: 0`); synthetic conversations only | muse-spark-1.3-contributor | 8 | in ~9.8k / out ~1.5k | 0.0013 |
 
-Running total (est.): **≤ $0.99**
+Running total (est.): **≤ $1.00**

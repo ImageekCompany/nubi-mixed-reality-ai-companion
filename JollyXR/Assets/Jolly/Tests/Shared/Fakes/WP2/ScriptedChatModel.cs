@@ -47,6 +47,7 @@ namespace Jolly.Testing.Conversation
             readonly UniTaskCompletionSource _gate = new();
             readonly System.Text.StringBuilder _text = new();
             int _calls;
+            FinishReason? _finish;
 
             public bool Started { get; private set; }
             public bool Finished { get; private set; }
@@ -86,6 +87,13 @@ namespace Jolly.Testing.Conversation
                 return this;
             }
 
+            /// <summary>Overrides the finish reason (default Stop, or ToolCalls when the round has calls).</summary>
+            public Round Finish(FinishReason reason)
+            {
+                _finish = reason;
+                return this;
+            }
+
             public void Release() => _gate.TrySetResult();
 
             internal async UniTask Play(IAsyncWriter<ModelEvent> writer, CancellationToken ct)
@@ -103,7 +111,7 @@ namespace Jolly.Testing.Conversation
                 Finished = true;
                 await writer.YieldAsync(new ModelEvent(ModelEventKind.Completed, result: new ModelTurnResult
                 {
-                    FinishReason = _calls > 0 ? FinishReason.ToolCalls : FinishReason.Stop,
+                    FinishReason = _finish ?? (_calls > 0 ? FinishReason.ToolCalls : FinishReason.Stop),
                     ResponseId = "resp_test",
                     OutputItems = _output,
                     Usage = new UsageRecord(Model, 100, 0, 10),

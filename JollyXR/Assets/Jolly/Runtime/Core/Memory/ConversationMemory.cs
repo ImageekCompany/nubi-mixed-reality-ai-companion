@@ -54,14 +54,9 @@ namespace Jolly.Core.Memory
             var folded = _recent.GetRange(0, cut);
             var generation = _generation;
 
-            var summary = await Summarizer.Run(model, Summary, folded, _limits, ct);
+            var summary = await Summarizer.Run(model, Summary, folded, _limits, _log, ct);
 
-            if (summary == null)
-            {
-                _log.Write(LogLevel.Warning, "memory", "evt=memory.summary_unusable");
-                return;
-            }
-            if (generation != _generation || !StartsWith(folded))
+            if (summary == null || generation != _generation || !StartsWith(folded))
                 return;
             _recent.RemoveRange(0, cut);
             Summary = summary;

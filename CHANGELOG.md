@@ -125,3 +125,7 @@ Each work package appends bullets under its own heading only (`docs/scope.md` §
 - Every Responses request carries a `prompt_cache_key` (hash of model, instructions and tool names): tool-bearing requests were never cached without one.
 - Vision output cap 600 → 1,024 tokens (a device call ended `finish=Length`); summary output cap 300 → 1,024, and a summary call that ends without text no longer replaces the summary.
 
+### LLM memory and prompt caching (ADR-0020)
+- Summaries finish again: `max_output_tokens` 300 → 1,024 (it includes reasoning, which took 188 of the 300), and the prompt asks for terse notes of at most 150 words. A reply that is cut off or empty is rejected and the old summary is kept. Before this, a cut-off reply was stored and an empty one erased the memory.
+- Cache-stable request prefix: the per-turn context block now comes after the recent items, the body writes `prompt_cache_key`, `instructions` and `tools` before `input`, and a test checks that the next turn's body starts with the previous one up to its context block.
+- Persona prompts are shorter: the tool paragraph repeated in six strings is gone, tool "when to call" guidance is in the tool descriptions, and the shared rules cover spoken length, stage directions, claims about seeing things, tool failures and never asking for passwords or bank details. The Mentor persona now says to unplug devices before cleaning, and the Listener persona no longer mentions camera tools.

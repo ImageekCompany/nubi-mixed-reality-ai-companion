@@ -21,5 +21,6 @@
 | [0017](0017-integration-deviations-wp1-wp10.md) | Deviations accepted when merging WP1–WP10 | accepted |
 | [0018](0018-wp9-integration-and-device-self-test.md) | WP9 composition, provider edges, line-clip asset, shared helpers and the device self-test | accepted |
 | [0019](0019-perf-latency-warmups-and-prompt-cache.md) | Launch warm-ups (pipelines, camera, ASR TLS), prompt cache key, self-test frame diagnostics | accepted |
+| [0020](0020-summary-budget-and-prompt-cache-order.md) | Summary token budget, truncation-safe summaries and a cache-stable prompt order | accepted |
 
 Review findings and their accept/reject decisions: [review-log.md](review-log.md).

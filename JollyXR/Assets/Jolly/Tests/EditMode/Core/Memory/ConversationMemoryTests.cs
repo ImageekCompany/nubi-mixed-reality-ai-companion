@@ -110,7 +110,8 @@ namespace Jolly.Tests.EditMode.Core.Memory
             var request = model.Requests.Single();
             Assert.That(request.Route, Is.EqualTo(ModelRoute.LiveUser));
             Assert.That(request.Effort, Is.EqualTo(ReasoningEffort.Minimal));
-            Assert.That(request.MaxOutputTokens, Is.EqualTo(1024), "includes reasoning; 300 ended in reasoning on the device");
+            Assert.That(request.MaxOutputTokens, Is.EqualTo(1024), "reasoning tokens count against the cap");
+            Assert.That(request.Instructions, Does.EndWith("At most 150 words."));
             Assert.That(request.Tools, Is.Empty);
             Assert.That(memory.Summary, Is.EqualTo("User asked five questions."));
             Assert.That(memory.Recent.Count, Is.EqualTo(8), "turns 1-3 folded (cut at the first turn start >= half)");
@@ -149,6 +150,25 @@ namespace Jolly.Tests.EditMode.Core.Memory
             Sync.Run(memory.Summarize(model, None));
 
             Assert.That(memory.Summary.Length, Is.LessThanOrEqualTo(20));
+        }
+
+        [TestCase(FinishReason.Length, "Sam likes jazz and his sister")]
+        [TestCase(FinishReason.Incomplete, "Sam likes")]
+        [TestCase(FinishReason.Stop, " ")]
+        public void Summarize_CutOffOrEmptyReply_KeepsTheOldSummaryAndItems(FinishReason finish, string text)
+        {
+            var memory = Create();
+            Sync.Run(memory.Load("companion", "Sam likes jazz.", None));
+            memory.CommitTurn(Turn(1));
+            memory.CommitTurn(Turn(2));
+            var model = new ScriptedChatModel();
+            model.Enqueue().Text(text).Finish(finish);
+
+            Sync.Run(memory.Summarize(model, None));
+
+            Assert.That(memory.Summary, Is.EqualTo("Sam likes jazz."));
+            Assert.That(memory.Recent.Count, Is.EqualTo(8));
+            Assert.That(_log.Contains(LogLevel.Warning, $"evt=memory.summary_rejected finish={finish}"), Is.True);
         }
 
         [Test]

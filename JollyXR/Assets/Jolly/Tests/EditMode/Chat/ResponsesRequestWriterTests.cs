@@ -31,6 +31,22 @@ namespace Jolly.Tests.EditMode.Chat
         }
 
         [Test]
+        public void Write_PerSessionFieldsComeBeforeTheInput()
+        {
+            var tool = new ToolDefinition("walk_to", "Walk somewhere.", WalkSchema, TimeSpan.FromSeconds(3), ToolConcurrency.Locomotion);
+            var request = new ModelRequest
+            {
+                Instructions = "Be Nubi.", Input = new[] { ConversationItem.User("go") }, Tools = new[] { tool },
+            };
+
+            var names = JObject.Parse(new ResponsesRequestWriter().Write(request, Model).Json)
+                               .Properties().Select(p => p.Name).ToList();
+
+            Assert.That(names.Take(7),
+                Is.EqualTo(new[] { "model", "stream", "store", "prompt_cache_key", "instructions", "tools", "input" }));
+        }
+
+        [Test]
         public void Write_PromptCacheKey_DependsOnlyOnTheStaticPrefix()
         {
             var tool = new ToolDefinition("walk_to", "Walk somewhere.", WalkSchema, TimeSpan.FromSeconds(3), ToolConcurrency.Locomotion);
