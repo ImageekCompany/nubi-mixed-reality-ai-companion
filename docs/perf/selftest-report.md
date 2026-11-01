@@ -1,9 +1,35 @@
 # Device self-test report
 
-Latest: 2026-11-01, 15:22–15:28 UTC, three default release runs of `36778c1` with the local come-here guard and `llm.reply` (ADR-0036; section below). Before that: 14:47–14:53 UTC, three default release runs verifying `main` `f311081` after round 1 (section below). Before that: 14:05–14:37 UTC, stale-frame cause and a 20-turn latency sample on `751acba` (cooled headset, before and after a headset reboot; section below). Before that: 13:03 UTC, one release run of `6f0383c` with the `highlight_part` / `find_object` scenarios and the hand debounce (ADR-0033; section below). Before that: 11:43–11:51 UTC, final verification of `main` `4d228c8` after the occlusion, room, character, Jolly and device-fix merges: three release runs of the default build and one of `--character jolly` (section below). Before that: 11:26–11:38 UTC, six release runs for the device-finding fixes (`3f35f7f`, `6cd06e6`, `4e298d8`; section below). Before that: 09:39–09:45 UTC, three release runs of `main` `dd14847` after the turn-gc and coverage-gate merges (section below). Before that: 08:37–09:27 UTC, the turn-GC and cold-first-turn pass on `fix/turn-gc` (ADR-0023): three "before" runs of `main`, three "after" runs, development IL2CPP (the only player that reports GC per frame), four allocation-profile runs and one release verification run. Before that: 08:20–08:47 UTC, the performance and latency pass on `fix/perf-latency` (ADR-0019), release IL2CPP. Earlier: 06:38–06:50 UTC from `fix/integration-review`, 06:00–06:14 UTC from `feat/wp9-integration`.
+Latest: 2026-11-01, 15:52–15:56 UTC, two default release runs of `8bd9560`: a guard walk answers without a model round, `find_object` says Nubi is already looking (ADR-0037; section below). Before that: 15:22–15:28 UTC, three default release runs of `36778c1` with the local come-here guard and `llm.reply` (ADR-0036; section below). Before that: 14:47–14:53 UTC, three default release runs verifying `main` `f311081` after round 1 (section below). Before that: 14:05–14:37 UTC, stale-frame cause and a 20-turn latency sample on `751acba` (cooled headset, before and after a headset reboot; section below). Before that: 13:03 UTC, one release run of `6f0383c` with the `highlight_part` / `find_object` scenarios and the hand debounce (ADR-0033; section below). Before that: 11:43–11:51 UTC, final verification of `main` `4d228c8` after the occlusion, room, character, Jolly and device-fix merges: three release runs of the default build and one of `--character jolly` (section below). Before that: 11:26–11:38 UTC, six release runs for the device-finding fixes (`3f35f7f`, `6cd06e6`, `4e298d8`; section below). Before that: 09:39–09:45 UTC, three release runs of `main` `dd14847` after the turn-gc and coverage-gate merges (section below). Before that: 08:37–09:27 UTC, the turn-GC and cold-first-turn pass on `fix/turn-gc` (ADR-0023): three "before" runs of `main`, three "after" runs, development IL2CPP (the only player that reports GC per frame), four allocation-profile runs and one release verification run. Before that: 08:20–08:47 UTC, the performance and latency pass on `fix/perf-latency` (ADR-0019), release IL2CPP. Earlier: 06:38–06:50 UTC from `fix/integration-review`, 06:00–06:14 UTC from `feat/wp9-integration`.
 Device: Quest 3 `2G0YC1ZF7P090N`, Horizon OS v209. Build: `tools/ci/build.sh` (IL2CPP ARM64 release, 58 MB APK).
 Nobody wore the headset. The room was dim (camera mean luma 23–45 of 255) and had no Space Setup. Command: `tools/device/selftest.sh` (headless: `prox_close`, `guardian_pause 1`, 16 MiB logcat buffer; all restored afterwards).
 Raw outputs (`selftest_results.json`, `logcat.txt`, `vrapi.txt`) are under `artifacts/selftest/`, which is git-ignored.
+
+## Guard walk without a model round, find_object gaze result (8bd9560)
+
+`main` at `8bd9560` (ADR-0037). `tools/ci/test.sh` (EditMode 1086/1086, PlayMode 379/379 + 1 explicit eval skipped, pure logic 92.7 % ≥ 91.6 %, 0 `warning CS`), `tools/ci/build.sh` (IL2CPP ARM64 release, 60 MB, `QuestBuild` 0 errors / 5 warnings), `tools/device/build.sh` (0 errors / 2 warnings, SHA-256 `a8923da92c62…`, installed and left installed). Two default self-tests back to back (headset uptime 1 h 48 min, not rebooted), same dim room (vision used the bundled still), no Space Setup (`navmesh=fallback`). `guardian_pause` read back 0 and the proximity sensor was restored after each run.
+
+| | Run 1 (15:52) | Run 2 (15:54) | Last report (`36778c1`) |
+|---|---|---|---|
+| `voice_come_here` | DEGRADED: first audio 1,054 ms (> 600 ms) | DEGRADED: first audio 611 ms (> 600 ms) | DEGRADED / FAIL / DEGRADED (2,235 / — / 2,138 ms) |
+| Come-here model request (`llm_request`) | none | none | 1 round per run (2 timeouts in run 2) |
+| Come-here reply heard | "Good question. On my way!" | "Okay! Coming right over!" | release ack, then the model's line |
+| Walk (`come_source`, outcome) | guard, arrived | guard, arrived | guard, arrived ×3 |
+| `vision_find_object` | PASS, tool → answer 2,222 ms, `find_object` only | DEGRADED, tool → answer 3,846 ms, `find_object` only | `find_object` then `look_at` in 2 of 3 (3.0–4.9 s) |
+| Release → first audio, greeting / come / identify / part / find (ms) | 3,163 / 1,054 / 2,094 / 3,363 / 1,917 | 2,565 / 611 / 2,521 / 1,680 / 2,778 | |
+| Stale frames, whole run | 3.70 % | 5.16 % | 2.06–2.68 % |
+| Barge-in silence | 28 ms | 56 ms | 39–48 ms |
+| Overall, spend | DEGRADED, $0.0228 | **FAIL**, $0.0214 | |
+
+Findings:
+
+- **The opening beat no longer touches the model.** No request was sent on the `voice_come_here` turn in either run, state path `Listening>Thinking>Speaking>Idle`, and Nubi arrived both times. Release → ASR final was 290 / 332 ms.
+- **The 600 ms budget is missed because of the release acknowledgement, not the model.** The ack clip is queued at release, before the final exists, so the ComingOver line always plays after it: first audio of the line = ack length (0.6–1.2 s clips, ~0.1 s leading silence each). Run 2 drew the shortest ack ("Okay!", 611 ms), run 1 a long one ("Good question.", 1,054 ms). What the user hears first is the ack, about 0.1 s after release. Run 1 also shows the cost: "Good question. On my way!" reads as two fillers. speculation: holding the release ack until the ASR final or ~350 ms, whichever is first, would let a guard walk drop it and play the line at ~0.4 s, at the price of ~250 ms later acks on every other turn; not done here.
+- **`find_object` no longer took a `look_at` round** in either run (one model round after the tool). Run 1 answered 2,222 ms after the tool start; run 2's 3,846 ms was a slow round (tool → mask 1,626 ms, then model time), not an extra tool.
+- **Run 2 FAIL is a network error on the vision call**: `evt=llm.failed kind=Network status=0` 1 s into `capture_and_identify`'s identify request, so the tool failed; the next scenario's model then re-ran `capture_and_identify` instead of `highlight_part` (FAIL, as in the last report's run 2). Neither touches this change.
+- **Stale frames 3.7–5.2 %**, up again with uptime (ADR-0034); not rebooted for these two runs.
+
+Spend: 2 runs ($0.0228 + $0.0214); `api-spend.md` has the row. The ComingOver clips came from Wit `/synthesize` (free).
 
 ## Local come-here guard and reply log (36778c1)
 
