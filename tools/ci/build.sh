@@ -15,6 +15,7 @@ APK="${1:-$OUT_DIR/Nubi.apk}"
 LOG="$OUT_DIR/build.log"
 mkdir -p "$OUT_DIR" "$(dirname "$APK")"
 rm -f "$APK"
+"$ROOT/tools/ci/restore-samples.sh"
 
 DEV_ARGS=()
 if [[ "${NUBI_DEVELOPMENT:-0}" == "1" ]]; then DEV_ARGS=(-nubiDevelopment); fi

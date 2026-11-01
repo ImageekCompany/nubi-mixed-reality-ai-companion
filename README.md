@@ -85,16 +85,16 @@ The full tool catalogue is in `JollyXR/Assets/Jolly/Runtime/Core/Tools`.
 
 ## Controls
 
-Hands are the primary input; Touch controllers work too. With the headset's automatic switching on, putting the controllers down brings your hands back.
+Hands are the primary input; Touch controllers work too. Your tracked hands are drawn over passthrough as translucent hand meshes and disappear when tracking is lost; picking up a controller swaps that side to the controller model and its ray, and with the headset's automatic switching on, putting the controllers down brings your hands back (XRI Hands Interaction rig, [ADR-0030](docs/decisions/0030-hands-interaction-rig.md)).
 
 | | Hands | Touch controllers |
 |---|---|---|
 | **Talk** (hold, release to send) | Pinch thumb and index finger and hold | Hold **A** (right) or **X** (left) |
 | **Interrupt Nubi** | Pinch again | Press A or X again |
-| **Settings, buttons** | Point the ray and pinch | Point the ray and pull the trigger |
+| **Settings, buttons** | Point the hand ray and pinch, or poke the button with your index finger | Point the ray and pull the trigger |
 | **Poke / greet Nubi** | Poke with the index finger, or hold an open palm toward Nubi | |
 
-- **A pinch does not talk** while that hand's ray is on a button or on Nubi, or while your palm faces you (the Horizon OS menu gesture). Settings → *PTT hand* limits pinch-to-talk to your dominant hand.
+- **A pinch does not talk** while that hand's ray is on a button, or while your palm faces you (the Horizon OS menu gesture). Pinching while you point at Nubi does talk: the ray doesn't select Nubi, only a finger poke does. Settings → *PTT hand* limits pinch-to-talk to your dominant hand.
 - **The trigger never talks.** It belongs to XRI's Activate action and UI press, and a runtime can report a hand pinch as a trigger; binding talk to it would skip the pinch checks above. The grip stays XRI's Select. A and X are bound to the Touch controller layouts by name, so no hand input can press them ([ADR-0021](docs/decisions/0021-controller-push-to-talk.md)).
 - While a hand is tracked, that side's controller button is ignored, which is the same rule XRI's input modality manager uses.
 - Holding a pinch and a button together counts as one press, so it can't interrupt your own turn.
@@ -162,7 +162,7 @@ graph TD
 - **Runtime NavMesh sized for a living room.** Floor plane outlines are triangulated into mesh colliders, and bounding boxes are baked as Not Walkable (`NavMeshBuilder.BuildNavMeshData`, agent radius 0.15 m). `NavMeshSurface` would use the 0.5 m Humanoid agent, which erases a living room (ADR-0017). Rebuilds are throttled to once per 2 s.
 - **Table-driven conversation state machine.** Three latched flags and per-state watchdogs. It is tested exhaustively, including every barge-in edge.
 - **Safety and robustness.** `CrisisGuard` runs before the model, for every persona, and hands off deterministically. A persona's tool allow-list is enforced when a call executes, not only in the list sent to the model. `StopGuard` stops Nubi locally. Retries happen only before the first streamed byte, with full jitter and `Retry-After` capped at 8 s. A five-state connectivity monitor (Online, Degraded, Offline, Unauthorized, BudgetReached) runs a backed-off health probe.
-- **Quality gates** (`tools/ci/test.sh`): `-warnaserror+` on every assembly; no `async void`; no `System.Threading.Tasks.Task` (UniTask everywhere); no `CancellationTokenSource.CancelAfter` (it fires on a thread-pool timer); no debug-capture defines in shipped settings; a content validator for personas, string tables and line clips; line coverage of Core, Net, Providers and Audio at or above 91.6 % (`tools/ci/coverage.sh`). Current: **EditMode 942/942, PlayMode 216/216, 92.2 % line coverage of that logic (83.2 % of all runtime code), zero compiler warnings, and an IL2CPP APK that builds.**
+- **Quality gates** (`tools/ci/test.sh`): `-warnaserror+` on every assembly; no `async void`; no `System.Threading.Tasks.Task` (UniTask everywhere); no `CancellationTokenSource.CancelAfter` (it fires on a thread-pool timer); no debug-capture defines in shipped settings; a content validator for personas, string tables and line clips; line coverage of Core, Net, Providers and Audio at or above 91.6 % (`tools/ci/coverage.sh`). Current: **EditMode 942/942, PlayMode 218/218, 92.2 % line coverage of that logic (83.2 % of all runtime code), zero compiler warnings, and an IL2CPP APK that builds.**
 - **A self-checking pipeline on the headset.** `tools/device/selftest.sh` installs the release APK, arms a built-in self-test and runs six scenarios with nobody wearing the headset. Bundled voice clips go through the real microphone pipeline to Muse ASR, Spark (with tools), SAM, Wit and the speaker. It also forces the network off and on, barges in, and samples frame time and render counters. It writes a PASS/DEGRADED/FAIL table and the run's API cost ([`docs/perf/selftest-report.md`](docs/perf/selftest-report.md), ADR-0018). It found bugs that no desk test could, including a health-probe URL that kept the app offline and a vision turn that ended in silence.
 
 ## Performance budget
@@ -279,7 +279,7 @@ As of `main` after `fix/turn-gc` and `feat/coverage-gate` (2026-11-01).
 
 | Area | State |
 |---|---|
-| All subsystems (Net, Responses chat, usage meter, ASR, SAM + one-bit decoder, Spark vision, Wit TTS, streaming audio, conversation core, agent loop, tools, memory, offline mode, XR layer, Nubi, presentation, localization) | **Built and tested**: EditMode 942/942, PlayMode 216/216 |
+| All subsystems (Net, Responses chat, usage meter, ASR, SAM + one-bit decoder, Spark vision, Wit TTS, streaming audio, conversation core, agent loop, tools, memory, offline mode, XR layer, Nubi, presentation, localization) | **Built and tested**: EditMode 942/942, PlayMode 218/218 |
 | Composition root (`JollyBootstrap` → `AppGraph`), four personas, `JollyConfig`, `Lines`/`Personas` tables (en, pl), end-to-end PlayMode tests on the real scene, zero-GC idle gate | **Done** |
 | Full app on Quest 3: voice turns, `capture_and_identify` on the live passthrough frame, barge-in, offline lines, idle performance | **Verified by the on-device self-test** (three runs, every scenario PASS except `come_here`, which is DEGRADED without Space Setup) |
 | Walking on a scanned floor, the camera extrinsics marker test (≤ 3 cm at 1 m), mask placement in a lit room, pinch/gaze/palm/poke with a wearer, OVR Metrics and Profiler captures, 20-turn latency run | **Pending** a session with a person in a lit room with Space Setup |
@@ -288,6 +288,7 @@ As of `main` after `fix/turn-gc` and `feat/coverage-gate` (2026-11-01).
 
 - **Walking is unverified on a real floor.** The test room has no Space Setup, so `come_here` answers "I can't reach you just yet". The NavMesh code is EditMode-tested.
 - **Interaction triggers and the pinch are unverified with a wearer.** With nobody wearing the headset, hand tracking produced phantom pinches, so the self-test drives push-to-talk itself.
+- **Hand meshes, the hand ray and finger pokes on the Settings panel are unverified with a wearer.** The device log shows the hand subsystem running and the hand visuals bound (`evt=hands.subsystem`, `evt=hands.tracked`, `evt=hands.visual`); until ADR-0030 the scene had no hand objects at all, so hands drew nothing and could not press UI.
 - **Controller push-to-talk is unverified on the headset.** Holding A or X is tested against the OpenXR device layouts in PlayMode, but no controller session has been run on the Quest.
 - **One ~320 ms frame at launch** while Meta's passthrough camera starts (synchronous, native). Turns are under 1 % stale on ~1 min samples; a 10-minute OVR Metrics run is still due.
 - **GC during turns is at the budget, not under it everywhere.** p50 3.9 KB per frame in a development player (target ≤ 4 KB); a barge-in, with two ASR sessions in seconds, reaches 6.4 KB. Most of the rest is Mono's TLS stream allocating 16 KB per WebSocket read (ADR-0023).
@@ -329,5 +330,5 @@ Twenty-two ADRs record every key choice and its alternatives: [`docs/decisions/`
 
 - Built by Andrew Urbanovich, with Claude Code as a pair-programmer across parallel work packages.
 - Meta Model API (Muse Spark, SAM 3.1, Muse Voice Transcribe) and Wit.ai.
-- [UniTask](https://github.com/Cysharp/UniTask) by Cysharp, [uLipSync](https://github.com/hecomi/uLipSync) by hecomi, and Unity's OpenXR, AR Foundation, XR Hands, XRI and Localization packages.
+- [UniTask](https://github.com/Cysharp/UniTask) by Cysharp, [uLipSync](https://github.com/hecomi/uLipSync) by hecomi, and Unity's OpenXR, AR Foundation, XR Hands, XRI and Localization packages, including the XRI *Starter Assets* and *Hands Interaction Demo* samples and the XR Hands *HandVisualizer* sample (hand rig, hand meshes and materials).
 - Test images: "04-BICcristal2008-03-26.jpg" by Trounce (CC BY 3.0) and "Coffee Mug (Unsplash).jpg" by Ryan Holloway (CC0), via Wikimedia Commons.

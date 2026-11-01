@@ -16,6 +16,7 @@ COVERAGE="$OUT/coverage"
 COVERAGE_ASSEMBLIES="+Jolly.*,-Jolly.Tests.*,-Jolly.Testing,-Jolly.Editor*,-Jolly.Spikes*"
 if [[ $# -gt 0 ]]; then PLATFORMS=("$@"); else PLATFORMS=(EditMode PlayMode); fi
 mkdir -p "$OUT"
+"$ROOT/tools/ci/restore-samples.sh"
 rm -rf "$COVERAGE"
 
 failures=0

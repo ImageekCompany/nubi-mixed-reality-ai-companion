@@ -48,3 +48,8 @@ JollyXR/Assets/AddressableAssetsData/Android/
 JollyXR/Assets/AddressableAssetsData/Android.meta
 JollyXR/Assets/AddressableAssetsData/link.xml
 JollyXR/Assets/AddressableAssetsData/link.xml.meta
+
+# XR Hands "HandVisualizer" sample: UPDL, so never committed. Restored from the package cache before every
+# editor run (tools/ci/restore-samples.sh, Jolly.Editor.Build.PackageSampleRestore; ADR-0030).
+/JollyXR/Assets/Samples/XR Hands/
+/JollyXR/Assets/Samples/XR Hands.meta

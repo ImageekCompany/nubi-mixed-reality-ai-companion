@@ -2,6 +2,7 @@ using System;
 using Jolly.Audio.Output;
 using Jolly.Character;
 using Jolly.Presentation;
+using Jolly.XR.Hands;
 using Jolly.XR.Interaction;
 using Jolly.XR.Navigation;
 using Jolly.XR.Permissions;
@@ -29,6 +30,7 @@ namespace Jolly.App
         public PermissionGate permissions;
         public FloorNavMeshBuilder floor;
         public InteractionSignals interactionSignals;
+        public HandTrackingMonitor handMonitor;
 
         [Header("AR managers (ship disabled; PermissionGate enables them)")]
         public ARCameraManager cameraManager;
