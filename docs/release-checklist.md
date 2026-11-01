@@ -40,13 +40,13 @@ Legend: ✅ met, with evidence · ⚠️ partial · ❌ not met · 🧑 needs a 
 
 | # | Item | State | Evidence |
 |---|---|---|---|
-| 4.1 | All rows met, or deviations documented with a mitigation | ⚠️ 🧑 | This run (`perf_idle`, 30 s): **72.0 fps**, p95 13.9 ms, draw calls 15, SetPass 12, triangles 29,426, system memory 516 MB, idle GC gate passes. Compositor stale frames over the whole run **1.06 %** (includes the ~320 ms launch hitch; turns-only was 0.55–0.99 % in the perf pass). **Over:** GC per turn 11–42 KB/frame (target ≤ 4 KB), documented in `perf/selftest-report.md` and README limitations without a fix. **Unmeasured:** CPU main-thread p95 (Profiler), `app_rss_MB`, 10-min stale frames, 30-min thermal, battery. These need an OVR Metrics + Profiler session on a development build. |
+| 4.1 | All rows met, or deviations documented with a mitigation | ⚠️ 🧑 | This run (`perf_idle`, 30 s): **72.0 fps**, p95 13.9 ms, draw calls 15, SetPass 12, triangles 29,426, system memory 516 MB, idle GC gate passes. Compositor stale frames over the whole run **1.06 %** (includes the ~320 ms launch hitch; turns-only was 0.55–0.99 % in the perf pass). **GC per turn** (fix/turn-gc, ADR-0023, 3 development-player runs): p50 3.9 KB/frame, was 14.5; still **over** in `barge_in` (5.9–6.4 KB, two ASR sessions; Mono allocates 16 KB per TLS read) and in one of three `voice_come_here` windows (4.6 KB). **Unmeasured:** CPU main-thread p95 (Profiler), `app_rss_MB`, 10-min stale frames, 30-min thermal, battery. These need an OVR Metrics + Profiler session on a development build. |
 
 ## 5. Latency
 
 | # | Item | State | Evidence |
 |---|---|---|---|
-| 5.1 | p50 targets met over 20 consecutive LiveUser turns, or the gap is in an ADR | ⚠️ 🧑 | Perf pass (ADR-0019): release → first audio p50 1.44 s over 16 turns; ASR p50 208 ms; first text p50 0.84 s; barge-in 28–54 ms; mask 0.72–1.13 s; vision answer p50 2.24 s. **This audit run** (4 online turns, release → first audio): 3,150 / 2,221 / 1,550 / 1,915 ms, p50 ≈ 2.07 s, **over** 2.0 s; turn 2's first text took 2.49 s after ASR final. The DoD's 20-consecutive-turn run with a wearer on Wi-Fi has not been done. |
+| 5.1 | p50 targets met over 20 consecutive LiveUser turns, or the gap is in an ADR | ⚠️ 🧑 | Perf pass (ADR-0019): release → first audio p50 1.44 s over 16 turns; ASR p50 208 ms; first text p50 0.84 s; barge-in 28–54 ms; mask 0.72–1.13 s; vision answer p50 2.24 s. **This audit run** (4 online turns, release → first audio): 3,150 / 2,221 / 1,550 / 1,915 ms, p50 ≈ 2.07 s, **over** 2.0 s; turn 2's first text took 2.49 s after ASR final. **fix/turn-gc** (3 development runs, 12 turns): p50 1.75 s, first turn 1.72–1.85 s (was 2.18–3.76 s); the Wit connection is now opened at launch, and the cold first turn was otherwise model reasoning time. The DoD's 20-consecutive-turn run with a wearer on Wi-Fi has not been done. |
 
 ## 6. End-to-end demo
 

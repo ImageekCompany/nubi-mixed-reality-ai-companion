@@ -134,3 +134,17 @@ NUBI_TMPDIR=<short temp dir> tools/device/selftest.sh --apk artifacts/Nubi-dev.a
 ```
 
 The import copies the trace to `Assets/Jolly/Content/Rendering/QuestVulkan.graphicsstate` and assigns it to `JollyConfig`. A collection recorded on another graphics API is skipped at boot (`evt=gfx.warmup skipped=api`).
+
+### Where a turn's GC comes from (no Profiler window needed)
+
+A development player can record each turn scenario to its own Profiler log with managed allocation call stacks, and the Editor can attribute them headless (ADR-0023):
+
+```bash
+NUBI_DEVELOPMENT=1 tools/ci/build.sh "$PWD/artifacts/Nubi-dev.apk"
+NUBI_TMPDIR=<short temp dir> tools/device/selftest.sh --apk artifacts/Nubi-dev.apk --profile   # pulls artifacts/selftest/selftest_turns_<scenario>.raw
+/Applications/Unity/Hub/Editor/6000.6.6f1/Unity.app/Contents/MacOS/Unity -batchmode -nographics -projectPath JollyXR \
+  -executeMethod Jolly.Editor.Tools.GcAllocReport.RunBatch -nubiProfile "$PWD/artifacts/selftest/selftest_turns_voice_greeting.raw" \
+  -nubiReport "$PWD/artifacts/gc_voice_greeting.txt" -logFile -
+```
+
+The report lists bytes, bytes per frame and allocation count by thread, by Profiler sample path and by call stack (innermost first, IL2CPP methods resolved). Its totals match `evt=selftest.frames` within 1 %. The capture adds its own overhead, so take budgets from a run without `--profile`. The Profiler keeps at most 2,000 frames per log, which is why each scenario gets its own file.
