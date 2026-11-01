@@ -1,6 +1,6 @@
 # Demo script
 
-The demo video runs **2:45 or less**, which is our working cap until the portal's real limit is confirmed (`docs/research/hackathon.md` §1). It shows exactly the six required beats of `definition-of-done.md` §6, and everything else is b-roll or README. The hero user is an older adult at home, and the hero object is a **TV remote** (backups: moka pot, thermostat). We never use medication.
+The demo video runs **2:45 or less**, which is our working cap until the portal's real limit is confirmed (`docs/research/hackathon.md` §1). It shows exactly the six required beats of `definition-of-done.md` §6, and everything else is b-roll or README. Beat 6 (cost) is a 4 s usage-meter overlay inside beat 5, and its seconds go to beat 2, the hero moment. The hero user is an older adult at home, and the hero object is a **TV remote** (backups: moka pot, thermostat). We never use medication.
 
 Rule for recording: record a beat only after 10 consecutive clean runs of all six required beats (no crash, no hang, no manual restart). Log every failure in the [rehearsal log](#rehearsal-log).
 
@@ -19,21 +19,21 @@ Rule for recording: record a beat only after 10 consecutive clean runs of all si
 
 | t | Beat | Shot | You say / do | Nubi does (what must be visible) | Meta tooling on screen |
 |---|---|---|---|---|---|
-| 0:00–0:10 | Cold open | Wide MR shot of the room. Nubi idles on the floor, blinks, and turns its head toward you. | Title card: **"Nubi: a companion that can see your world."** | Idle, blink, look-at | — |
+| 0:00–0:10 | Cold open | Wide MR shot of the room. Nubi idles on the floor, blinks, and turns its head toward you. | **VO (mandatory):** the problem statement below, with the Pew figure. Title card under it: **"Nubi: a companion that can see your world."** | Idle, blink, look-at | — |
 | 0:10–0:40 | **1. Come here** | First-person view. Pinch-hold. | "Nubi, come here." Release. | The live caption reads "Nubi", not "newbie". An acknowledgement sound plays. The walk starts at once: the local guard calls `come_here` before the model (ADR-0036; it matches "Hi Nubi, come here." too). The spoken answer follows with lip-sync and a caption in about 2 s (2.1–2.2 s in the `36778c1` runs). Nubi walks *around* the furniture and stops about 1 m in front of you. | Muse Voice Transcribe (live partials), Spark badge, `come_here` badge, latency HUD |
-| 0:40–1:15 | **2. What is this?** | Pick up the remote, hold it at chest height, point at it with the other hand. Pinch-hold. | "What is this, and which button turns it on?" | The mask outline appears on the real remote within 2 s and the answer is spoken as it streams. Then `highlight_part("power button")` outlines the actual button on the same capture. Nubi looks at the remote. Two SAM prompt types on screen: a pointed object, then a text-prompted part. | `capture_and_identify` + `highlight_part` badges, **SAM 3.1** + **Spark** badges, mask outlines |
-| 1:15–1:35 | **3. Follow me / Stop** | Wider shot. Walk about 3 m. | "Follow me." Walk. Then: "Stop." | Nubi follows at 1–1.5 m, then stops *immediately* on "Stop" (handled on the device, before any model call). | `follow_user` badge, `stop` badge |
-| 1:35–1:55 | **4. Barge-in** | Medium shot. | "Tell me everything about this remote." Pinch in the middle of a sentence. | The audio fades out in ≤ 150 ms and Nubi switches to listening (self-test: silent in 28–55 ms over the `751acba`, `f311081` and `36778c1` runs). | Latency HUD shows the barge-in |
-| 1:55–2:22 | **5. Offline** | Show the Wi-Fi toggle going off in quick settings. Pinch. | "Are you there?" *Optional, only once a wearer has confirmed it on the headset:* hold an open palm toward Nubi. Turn Wi-Fi back on and pinch: "Thanks, Nubi!" | An offline line plays from the baked clip with lip-sync. Idle animations carry on. (Optional: the palm triggers a greeting line.) After Wi-Fi returns, the next turn is online. | Status indicator: Offline → Online |
-| 2:22–2:34 | **6. Cost** | Open Settings → usage. Cut to `docs/api-spend.md` on a monitor. | VO: "Every call is metered against a hard cap. This session cost ___." | The usage meter matches the ledger within 10 %. | Usage meter |
+| 0:40–1:27 | **2. What is this?** | Pick up the real remote, hold it at chest height, point at it with the other hand. Pinch-hold. Hold still through the answer; then push in on the remote for the part outline. | "What is this, and which button turns it on?" | The mask outline appears on the real remote within 2 s and the answer is spoken as it streams. Then `highlight_part("power button")` outlines the actual button on the same capture: hold that shot for at least 3 s. Nubi looks at the remote. Two SAM prompt types on screen: a pointed object, then a text-prompted part. | `capture_and_identify` + `highlight_part` badges, **SAM 3.1** + **Spark** badges, mask outlines |
+| 1:27–1:47 | **3. Follow me / Stop** | Wider shot. Walk about 3 m. | "Follow me." Walk. Then: "Stop." | Nubi follows at 1–1.5 m, then stops *immediately* on "Stop" (handled on the device, before any model call). | `follow_user` badge, `stop` badge |
+| 1:47–2:07 | **4. Barge-in** | Medium shot. | "Tell me everything about this remote." Pinch in the middle of a sentence. | The audio fades out in ≤ 150 ms and Nubi switches to listening (self-test: silent in 28–55 ms over the `751acba`, `f311081` and `36778c1` runs). | Latency HUD shows the barge-in |
+| 2:07–2:34 | **5. Offline** | Show the Wi-Fi toggle going off in quick settings. Pinch. | "Are you there?" *Optional, only once a wearer has confirmed it on the headset:* hold an open palm toward Nubi. Turn Wi-Fi back on and pinch: "Thanks, Nubi!" | An offline line plays from the baked clip with lip-sync. Idle animations carry on. (Optional: the palm triggers a greeting line.) After Wi-Fi returns, the next turn is online. | Status indicator: Offline → Online |
+| 2:30–2:34 | **6. Cost** (overlay on beat 5) | Picture-in-picture over the end of beat 5: Settings → usage, cut in from a separate capture. No VO; a lower third reads "This session: $___ · metered against a hard cap". | — | The usage meter matches `docs/api-spend.md` within 10 % (checked off camera, logged in the rehearsal log). | Usage meter |
 | 2:34–2:45 | Close | Architecture card (README voice-turn diagram), repo URL. | VO: "Open source. OpenXR. Built on Muse Spark, SAM 3.1 and Muse Voice Transcribe." | Nubi waves | — |
 
-### Lines (voice-over, optional)
+### Lines (voice-over)
 
-- 0:00: "Lots of people live alone and get stuck on everyday things. A new remote, a coffee machine, a thermostat."
-- 0:40: "Point at something and ask. SAM 3.1 outlines exactly what you mean, while Muse Spark explains it, both on the same frame."
-- 1:15: "Spark calls tools that move Nubi through *your* room, on a NavMesh built from your scanned floor."
-- 1:55: "When the network drops, Nubi doesn't go silent."
+- 0:00, **mandatory**: "In the US, one in four adults aged 65 and older lives alone. When a new remote or a coffee machine gets the better of them, there's nobody in the room to ask." Source: 26 % of US adults 65 and older lived alone in 2023 (Pew Research Center, from Census Bureau data; the README's [problem statement](../README.md#the-problem) links it). About 8 s at a calm pace; it must end by 0:10.
+- 0:40, optional: "Point at something and ask. SAM 3.1 outlines exactly what you mean, while Muse Spark explains it, both on the same frame."
+- 1:27, optional: "Spark calls tools that move Nubi through *your* room, on a NavMesh built from your scanned floor."
+- 2:07, optional: "When the network drops, Nubi doesn't go silent."
 
 ### Optional beats (should tier)
 
@@ -52,12 +52,13 @@ Use at most two, and only if the tier has shipped and passed 10 clean runs. Each
 | 1 | Nubi doesn't walk (no NavMesh) | Re-run Space Setup, relaunch, wait for the floor plane | Skip the walk and continue with beat 2 |
 | 2 | No mask, or the mask is on the hand | Hold the remote further from the body and point with the other hand. If R1 failed, use the centre-point prompt: hold the remote in the centre of view | The answer still streams without a mask (SAM no-match is not an error); say "Let's look at it again" and repeat once |
 | 2 | Vision timeout ("hold it closer" line) | Move to brighter light and retake | Hold it closer, as Nubi asks |
+| 2 | Room too dark: Nubi says it is too dark to see and asks for a light (`too_dark`, no SAM or Spark call, ADR-0039; `evt=vision.too_dark` in the log) | Switch on a lamp near the sofa and retake | Use it as a line: "Fair enough, Nubi." Switch on a light or hold the remote toward one and ask again |
 | 2 | No `highlight_part` call, or the part mask is wrong | Ask the follow-up on its own: "Which button turns it on?" | Skip the part highlight; the object mask has already landed |
 | 3 | Nubi loses you while following | Walk slower and stay in view | "Come here" re-targets Nubi |
 | 4 | Audio doesn't stop | Retake, and file a bug (the barge-in gate is a must) | Pinch again; the second pinch also cancels |
 | 5 | The app doesn't notice going offline | Wait 2 s, then pinch (the reachability poll runs every 1 s) | Toggle airplane mode instead of Wi-Fi |
 | 5 | Still offline after Wi-Fi returns | Wait until the status indicator shows Online. The health probe backs off from 5 s up to 30 s, so keep the Wi-Fi-off segment short | Talk about the offline behaviour until the indicator turns Online, then pinch |
-| 6 | The meter is not visible | Screen-capture Settings separately and cut it in | Read the number from Settings |
+| 6 | The overlay is not legible in 4 s | Capture Settings → usage at a larger caption size and cut it in full-frame for the same 4 s | Read the number from Settings |
 
 ## Live finals runbook (Nov 9)
 
@@ -72,14 +73,14 @@ The finals format (length, Q&A, in-headset or cast) is **UNVERIFIED** (`docs/res
 ### At the venue (30 min before)
 - [ ] Reboot the headset (ADR-0034) now, before launching the app (the measured post-reboot runs idled 20 min after it).
 - [ ] Wi-Fi: join the venue network, run a speed test, and fall back to the phone hotspot if latency looks poor. Keep the hotspot on and paired as a second network.
-- [ ] Space Setup in the demo area. Clear 3 m of floor. Make sure there is enough light for the passthrough camera (the camera frames were black in a dark room).
+- [ ] Space Setup in the demo area. Clear 3 m of floor. Make sure there is enough light for the passthrough camera: below mean luma 25 Nubi answers "too dark" instead of identifying (ADR-0039). Do one capture of the remote where you will stand and check the log has no `evt=vision.too_dark`.
 - [ ] Casting works (MQDH cast or scrcpy) and shows the passthrough *and* Nubi.
 - [ ] Launch the app and do one greeting turn ("Hi Nubi, who are you?") and one capture of the remote. This warms the ASR and TTS connections, and the slow greeting answer is spent before beat 1.
 - [ ] Settings → Clear memory, Companion persona, large captions.
 - [ ] Turn on Do Not Disturb, and check there is no pending system update.
 
 ### During the demo
-- [ ] Open with the problem in one sentence. Beat 2 (the mask on the remote) is the moment to land, so don't rush it.
+- [ ] Open with the problem in one sentence: one in four US adults aged 65 and older lives alone (Pew, 2023). Beat 2 (the mask on the remote, then the power button) is the moment to land, so don't rush it.
 - [ ] If any beat fails, use its live fallback once, then move on. Never debug on stage.
 - [ ] If the network is down entirely, show beat 5 first ("this is what happens offline"), then play the recorded video for beats 1–4.
 
