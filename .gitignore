@@ -20,6 +20,7 @@ JollyXR/[Ll]ogs/
 JollyXR/[Uu]ser[Ss]ettings/
 JollyXR/[Mm]emoryCaptures/
 JollyXR/[Rr]ecordings/
+JollyXR/.utmp/
 JollyXR/Assets/StreamingAssets/secrets*.json*
 *.apk
 *.aab
@@ -27,3 +28,11 @@ JollyXR/Assets/StreamingAssets/secrets*.json*
 # Third-party character source (no license; local-only)
 Meta+Muse+Jolly*
 assets-src/private/
+
+# Blender build outputs (regenerate with tools/blender/build_nubi.py)
+tools/blender/out/
+*.blend1
+__pycache__/
+
+# On-device spike captures (camera frames / mic audio from the developer's home)
+docs/research/samples/device/
