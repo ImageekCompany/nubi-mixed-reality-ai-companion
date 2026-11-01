@@ -79,6 +79,7 @@ The demo runs as six beats. The full shot list is in [`docs/demo-script.md`](doc
 **Built and tested but not in the main demo:**
 - `find_object` ("where are my glasses?") highlights every match.
 - `remember_place` and `walk_to("sofa")` use persisted anchors.
+- **Your real furniture.** Nubi knows the couch, table, bed and chairs from Space Setup: "go sit by the couch" walks it to the couch's edge, facing it, and it looks at things in the room when it talks about them. Without Space Setup it says so once, stays within about 1.5 m of you, and opens Space Setup when you ask (ADR-0025).
 - `set_persona` switches personas by voice.
 - Gaze, open-palm and poke greetings (not yet confirmed with a person wearing the headset).
 
@@ -105,7 +106,7 @@ Hands are the primary input; Touch controllers work too. Your tracked hands are 
 | Meta capability | How Nubi uses it | Where |
 |---|---|---|
 | **Muse Spark 1.3, Responses API** | Streamed `POST /v1/responses` with `store:false`, `reasoning.effort:"minimal"`, flat function tools and `parallel_tool_calls`. Tool calls start executing **while the model is still streaming**. Spark's `phase:"commentary"` preamble is spoken before the tools finish, so you hear a reply straight away. Within a turn, every output item, including the **`reasoning.encrypted_content`** blobs, is replayed verbatim for the next round (up to 4 rounds). Interrupted turns commit `{"error":"interrupted"}` for unanswered calls, because the API rejects an orphan `function_call` with a 400 (verified live). | `Providers/MetaApi/Chat`, `Core/Agent` |
-| **Spark as a body controller** | Locomotion tools (`come_here`, `follow_user`, `walk_to`, `look_at`, `stop`, `play_gesture`) drive a NavMesh agent on the scanned floor. They return as soon as motion starts, so a walk never holds a model round, and a barge-in never cancels a walk. | `Core/Tools/Locomotion`, `Character` |
+| **Spark as a body controller** | Locomotion tools (`come_here`, `follow_user`, `walk_to`, `go_to_surface`, `look_at`, `stop`, `play_gesture`) drive a NavMesh agent on the scanned floor, and the prompt lists the room's scanned furniture. They return as soon as motion starts, so a walk never holds a model round, and a barge-in never cancels a walk. | `Core/Tools/Locomotion`, `Character` |
 | **SAM 3.1** | Three prompt types: a **point** from the hand ray projected into the passthrough camera image, with **negative points** from the tracked hand joints so your hand stays out of the mask; a **text** prompt (`find_object`, `highlight_part`, retries); and the image centre as a fallback. The masks are requested as `one_bit` and decoded by a **C# port of Meta's one-bit range decoder** (bit-exact against live masks; SAM License). | `Providers/MetaApi/Vision`, `Core/Tools/Vision` |
 | **Spark vision driving SAM** | SAM and Spark run **in parallel** on the same frame. Spark streams a first line `LABEL\|NOUN_PHRASE`, then the spoken answer. If the first SAM mask looks implausible (empty, more than half the frame, or containing your hand), SAM is re-run once with Spark's noun phrase. SAM segments; Spark explains. We never claim SAM "recognises" anything. | `SparkObjectIdentifier`, `CaptureAndIdentifyTool` |
 | **Muse Voice Transcribe, realtime** | `wss://api.meta.ai/v1/asr/realtime` over the BCL managed WebSocket, verified under IL2CPP on Quest 3. The socket opens at pinch *start*. Audio captured during the ~1 s handshake is sent all at once after the ack, then live. The final transcript arrives 166–208 ms after end-of-stream (device). | `Providers/MetaApi/Asr`, `Net/WebSockets` |
@@ -225,7 +226,7 @@ Unity Localization 1.5.13, with locales `en` (default) and `pl`.
 - **Unity 6000.6.6f1** with Android Build Support (OpenJDK, SDK and NDK from the Hub).
 - **Git LFS.** The character FBX, textures, preview PNGs and baked audio are stored in LFS.
 - **A Meta Quest 3** on Horizon OS ≥ v74 (we use v209) in **developer mode** (enable it in the Meta Horizon mobile app), connected over USB with `adb`.
-- **Space Setup** done in the room you'll use. Nubi's NavMesh comes from the scanned floor and furniture.
+- **Space Setup** done in the room you'll use. Nubi's NavMesh comes from the scanned floor and furniture. Without it Nubi walks only within about 1.5 m of you and offers to open Space Setup.
 - **Accounts:** a Meta Model API key and a Wit.ai app (its client access token and app id).
 - `python3`, used by `push-secrets.sh`.
 
@@ -288,7 +289,10 @@ As of `main` after `fix/turn-gc` and `feat/coverage-gate` (2026-11-01).
 
 ## Known limitations
 
-- **Walking is unverified on a real floor.** The test room has no Space Setup, so `come_here` answers "I can't reach you just yet". The NavMesh code is EditMode-tested.
+- **Walking is unverified on a real floor.** The test room has no Space Setup. `come_here` now walks on the fallback disc there (ADR-0025), but walking on a scanned floor and to real furniture (`go_to_surface`) is tested only in PlayMode on a simulated room.
+- **Without Space Setup, Nubi only knows the floor near you.** The fallback is a 1.5 m disc around the user at the tracking-origin floor height, stretched over to Nubi (up to 4 m); it does not know about a chair inside it. Re-reading planes after Space Setup by restarting the plane and box managers is unverified on the headset.
+- **No perching.** Nubi stops at the edge of the couch or table and faces it; it cannot climb onto furniture (no NavMesh links or climb clips).
+- **Real furniture does not hide Nubi.** Depth occlusion (Should 3) is not built.
 - **Interaction triggers and the pinch are unverified with a wearer.** With nobody wearing the headset, hand tracking produced phantom pinches, so the self-test drives push-to-talk itself.
 - **Hand meshes, the hand ray and finger pokes on the Settings panel are unverified with a wearer.** The device log shows the hand subsystem running and the hand visuals bound (`evt=hands.subsystem`, `evt=hands.tracked`, `evt=hands.visual`); until ADR-0030 the scene had no hand objects at all, so hands drew nothing and could not press UI.
 - **Controller push-to-talk is unverified on the headset.** Holding A or X is tested against the OpenXR device layouts in PlayMode, but no controller session has been run on the Quest.

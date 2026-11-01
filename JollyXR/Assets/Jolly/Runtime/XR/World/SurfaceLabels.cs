@@ -1,40 +1,50 @@
-using System;
-using System.Collections.Generic;
 using UnityEngine.XR.ARSubsystems;
 
 namespace Jolly.XR.World
 {
-    /// <summary>Maps the furniture words the model uses (walk_to "couch") onto Space Setup plane and box classifications.
-    /// There are no room labels in the scene model (xr-stack.md §4.4), so "kitchen" is unknown here by design.</summary>
+    /// <summary>Names Space Setup plane and box classifications with the lower-case furniture words of SceneSurface.Label.
+    /// There are no room labels in the scene model (xr-stack.md §4.4), so "kitchen" has none by design.</summary>
     public static class SurfaceLabels
     {
-        static readonly Dictionary<string, (PlaneClassifications Plane, BoundingBoxClassifications Box)> Labels =
-            new(StringComparer.OrdinalIgnoreCase)
-            {
-                ["couch"] = (PlaneClassifications.Couch, BoundingBoxClassifications.Couch),
-                ["sofa"] = (PlaneClassifications.Couch, BoundingBoxClassifications.Couch),
-                ["table"] = (PlaneClassifications.Table, BoundingBoxClassifications.Table),
-                ["desk"] = (PlaneClassifications.Table, BoundingBoxClassifications.Table),
-                ["bed"] = (PlaneClassifications.None, BoundingBoxClassifications.Bed),
-                ["screen"] = (PlaneClassifications.None, BoundingBoxClassifications.Screen),
-                ["tv"] = (PlaneClassifications.None, BoundingBoxClassifications.Screen),
-                ["television"] = (PlaneClassifications.None, BoundingBoxClassifications.Screen),
-                ["storage"] = (PlaneClassifications.None, BoundingBoxClassifications.Storage),
-                ["shelf"] = (PlaneClassifications.None, BoundingBoxClassifications.Storage),
-                ["cabinet"] = (PlaneClassifications.None, BoundingBoxClassifications.Storage),
-                ["lamp"] = (PlaneClassifications.None, BoundingBoxClassifications.Lamp),
-                ["plant"] = (PlaneClassifications.None, BoundingBoxClassifications.Plant),
-                ["chair"] = (PlaneClassifications.Seat, BoundingBoxClassifications.Chair),
-            };
-
-        public static bool TryParse(string label, out PlaneClassifications plane, out BoundingBoxClassifications box)
+        static readonly (BoundingBoxClassifications Flag, string Label)[] Boxes =
         {
-            plane = PlaneClassifications.None;
-            box = BoundingBoxClassifications.None;
-            if (string.IsNullOrWhiteSpace(label) || !Labels.TryGetValue(label.Trim(), out var match))
-                return false;
-            (plane, box) = match;
-            return true;
+            (BoundingBoxClassifications.Couch, "couch"),
+            (BoundingBoxClassifications.Table, "table"),
+            (BoundingBoxClassifications.Bed, "bed"),
+            (BoundingBoxClassifications.Chair, "chair"),
+            (BoundingBoxClassifications.Storage, "storage"),
+            (BoundingBoxClassifications.Screen, "screen"),
+            (BoundingBoxClassifications.Lamp, "lamp"),
+            (BoundingBoxClassifications.Plant, "plant"),
+        };
+
+        static readonly (PlaneClassifications Flag, string Label)[] Planes =
+        {
+            (PlaneClassifications.Couch, "couch"),
+            (PlaneClassifications.Table, "table"),
+            (PlaneClassifications.Seat, "chair"),
+        };
+
+        /// <summary>The first furniture label among the classifications, or null.</summary>
+        public static string ForBox(BoundingBoxClassifications classifications)
+        {
+            foreach (var (flag, label) in Boxes)
+            {
+                if ((classifications & flag) != 0)
+                    return label;
+            }
+            return null;
+        }
+
+        /// <inheritdoc cref="ForBox"/>
+        public static string ForPlane(PlaneClassifications classifications)
+        {
+            foreach (var (flag, label) in Planes)
+            {
+                if ((classifications & flag) != 0)
+                    return label;
+            }
+            return null;
         }
     }
 }

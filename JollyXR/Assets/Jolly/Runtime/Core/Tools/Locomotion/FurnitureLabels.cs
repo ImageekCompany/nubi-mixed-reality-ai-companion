@@ -1,6 +1,6 @@
 namespace Jolly.Core.Tools
 {
-    /// <summary>Maps everyday words onto the AR plane/box classifications IWorldQuery understands (contracts §7).</summary>
+    /// <summary>Maps everyday words onto the furniture labels of the room scan (SceneSurface.Label, contracts §7).</summary>
     static class FurnitureLabels
     {
         public static string Normalize(string word)
@@ -10,8 +10,9 @@ namespace Jolly.Core.Tools
             {
                 "sofa" or "settee" => "couch",
                 "desk" or "counter" => "table",
+                "seat" or "armchair" or "stool" => "chair",
                 "tv" or "television" or "monitor" => "screen",
-                "shelf" or "cabinet" or "cupboard" or "dresser" => "storage",
+                "shelf" or "cabinet" or "cupboard" or "dresser" or "wardrobe" => "storage",
                 _ => w,
             };
         }

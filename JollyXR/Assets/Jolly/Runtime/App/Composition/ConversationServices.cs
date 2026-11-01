@@ -4,6 +4,7 @@ using Jolly.Core.Config;
 using Jolly.Core.Conversation;
 using Jolly.Core.Memory;
 using Jolly.Core.Personas;
+using Jolly.Core.Spatial;
 using Jolly.Core.Tools;
 
 namespace Jolly.App.Composition
@@ -25,14 +26,15 @@ namespace Jolly.App.Composition
         public static ConversationServices Build(Foundation f, JollyConfig config, CloudServices cloud, XrServices xr,
                                                  SpeechServices speech, PersonaRepository personas, ILocalizer localizer,
                                                  IUserPreferences preferences, ICharacterController character,
-                                                 IVoiceActivation voice, IMaskPresenter masks, DisposableStack disposables)
+                                                 IVoiceActivation voice, IMaskPresenter masks, IRoomScan room,
+                                                 RoomContext roomContext, DisposableStack disposables)
         {
             var limits = new MemoryLimits();
             var timings = new ConversationTimings { AcknowledgeOnRelease = config.acknowledgeOnRelease };
             var conversation = new ConversationMemory(f.Paths.MemoryDirectory, personas, limits, f.Log);
             var scene = new SceneMemory(f.Paths.SceneMemory, xr.Anchors, f.Clock, limits, f.Log);
-            var tools = ToolCatalog.Build(f, cloud, xr, character, scene, personas, localizer, masks, out var frames);
-            var agent = new AgentLoop(cloud.VoiceChat, tools, conversation, scene, personas, localizer, preferences, f.Log,
+            var tools = ToolCatalog.Build(f, cloud, xr, character, scene, personas, localizer, masks, room, out var frames);
+            var agent = new AgentLoop(cloud.VoiceChat, tools, conversation, scene, roomContext, personas, localizer, preferences, f.Log,
                 f.Clock, f.Latency, f.Events, new AgentSettings { SafetyIdentifier = f.SafetyIdentifier });
 
             var listener = new TurnListener(speech.Microphone, cloud.SpeechToText, frames, TranscriptAliases.Default,

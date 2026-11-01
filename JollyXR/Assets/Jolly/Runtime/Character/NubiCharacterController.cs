@@ -9,9 +9,9 @@ namespace Jolly.Character
 {
     /// <summary>
     /// Nubi's <see cref="ICharacterController"/>: a thin MonoBehaviour shell that orders the plain-C# parts per frame.
-    /// Update: locomotion → body yaw → Animator parameters. The Animator then evaluates, and LateUpdate layers the
-    /// look-at on the animated bones, writes the face (clip preset/mood → lip-sync → blink) and shapes the contact
-    /// shadow from the animated feet.
+    /// Update: relocation pop → locomotion → body yaw → Animator parameters. The Animator then evaluates, and LateUpdate
+    /// layers the look-at on the animated bones, writes the face (clip preset/mood → lip-sync → blink) and shapes the
+    /// contact shadow from the animated feet.
     /// Inert until <see cref="Construct"/> is called by the composition root.
     /// </summary>
     [DisallowMultipleComponent]
@@ -19,6 +19,8 @@ namespace Jolly.Character
     {
         static readonly float[] LookAroundYaws = { -40f, 40f, 0f };
         static readonly TimeSpan LookAroundHold = TimeSpan.FromSeconds(0.8);
+        /// <summary>Never zero: a zero scale makes the transform matrix singular.</summary>
+        const float PopMinScale = 0.01f;
 
         [SerializeField] Animator _animator;
         [SerializeField] NavMeshAgent _agent;
@@ -48,6 +50,10 @@ namespace Jolly.Character
         Vector3 _lookOverride;
         int _lookAroundGeneration;
         float _speed;
+        Vector3 _scale;
+        Vector3 _popTarget;
+        float _popElapsed = -1f;
+        bool _popMoved;
 
         public bool IsConstructed => _locomotion != null;
         public NubiCharacterSettings Settings => _settings;
@@ -79,6 +85,7 @@ namespace Jolly.Character
             _faceRenderer = new FaceRenderer(_faceMesh);
             _shadow = new ContactShadow(_shadowRig, transform, _settings.shadow);
             _locomotion = new AgentLocomotion(_agent, clock, _settings.locomotion);
+            _scale = transform.localScale;
         }
 
         public Vector3 Position => transform.position;
@@ -94,6 +101,16 @@ namespace Jolly.Character
         public void Follow(float distanceMin, float distanceMax) => Constructed()._locomotion.Follow(distanceMin, distanceMax);
 
         public void Stop() => Constructed()._locomotion.Stop();
+
+        public void Relocate(Vector3 floorPoint)
+        {
+            Constructed();
+            _popTarget = floorPoint;
+            if (_popElapsed >= 0f && !_popMoved)
+                return;
+            _popElapsed = 0f;
+            _popMoved = false;
+        }
 
         public void LookAt(LookTarget target) => _lookTarget = target;
 
@@ -116,6 +133,7 @@ namespace Jolly.Character
         {
             if (!IsConstructed)
                 return;
+            TickPop(Time.deltaTime);
             _locomotion.Tick(_user.Head.position);
 
             var velocity = Vector3.ProjectOnPlane(_locomotion.Velocity, Vector3.up);
@@ -201,6 +219,28 @@ namespace Jolly.Character
                     point = _user.Head.position;
                     return _locomotion.Mode == LocomotionMode.Following;
             }
+        }
+
+        /// <summary>Shrinks to nothing, moves at the midpoint, grows back.</summary>
+        void TickPop(float deltaTime)
+        {
+            if (_popElapsed < 0f)
+                return;
+            _popElapsed += deltaTime;
+            var half = Mathf.Max(_settings.locomotion.relocatePopSeconds * 0.5f, 1e-3f);
+            if (!_popMoved && _popElapsed >= half)
+            {
+                _locomotion.Relocate(_popTarget);
+                _popMoved = true;
+            }
+            if (_popElapsed >= 2f * half)
+            {
+                _popElapsed = -1f;
+                transform.localScale = _scale;
+                return;
+            }
+            var size = Mathf.SmoothStep(0f, 1f, Mathf.Abs(_popElapsed - half) / half);
+            transform.localScale = _scale * Mathf.Max(size, PopMinScale);
         }
 
         void TurnToward(Quaternion target, float deltaTime)

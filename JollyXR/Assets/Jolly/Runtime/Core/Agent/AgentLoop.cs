@@ -5,6 +5,7 @@ using Cysharp.Threading.Tasks.Linq;
 using Jolly.Contracts;
 using Jolly.Core.Config;
 using Jolly.Core.Conversation;
+using Jolly.Core.Spatial;
 
 namespace Jolly.Core.Agent
 {
@@ -27,8 +28,9 @@ namespace Jolly.Core.Agent
         readonly AgentSettings _settings;
         readonly PromptBuilder _prompt;
 
+        /// <param name="room">The room line of the context block; null leaves it out.</param>
         public AgentLoop(IChatModel model, IToolRegistry registry, IConversationMemory memory, ISceneMemory scene,
-                         IPersonaProvider personas, ILocalizer localizer, IUserPreferences preferences, ILog log,
+                         RoomContext room, IPersonaProvider personas, ILocalizer localizer, IUserPreferences preferences, ILog log,
                          IClock clock, ILatencyTracker latency, ConversationEvents events, AgentSettings settings)
         {
             _model = model;
@@ -42,7 +44,7 @@ namespace Jolly.Core.Agent
             _latency = latency;
             _events = events;
             _settings = settings;
-            _prompt = new PromptBuilder(localizer, preferences, memory, scene, settings);
+            _prompt = new PromptBuilder(localizer, preferences, memory, scene, room, settings);
         }
 
         public IUniTaskAsyncEnumerable<AgentEvent> RunTurn(UserTurn turn, Func<string> spokenSoFar, CancellationToken ct) =>

@@ -12,6 +12,10 @@ namespace Jolly.Core.Config
         public float FollowMinDistance { get; set; } = 1.0f;
         public float FollowMaxDistance { get; set; } = 1.5f;
         public float LookRayMaxDistance { get; set; } = 5f;
+        /// <summary>Gap between a furniture footprint and where Nubi stops beside it: the 0.15 m NavMesh agent radius
+        /// plus a margin, since the scanned box edge is only as exact as Space Setup.</summary>
+        public float SurfaceClearance { get; set; } = 0.25f;
+        public float SurfaceStopDistance { get; set; } = 0.1f;
     }
 
     /// <summary>Capture, SAM and vision numbers of architecture §5.3 (one set, shared with JollyConfig).</summary>

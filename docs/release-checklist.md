@@ -95,3 +95,30 @@ Legend: ✅ met, with evidence · ⚠️ partial · ❌ not met · 🧑 needs a 
     - **Fallback boxes:** with depth available, set `preference: SceneMeshes` in a development build → the boxes line up with the furniture (box pose = centre is assumed, as for the NavMesh colliders), and captions, the settings panel, status indicator and tool badges stay visible with a box between them and the eyes.
     - **Cost:** OVR Metrics app GPU time and stale frames, 2 min each with `preference` Off, EnvironmentDepth hard and EnvironmentDepth soft, Nubi in view; record the deltas in `perf/selftest-report.md` (budget: ≤ 1 ms GPU for occlusion, 72 fps held). Profiler: no per-frame GC from the occlusion frame callback.
     - **Pipeline warm-up:** re-record `QuestVulkan.graphicsstate` with depth active (`docs/perf/README.md` §7), so the occlusion shader variants do not compile on the first depth frame.
+
+## Room awareness device checks (ADR-0025, `feat/mr-room-awareness`)
+
+Not run: the headset was owned by another task. Automated cover: EditMode (detector timeout, fallback disc, surface targets, room line, tool argument validation) and PlayMode (fallback disc NavMesh; the real Nubi walking to the user after the area moved 1.5 m and 3 m, following across re-centres, and popping back past 4 m; `go_to_surface` with the real Nubi on a simulated room). Each check below needs a wearer; record the logcat lines (`adb logcat -s Unity | grep "evt=room"`) as evidence.
+
+**A. Unscanned room: fallback area** (erase Space Setup for the room first: Settings → Physical space → Space Setup → clear, or use a new room)
+1. Launch with all permissions granted. Within ~8 s logcat shows `evt=room.status status=Unscanned` then `evt=room.degraded walkable=fallback radius_m=1.5`.
+2. Look down: Nubi stands on the real floor (feet not sinking or floating). If it floats or sinks, the XR Origin is not in Floor tracking mode or the Quest floor height is wrong; `evt=room.fallback_floor_unavailable` means the origin mode was not Floor.
+3. "Nubi, come here": Nubi walks to about 1 m in front of you, faces you, no `unreachable`. With Nubi standing still, step 1.5 m and then 3 m away and repeat: the area stretches from you to Nubi (`evt=room.fallback_floor_moved` at Debug), Nubi walks the whole way to you each time, never `unreachable` and never jumping.
+4. "Follow me", walk slowly around a 2 m circle: Nubi follows without freezing and without any teleport; note any visible hitch when the area rebuilds (OVR Metrics stale frames).
+5. Say "stop", walk more than 4 m away from Nubi: once, Nubi shrinks away and pops back about 1 m from you on its side (`evt=room.character_returned from_m=…`), then "come here" works.
+6. Self-test in the same room: `voice_come_here` reports `PASS navmesh=fallback walk=Arrived`.
+
+**B. Space Setup prompt flow** (same unscanned room, normal launch, not the self-test)
+1. Stay idle: once, and only once per launch, Nubi says the `room_scan_01` line with lip-sync and a caption. It must not interrupt a reply in progress.
+2. Say "yes, scan my room": the model calls `request_room_scan` (tool badge), Nubi finishes "Okay! Look around your room…", then Space Setup opens (`evt=room.scan_requested accepted=yes`). Nothing cut off mid-word.
+3. Complete Space Setup with a couch and a table. On return: `evt=room.requery`, then `evt=room.status status=Scanned` within ~8 s and `evt=room.fallback_floor_cleared`. **UNVERIFIED and most likely to fail:** that restarting the plane and box managers re-reads the new scene model. If the status stays `Unscanned`, relaunch the app and record it; the fix would be an `ARSession.Reset()` or a full app restart prompt.
+4. Cancel Space Setup instead: the app resumes, the disc stays, and after ~8 s the status is `Unscanned` again with no second offer.
+5. Polish locale: the offer is captioned in Polish and plays the English clip (no Polish TTS).
+
+**C. Walking to the couch** (room with Space Setup, couch and table labelled)
+1. "What furniture do you see?": the answer names the couch and table from the context line, without calling a camera tool.
+2. "Go to the couch" / "go sit by the sofa": `go_to_surface` (or `walk_to`) with `couch`; Nubi walks around obstacles and stops 0.25–0.5 m from the couch edge nearest to it, facing the couch. Check it is not inside the couch or on the seat.
+3. "Go to the desk": resolves to the table. "Go to the bed" with no bed: the model says there is none (`no_surface`).
+4. Ask about a seen object by name after `capture_and_identify` ("walk to the mug"): `walk_to` with the label works and Nubi faces it; "look at the couch" turns Nubi's head toward the couch.
+5. Box orientation: with a couch at an angle to the room, Nubi still stops beside the long side, not diagonally inside the box. This checks that `ARBoundingBox` pose is the box centre with an up-aligned rotation (assumed, not documented in AR Foundation).
+6. Seated mode on: `go_to_surface` is not offered; the model says it cannot walk to furniture while the user is seated.

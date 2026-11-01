@@ -26,6 +26,7 @@ MonoBehaviour:
   - stop
   - play_gesture
   - set_persona
+  - request_room_scan
   persistMemory: 0
   crisisHandoff: 1
   defaultMood: 0

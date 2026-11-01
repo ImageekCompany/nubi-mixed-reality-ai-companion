@@ -31,6 +31,9 @@ namespace Jolly.App.Composition
         /// <summary>Null uses the scene's streaming output on Nubi.</summary>
         public ISpeechOutput SpeechOutput { get; set; }
         public Func<ICameraFrameSource, ICameraFrameSource> WrapCamera { get; set; } = camera => camera;
+        /// <summary>Whether Nubi may speak the one unprompted Space Setup offer (ADR-0025). Off unless a person is there
+        /// to hear it: scripted runs would have it race their turns.</summary>
+        public bool OfferRoomScan { get; set; }
 
         public static Edges ForPlayer()
         {
@@ -45,6 +48,7 @@ namespace Jolly.App.Composition
                 WebSockets = provider => new ClientWebSocketConnection(provider),
                 HttpStatus = new TransportStatusClient(http),
                 Microphone = new UnityMicrophone(),
+                OfferRoomScan = true,
             };
         }
     }

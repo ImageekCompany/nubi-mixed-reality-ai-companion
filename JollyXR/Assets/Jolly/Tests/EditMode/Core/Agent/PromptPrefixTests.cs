@@ -42,6 +42,31 @@ namespace Jolly.Tests.EditMode.Core.Agent
             Assert.That(second, Does.Contain("2 min ago"), "the context block itself did change");
         }
 
+        [Test]
+        public void RoomLine_GoesInTheContextBlock_SoAScanChangesNothingBeforeIt()
+        {
+            var f = new AgentFixture();
+            f.Tool("go_to_surface");
+            f.Memory.CommitTurn(new[] { ConversationItem.User("hi"), ConversationItem.Assistant("Hello!") });
+            f.RoomScan.Status = RoomScanStatus.Unscanned;
+            f.Model.Enqueue().Text("Okay.");
+            f.Model.Enqueue().Text("Sure.");
+
+            AgentFixture.Completed(f.Run("come here"));
+            f.RoomScan.Status = RoomScanStatus.Scanned;
+            f.World.AddBox("couch", new Vector3(0f, 0f, 2f), new Vector3(2f, 0.8f, 0.9f));
+            AgentFixture.Completed(f.Run("go to the couch"));
+
+            var first = Body(f, 0);
+            var second = Body(f, 1);
+            var cut = first.IndexOf(ContextMessage, StringComparison.Ordinal);
+            Assert.That(first, Does.Contain("Room: not scanned"));
+            Assert.That(first.IndexOf("Room: not scanned", StringComparison.Ordinal), Is.GreaterThan(cut));
+            Assert.That(second, Does.StartWith(first.Substring(0, cut)));
+            Assert.That(second, Does.Contain("Room: scanned. Furniture: couch 2 m."));
+            Assert.That(f.Model.Requests[0].Instructions, Does.Not.Contain("Room:"), "never in the static instructions");
+        }
+
         static string Body(AgentFixture f, int request)
         {
             var sent = f.Model.Requests[request];

@@ -9,8 +9,9 @@ namespace Jolly.App.Adapters
 {
     /// <summary>
     /// Speaks the canned line an interaction asks for (gaze, open palm, poke: architecture §5.4) when the conversation is
-    /// Idle and nothing is playing. These lines bypass the state machine, so the talking animation is driven here and
-    /// handed back to the conversation state afterwards. Ids are negative so they never collide with turn utterances.
+    /// Idle and nothing is playing, and the room-scan offer (ADR-0025) through <see cref="Request"/>. These lines bypass
+    /// the state machine, so the talking animation is driven here and handed back to the conversation state afterwards.
+    /// Ids are negative so they never collide with turn utterances.
     /// </summary>
     public sealed class InteractionLinePlayer : IDisposable
     {
@@ -39,6 +40,9 @@ namespace Jolly.App.Adapters
             () => machine.State == ConversationState.Idle && !output.IsPlaying;
 
         public void Dispose() => _triggers.LineRequested -= OnLineRequested;
+
+        /// <summary>Plays a line now; the caller has checked <see cref="CanSpeak"/>.</summary>
+        public void Request(LineCategory category) => Play(category).Forget();
 
         void OnLineRequested(LineCategory category) => Play(category).Forget();
 

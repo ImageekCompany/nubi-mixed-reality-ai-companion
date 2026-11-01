@@ -11,7 +11,7 @@ namespace Jolly.App.Composition
     {
         public static ToolRegistry Build(Foundation f, CloudServices cloud, XrServices xr, ICharacterController character,
                                          ISceneMemory scene, IPersonaProvider personas, ILocalizer localizer,
-                                         IMaskPresenter masks, out FrameGrabber frames)
+                                         IMaskPresenter masks, IRoomScan room, out FrameGrabber frames)
         {
             var vision = new VisionSettings();
             var locomotion = new LocomotionSettings();
@@ -32,6 +32,8 @@ namespace Jolly.App.Composition
             registry.Register(new StopTool(character));
             registry.Register(new PlayGestureTool(character));
             registry.Register(new SetPersonaTool(personas));
+            registry.Register(new GoToSurfaceTool(character, xr.World, room, locomotion));
+            registry.Register(new RequestRoomScanTool(room, localizer));
             return registry;
         }
     }

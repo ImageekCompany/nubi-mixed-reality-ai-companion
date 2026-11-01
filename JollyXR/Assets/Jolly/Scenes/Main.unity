@@ -166,6 +166,7 @@ MonoBehaviour:
     boxManager: {fileID: 1097538762}
     raycastManager: {fileID: 1097538765}
     anchorManager: {fileID: 1097538764}
+    session: {fileID: 1720775228}
     nubi: {fileID: 1314027018}
     speechOutput: {fileID: 886107493}
     lipSync: {fileID: 886107492}

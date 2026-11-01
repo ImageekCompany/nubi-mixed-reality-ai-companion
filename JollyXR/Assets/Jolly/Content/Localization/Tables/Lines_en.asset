@@ -150,6 +150,14 @@ MonoBehaviour:
     m_Localized: I couldn't see it clearly, can you hold it closer?
     m_Metadata:
       m_Items: []
+  - m_Id: 154132513
+    m_Localized: "I don't know your room yet, so I'll stay close to you. If you'd like me to walk around, ask me to scan the room."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132514
+    m_Localized: "Okay! Look around your room, and I'll be right here when you're done."
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

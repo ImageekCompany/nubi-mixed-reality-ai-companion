@@ -14,7 +14,9 @@ namespace Jolly.Tests.PlayMode.Character
 {
     /// <summary>
     /// A 10 × 10 m floor with a disconnected 3 × 3 m island at x = 20, baked by the production NavMeshBaker, and the real Nubi prefab
-    /// constructed with fakes. Time runs at <see cref="TimeScale"/>× so walks take a fraction of real time.
+    /// constructed with fakes. Time runs at <see cref="TimeScale"/>× so walks take a fraction of real time. Furniture added
+    /// with <see cref="AddFurniture"/> is baked as Not Walkable, like a Space Setup bounding box. Without the floor
+    /// (<see cref="Create"/> floor: false) the test brings its own NavMesh.
     /// </summary>
     sealed class CharacterTestRig : IDisposable
     {
@@ -24,10 +26,10 @@ namespace Jolly.Tests.PlayMode.Character
         readonly NavMeshBaker _navMesh = new();
         readonly GameObject _floor;
 
-        CharacterTestRig(ILipSyncDriver lipSync)
+        CharacterTestRig(ILipSyncDriver lipSync, bool floor)
         {
             Time.timeScale = TimeScale;
-            _floor = BuildFloor();
+            _floor = floor ? BuildFloor() : null;
             var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(NubiAssetPaths.Prefab);
             Assert(prefab != null, $"missing {NubiAssetPaths.Prefab}");
             Nubi = Object.Instantiate(prefab).GetComponent<NubiCharacterController>();
@@ -40,15 +42,31 @@ namespace Jolly.Tests.PlayMode.Character
         public StubUserPose User { get; } = new();
         public ILipSyncDriver LipSync { get; }
         public Animator Animator => Nubi.Animator;
+        public NavMeshBaker NavMesh => _navMesh;
 
-        public static CharacterTestRig Create(ILipSyncDriver lipSync = null) => new(lipSync ?? new ScriptedLipSync());
+        /// <summary>A box standing on the floor, baked as an obstacle; rebakes at once.</summary>
+        public void AddFurniture(Vector3 floorCenter, Vector3 size)
+        {
+            var box = new GameObject("Furniture");
+            box.transform.SetParent(_floor.transform, false);
+            box.transform.position = floorCenter + Vector3.up * (size.y * 0.5f);
+            var collider = box.AddComponent<BoxCollider>();
+            collider.size = size;
+            Physics.SyncTransforms();
+            _navMesh.AddObstacle(collider);
+            _navMesh.Rebuild(0);
+        }
+
+        public static CharacterTestRig Create(ILipSyncDriver lipSync = null, bool floor = true) =>
+            new(lipSync ?? new ScriptedLipSync(), floor);
 
         public void Dispose()
         {
             if (Nubi != null)
                 Object.Destroy(Nubi.gameObject);
             _navMesh.Dispose();
-            Object.Destroy(_floor);
+            if (_floor != null)
+                Object.Destroy(_floor);
             Time.timeScale = 1f;
         }
 
