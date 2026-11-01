@@ -15,9 +15,15 @@ using NUnit.Framework;
 
 namespace Jolly.Tests.EditMode.Core.Conversation
 {
-    // WP3's Jolly.Testing fakes of the same names script ASR differently (partials only after the audio ends).
+    // Same-named fakes from other WPs also live in Jolly.Testing; these tests are written against this WP's.
     using FakeAudioCapture = Jolly.Testing.Conversation.FakeAudioCapture;
     using ScriptedSpeechToText = Jolly.Testing.Conversation.ScriptedSpeechToText;
+    using FakeLocalizer = Jolly.Testing.Conversation.FakeLocalizer;
+    using FakePersonaProvider = Jolly.Testing.Conversation.FakePersonaProvider;
+    using FakeSpatialAnchors = Jolly.Testing.Conversation.FakeSpatialAnchors;
+    using FakeSpeechOutput = Jolly.Testing.Conversation.FakeSpeechOutput;
+    using FakeUsageMeter = Jolly.Testing.Conversation.FakeUsageMeter;
+    using FakeVoiceActivation = Jolly.Testing.Conversation.FakeVoiceActivation;
 
     /// <summary>The real controller, pipeline, state machine and memories over scripted voice, agent and speech fakes.</summary>
     sealed class ConversationFixture : IDisposable

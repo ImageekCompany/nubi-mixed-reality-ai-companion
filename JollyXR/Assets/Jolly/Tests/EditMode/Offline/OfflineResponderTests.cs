@@ -11,6 +11,9 @@ using UnityEngine;
 
 namespace Jolly.Tests.EditMode.Offline
 {
+    // Same-named fakes from other WPs also live in Jolly.Testing; these tests are written against this WP's.
+    using FakeSpeechOutput = Jolly.Testing.Offline.FakeSpeechOutput;
+
     public sealed class OfflineResponderTests
     {
         AudioClip _clip;

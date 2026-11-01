@@ -15,6 +15,12 @@ using Jolly.Testing.Conversation;
 
 namespace Jolly.Tests.EditMode.Core.Agent
 {
+    // Same-named fakes from other WPs also live in Jolly.Testing; these tests are written against this WP's.
+    using FakeLocalizer = Jolly.Testing.Conversation.FakeLocalizer;
+    using FakePersonaProvider = Jolly.Testing.Conversation.FakePersonaProvider;
+    using FakeSpatialAnchors = Jolly.Testing.Conversation.FakeSpatialAnchors;
+    using FakeUserPreferences = Jolly.Testing.Conversation.FakeUserPreferences;
+
     /// <summary>An AgentLoop over scripted fakes and the real registry and memories (never saved to disk).</summary>
     sealed class AgentFixture
     {

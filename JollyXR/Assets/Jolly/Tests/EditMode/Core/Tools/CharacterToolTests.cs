@@ -13,6 +13,11 @@ using UnityEngine;
 
 namespace Jolly.Tests.EditMode.Core.Tools
 {
+    // Same-named fakes from other WPs also live in Jolly.Testing; these tests are written against this WP's.
+    using FakePersonaProvider = Jolly.Testing.Conversation.FakePersonaProvider;
+    using FakeSpatialAnchors = Jolly.Testing.Conversation.FakeSpatialAnchors;
+    using FakeWorldQuery = Jolly.Testing.Conversation.FakeWorldQuery;
+
     public sealed class CharacterToolTests
     {
         RecordingCharacterController _character;

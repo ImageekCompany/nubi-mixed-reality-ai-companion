@@ -11,6 +11,9 @@ using NUnit.Framework;
 
 namespace Jolly.Tests.EditMode.Core.Memory
 {
+    // Same-named fakes from other WPs also live in Jolly.Testing; these tests are written against this WP's.
+    using FakePersonaProvider = Jolly.Testing.Conversation.FakePersonaProvider;
+
     public sealed class ConversationMemoryTests
     {
         static readonly CancellationToken None = CancellationToken.None;

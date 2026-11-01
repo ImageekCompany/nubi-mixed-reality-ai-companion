@@ -8,6 +8,9 @@ using NUnit.Framework;
 
 namespace Jolly.Tests.EditMode.Offline
 {
+    // Same-named fakes from other WPs also live in Jolly.Testing; these tests are written against this WP's.
+    using FakeInteractionSignals = Jolly.Testing.Offline.FakeInteractionSignals;
+
     public sealed class InteractionTriggersTests
     {
         FakeInteractionSignals _signals;
