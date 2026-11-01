@@ -43,4 +43,6 @@ Rows before 2026-11-01 02:00 (research phase, `docs/research/*.md`) were not ite
 | 2026-11-01 | guard walk without a model round and `find_object` gaze result (ADR-0037): 2 device self-test runs of the default release build `8bd9560` (app meter 0.0228 + 0.0214); the 6 ComingOver clips (Nubi and local Jolly) from Wit `/synthesize` (free) | muse-spark-1.3, sam-3.1, muse-voice-transcribe-1.0 (+ Wit, free) | ~12 Spark calls, ~4 SAM, ~12 ASR sessions | ~4 images; ~30 s audio | 0.044 |
 | 2026-11-01 | hedged first event (ADR-0038): 4 device self-test runs of the default release build, 3 of `ee9b05c` and 1 of `b96a062` (app meter 0.0244 + 0.0226 + 0.0203 + 0.0228); one launch after a reboot stopped before any API call | muse-spark-1.3, sam-3.1, muse-voice-transcribe-1.0 (+ Wit, free) | ~40 Spark calls (1 hedge), ~8 SAM, ~24 ASR sessions | ~8 images; ~60 s audio | 0.090 |
 
-Running total (est.): **≤ $1.92** (sum of the rows: 1.916)
+| 2026-11-01 | dark-room vision guard (ADR-0039): 1 device self-test run of the default release build `4fecc17` (app meter 0.0236) | muse-spark-1.3, sam-3.1, muse-voice-transcribe-1.0 (+ Wit, free) | ~7 Spark calls, 3 SAM, ~6 ASR sessions | 3 images; ~15 s audio | 0.024 |
+
+Running total (est.): **≤ $1.94** (sum of the rows: 1.940)
