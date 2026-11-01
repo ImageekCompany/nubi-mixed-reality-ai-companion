@@ -2,6 +2,9 @@ using Jolly.Contracts;
 
 namespace Jolly.Core.Conversation
 {
+    // Jolly.Core.Connectivity (the namespace) would otherwise shadow the contract enum.
+    using Connectivity = Jolly.Contracts.Connectivity;
+
     public enum TurnRoute { Online, Offline, Unauthorized, BudgetReached }
 
     /// <summary>Decides per PTT press whether the cloud path can run (architecture §5.4). Pure.</summary>
