@@ -51,7 +51,7 @@ MonoBehaviour:
   samSeconds: 5
   samAttempts: 2
   visionSeconds: 8
-  visionMaxOutputTokens: 600
+  visionMaxOutputTokens: 1024
   witFirstChunkSeconds: 3
   witIdleSeconds: 3
   healthProbeSeconds: 3
@@ -69,6 +69,7 @@ MonoBehaviour:
   - Personas
   - Crisis
   editorCameraStill: {fileID: 4900000, guid: 8d67d578542784ffc9f64d6a7139c4be, type: 3}
+  graphicsStates: {fileID: -6766982352335285333, guid: a8b84f8a4598141d2ada90910ffb4606, type: 3}
   acknowledgeOnRelease: 1
   headPoseLeadSeconds: 0
   minimumLogLevel: 1

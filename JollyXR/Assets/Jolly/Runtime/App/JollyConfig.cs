@@ -2,6 +2,7 @@ using System;
 using Jolly.Contracts;
 using Jolly.Localization;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace Jolly.App
 {
@@ -40,7 +41,7 @@ namespace Jolly.App
         public float samSeconds = 5f;
         public int samAttempts = 2;
         public float visionSeconds = 8f;
-        public int visionMaxOutputTokens = 600;
+        public int visionMaxOutputTokens = 1024;
         public float witFirstChunkSeconds = 3f;
         public float witIdleSeconds = 3f;
         public float healthProbeSeconds = 3f;
@@ -54,6 +55,10 @@ namespace Jolly.App
         public string[] preloadTables = { "UI", "Lines", "Personas", "Crisis" };
         [Tooltip("Editor and Link only: the still image served as the camera frame (meta-openxr gives no CPU image there).")]
         public TextAsset editorCameraStill;
+
+        [Header("Rendering")]
+        [Tooltip("Pipelines warmed at boot; recorded by a development-player self-test (docs/perf/README.md §7).")]
+        public GraphicsStateCollection graphicsStates;
 
         [Header("Behaviour")]
         public bool acknowledgeOnRelease = true;

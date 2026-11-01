@@ -5,6 +5,8 @@ using Cysharp.Threading.Tasks;
 using Jolly.App.Composition;
 using Jolly.Contracts;
 using Jolly.XR.Capture;
+using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace Jolly.App.SelfTest
 {
@@ -19,16 +21,20 @@ namespace Jolly.App.SelfTest
     {
         public const string FlagFile = "selftest.json";
         public const string ResultsFile = "selftest_results.json";
+        public const string GraphicsStatesFile = "graphics_states.graphicsstate";
         const string CommandLineFlag = "-selftest";
 
         readonly SelfTestAssets _assets;
         readonly string _resultsPath;
+        readonly string _dataRoot;
         Func<bool> _realReachability;
+        GraphicsStateCollection _graphicsTrace;
 
-        SelfTestSession(SelfTestAssets assets, string resultsPath)
+        SelfTestSession(SelfTestAssets assets, string dataRoot)
         {
             _assets = assets;
-            _resultsPath = resultsPath;
+            _dataRoot = dataRoot;
+            _resultsPath = Path.Combine(dataRoot, ResultsFile);
         }
 
         public bool ForceOffline { get; set; }
@@ -37,6 +43,8 @@ namespace Jolly.App.SelfTest
         public ClipMicrophone Microphone { get; private set; }
         public ScriptedPushToTalk Voice { get; private set; }
         public SwitchableCameraSource Camera { get; private set; }
+        /// <summary>Started by the bootstrap so the launch is traced too; disposes itself when the app token cancels.</summary>
+        public FrameSpikeLog Frames { get; private set; }
 
         /// <summary>Null in normal use. Otherwise rewires <paramref name="edges"/> and returns the armed session.</summary>
         public static SelfTestSession TryStart(Edges edges, SelfTestAssets assets, Foundation foundation, SceneRefs scene)
@@ -50,14 +58,35 @@ namespace Jolly.App.SelfTest
                 log.Write(LogLevel.Error, "selftest", "evt=selftest.no_assets");
                 return null;
             }
-            var results = Path.Combine(edges.Paths.DataRoot, ResultsFile);
-            if (File.Exists(results))
-                File.Delete(results);
+            var session = new SelfTestSession(assets, edges.Paths.DataRoot) { Frames = new FrameSpikeLog(log) };
+            if (File.Exists(session._resultsPath))
+                File.Delete(session._resultsPath);
             log.Write(LogLevel.Info, "selftest", "evt=selftest.armed");
-
-            var session = new SelfTestSession(assets, results);
             session.Rewire(edges, foundation, scene);
+            session.TraceGraphicsStates();
             return session;
+        }
+
+        /// <summary>Saves what the run drew for <see cref="Jolly.App.Platform.GraphicsWarmup"/>; development players only.</summary>
+        public void SaveGraphicsStates(ILog log)
+        {
+            if (_graphicsTrace == null)
+                return;
+            _graphicsTrace.EndTrace();
+            var path = Path.Combine(_dataRoot, GraphicsStatesFile);
+            var saved = _graphicsTrace.SaveToFile(path);
+            log.Write(LogLevel.Info, "selftest", $"evt=selftest.graphics_states saved={saved} " +
+                $"variants={_graphicsTrace.variantCount} states={_graphicsTrace.totalGraphicsStateCount}");
+            _graphicsTrace = null;
+        }
+
+        void TraceGraphicsStates()
+        {
+            if (!Debug.isDebugBuild || Application.isEditor)
+                return;
+            _graphicsTrace = new GraphicsStateCollection();
+            if (!_graphicsTrace.BeginTrace())
+                _graphicsTrace = null;
         }
 
         public UniTaskVoid Run(AppGraph graph, CancellationToken ct) =>

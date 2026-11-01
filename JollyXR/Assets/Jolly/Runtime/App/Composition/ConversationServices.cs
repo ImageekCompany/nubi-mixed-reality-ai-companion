@@ -19,6 +19,8 @@ namespace Jolly.App.Composition
         public ConversationMemory Conversation { get; private set; }
         public SceneMemory Scene { get; private set; }
         public ToolRegistry Tools { get; private set; }
+        /// <summary>The camera grabber shared by the PTT-release pre-capture and the vision tools.</summary>
+        public FrameGrabber Frames { get; private set; }
 
         public static ConversationServices Build(Foundation f, JollyConfig config, CloudServices cloud, XrServices xr,
                                                  SpeechServices speech, PersonaRepository personas, ILocalizer localizer,
@@ -51,6 +53,7 @@ namespace Jolly.App.Composition
             return new ConversationServices
             {
                 Controller = controller, Memory = keeper, Conversation = conversation, Scene = scene, Tools = tools,
+                Frames = frames,
             };
         }
     }

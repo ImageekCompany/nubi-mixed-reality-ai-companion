@@ -150,24 +150,24 @@ graph TD
 
 ## Performance budget
 
-Targets come from [`docs/definition-of-done.md`](docs/definition-of-done.md) §4–5. Measured values come from the on-device self-test of the full app (Quest 3, Horizon OS v209, IL2CPP release build, three runs on 2026-11-01; [`docs/perf/selftest-report.md`](docs/perf/selftest-report.md)), in a dim room with no Space Setup and nobody wearing the headset. Rows marked **unmeasured** need the OVR Metrics capture or a development-build Profiler session; the self-test report keeps the full DoD coverage table. Method: [`docs/perf/README.md`](docs/perf/README.md).
+Targets come from [`docs/definition-of-done.md`](docs/definition-of-done.md) §4–5. Measured values come from the on-device self-test of the full app (Quest 3, Horizon OS v209, IL2CPP release build, four runs of the performance pass on 2026-11-01 unless noted; [`docs/perf/selftest-report.md`](docs/perf/selftest-report.md)), in a dim room with no Space Setup and nobody wearing the headset. Rows marked **unmeasured** need the OVR Metrics capture or a development-build Profiler session; the self-test report keeps the full DoD coverage table. Method: [`docs/perf/README.md`](docs/perf/README.md).
 
 | Metric | Target | Measured |
 |---|---|---|
 | Frame rate (passthrough, Nubi visible) | ≥ 72 fps sustained | **72.0 fps** average, p95 frame 13.9 ms (30 s idle, 3 runs) |
-| Stale frames | < 1 % over 10 min | idle **0.18 %**; during turns **1.15 %** (just over); a 0.5 s hitch at launch |
+| Stale frames | < 1 % over 10 min | during turns **0.55–0.99 %** (was 1.06–1.28 %); idle ≤ **0.22 %**; one ~320 ms frame at launch while Meta's passthrough camera starts |
 | Draw calls / SetPass | ≤ 200 / ≤ 60 | **12 / 11** max per frame (idle) |
 | Triangles | ≤ 300k scene; Nubi ≤ 30k | **27,178** max per frame; Nubi 25,248 tris, 2 materials, one 1024² texture |
-| GC alloc | 0 B/frame idle; ≤ 4 KB/frame in a turn | idle: PlayMode gate `NoGcAllocInSteadyStateIdle` passes, and 0 GC collections in 30 s on the headset; per turn: unmeasured |
+| GC alloc | 0 B/frame idle; ≤ 4 KB/frame in a turn | idle: PlayMode gate `NoGcAllocInSteadyStateIdle` passes, and 0 GC collections in 30 s on the headset; per turn: **11–42 KB/frame** in a development player (**over**) |
 | Memory | `app_rss_MB` ≤ 1,500 MB peak | system used memory **530 MB** (idle); `app_rss_MB` unmeasured |
 | CPU main thread, thermal, battery | p95 ≤ 11 ms; 30 min without throttling; ≤ 20 % per 30 min | unmeasured |
-| **PTT release → first answer audio** | p50 ≤ 2.0 s | p50 **1.57 s**, max 1.97 s over 9 online turns, including each launch's first turn (n=9, not yet the 20 the DoD asks for) |
-| PTT release → ASR final | p50 ≤ 300 ms | **207–464 ms** |
-| ASR final → first LLM text | p50 ≤ 1.3 s | **0.39–1.37 s** |
+| **PTT release → first answer audio** | p50 ≤ 2.0 s | p50 **1.44 s**, max 2.87 s over 16 online turns, including each launch's first turn (not yet the 20 consecutive turns the DoD asks for) |
+| PTT release → ASR final | p50 ≤ 300 ms | p50 **208 ms** |
+| ASR final → first LLM text | p50 ≤ 1.3 s | p50 **0.84 s** |
 | Pinch → silence | p50 ≤ 150 ms | **28–54 ms** |
 | Network loss → offline line | ≤ 2.0 s | Offline detected in < 1 s; offline line captioned **14–27 ms** after the press |
-| `capture_and_identify` → mask visible | p50 ≤ 2.0 s | SAM returns 0.5–0.8 s after the call (live frame); mask-shown time unmeasured |
-| `capture_and_identify` → answer audio | p50 ≤ 2.5 s | unmeasured; the vision header alone arrives 2.8–3.1 s after the call on a dim frame, so this is **at risk** |
+| `capture_and_identify` → mask visible | p50 ≤ 2.0 s | **0.72–1.13 s** (live dim frame) |
+| `capture_and_identify` → answer audio | p50 ≤ 2.5 s | p50 **2.24 s**, range 1.56–3.39 s (4 runs); the spread is the model's reasoning time |
 | Camera frame → 640 px RGBA | — | **12–14 ms** convert, frame age 31–46 ms at acquire (device spike) |
 
 ## Privacy and security
@@ -269,10 +269,10 @@ As of `fix/integration-review` (2026-11-01), merged into `main`.
 - **Walking is unverified on a real floor.** The test room has no Space Setup, so `come_here` answers "I can't reach you just yet". The NavMesh code is EditMode-tested.
 - **Interaction triggers and the pinch are unverified with a wearer.** With nobody wearing the headset, hand tracking produced phantom pinches, so the self-test drives push-to-talk itself.
 - **No controller push-to-talk.** The scene's controller binding is empty; push-to-talk is hand pinch only.
-- **Stale frames during turns are 1.15 %**, just over the 1 % target, and there is a 0.5 s hitch at launch. Idle is 0.18 %.
-- **Vision answers are slower than the stage budget.** The vision header arrives 2.8–3.1 s after the tool call on a dim frame. The mask (SAM, 0.5–0.8 s) appears first, and a preamble covers the wait.
-- **The first turn after launch opens cold connections** (ASR acknowledgement 1.8–2.3 s vs ~0.8 s warm). In the self-test it still stayed under 2 s, but the demo script uses a warm-up turn.
-- **Prompt caching rarely hits** on the main chat route (once in about 18 requests over three self-test runs), so most turns pay for ~2.2k uncached input tokens and some time to first token. The cause is not known yet.
+- **One ~320 ms frame at launch** while Meta's passthrough camera starts (synchronous, native). Turns are under 1 % stale on ~1 min samples; a 10-minute OVR Metrics run is still due.
+- **GC during turns is over budget** (11–42 KB per frame in a development player; target ≤ 4 KB).
+- **Vision answers vary with the model's reasoning.** Tool start → answer audio was 1.6–3.4 s (p50 2.2 s); the mask appears first (0.7–1.1 s) and a preamble covers the wait.
+- **The first turn after launch is a little slower.** A connection opened at launch warms TLS for the ASR; the first acknowledgement now takes 0.7–1.7 s (was 1.5–2.3 s) vs 0.7–1.0 s later.
 - **Polish TTS is not available.** Polish replies are captions-only.
 - **The camera pose is gyroscope-relative.** The mapping from that pose to the OpenXR head pose is still to be confirmed by the marker test. Until then, the mask overlay and pointing may be off by a few centimetres.
 - **No server-side cancel for streaming responses.** A barge-in aborts the HTTP stream on the client and books an estimate of the aborted request.

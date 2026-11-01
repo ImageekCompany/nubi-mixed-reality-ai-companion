@@ -23,5 +23,8 @@ Rows before 2026-11-01 02:00 (research phase, `docs/research/*.md`) were not ite
 | 2026-11-01 | integration review (device reviewer): self-test re-run on `main` 9441aa8, 1 paid run (app meter) | muse-spark-1.3, sam-3.1, muse-voice-transcribe-1.0 (+ Wit, free) | ~5 agent + 1 vision Spark calls, 1 SAM, 5 ASR sessions | ~1 image; ~12 s audio | 0.0229 |
 | 2026-11-01 | integration fix pass: self-test voice clips re-synthesised (4× Wit `/synthesize`) | Wit.ai (not Meta API budget) | 4 | ~140 chars | 0.00 |
 | 2026-11-01 | integration fix pass: device self-test, 3 paid runs on `fix/integration-review` (app meter: 0.0232 + 0.0243 + 0.0260) | muse-spark-1.3, sam-3.1, muse-voice-transcribe-1.0 (+ Wit, free) | ~24 Spark calls, 3 SAM, 15 ASR sessions | in ~40k / out ~4k; 3 images; ~35 s audio | 0.0735 |
+| 2026-11-01 | perf-latency: vision latency probes from the dev Mac (app vision prompt; dark device frame, `mug_640.jpg`, darkened `pen_640.jpg`; 1.3 vs 1.2, prompt variants, no-tools line); 2 of them lost their printout to a script bug | muse-spark-1.3, muse-spark-1.2 | 9 | in ~0.8–1.0k / out ~250–440 each | 0.03 |
+| 2026-11-01 | perf-latency: prompt caching probes, app-shaped 2,718-token request with 11 synthetic tools, with and without `prompt_cache_key` | muse-spark-1.3 | 4 | in 2,718 / out ~90–150 each | 0.016 |
+| 2026-11-01 | perf-latency: 11 device self-test runs (4 development, 2 baseline, 4 after, 1 verification; app meter 0.0211 + 0.0209 + 0.0292 + 0.0242 + 0.0226 + 0.0182 + 0.0166 + 0.0305 + 0.0247 + 0.0226 + 0.0123) | muse-spark-1.3, sam-3.1, muse-voice-transcribe-1.0 (+ Wit, free) | ~70 Spark calls, 10 SAM, ~50 ASR sessions | ~11 images; ~2 min audio | 0.243 |
 
-Running total (est.): **≤ $0.70**
+Running total (est.): **≤ $0.99**

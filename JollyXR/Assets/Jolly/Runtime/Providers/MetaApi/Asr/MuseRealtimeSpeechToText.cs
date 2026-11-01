@@ -38,6 +38,25 @@ namespace Jolly.Providers.MetaApi.Asr
                                                                    CancellationToken ct) =>
             AsrSessionStream.Start(_secrets, (key, events, token) => RunAsync(audio, options, key, events, token), ct);
 
+        /// <summary>
+        /// Opens and drops a connection without the handshake, so the first session of a launch does not pay the
+        /// one-time TLS and WebSocket setup (Quest, 2026-11-01: first ack 1.5–2.3 s, later ones 0.7–0.9 s). Nothing is
+        /// authenticated, sent or billed: the server starts a session only after the handshake. A failure is ignored;
+        /// the next real session reports its own.
+        /// </summary>
+        public async UniTask WarmUp(CancellationToken ct)
+        {
+            using var socket = _connect();
+            try
+            {
+                await socket.ConnectAsync(_options.RealtimeEndpoint, ct);
+            }
+            catch (ProviderException e)
+            {
+                _log.Write(LogLevel.Info, "asr", $"evt=asr.warmup_failed kind={e.Kind}");
+            }
+        }
+
         async UniTask RunAsync(IUniTaskAsyncEnumerable<PcmChunk> audio, SttOptions options, string key,
                                ChannelWriter<TranscriptEvent> events, CancellationToken ct)
         {

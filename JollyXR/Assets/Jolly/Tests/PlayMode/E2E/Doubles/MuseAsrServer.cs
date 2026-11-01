@@ -9,7 +9,8 @@ namespace Jolly.Tests.PlayMode.E2E.Doubles
 {
     /// <summary>
     /// Muse realtime ASR at the WebSocket edge, speaking the recorded protocol (Tests/Fixtures/asr): the handshake gets a
-    /// session ack, endStream gets the next queued final and a normal close. Each connection is one session.
+    /// session ack, endStream gets the next queued final and a normal close. A session starts at the handshake, as on the
+    /// server: the launch warm-up connects without one.
     /// </summary>
     public sealed class MuseAsrServer
     {
@@ -36,17 +37,14 @@ namespace Jolly.Tests.PlayMode.E2E.Doubles
 
             public Connection(MuseAsrServer server) => _server = server;
 
-            public UniTask ConnectAsync(Uri uri, CancellationToken ct)
-            {
-                _server.Sessions++;
-                return UniTask.CompletedTask;
-            }
+            public UniTask ConnectAsync(Uri uri, CancellationToken ct) => UniTask.CompletedTask;
 
             public UniTask SendTextAsync(string text, CancellationToken ct)
             {
                 if (!_handshakeSeen)
                 {
                     _handshakeSeen = true;
+                    _server.Sessions++;
                     Deliver(WebSocketMessage.FromText("{\"sessionId\":\"e2e-session\"}"));
                 }
                 else if (text.Contains("endStream"))

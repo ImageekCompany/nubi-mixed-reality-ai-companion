@@ -110,12 +110,31 @@ namespace Jolly.Tests.EditMode.Core.Memory
             var request = model.Requests.Single();
             Assert.That(request.Route, Is.EqualTo(ModelRoute.LiveUser));
             Assert.That(request.Effort, Is.EqualTo(ReasoningEffort.Minimal));
-            Assert.That(request.MaxOutputTokens, Is.EqualTo(300));
+            Assert.That(request.MaxOutputTokens, Is.EqualTo(1024), "includes reasoning; 300 ended in reasoning on the device");
             Assert.That(request.Tools, Is.Empty);
             Assert.That(memory.Summary, Is.EqualTo("User asked five questions."));
             Assert.That(memory.Recent.Count, Is.EqualTo(8), "turns 1-3 folded (cut at the first turn start >= half)");
             Assert.That(memory.Recent[0].Text, Is.EqualTo("question 4"));
             Assert.That(model.Inputs[0][0].Text, Does.Contain("question 1").And.Contain("answer 3").And.Not.Contain("question 4"));
+        }
+
+        [Test]
+        public void Summarize_WithoutText_KeepsSummaryAndItems()
+        {
+            var memory = Create();
+            for (var i = 1; i <= 5; i++)
+                memory.CommitTurn(Turn(i));
+            Sync.Run(memory.Summarize(Scripted("Earlier: five questions."), None));
+            var model = new ScriptedChatModel();
+            model.Enqueue();
+            for (var i = 6; i <= 8; i++)
+                memory.CommitTurn(Turn(i));
+            var before = memory.Recent.Count;
+
+            Sync.Run(memory.Summarize(model, None));
+
+            Assert.That(memory.Summary, Is.EqualTo("Earlier: five questions."));
+            Assert.That(memory.Recent.Count, Is.EqualTo(before));
         }
 
         [Test]

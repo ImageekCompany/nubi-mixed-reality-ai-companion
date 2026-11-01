@@ -6,16 +6,22 @@ using Jolly.Contracts;
 
 namespace Jolly.Core.Tools
 {
-    /// <summary>Outcome of one streamed identification.</summary>
+    /// <summary>Outcome of one streamed identification. The times are <see cref="IClock.Now"/> values, NaN if never reached.</summary>
     public readonly struct VisionAnswer
     {
-        public VisionAnswer(string label, string nounPhrase, string text, bool timedOut, ProviderException error)
-        { Label = label; NounPhrase = nounPhrase; Text = text; TimedOut = timedOut; Error = error; }
+        public VisionAnswer(string label, string nounPhrase, string text, bool timedOut, ProviderException error,
+                            double headerAt, double firstTextAt)
+        {
+            Label = label; NounPhrase = nounPhrase; Text = text; TimedOut = timedOut; Error = error;
+            HeaderAt = headerAt; FirstTextAt = firstTextAt;
+        }
         public string Label { get; }
         public string NounPhrase { get; }
         public string Text { get; }
         public bool TimedOut { get; }
         public ProviderException Error { get; }
+        public double HeaderAt { get; }
+        public double FirstTextAt { get; }
     }
 
     /// <summary>
@@ -43,6 +49,7 @@ namespace Jolly.Core.Tools
                 Question = question, PersonaInstructions = context.PersonaInstructions, LanguageTag = context.Turn?.LanguageTag,
             };
             string label = null, phrase = null, full = null;
+            double headerAt = double.NaN, firstTextAt = double.NaN;
             var spoken = new StringBuilder();
             using var scope = new TimeoutScope(_clock, _timeout, ct);
             try
@@ -54,9 +61,12 @@ namespace Jolly.Core.Tools
                         case IdentificationEventKind.Header:
                             label = e.Label;
                             phrase = e.NounPhrase;
+                            headerAt = _clock.Now;
                             nounPhrase.TrySetResult(phrase);
                             break;
                         case IdentificationEventKind.AnswerDelta:
+                            if (spoken.Length == 0)
+                                firstTextAt = _clock.Now;
                             spoken.Append(e.Text);
                             context.Speech?.Append(e.Text);
                             break;
@@ -65,15 +75,15 @@ namespace Jolly.Core.Tools
                             break;
                     }
                 }
-                return new VisionAnswer(label, phrase, full ?? spoken.ToString(), false, null);
+                return new VisionAnswer(label, phrase, full ?? spoken.ToString(), false, null, headerAt, firstTextAt);
             }
             catch (OperationCanceledException) when (scope.TimedOut && !ct.IsCancellationRequested)
             {
-                return new VisionAnswer(label, phrase, spoken.ToString(), true, null);
+                return new VisionAnswer(label, phrase, spoken.ToString(), true, null, headerAt, firstTextAt);
             }
             catch (ProviderException e)
             {
-                return new VisionAnswer(label, phrase, spoken.ToString(), false, e);
+                return new VisionAnswer(label, phrase, spoken.ToString(), false, e, headerAt, firstTextAt);
             }
             finally
             {
