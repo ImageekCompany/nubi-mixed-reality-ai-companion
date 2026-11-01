@@ -1,0 +1,162 @@
+{
+  "triangles": 25248,
+  "vertices": 12683,
+  "tri_budget_ok": true,
+  "bones": 22,
+  "unweighted_vertices": 0,
+  "max_influences": 4,
+  "non_normalised_vertices": 0,
+  "groups_without_bone": [],
+  "shape_keys": [
+    "sil",
+    "A",
+    "I",
+    "U",
+    "E",
+    "O",
+    "Smile",
+    "Frown",
+    "Blink_L",
+    "Blink_R",
+    "Happy_Eyes",
+    "Wide_Eyes",
+    "Sad_Eyes"
+  ],
+  "materials": [
+    "M_Nubi_Skin",
+    "M_Nubi_Gloss"
+  ],
+  "clips": [
+    "Idle",
+    "Walk",
+    "Hop",
+    "Talk",
+    "Listen",
+    "Think",
+    "Wave",
+    "Point",
+    "Happy",
+    "Nod",
+    "ShakeHead",
+    "Sad",
+    "Surprised"
+  ],
+  "uv_coverage": 0.56,
+  "blink_closed_ratio": {
+    "Blink_L": 0.208,
+    "Blink_R": 0.208
+  },
+  "penetration": {
+    "Idle": {
+      "arms_in_body": 0.0,
+      "feet_overlap": 0.0,
+      "worst_frame": 0,
+      "worst_arm": null,
+      "ok": true
+    },
+    "Walk": {
+      "arms_in_body": 0.0,
+      "feet_overlap": 0.0,
+      "worst_frame": 0,
+      "worst_arm": null,
+      "ok": true
+    },
+    "Hop": {
+      "arms_in_body": 0.0,
+      "feet_overlap": 0.0,
+      "worst_frame": 0,
+      "worst_arm": null,
+      "ok": true
+    },
+    "Talk": {
+      "arms_in_body": 0.0,
+      "feet_overlap": 0.0,
+      "worst_frame": 0,
+      "worst_arm": null,
+      "ok": true
+    },
+    "Listen": {
+      "arms_in_body": 0.0,
+      "feet_overlap": 0.0,
+      "worst_frame": 0,
+      "worst_arm": null,
+      "ok": true
+    },
+    "Think": {
+      "arms_in_body": 0.0294,
+      "feet_overlap": 0.0,
+      "worst_frame": 30,
+      "worst_arm": "arm_R",
+      "ok": true
+    },
+    "Wave": {
+      "arms_in_body": 0.0004,
+      "feet_overlap": 0.0,
+      "worst_frame": 14,
+      "worst_arm": "arm_R",
+      "ok": true
+    },
+    "Point": {
+      "arms_in_body": 0.0036,
+      "feet_overlap": 0.0,
+      "worst_frame": 12,
+      "worst_arm": "arm_R",
+      "ok": true
+    },
+    "Happy": {
+      "arms_in_body": 0.0,
+      "feet_overlap": 0.0,
+      "worst_frame": 0,
+      "worst_arm": null,
+      "ok": true
+    },
+    "Nod": {
+      "arms_in_body": 0.0,
+      "feet_overlap": 0.0,
+      "worst_frame": 0,
+      "worst_arm": null,
+      "ok": true
+    },
+    "ShakeHead": {
+      "arms_in_body": 0.0,
+      "feet_overlap": 0.0,
+      "worst_frame": 0,
+      "worst_arm": null,
+      "ok": true
+    },
+    "Sad": {
+      "arms_in_body": 0.0,
+      "feet_overlap": 0.0,
+      "worst_frame": 0,
+      "worst_arm": null,
+      "ok": true
+    },
+    "Surprised": {
+      "arms_in_body": 0.0,
+      "feet_overlap": 0.0,
+      "worst_frame": 0,
+      "worst_arm": null,
+      "ok": true
+    }
+  },
+  "locomotion": {
+    "Walk": {
+      "design_speed_mps": 0.491,
+      "planted_foot_speed_mps": 0.491,
+      "max_foot_ik_error_mm": 0.0,
+      "ok": true
+    },
+    "Hop": {
+      "design_speed_mps": 0.9,
+      "planted_foot_speed_mps": 0.9,
+      "max_foot_ik_error_mm": 1.95,
+      "ok": true
+    }
+  },
+  "outputs": {
+    "fbx": "JollyXR/Assets/Jolly/Art/Character/Nubi.fbx",
+    "face_presets": "JollyXR/Assets/Jolly/Art/Character/Nubi_FacePresets.json",
+    "texture": "JollyXR/Assets/Jolly/Art/Character/Textures/T_Nubi_Albedo.png",
+    "blend": "tools/blender/out/Nubi.blend"
+  }
+}
