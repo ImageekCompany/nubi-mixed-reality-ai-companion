@@ -53,4 +53,6 @@ Rows before 2026-11-01 02:00 (research phase, `docs/research/*.md`) were not ite
 
 | 2026-11-01 | settings on demand, model badges, listening cue, name-as-heard guard (ADR-0042, ADR-0043): 1 device self-test run of the `--character jolly` release build `06dbdc0` (app meter 0.0262); `come_here_jolly.wav` from Wit `/synthesize` (free) | muse-spark-1.3, sam-3.1, muse-voice-transcribe-1.0 (+ Wit, free) | ~8 Spark calls, 2 SAM, ~7 ASR sessions | 2 images; ~15 s audio | 0.026 |
 
-Running total (est.): **≤ $2.04** (sum of the rows: 2.040)
+| 2026-11-02 | review of ADR-0042/0043: 1 device self-test run of the `--character jolly` release build `4963f5b` (app meter 0.0255) | muse-spark-1.3, sam-3.1, muse-voice-transcribe-1.0 (+ Wit, free) | ~8 Spark calls, 2 SAM, ~7 ASR sessions | 2 images; ~15 s audio | 0.026 |
+
+Running total (est.): **≤ $2.07** (sum of the rows: 2.066)
