@@ -59,6 +59,11 @@ namespace Jolly.Core.Tools
                     CoreLines.Get(_localizer, CoreLines.HoldCloser), endsTurn: true);
             if (answer.Error != null)
                 return ToolResult.Failure("vision_error", answer.Error.Kind.ToString());
+            // Seen on the headset with a dim live frame: the stream completed with nothing to say, and the turn ended
+            // silently right after the preamble.
+            if (string.IsNullOrWhiteSpace(answer.Text))
+                return new ToolResult(false, ToolResult.Failure("vision_empty").OutputJson,
+                    CoreLines.Get(_localizer, CoreLines.HoldCloser), endsTurn: true);
 
             var label = answer.Label ?? hint ?? "object";
             string objectId = null;
