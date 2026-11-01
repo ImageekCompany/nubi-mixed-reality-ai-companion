@@ -163,3 +163,12 @@ Each work package appends bullets under its own heading only (`docs/scope.md` §
 ### Coverage gate
 - `com.unity.testtools.codecoverage` 1.3.0 (bundled with 6000.6.6f1). `tools/ci/test.sh` runs EditMode and PlayMode with coverage over the `Jolly.*` runtime assemblies and writes the merged report to `artifacts/coverage/Report`; `tools/ci/coverage.sh` prints line coverage per assembly and fails when Core + Net + Providers.MetaApi + Providers.Wit + Audio together fall below 91.6 % (measured 93.6 % minus 2 points; 92.7 % before the new tests).
 - 23 EditMode tests on the lowest-covered logic: `MemoryKeeper` failure and cancellation paths, a turn that throws a non-provider exception, a refused or crashing persona switch, SAM `response.incomplete` / `error` / malformed events, `MetaErrors` edge mappings, the health probe's `TransportStatusClient`, and `find_object`'s instance cap. EditMode 904 → 927.
+
+### Cartoon voice (ADR-0031)
+- Nubi speaks with Wit `Rubie`, pitch 110, speed 100, default style, no effect: the winner of a 14-voice audition re-checked on latency, pitch, noise and transcription errors (`docs/research/voice.md` §11). Brighter and more cartoon-like than `Charlie`, still clean on long and sensitive lines.
+- `VoiceProfile` asset (`Jolly.Character`, `Content/Character/Nubi/NubiVoice.asset`) holds a character's voice (voice, style, speed, pitch, SSML sfx character and environment) with per-language replacements; `JollyConfig.characterVoice` references it until `CharacterDefinition` owns it. New contract `ICharacterVoice`; `VoiceSpec` gains `SfxCharacter`, `SfxEnvironment` and `Copy()`.
+- Personas no longer name a Wit voice: `voiceStyle`, `voiceSpeedPercent` and `voicePitchPercent` scale the character's voice (`VoiceDelivery`). `LocaleVoiceMap` and `LocaleVoiceProfile` lose their TTS voice fields.
+- `WitProtocol.SynthesizeBody` wraps XML-escaped text in `<speak><sfx …>` only when an effect is set and never sends `gain` (Wit ignores it, checked live).
+- The 31 English canned lines are re-baked in the new voice; `CannedLineBaker` reads the character's voice and warms the Wit connection before the first line.
+- `VoiceLipSyncTests` runs the baked lines through the scene's uLipSync profile: every vowel stays reachable with the new voice (I 3.8 % → 10.7 % of voiced frames), so the profile was not retuned.
+- Tests: Wit request body per parameter and omission, `VoiceDelivery`, `VoiceProfile` resolution and the shipped Nubi voice, persona voices through `PersonaRepository`.

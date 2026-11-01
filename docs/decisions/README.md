@@ -25,5 +25,6 @@
 | [0021](0021-controller-push-to-talk.md) | Controller push-to-talk: hold A or X, bound by device layout | accepted |
 | [0022](0022-audit-fixes-anchors-selftest-memory-spikes.md) | Audit fixes: anchor erase, self-test memory, spike assemblies, log redaction | accepted |
 | [0023](0023-turn-gc-websocket-upgrade-and-wit-warmup.md) | Turn GC: own WebSocket upgrade, packed ASR frames, slim Responses envelopes; Wit warm-up | accepted |
+| [0031](0031-character-voice-profile.md) | Character voice as data (`VoiceProfile`, persona delivery); Nubi speaks as Wit Rubie, pitch 110 | accepted |
 
 Review findings and their accept/reject decisions: [review-log.md](review-log.md).

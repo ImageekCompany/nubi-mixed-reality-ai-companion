@@ -234,3 +234,47 @@ Measured LLM numbers. Ran `scratchpad/scripts/ttft.py`: streaming `POST https://
 5. **sherpa-onnx v2 dropped espeak.** Runtime Piper means either GPL v1.13.8 or a lexicon. Pre-baking avoids it (§4).
 6. **Voice SDK 85.0.1 on Unity 6000.6 is unverified.** Do an import and build spike on day 1 (§1).
 7. **Unity `Microphone` reliability on Quest 3 standalone.** Reports of frozen capture; test on device first (§6).
+
+## 11. Character voice audition (2026-11-01)
+
+Request: Nubi should sound "more like a cartoon character, but still suitable for normal conversation". It also speaks as Mentor, Guru and Listener, including sensitive talk, and should work in Polish later. Decision: ADR-0031.
+
+**What Wit offers (live, our app).** `GET /voices` lists 30 voices: `en_US` 23, `en_CA` 2, `en_GB` 5, **no Polish**. Each lists `style`, `pitch`, `speed`, `sfx` and viseme/phoneme/word events; styles are `default`, `soft`, `formal`, `fast`, `projected` (Charlie lacks `formal`, Prospector has only `default`). `/synthesize` accepts `speed` 50–200 and `pitch` 25–200 (Voice SDK `WitConstants`). `gain` is accepted but has no effect (same PCM as without it). Effects are SSML only: `<speak><sfx character="chipmunk|monster|daemon|robot|alien" environment="reverb|room|cathedral|radio|phone|pa|helmet">…</sfx></speak>`. SSML of ~290 characters and XML entities were accepted. https://wit.ai/docs/http renders only in a browser, so these come from the live API and the Voice SDK source.
+
+**Round 1** (4 lines: greeting, explanation, listener, excited; median F0 per line in Hz):
+
+| Candidate | F0 median (Hz) | Range (semitones) | First byte (ms) |
+|---|---|---|---|
+| Charlie (current) | 154–182 | 7.3–9.6 | 277 |
+| Cartoon Kid | 208–310 | 5.9–9.8 | 200 |
+| Cartoon Kid, soft | 204–256 | 6.1–12.4 | 226 |
+| Cartoon Baby | 256–340 | 7.1–13.9 | 213 |
+| Whimsical | 249–336 | 13.9–19.8 | 308 |
+| Rubie, pitch 110 | 250–280 | 12.5–14.1 | 278 |
+| Railey, pitch 112, speed 105 | 309–387 | 10.6–12.6 | 240 |
+| Remi, pitch 110 | 257–396 | 10.9–19.7 | 246 |
+| Cody, pitch 115, speed 105 | 184–188 | 7.1–12.9 | 240 |
+| Charlie, pitch 120, speed 105 | 177–212 | 8.6–12.5 | 239 |
+| Charlie + chipmunk sfx | 241–315 | 7.3–10.9 | 234 |
+| Rebecca, pitch 112 | 223–275 | 11.8–14.4 | 260 |
+| Trendy | 196–260 | 9.1–14.9 | 268 |
+
+Cartoon Kid soft at speed 115 was also tried. Six went to a re-check.
+
+**Re-check** (3 new lines: casual, sensitive, a 43-word answer). First byte is the median of 5 uncached short lines on a warmed connection, alternating the voice order. Errors are word errors of `muse-voice-transcribe-1.0` (`POST /v1/asr/transcribe`, 16 calls, ~$0.009, logged in `api-spend.md`); the second figure drops repeated words ("every every"), which varied run to run on the same audio and come from the transcriber. Noise is spectral flatness (higher = noisier, a proxy for robotic or breathy artefacts). Clarity is the energy share in 1–4 kHz; it rises with any upward pitch shift, so it was not used to rank.
+
+| Candidate | First byte (ms) | F0 Hz (casual/sensitive/long) | Range (st) | Words/s (long) | Clarity 1–4 kHz | Noise median / p90 | Clipping | Errors / without repeats |
+|---|---|---|---|---|---|---|---|---|
+| A Charlie (current) | 267 | 163/163/174 | 7.3–10.3 | 3.67 | 0.13–0.15 | 0.0015–0.0022 / ≤0.064 | 0 | 0% / 0% |
+| **B Rubie, pitch 110** | **252** | **245/255/253** | **9.2–12.0** | **3.28** | 0.12–0.13 | **0.0010–0.0013** / ≤0.081 | 0 | **0% / 0%, 3 runs** |
+| C Cartoon Kid, soft, speed 128 | 211 | 220/208/216 | 4.8–7.8 | 3.05 | 0.10–0.16 | 0.0024–0.0037 / 0.128 | 0 | long: 11.6% and 4.7% / 7.0% and 0% |
+| D Charlie, pitch 120, speed 105 | 208 | 197/184/186 | 8.0–10.7 | 3.24 | 0.12–0.13 | 0.0011–0.0019 / ≤0.052 | 0 | ≤4.7% / 0% |
+| E Whimsical | 203 | 376/238/311 | 12.3–17.1 | 2.61 | 0.19–0.22 | 0.0035–0.0088 / 0.18 | 0 | sensitive 13.6% then 0% / ≤9.1% |
+| F Charlie + chipmunk sfx | 250 | 252/243/235 | 7.1–9.5 | 3.59 | 0.19–0.23 | 0.0044–0.0061 / 0.098 | 0 | ≤4.5% / 0% |
+
+- **Latency** does not separate them: all are within noise of Charlie, far from a +150 ms concern.
+- **Winner: B, Rubie, pitch 110, speed 100, default style, no sfx** (`{"voice":"Rubie","speed":100,"pitch":110}`). Clean transcripts on every run, the lowest noise, ~1.5× Charlie's pitch with a wider range, and its pitch barely moves on the sensitive line (245 → 255 Hz) while the range widens instead of turning excited.
+- **Runner-up: C, Cartoon Kid soft at speed 128.** The most cartoon-like that still sounds like a person, at a normal pace (3.05–3.75 words/s), but monotone and the only real recognition error ("sourdough" → "Soto").
+- E is breathy, slow and squeaky on casual lines; F needs SSML and shows a processing artefact; D is clean but barely more cartoon-like.
+- **Nobody listened to the clips;** the pick is from measurements. Listen to the sensitive line before a demo.
+- **Polish:** unchanged, no Polish Wit voice. `VoiceProfile.locales` can take a `pl` voice when one exists.
