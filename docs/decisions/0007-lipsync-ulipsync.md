@@ -18,6 +18,7 @@
 ## Consequences
 - One lipsync path for online TTS, baked lines and any future offline TTS.
 - Burst and Mathematics come in as dependencies. Burst is already resolved by the editor (2.0.0).
+- `com.unity.timeline` 6.6.0 (built-in) is pinned in the manifest too: `uLipSync.Runtime` compiles a Timeline track (`Runtime/Timeline/`) but its `package.json` does not declare the dependency, so without it the project fails with CS0234 (WP0, 2026-11-01).
 - The analysed `AudioSource` must play at volume > 0. Ducking is done in the mixer after analysis, if needed.
 
 ## Alternatives
