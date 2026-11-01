@@ -3,15 +3,14 @@ using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
 using Cysharp.Threading.Tasks;
-using Jolly.Contracts;
 
 namespace Jolly.Net.WebSockets
 {
     /// <summary>
     /// <see cref="IWebSocketConnection"/> over <c>System.Net.WebSockets.ClientWebSocket</c>, verified on Quest IL2CPP
     /// by the device spike (R4 transport). Socket continuations may run on the thread pool, so every operation switches
-    /// back to the main thread before it returns or throws. The receive buffer is owned, not pooled: an aborted receive
-    /// can still be writing into it after Dispose.
+    /// back to the main thread before it returns or throws; that switch is verified on device only (R4), as EditMode has
+    /// no socket. The receive buffer is owned, not pooled: an aborted receive can still be writing into it after Dispose.
     /// </summary>
     public sealed class ClientWebSocketConnection : IWebSocketConnection
     {
@@ -48,7 +47,7 @@ namespace Jolly.Net.WebSockets
                 do
                 {
                     if (count == _receiveBuffer.Length)
-                        Array.Resize(ref _receiveBuffer, _receiveBuffer.Length * 2);
+                        Array.Resize(ref _receiveBuffer, WebSocketFailures.GrowReceiveBuffer(_provider, _receiveBuffer.Length));
                     result = await _socket.ReceiveAsync(
                         new ArraySegment<byte>(_receiveBuffer, count, _receiveBuffer.Length - count), ct);
                     count += result.Count;
@@ -95,12 +94,8 @@ namespace Jolly.Net.WebSockets
 
         void ThrowIfFailed(Exception failure, string operation, CancellationToken ct)
         {
-            if (failure == null)
-                return;
-            if (ct.IsCancellationRequested)
-                throw new OperationCanceledException(ct);
-            throw new ProviderException(_provider, ProviderErrorKind.Network,
-                $"WebSocket {operation} failed: {failure.Message}", inner: failure);
+            if (failure != null)
+                throw WebSocketFailures.Map(_provider, operation, failure, ct);
         }
     }
 }
