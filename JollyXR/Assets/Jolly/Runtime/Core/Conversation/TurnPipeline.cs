@@ -118,6 +118,8 @@ namespace Jolly.Core.Conversation
         async UniTask<string> ApplyGuards(string text, CancellationToken ct)
         {
             _guards.ApplyStop(text);
+            if (await _guards.ApplyComeHere(text, ct))
+                text += TurnGuards.ComeHereNote;
             if (!_guards.NeedsCrisisHandoff(text))
                 return text;
             await _offline.Respond(LineCategory.CrisisHandoff, _speech.NextUtteranceId(), ct);

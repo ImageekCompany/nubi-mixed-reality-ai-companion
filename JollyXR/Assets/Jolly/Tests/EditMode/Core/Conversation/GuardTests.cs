@@ -1,6 +1,9 @@
 using System.Collections.Generic;
 using System.Threading;
+using Jolly.Contracts;
+using Jolly.Core.Config;
 using Jolly.Core.Conversation;
+using Jolly.Core.Tools;
 using Jolly.Testing;
 using Jolly.Testing.Conversation;
 using NUnit.Framework;
@@ -87,6 +90,127 @@ namespace Jolly.Tests.EditMode.Core.Conversation
 
             Assert.That(guard.Matches("Nubi, stój!"), Is.True);
             Assert.That(guard.Matches("stop"), Is.False);
+        }
+
+        [TestCase("come here", true)]
+        [TestCase("Nubi, come here.", true)]
+        [TestCase("Hi Nubi, come here please", true)]
+        [TestCase("Hey, come to me!", true)]
+        [TestCase("Nubi come closer", true)]
+        [TestCase("Hello Nubi, come over here.", true)]
+        [TestCase("hi Nubi", false)]
+        [TestCase("don't come here", false)]
+        [TestCase("come here and tell me about this remote", false)]
+        [TestCase("what does come here mean", false)]
+        [TestCase("please please please please Nubi come here", false)]
+        [TestCase("", false)]
+        public void ComeGuard_MatchesOnlyShortComeRequests(string transcript, bool expected)
+        {
+            var guard = new ComeGuard(new FakeLocalizer());
+
+            Assert.That(guard.Matches(transcript), Is.EqualTo(expected));
+        }
+
+        [Test]
+        public void ComeGuard_UsesLocalizedTableForCurrentLanguage()
+        {
+            var localizer = new FakeLocalizer()
+                .With("pl", GuardTables.Table, GuardTables.ComeTriggers, "chodź tu|podejdź")
+                .With("pl", GuardTables.Table, GuardTables.ComeFillers, "nubi|cześć");
+            var guard = new ComeGuard(localizer);
+
+            localizer.SetLanguage("pl", CancellationToken.None);
+
+            Assert.That(guard.Matches("Cześć Nubi, chodź tu!"), Is.True);
+            Assert.That(guard.Matches("come here"), Is.False);
+        }
+
+        [Test]
+        public void ComeGuard_Polish_UsesBuiltInFallback()
+        {
+            Assert.That(new ComeGuard(new FakeLocalizer("pl")).Matches("Hej Nubi, chodź do mnie."), Is.True);
+        }
+
+        [Test]
+        public void ApplyComeHere_PersonaWithComeHere_StartsTheWalkThroughTheTool()
+        {
+            // Arrange
+            var c = new GuardContext();
+
+            // Act
+            var started = Sync.Run(c.Guards.ApplyComeHere("Hi Nubi, come here", CancellationToken.None));
+
+            // Assert
+            Assert.That(started, Is.True);
+            Assert.That(c.Character.Mode, Is.EqualTo(LocomotionMode.MovingTo));
+            Assert.That(c.Character.MoveStopDistance, Is.EqualTo(new LocomotionSettings().ComeHereStopDistance));
+            Assert.That(c.Character.LastLook?.Kind, Is.EqualTo(LookTargetKind.User));
+            Assert.That(c.Tools, Is.EqualTo(new[] { "start:" + TurnGuards.ComeHereCallId, "done:" + TurnGuards.ComeHereCallId }));
+            Assert.That(c.Log.Contains(LogLevel.Info, "evt=guard.come status=walking"), Is.True);
+        }
+
+        [Test]
+        public void ApplyComeHere_PersonaWithoutComeHere_DoesNotMove()
+        {
+            // Arrange
+            var c = new GuardContext();
+            c.Personas.Current.AllowedTools = new[] { ToolNames.Stop };
+
+            // Act
+            var started = Sync.Run(c.Guards.ApplyComeHere("Nubi, come here", CancellationToken.None));
+
+            // Assert
+            Assert.That(started, Is.False);
+            Assert.That(c.Character.MoveTarget, Is.Null);
+            Assert.That(c.Tools, Is.Empty);
+        }
+
+        [Test]
+        public void ApplyComeHere_GreetingAlone_DoesNotMove()
+        {
+            var c = new GuardContext();
+
+            Assert.That(Sync.Run(c.Guards.ApplyComeHere("Hi Nubi, who are you?", CancellationToken.None)), Is.False);
+            Assert.That(c.Character.MoveTarget, Is.Null);
+        }
+
+        [Test]
+        public void ApplyComeHere_Unreachable_LeavesTheRequestToTheModel()
+        {
+            // Arrange
+            var c = new GuardContext();
+            c.World.Walkable = false;
+
+            // Act
+            var started = Sync.Run(c.Guards.ApplyComeHere("come here", CancellationToken.None));
+
+            // Assert
+            Assert.That(started, Is.False, "no note: the model calls come_here itself and explains 'unreachable'");
+            Assert.That(c.Character.Mode, Is.EqualTo(LocomotionMode.None));
+            Assert.That(c.Log.Contains(LogLevel.Info, "evt=guard.come status=unreachable"), Is.True);
+        }
+
+        sealed class GuardContext
+        {
+            public readonly RecordingCharacterController Character = new();
+            public readonly FakeWorldQuery World = new();
+            public readonly FakePersonaProvider Personas = new();
+            public readonly RecordingLog Log = new();
+            public readonly List<string> Tools = new();
+            public readonly TurnGuards Guards;
+
+            public GuardContext()
+            {
+                var localizer = new FakeLocalizer();
+                var registry = new ToolRegistry();
+                registry.Register(new StopTool(Character));
+                registry.Register(new ComeHereTool(Character, new FakeUserPoseProvider(), World, new LocomotionSettings()));
+                var events = new ConversationEvents();
+                events.ToolStarted += (id, name) => Tools.Add("start:" + id);
+                events.ToolCompleted += (id, name, ok) => Tools.Add("done:" + id);
+                Guards = new TurnGuards(new StopGuard(localizer), new ComeGuard(localizer), new CrisisGuard(localizer),
+                    Character, registry, Personas, new FakeUserPreferences(), events, Log);
+            }
         }
 
         [TestCase("I want to kill myself", true)]

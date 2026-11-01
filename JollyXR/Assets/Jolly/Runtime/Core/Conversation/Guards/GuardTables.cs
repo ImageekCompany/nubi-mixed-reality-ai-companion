@@ -11,6 +11,8 @@ namespace Jolly.Core.Conversation
         public const string CrisisKeywords = "crisis.keywords";
         public const string StopTriggers = "stop.triggers";
         public const string StopFillers = "stop.fillers";
+        public const string ComeTriggers = "come.triggers";
+        public const string ComeFillers = "come.fillers";
 
         internal static string Fallback(string key, string languageTag) => (key, languageTag) switch
         {
@@ -20,6 +22,10 @@ namespace Jolly.Core.Conversation
             (StopTriggers, _) => "stop|wait|stay|halt|freeze|hold on|stand still",
             (StopFillers, "pl") => "nubi|proszę|teraz|tam|tu|no|hej|ok|okej",
             (StopFillers, _) => "nubi|please|now|ok|okay|hey|there|right|just|it|that",
+            (ComeTriggers, "pl") => "chodź tu|chodź tutaj|chodź do mnie|chodź bliżej|podejdź|podejdź tu|podejdź bliżej|podejdź do mnie",
+            (ComeTriggers, _) => "come here|come to me|come closer|come over here",
+            (ComeFillers, "pl") => "nubi|proszę|cześć|hej|witaj",
+            (ComeFillers, _) => "nubi|please|hi|hey|hello",
             _ => "",
         };
     }

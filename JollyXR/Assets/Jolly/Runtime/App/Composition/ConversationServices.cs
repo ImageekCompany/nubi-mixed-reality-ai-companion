@@ -28,7 +28,7 @@ namespace Jolly.App.Composition
                                                  SpeechServices speech, PersonaRepository personas, ILocalizer localizer,
                                                  TranscriptAliases aliases, IUserPreferences preferences, ICharacterController character,
                                                  IVoiceActivation voice, IMaskPresenter masks, IRoomScan room,
-                                                 RoomContext roomContext, DisposableStack disposables)
+                                                 RoomContext roomContext, Action<string> modelReplies, DisposableStack disposables)
         {
             var limits = new MemoryLimits();
             var timings = new ConversationTimings { AcknowledgeOnRelease = config.acknowledgeOnRelease };
@@ -41,11 +41,13 @@ namespace Jolly.App.Composition
                     SafetyIdentifier = f.SafetyIdentifier,
                     HoldLineAfter = TimeSpan.FromSeconds(config.holdLineSeconds),
                     HoldLineRepeat = TimeSpan.FromSeconds(config.holdLineRepeatSeconds),
+                    ReplyObserved = modelReplies,
                 });
 
             var listener = new TurnListener(speech.Microphone, cloud.SpeechToText, frames, aliases,
                 localizer, f.Events, f.Latency, f.Log, timings);
-            var guards = new TurnGuards(new StopGuard(localizer), new CrisisGuard(localizer), character);
+            var guards = new TurnGuards(new StopGuard(localizer), new ComeGuard(localizer), new CrisisGuard(localizer), character,
+                tools, personas, preferences, f.Events, f.Log);
             var turnSpeech = disposables.Add(new TurnSpeech(speech.Queue, speech.Splitter, speech.Output, f.Machine,
                 f.Events, f.Latency, f.Clock));
             var pipeline = new TurnPipeline(listener, guards, turnSpeech, agent, speech.Offline, personas, f.Machine,

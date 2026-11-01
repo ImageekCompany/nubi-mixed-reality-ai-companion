@@ -22,7 +22,8 @@ namespace Jolly.Tests.PlayMode.E2E
             var app = await AppHarness.Start();
             try
             {
-                app.Asr.Will("Nubi, come here.");
+                // Longer than the local ComeGuard accepts (ADR-0036), so the model's call is the only one.
+                app.Asr.Will("Nubi, could you come here?");
                 app.Http.Enqueue(Kind.Chat, new ResponsesScript().Say("On my way!").Call(ToolNames.ComeHere, "{}").Complete())
                         .Enqueue(Kind.Chat, new ResponsesScript().Say("Here ", "I am.").Complete());
 
@@ -30,7 +31,7 @@ namespace Jolly.Tests.PlayMode.E2E
                 Assert.That(await app.WaitUntil(() => app.States.Count > 2, TurnSeconds), Is.True, app.StatePath());
                 Assert.That(await app.WaitForIdle(TurnSeconds), Is.True, app.StatePath());
 
-                Assert.That(app.UserFinal, Is.EqualTo("Nubi, come here."));
+                Assert.That(app.UserFinal, Is.EqualTo("Nubi, could you come here?"));
                 Assert.That(app.StatePath(), Does.StartWith("Listening>Thinking"));
                 Assert.That(app.States, Has.Member(ConversationState.Speaking));
                 Assert.That(app.States[app.States.Count - 1], Is.EqualTo(ConversationState.Idle));

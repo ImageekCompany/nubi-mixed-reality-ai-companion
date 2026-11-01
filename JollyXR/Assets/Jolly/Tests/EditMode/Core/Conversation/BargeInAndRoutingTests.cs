@@ -191,6 +191,24 @@ namespace Jolly.Tests.EditMode.Core.Conversation
         }
 
         [Test]
+        public void ComeHere_StartsTheWalkBeforeTheModelAndAnnotatesTheTurn()
+        {
+            _f.Talk("Hi Nubi, come here.");
+
+            Assert.That(_f.Character.Mode, Is.EqualTo(LocomotionMode.MovingTo));
+            Assert.That(_f.Agent.Turns.Single().Text, Is.EqualTo("Hi Nubi, come here." + TurnGuards.ComeHereNote));
+        }
+
+        [Test]
+        public void Greeting_LeavesMovementToTheModel()
+        {
+            _f.Talk("Hi Nubi, who are you?");
+
+            Assert.That(_f.Character.Mode, Is.EqualTo(LocomotionMode.None));
+            Assert.That(_f.Agent.Turns.Single().Text, Is.EqualTo("Hi Nubi, who are you?"));
+        }
+
+        [Test]
         public void NoCrisisWords_NeverHandsOff()
         {
             _f.Talk("Sometimes I want a nap.");

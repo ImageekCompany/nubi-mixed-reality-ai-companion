@@ -30,6 +30,14 @@ MonoBehaviour:
     m_Localized: '{name}|please|now|ok|okay|hey|there|right|just|it|that'
     m_Metadata:
       m_Items: []
+  - m_Id: 569368576
+    m_Localized: come here|come to me|come closer|come over here
+    m_Metadata:
+      m_Items: []
+  - m_Id: 577757184
+    m_Localized: '{name}|please|hi|hey|hello'
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

@@ -27,6 +27,14 @@ MonoBehaviour:
     m_Key: stop.fillers
     m_Metadata:
       m_Items: []
+  - m_Id: 569368576
+    m_Key: come.triggers
+    m_Metadata:
+      m_Items: []
+  - m_Id: 577757184
+    m_Key: come.fillers
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:
