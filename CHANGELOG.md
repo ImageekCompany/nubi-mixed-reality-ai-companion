@@ -34,6 +34,7 @@ Each work package appends bullets under its own heading only (`docs/scope.md` §
 - Generated `Nubi.prefab`, `Nubi.controller` (Locomotion blend tree with playback rate clamped to 0.7–1.5×, upper-body Conversation and Gesture layers), rim/fresnel `NubiSkin` shader and an analytic blob contact shadow that darkens passthrough.
 - `ULipSyncDriver : ILipSyncDriver` with silence detection.
 - PlayMode tests for locomotion, gestures, Animator parameters, face (tone-driven mouth), import settings and shader compilation.
+- Review fixes: look-at restarts from the animated pose each frame (no spin while culled offscreen); full pitch reach with the eyes clamped; a superseded move's awaiter can issue the next command; catch-up uses floor distance; gestures cancel on destroy; overlapping LookAround sweeps.
 
 ### WP7
 
