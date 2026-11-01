@@ -34,6 +34,7 @@
 | [0033](0033-selftest-sam-text-tools-and-hand-debounce.md) | Device self-test for `highlight_part` and `find_object`; hand meshes follow a 200 ms debounced tracked state | accepted |
 | [0034](0034-latency-turns-and-stale-frames-are-device-state.md) | `selftest.sh --turns N` for a 20-turn latency sample; stale frames are headset state (reboot before a demo); the camera keeps its post-graph start | accepted |
 | [0035](0035-positive-movement-and-find-tool-descriptions.md) | Positive `come_here` / `find_object` triggers and a live tool-selection eval; `come_here` still missed 3 of 5 at `minimal` | accepted |
+| [0036](0036-local-come-here-guard.md) | A local `ComeGuard` starts `come_here` on a short come request before the model; self-test runs log each model reply (`evt=llm.reply`) | accepted |
 
 Numbers 0027–0029 are unused and were not reserved on a dropped branch: no commit on any branch (`git log --all`) adds or mentions an ADR with those numbers.
 
