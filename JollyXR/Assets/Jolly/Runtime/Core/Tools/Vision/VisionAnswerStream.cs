@@ -26,19 +26,20 @@ namespace Jolly.Core.Tools
 
     /// <summary>
     /// Streams <see cref="IObjectIdentifier.Identify"/> into the turn's speech under the vision timeout. Publishes the
-    /// header's noun phrase (or null once the stream ends without one) for the SAM retry. Only the caller's cancel throws.
+    /// header's noun phrase (or null once the stream ends without one) for the SAM retry, and reports a stream that
+    /// completed as a Spark-vision model call. Only the caller's cancel throws.
     /// </summary>
     sealed class VisionAnswerStream
     {
         readonly IObjectIdentifier _identifier;
+        readonly VisionToolkit _kit;
         readonly IClock _clock;
-        readonly TimeSpan _timeout;
 
-        public VisionAnswerStream(IObjectIdentifier identifier, IClock clock, TimeSpan timeout)
+        public VisionAnswerStream(IObjectIdentifier identifier, VisionToolkit kit)
         {
             _identifier = identifier;
-            _clock = clock;
-            _timeout = timeout;
+            _kit = kit;
+            _clock = kit.Clock;
         }
 
         public async UniTask<VisionAnswer> Run(EncodedImage image, string question, ToolContext context,
@@ -51,7 +52,8 @@ namespace Jolly.Core.Tools
             string label = null, phrase = null, full = null;
             double headerAt = double.NaN, firstTextAt = double.NaN;
             var spoken = new StringBuilder();
-            using var scope = new TimeoutScope(_clock, _timeout, ct);
+            var started = _clock.Now;
+            using var scope = new TimeoutScope(_clock, _kit.Settings.VisionTimeout, ct);
             try
             {
                 await foreach (var e in _identifier.Identify(image, request, scope.Token).WithCancellation(scope.Token))
@@ -75,6 +77,7 @@ namespace Jolly.Core.Tools
                             break;
                     }
                 }
+                _kit.ReportModelCall(ModelCallIds.Vision(_kit.Settings.VisionModel), started);
                 return new VisionAnswer(label, phrase, full ?? spoken.ToString(), false, null, headerAt, firstTextAt);
             }
             catch (OperationCanceledException) when (scope.TimedOut && !ct.IsCancellationRequested)

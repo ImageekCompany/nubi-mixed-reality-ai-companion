@@ -34,5 +34,8 @@ namespace Jolly.Core.Config
         public int InteriorSamples { get; set; } = 8;
         /// <summary>A frame darker than this (mean luma 0–255) gets no SAM or Spark call; JollyConfig.visionMinMeanLuma.</summary>
         public float MinMeanLuma { get; set; } = 25f;
+        /// <summary>The ids the vision path reports on ModelCallCompleted (JollyConfig.samModel, chatModel).</summary>
+        public string SegmenterModel { get; set; } = "sam-3.1";
+        public string VisionModel { get; set; } = "muse-spark-1.3";
     }
 }

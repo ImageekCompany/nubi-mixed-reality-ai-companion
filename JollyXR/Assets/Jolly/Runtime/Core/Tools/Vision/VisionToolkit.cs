@@ -5,12 +5,14 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using Jolly.Contracts;
 using Jolly.Core.Config;
+using Jolly.Core.Conversation;
 
 namespace Jolly.Core.Tools
 {
     /// <summary>
     /// The capture → SAM → world → overlay steps shared by capture_and_identify, find_object and highlight_part
-    /// (architecture §5.3, §5.3.1).
+    /// (architecture §5.3, §5.3.1). Each SAM and Spark-vision call that answers raises ModelCallCompleted, so the
+    /// badges name the models the vision path used.
     /// </summary>
     public sealed class VisionToolkit
     {
@@ -23,9 +25,11 @@ namespace Jolly.Core.Tools
 
         readonly ISegmenter _segmenter;
         readonly IMaskPresenter _presenter;
+        readonly ConversationEvents _events;
 
         public VisionToolkit(FrameGrabber frames, SegmentPromptPlanner prompts, MaskGeometry geometry, ISegmenter segmenter,
-                             IMaskPresenter presenter, IClock clock, ILog log, VisionSettings settings)
+                             IMaskPresenter presenter, IClock clock, ILog log, VisionSettings settings,
+                             ConversationEvents events)
         {
             Frames = frames;
             Prompts = prompts;
@@ -35,6 +39,7 @@ namespace Jolly.Core.Tools
             Log = log;
             _segmenter = segmenter;
             _presenter = presenter;
+            _events = events;
         }
 
         public FrameGrabber Frames { get; }
@@ -73,9 +78,12 @@ namespace Jolly.Core.Tools
         public async UniTask<IReadOnlyList<SegmentedObject>> Segment(EncodedImage image, SegmentPrompt prompt, CancellationToken ct)
         {
             using var scope = new TimeoutScope(Clock, Settings.SamTimeout, ct);
+            var started = Clock.Now;
             try
             {
-                return await _segmenter.Segment(image, prompt, scope.Token);
+                var objects = await _segmenter.Segment(image, prompt, scope.Token);
+                ReportModelCall(Settings.SegmenterModel, started);
+                return objects;
             }
             catch (OperationCanceledException) when (scope.TimedOut && !ct.IsCancellationRequested)
             {
@@ -90,5 +98,9 @@ namespace Jolly.Core.Tools
 
         public void Present(IReadOnlyList<SegmentedObject> objects, EncodedImage image, float distance) =>
             _presenter.Show(objects, image, distance);
+
+        /// <summary>A model call that answered, timed from <paramref name="startedAt"/> (an <see cref="IClock.Now"/> value).</summary>
+        public void ReportModelCall(string model, double startedAt) =>
+            _events.RaiseModelCallCompleted(model, (Clock.Now - startedAt) * 1000.0);
     }
 }

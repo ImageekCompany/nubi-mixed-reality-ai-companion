@@ -13,12 +13,15 @@ namespace Jolly.App.Composition
                                          ISceneMemory scene, IPersonaProvider personas, ILocalizer localizer,
                                          IMaskPresenter masks, IRoomScan room, out FrameGrabber frames)
         {
-            var vision = new VisionSettings { MinMeanLuma = config.visionMinMeanLuma };
+            var vision = new VisionSettings
+            {
+                MinMeanLuma = config.visionMinMeanLuma, SegmenterModel = config.samModel, VisionModel = config.chatModel,
+            };
             var locomotion = new LocomotionSettings();
             var projection = new CameraMathProjection();
             frames = new FrameGrabber(xr.Camera, new JpegImageEncoder(), f.Clock, vision);
             var kit = new VisionToolkit(frames, new SegmentPromptPlanner(xr.User, xr.World, projection, vision),
-                new MaskGeometry(xr.World, projection, vision), cloud.Segmenter, masks, f.Clock, f.Log, vision);
+                new MaskGeometry(xr.World, projection, vision), cloud.Segmenter, masks, f.Clock, f.Log, vision, f.Events);
 
             var registry = new ToolRegistry();
             registry.Register(new WalkToTool(character, scene, xr.World, locomotion));

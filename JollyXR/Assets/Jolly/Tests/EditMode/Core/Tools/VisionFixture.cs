@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using Jolly.Contracts;
 using Jolly.Core.Config;
+using Jolly.Core.Conversation;
 using Jolly.Core.Memory;
 using Jolly.Core.Tools;
 using Jolly.Testing;
@@ -21,7 +23,10 @@ namespace Jolly.Tests.EditMode.Core.Tools
         public readonly RecordingMaskPresenter Presenter = new();
         public readonly RecordingCharacterController Character = new();
         public readonly FakeLocalizer Localizer = new();
-        public readonly VisionSettings Settings = new();
+        public readonly VisionSettings Settings = new() { SegmenterModel = "sam-3.1", VisionModel = "muse-spark-1.3" };
+        public readonly ConversationEvents Events = new();
+        /// <summary>Every <see cref="ConversationEvents.ModelCallCompleted"/>: model id and milliseconds.</summary>
+        public readonly List<(string model, double ms)> ModelCalls = new();
         public readonly SceneMemory Scene;
         public readonly VisionToolkit Kit;
 
@@ -31,7 +36,8 @@ namespace Jolly.Tests.EditMode.Core.Tools
             var projection = new PinholeProjection();
             var frames = new FrameGrabber(Camera, new FakeImageEncoder(), Clock, Settings);
             Kit = new VisionToolkit(frames, new SegmentPromptPlanner(User, World, projection, Settings),
-                new MaskGeometry(World, projection, Settings), Segmenter, Presenter, Clock, Log, Settings);
+                new MaskGeometry(World, projection, Settings), Segmenter, Presenter, Clock, Log, Settings, Events);
+            Events.ModelCallCompleted += (model, ms) => ModelCalls.Add((model, ms));
         }
 
         public CaptureAndIdentifyTool Capture() => new(Kit, Identifier, Character, Scene, Localizer);

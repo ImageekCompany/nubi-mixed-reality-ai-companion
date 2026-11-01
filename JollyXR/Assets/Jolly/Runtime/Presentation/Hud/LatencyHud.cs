@@ -72,7 +72,7 @@ namespace Jolly.Presentation
                 _models[i] = _models[i - 1];
                 _modelMs[i] = _modelMs[i - 1];
             }
-            _models[0] = model;
+            _models[0] = ModelLabels.Of(model, _localizer);
             _modelMs[0] = ms;
             _modelCount = Mathf.Min(_modelCount + 1, _modelRows);
             Render();

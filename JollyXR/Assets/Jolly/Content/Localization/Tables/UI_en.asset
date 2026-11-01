@@ -218,6 +218,10 @@ MonoBehaviour:
     m_Localized: "Release \u2192 mask"
     m_Metadata:
       m_Items: []
+  - m_Id: 380624942
+    m_Localized: vision
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

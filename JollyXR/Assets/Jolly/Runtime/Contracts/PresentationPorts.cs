@@ -17,6 +17,17 @@ namespace Jolly.Contracts
         event Action<string, double> ModelCallCompleted;     // model id, ms (badges + HUD)
     }
 
+    /// <summary>
+    /// Model ids on <see cref="IConversationEvents.ModelCallCompleted"/>. Spark answering about a camera frame carries
+    /// <see cref="VisionSuffix"/>, so the badges tell it from the agent's own Spark rounds.
+    /// </summary>
+    public static class ModelCallIds
+    {
+        public const string VisionSuffix = "+vision";
+
+        public static string Vision(string model) => model + VisionSuffix;
+    }
+
     /// <summary>World-space mask outline for capture_and_identify, find_object and highlight_part.</summary>
     public interface IMaskPresenter
     {

@@ -29,7 +29,7 @@ The Jolly cut keeps "Nubi" as the product name: the project, the repo and the bu
 | L8 | 2:08–2:12 | 5 | Offline: baked lines, still lip-synced, still idling |
 | L9 | 2:18–2:22 | 6 (over the usage-meter picture-in-picture) | This take: $___ · total $___ of a $20 hard cap |
 
-Nine lower thirds in 2:37, at most one on screen at a time. L2, L3 and L7 carry the take's own numbers: `evt=turn.latency` (release → first audio), `evt=vision.timing` (tool start → mask shown), and the barge-in silence from the same lines. If a number is missing for that take, drop the number, keep the text. L9: the in-app meter is lifetime, so "this take" is after − before from the rehearsal log. L3–L5 stand in for in-app SAM and Spark-vision badges, which do not exist yet; if that code lands, keep the lower thirds anyway (they are easier to read than a badge).
+Nine lower thirds in 2:37, at most one on screen at a time. L2, L3 and L7 carry the take's own numbers: `evt=turn.latency` (release → first audio), `evt=vision.timing` (tool start → mask shown), and the barge-in silence from the same lines. If a number is missing for that take, drop the number, keep the text. L9: the in-app meter is lifetime, so "this take" is after − before from the rehearsal log. L3–L5 name SAM 3.1 and Spark vision; the app also shows them as model badges ("SAM 3.1", "Muse Spark · vision") since the vision path raises its own model calls. Keep the lower thirds anyway: they are easier to read than a badge.
 
 ## End card (2:24–2:37)
 

@@ -215,6 +215,10 @@ MonoBehaviour:
     m_Key: hud.mask_shown
     m_Metadata:
       m_Items: []
+  - m_Id: 380624942
+    m_Key: badge.vision
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:

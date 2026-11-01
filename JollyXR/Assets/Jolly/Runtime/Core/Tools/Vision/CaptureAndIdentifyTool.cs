@@ -57,8 +57,7 @@ namespace Jolly.Core.Tools
             _scene.LastCapture = image;
 
             var header = new UniTaskCompletionSource<string>();
-            var identify = new VisionAnswerStream(_identifier, _kit.Clock, _kit.Settings.VisionTimeout)
-                .Run(image, question, context, header, ct);
+            var identify = new VisionAnswerStream(_identifier, _kit).Run(image, question, context, header, ct);
             var maskShownAt = double.NaN;
             var (answer, mask) = await UniTask.WhenAll(identify, Mask(image, hint, header.Task, at => maskShownAt = at, ct));
             LogTiming(started, preCaptured, answer, maskShownAt);

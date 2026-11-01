@@ -54,8 +54,8 @@ namespace Jolly.Presentation
         }
 
         void OnModelCallCompleted(string model, double ms) =>
-            Take().Show(null, model, ms.ToString("0", CultureInfo.InvariantCulture) + " ms", BadgeState.Succeeded,
-                _clock.Now + _holdSeconds);
+            Take().Show(null, ModelLabels.Of(model, _localizer), ms.ToString("0", CultureInfo.InvariantCulture) + " ms",
+                BadgeState.Succeeded, _clock.Now + _holdSeconds);
 
         /// <summary>A cancelled turn (barge-in, failure) raises no ToolCompleted for its unfinished calls
         /// (contracts §3 RunTurn), so a new turn or Idle ends whatever is still running.</summary>

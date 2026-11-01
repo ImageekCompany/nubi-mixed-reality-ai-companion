@@ -46,6 +46,34 @@ namespace Jolly.Tests.EditMode.Core.Tools
         }
 
         [Test]
+        public void CompletedCalls_RaiseTheSamAndSparkVisionModelCalls()
+        {
+            // Arrange
+            var image = _f.PreCapture();
+            _f.Segmenter.Returns(ScriptedSegmenter.Square(24, 24, 16));
+
+            // Act
+            ToolHarness.Run(_f.Capture(), "{\"question\":\"what is this?\"}", ContextWith(image));
+
+            // Assert
+            Assert.That(_f.ModelCalls.Select(c => c.model),
+                Is.EquivalentTo(new[] { "sam-3.1", ModelCallIds.Vision("muse-spark-1.3") }));
+            Assert.That(_f.ModelCalls.All(c => c.ms >= 0), Is.True);
+        }
+
+        [Test]
+        public void FailedCalls_RaiseNoModelCall()
+        {
+            var image = _f.PreCapture();
+            _f.Segmenter.Failure = new ProviderException("sam", ProviderErrorKind.Network, "down");
+            _f.Identifier.Failure = new ProviderException("spark", ProviderErrorKind.Network, "down");
+
+            ToolHarness.Run(_f.Capture(), "{\"question\":\"q\"}", ContextWith(image));
+
+            Assert.That(_f.ModelCalls, Is.Empty, "a badge says a model answered");
+        }
+
+        [Test]
         public void StalePreCapture_CapturesAgain()
         {
             var image = _f.PreCapture();

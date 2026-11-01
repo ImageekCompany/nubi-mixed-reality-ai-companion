@@ -218,6 +218,10 @@ MonoBehaviour:
     m_Localized: "Puszczenie \u2192 maska"
     m_Metadata:
       m_Items: []
+  - m_Id: 380624942
+    m_Localized: wizja
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

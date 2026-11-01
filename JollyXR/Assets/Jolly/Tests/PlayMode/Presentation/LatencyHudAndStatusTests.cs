@@ -59,8 +59,8 @@ namespace Jolly.Tests.PlayMode.Presentation
             _events.RaiseModelCall("muse-spark-1.3", 1210);
             _events.RaiseModelCall("sam-3.1", 840);
 
-            Assert.That(hud.Text.IndexOf("sam-3.1: 840", System.StringComparison.Ordinal),
-                Is.LessThan(hud.Text.IndexOf("muse-spark-1.3: 1210", System.StringComparison.Ordinal)));
+            Assert.That(hud.Text.IndexOf("SAM 3.1: 840", System.StringComparison.Ordinal),
+                Is.LessThan(hud.Text.IndexOf("Muse Spark: 1210", System.StringComparison.Ordinal)));
         }
 
         [Test]

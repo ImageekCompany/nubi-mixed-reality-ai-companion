@@ -65,13 +65,23 @@ namespace Jolly.Tests.PlayMode.Presentation
         }
 
         [Test]
-        public void ModelCall_ShowsTheModelAndItsDuration()
+        public void ModelCall_ShowsTheModelByNameAndItsDuration()
         {
             _events.RaiseModelCall("sam-3.1", 812.4);
 
             var badge = Visible.Single();
-            Assert.That(badge.Title, Is.EqualTo("sam-3.1"));
+            Assert.That(badge.Title, Is.EqualTo("SAM 3.1"));
             Assert.That(badge.Detail, Is.EqualTo("812 ms"));
+        }
+
+        [TestCase("muse-spark-1.3", "Muse Spark")]
+        [TestCase("muse-spark-1.3+vision", "Muse Spark · [en] badge.vision")]
+        [TestCase("sam-3.1", "SAM 3.1")]
+        [TestCase("muse-voice-transcribe-1.0", "Muse Voice Transcribe")]
+        [TestCase("some-new-model", "some-new-model")]
+        public void ModelLabels_NameTheMetaModels(string id, string label)
+        {
+            Assert.That(ModelLabels.Of(id, _localizer), Is.EqualTo(label));
         }
 
         [UnityTest]
