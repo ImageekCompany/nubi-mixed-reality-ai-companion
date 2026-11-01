@@ -10,7 +10,8 @@ namespace Jolly.Providers.MetaApi.Chat
 {
     /// <summary>
     /// IChatModel over POST /v1/responses (ADR-0004). Every request reserves budget first and is settled exactly once:
-    /// with the reported usage on completion, otherwise with an estimate (barge-in, timeout, failure).
+    /// with the reported usage on completion, otherwise with an estimate (barge-in, timeout, failure). A hedged second
+    /// request (ADR-0038) has its own reservation; the leg that loses is settled with an input estimate.
     /// Main thread only: the request writer is reused.
     /// </summary>
     public sealed class ResponsesChatModel : IChatModel
@@ -23,9 +24,10 @@ namespace Jolly.Providers.MetaApi.Chat
         readonly IApiUsageMeter _meter;
         readonly ResponsesChatOptions _options;
         readonly ILog _log;
+        readonly FirstEventHedge _hedge;
         readonly ResponsesRequestWriter _writer = new();
 
-        public ResponsesChatModel(MetaApiEndpoint endpoint, MetaSseClient client, IApiUsageMeter meter,
+        public ResponsesChatModel(MetaApiEndpoint endpoint, MetaSseClient client, IClock clock, IApiUsageMeter meter,
                                   ResponsesChatOptions options, ILog log)
         {
             _endpoint = endpoint;
@@ -33,6 +35,7 @@ namespace Jolly.Providers.MetaApi.Chat
             _meter = meter;
             _options = options;
             _log = log;
+            _hedge = new FirstEventHedge(clock, log);
         }
 
         public IUniTaskAsyncEnumerable<ModelEvent> Stream(ModelRequest request, CancellationToken ct) =>
@@ -47,15 +50,30 @@ namespace Jolly.Providers.MetaApi.Chat
             var model = MetaModelResolver.Resolve(request.Route, _options.ModelFor(request.Route));
             var body = _writer.Write(request, model);
             var http = _endpoint.PostStreaming("/responses", body.Json);
-            if (!_meter.TryReserve(_options.ReservationUsd, out var reservation))
+            if (!_meter.TryReserve(_options.ReservationUsd, out var original))
                 throw new ProviderException(MetaErrors.Provider, ProviderErrorKind.BudgetExceeded, "Usage cap reached.");
 
+            var hedge = 0L;
+            var originalAttempts = new OpenAttempts();
+            var hedgeAttempts = new OpenAttempts();
+            var inputTokens = (long)(body.InputChars / CharsPerToken);
             var reducer = new ResponsesStreamReducer(model);
-            var attempts = new OpenAttempts();
+            var opened = false;
             var settled = false;
+            long reservation = 0;
+            OpenAttempts attempts = null;
             try
             {
-                var stream = await _client.Open(http, _options.FirstEventTimeout, _options.IdleTimeout, _options.RetryPolicy, attempts, ct);
+                var (leg, stream) = await _hedge.Open(
+                    (l, firstEventTimeout, t) => _client.Open(http, firstEventTimeout, _options.IdleTimeout, _options.RetryPolicy,
+                        l == HedgeLeg.Original ? originalAttempts : hedgeAttempts, t),
+                    () => _meter.TryReserve(_options.ReservationUsd, out hedge),
+                    l => _meter.RecordEstimate(l == HedgeLeg.Original ? original : hedge, model,
+                        (l == HedgeLeg.Original ? originalAttempts : hedgeAttempts).PossiblyBilled * inputTokens, 0),
+                    _options.HedgeAfter, _options.FirstEventTimeout, ct);
+                opened = true;
+                reservation = leg == HedgeLeg.Original ? original : hedge;
+                attempts = leg == HedgeLeg.Original ? originalAttempts : hedgeAttempts;
                 try
                 {
                     var events = new List<ModelEvent>(4);
@@ -91,9 +109,9 @@ namespace Jolly.Providers.MetaApi.Chat
             }
             finally
             {
-                if (!settled)
-                    _meter.RecordEstimate(reservation, model, attempts.PossiblyBilled * (long)(body.InputChars / CharsPerToken),
-                        reducer.OutputChars / CharsPerToken);
+                // A leg that never opened was settled by the hedge's abandoned callback.
+                if (opened && !settled)
+                    _meter.RecordEstimate(reservation, model, attempts.PossiblyBilled * inputTokens, reducer.OutputChars / CharsPerToken);
             }
         }
 

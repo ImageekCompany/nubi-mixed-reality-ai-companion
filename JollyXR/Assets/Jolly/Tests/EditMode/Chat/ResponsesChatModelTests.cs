@@ -307,8 +307,8 @@ namespace Jolly.Tests.EditMode.Chat
         ResponsesChatModel Model(string liveModel = LiveModel)
         {
             var retry = new RetryExecutor(_clock, new FakeRandom().EnqueueFloat(0f, 0f, 0f), _log);
-            return new ResponsesChatModel(new MetaApiEndpoint(_secrets), new MetaSseClient(_transport, retry, _clock), _meter,
-                ResponsesChatOptions.VoiceTurn(liveModel, SyntheticModel, 0.01m), _log);
+            return new ResponsesChatModel(new MetaApiEndpoint(_secrets), new MetaSseClient(_transport, retry, _clock), _clock, _meter,
+                new ResponsesChatOptions(liveModel, SyntheticModel, TimeSpan.FromSeconds(4), TimeSpan.FromSeconds(10), 2, 0.01m), _log);
         }
 
         static ModelRequest Request(ModelRoute route = ModelRoute.LiveUser) => new()

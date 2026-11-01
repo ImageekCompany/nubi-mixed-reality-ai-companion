@@ -19,7 +19,7 @@ namespace Jolly.App.Composition
     public sealed class CloudServices
     {
         public ConnectivityMonitor Connectivity { get; private set; }
-        /// <summary>Voice turns and vision: 4 s first event, 2 attempts (architecture §7 voice-turn budget).</summary>
+        /// <summary>Voice turns and vision: 4 s first event, one attempt hedged after 2.5 s (ADR-0038).</summary>
         public IChatModel VoiceChat { get; private set; }
         /// <summary>Summarisation: 10 s first event, 3 attempts.</summary>
         public IChatModel BackgroundChat { get; private set; }
@@ -44,10 +44,10 @@ namespace Jolly.App.Composition
             var sse = new MetaSseClient(edges.Http, new RetryExecutor(f.Clock, f.Random, f.Log), f.Clock);
             var liveModel = MetaModelResolver.Resolve(ModelRoute.LiveUser, c.chatModel);
             var syntheticModel = MetaModelResolver.Resolve(ModelRoute.Synthetic, c.syntheticChatModel);
-            IChatModel Chat(float firstEventSeconds, int attempts) => new ReportingChatModel(
-                new ResponsesChatModel(endpoint, sse, f.Usage, new ResponsesChatOptions(liveModel, syntheticModel,
+            IChatModel Chat(float firstEventSeconds, int attempts, float hedgeSeconds) => new ReportingChatModel(
+                new ResponsesChatModel(endpoint, sse, f.Clock, f.Usage, new ResponsesChatOptions(liveModel, syntheticModel,
                     TimeSpan.FromSeconds(firstEventSeconds), TimeSpan.FromSeconds(c.llmIdleSeconds), attempts,
-                    (decimal)c.chatReservationUsd), f.Log),
+                    (decimal)c.chatReservationUsd, TimeSpan.FromSeconds(hedgeSeconds)), f.Log),
                 MetaErrors.Provider, monitor);
 
             var asr = new MuseRealtimeSpeechToText(() => edges.WebSockets(MuseAsrErrors.Provider), f.Secrets, f.Usage,
@@ -59,8 +59,8 @@ namespace Jolly.App.Composition
             var services = new CloudServices
             {
                 Connectivity = monitor,
-                VoiceChat = Chat(c.voiceFirstEventSeconds, c.voiceAttempts),
-                BackgroundChat = Chat(c.backgroundFirstEventSeconds, c.backgroundAttempts),
+                VoiceChat = Chat(c.voiceFirstEventSeconds, c.voiceAttempts, c.voiceHedgeSeconds),
+                BackgroundChat = Chat(c.backgroundFirstEventSeconds, c.backgroundAttempts, 0f),
                 RealtimeAsr = asr,
                 SpeechToText = new ReportingSpeechToText(asr, MuseAsrErrors.Provider, monitor),
                 Wit = wit,

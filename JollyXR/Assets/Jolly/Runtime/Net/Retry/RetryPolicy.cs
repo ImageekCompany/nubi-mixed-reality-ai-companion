@@ -41,7 +41,7 @@ namespace Jolly.Net.Retry
             return TimeSpan.FromSeconds(r.Range(0f, (float)cap));
         }
 
-        static bool IsRetryable(ProviderException e) =>
+        public static bool IsRetryable(ProviderException e) =>
             e.IsTransient && e.HttpStatus is 0 or 429 or 500 or 502 or 503;
     }
 }

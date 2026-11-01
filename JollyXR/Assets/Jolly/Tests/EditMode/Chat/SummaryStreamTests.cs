@@ -71,7 +71,7 @@ namespace Jolly.Tests.EditMode.Chat
             var clock = new FakeClock();
             var retry = new RetryExecutor(clock, new FakeRandom(), _log);
             return new ResponsesChatModel(new MetaApiEndpoint(new InMemorySecrets().With(SecretKeys.MetaApiKey, "fake-key")),
-                new MetaSseClient(_transport, retry, clock), new RecordingUsageMeter(),
+                new MetaSseClient(_transport, retry, clock), clock, new RecordingUsageMeter(),
                 ResponsesChatOptions.Background("muse-spark-1.3", "muse-spark-1.3-contributor", 0.01m), _log);
         }
     }

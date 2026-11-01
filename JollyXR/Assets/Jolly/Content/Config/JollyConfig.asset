@@ -44,7 +44,8 @@ MonoBehaviour:
     perImage: 0
     perAudioHour: 0.18
   voiceFirstEventSeconds: 4
-  voiceAttempts: 2
+  voiceAttempts: 1
+  voiceHedgeSeconds: 2.5
   holdLineSeconds: 2
   holdLineRepeatSeconds: 4
   backgroundFirstEventSeconds: 10

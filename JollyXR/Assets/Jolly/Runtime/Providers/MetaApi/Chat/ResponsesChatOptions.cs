@@ -11,7 +11,7 @@ namespace Jolly.Providers.MetaApi.Chat
     public sealed class ResponsesChatOptions
     {
         public ResponsesChatOptions(string liveUserModel, string syntheticModel, TimeSpan firstEventTimeout,
-                                    TimeSpan idleTimeout, int maxAttempts, decimal reservationUsd)
+                                    TimeSpan idleTimeout, int maxAttempts, decimal reservationUsd, TimeSpan hedgeAfter = default)
         {
             LiveUserModel = liveUserModel;
             SyntheticModel = syntheticModel;
@@ -19,11 +19,13 @@ namespace Jolly.Providers.MetaApi.Chat
             IdleTimeout = idleTimeout;
             RetryPolicy = new RetryPolicy(maxAttempts);
             ReservationUsd = reservationUsd;
+            HedgeAfter = hedgeAfter;
         }
 
-        /// <summary>4 s first event × 2 attempts (≤ 8.5 s with backoff, under the 20 s Thinking watchdog).</summary>
+        /// <summary>4 s first event, one attempt, hedged after 2.5 s (ADR-0038): a silent turn fails at 4 s.</summary>
         public static ResponsesChatOptions VoiceTurn(string liveUserModel, string syntheticModel, decimal reservationUsd) =>
-            new(liveUserModel, syntheticModel, TimeSpan.FromSeconds(4), TimeSpan.FromSeconds(10), 2, reservationUsd);
+            new(liveUserModel, syntheticModel, TimeSpan.FromSeconds(4), TimeSpan.FromSeconds(10), 1, reservationUsd,
+                TimeSpan.FromSeconds(2.5));
 
         /// <summary>10 s first event × 3 attempts.</summary>
         public static ResponsesChatOptions Background(string liveUserModel, string syntheticModel, decimal reservationUsd) =>
@@ -33,7 +35,13 @@ namespace Jolly.Providers.MetaApi.Chat
         public string SyntheticModel { get; }
         public TimeSpan FirstEventTimeout { get; }
         public TimeSpan IdleTimeout { get; }
+        /// <summary>Applies to each leg of a hedge.</summary>
         public RetryPolicy RetryPolicy { get; }
+        /// <summary>
+        /// Without a first event this long after the request, an identical second request races it
+        /// (<see cref="FirstEventHedge"/>); zero turns hedging off.
+        /// </summary>
+        public TimeSpan HedgeAfter { get; }
         /// <summary>Reserved in IApiUsageMeter before each request and settled with the actual usage.</summary>
         public decimal ReservationUsd { get; }
 

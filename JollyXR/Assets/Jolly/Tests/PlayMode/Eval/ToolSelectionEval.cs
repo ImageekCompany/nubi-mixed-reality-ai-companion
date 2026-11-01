@@ -72,7 +72,7 @@ namespace Jolly.Tests.PlayMode.Eval
                 Path.Combine(Path.GetTempPath(), "jolly-eval-usage-" + Guid.NewGuid().ToString("N") + ".json"), 1m, clock, log);
             var liveModel = MetaModelResolver.Resolve(ModelRoute.LiveUser, config.chatModel);
             var model = new ResponsesChatModel(new MetaApiEndpoint(secrets),
-                new MetaSseClient(new HttpTransport(), new RetryExecutor(clock, new SystemRandom(1), log), clock), usage,
+                new MetaSseClient(new HttpTransport(), new RetryExecutor(clock, new SystemRandom(1), log), clock), clock, usage,
                 ResponsesChatOptions.VoiceTurn(liveModel, config.syntheticChatModel, (decimal)config.chatReservationUsd), log);
 
             var tags = Env("JOLLY_EVAL_TAGS", "").Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);

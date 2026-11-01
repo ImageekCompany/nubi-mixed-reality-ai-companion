@@ -13,7 +13,7 @@ namespace Jolly.Tests.EditMode.Core.Agent
 {
     /// <summary>
     /// The device failure of 2026-11-01: Responses sent no first event within the timeout, twice. The loop must signal
-    /// Delayed (a hold line) while it waits, and the real adapter's retry must either recover or end in Failed.
+    /// Delayed (a hold line) while it waits, and the real adapter's hedge (ADR-0038) must either recover or end in Failed.
     /// </summary>
     public sealed class SlowModelTests
     {
@@ -66,7 +66,7 @@ namespace Jolly.Tests.EditMode.Core.Agent
         }
 
         [Test]
-        public void FirstAttemptTimesOut_HoldLineThenTheRetryAnswers()
+        public void FirstRequestSilent_HoldLineThenTheHedgeAnswers()
         {
             var transport = new FakeHttpTransport().Hang().Respond(SseFixtures.Parse("responses_text"));
             var f = new AgentFixture(c => VoiceModel(transport, c));
@@ -75,7 +75,7 @@ namespace Jolly.Tests.EditMode.Core.Agent
             var run = f.Run();
             clock.Advance(TimeSpan.FromSeconds(2));
             var atHold = AgentFixture.Describe(run.Items);
-            clock.Advance(TimeSpan.FromSeconds(2));
+            clock.Advance(TimeSpan.FromSeconds(0.5));
 
             Assert.That(atHold, Is.EqualTo("Delayed"));
             AgentFixture.Completed(run);
@@ -87,32 +87,32 @@ namespace Jolly.Tests.EditMode.Core.Agent
         }
 
         [Test]
-        public void BothAttemptsTimeOut_TwoHoldLinesThenFailedWithin9Seconds()
+        public void BothRequestsSilent_HoldLineThenFailedWithin4Seconds()
         {
             var transport = new FakeHttpTransport().Hang().Hang();
             var f = new AgentFixture(c => VoiceModel(transport, c));
             var clock = f.Clock;
 
             var run = f.Run();
-            clock.Advance(TimeSpan.FromSeconds(7.9));
-            var beforeSecondTimeout = run.Status;
+            clock.Advance(TimeSpan.FromSeconds(3.9));
+            var beforeDeadline = run.Status;
             clock.Advance(TimeSpan.FromSeconds(0.1));
 
-            Assert.That(beforeSecondTimeout, Is.EqualTo(UniTaskStatus.Pending));
-            Assert.That(AgentFixture.Describe(run.Items), Is.EqualTo("Delayed Delayed Failed"));
+            Assert.That(beforeDeadline, Is.EqualTo(UniTaskStatus.Pending));
+            Assert.That(AgentFixture.Describe(run.Items), Is.EqualTo("Delayed Failed"));
             Assert.That(run.Items.Last().Error.Kind, Is.EqualTo(ProviderErrorKind.Timeout));
             Assert.That(transport.Requests, Has.Count.EqualTo(2));
             AgentFixture.Completed(run);
             Assert.That(clock.PendingDelays, Is.Zero);
         }
 
-        /// <summary>The production voice-turn adapter (4 s first event × 2 attempts), with no retry backoff.</summary>
+        /// <summary>The production voice-turn adapter: 4 s first event, one attempt, hedged after 2.5 s.</summary>
         static IChatModel VoiceModel(FakeHttpTransport transport, FakeClock c)
         {
             var log = new RecordingLog();
             var retry = new RetryExecutor(c, new FakeRandom().EnqueueFloat(0f, 0f, 0f), log);
             var secrets = new InMemorySecrets().With(SecretKeys.MetaApiKey, "fake-key");
-            return new ResponsesChatModel(new MetaApiEndpoint(secrets), new MetaSseClient(transport, retry, c),
+            return new ResponsesChatModel(new MetaApiEndpoint(secrets), new MetaSseClient(transport, retry, c), c,
                 new RecordingUsageMeter(), ResponsesChatOptions.VoiceTurn("muse-spark-1.3", "muse-spark-1.3-contributor", 0.01m),
                 log);
         }

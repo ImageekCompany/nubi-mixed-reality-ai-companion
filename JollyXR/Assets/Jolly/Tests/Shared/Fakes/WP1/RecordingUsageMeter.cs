@@ -25,6 +25,8 @@ namespace Jolly.Testing
         long _nextId;
 
         public bool RefuseReservations { get; set; }
+        /// <summary>Refuses a reservation while this many are open, as a cap with room for that many does.</summary>
+        public int MaxOpenReservations { get; set; } = int.MaxValue;
         public decimal CostPerRequest { get; set; } = 0.001m;
         public IReadOnlyList<decimal> Reservations => _reservations;
         public IReadOnlyList<UsageRecord> Records => _records;
@@ -41,7 +43,7 @@ namespace Jolly.Testing
         public bool TryReserve(decimal estimatedUsd, out long reservationId)
         {
             _reservations.Add(estimatedUsd);
-            if (RefuseReservations)
+            if (RefuseReservations || _open.Count >= MaxOpenReservations)
             {
                 reservationId = 0;
                 return false;
