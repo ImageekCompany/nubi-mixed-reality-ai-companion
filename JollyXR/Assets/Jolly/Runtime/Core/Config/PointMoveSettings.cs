@@ -14,6 +14,9 @@ namespace Jolly.Core.Config
         public float FloorTolerance { get; set; } = 0.1f;
         /// <summary>A hit this close in height to a surface's top, and this far around its footprint, is that top.</summary>
         public float SurfaceTolerance { get; set; } = 0.12f;
+        /// <summary>Floor nearer the user's head than this (flat) gives no target: a resting hand's ray lands at the feet,
+        /// and the character would end up in the user's legs looking straight up.</summary>
+        public float UserMinDistance { get; set; } = 0.5f;
         public float StopDistance { get; set; } = 0.1f;
     }
 }

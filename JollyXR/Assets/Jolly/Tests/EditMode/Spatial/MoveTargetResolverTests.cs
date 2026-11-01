@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using Jolly.Contracts;
 using Jolly.Core.Config;
 using Jolly.Core.Spatial;
+using Jolly.Testing;
 using Jolly.Testing.Conversation;
 using NUnit.Framework;
 using UnityEngine;
@@ -55,7 +56,7 @@ namespace Jolly.Tests.EditMode.Spatial
             _world = new PointWorld();
             _character = new RecordingCharacterController { Position = new Vector3(0f, 0f, 1f) };
             _settings = new PointMoveSettings();
-            _resolver = new MoveTargetResolver(_world, _character, _settings, new LocomotionSettings());
+            _resolver = new MoveTargetResolver(_world, _character, new FakeUserPoseProvider(), _settings, new LocomotionSettings());
         }
 
         static Ray Toward(Vector3 point) => new(Head, point - Head);
@@ -80,6 +81,25 @@ namespace Jolly.Tests.EditMode.Spatial
             _world.Hit = floor;
 
             Assert.That(_resolver.TryResolve(Toward(floor), out _), Is.False);
+        }
+
+        [Test]
+        public void FloorAtTheUsersFeet_IsNoTarget()
+        {
+            // A resting hand's ray lands here; a stray tap must not walk the character into the user's legs.
+            var feet = new Vector3(0.2f, 0f, 0.3f);
+            _world.Hit = feet;
+
+            Assert.That(_resolver.TryResolve(Toward(feet), out _), Is.False);
+        }
+
+        [Test]
+        public void FloorJustPastTheUserMinimum_IsATarget()
+        {
+            var near = new Vector3(0f, 0f, _settings.UserMinDistance + 0.05f);
+            _world.Hit = near;
+
+            Assert.That(_resolver.TryResolve(Toward(near), out _), Is.True);
         }
 
         [Test]

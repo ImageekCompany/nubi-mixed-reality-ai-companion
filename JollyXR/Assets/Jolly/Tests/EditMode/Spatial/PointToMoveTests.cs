@@ -78,7 +78,7 @@ namespace Jolly.Tests.EditMode.Spatial
             _character = new RecordingCharacterController { Position = new Vector3(0f, 0f, 1f) };
             _log = new RecordingLog();
             _settings = new PointMoveSettings();
-            var resolver = new MoveTargetResolver(_world, _character, _settings, new LocomotionSettings());
+            var resolver = new MoveTargetResolver(_world, _character, new FakeUserPoseProvider(), _settings, new LocomotionSettings());
             _targeting = new PointerTargeting(_pointer, resolver, _marker);
             _pinch = new TapHoldClassifier(_rawPinch, _clock, _settings.TapMax, _targeting.TryCapture);
             _move = new PointToMove(_pinch, _pointer, _targeting, resolver, _character, _settings, _marker, _clock, _log);

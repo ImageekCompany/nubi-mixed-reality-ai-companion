@@ -30,7 +30,7 @@ namespace Jolly.App.Composition
             var settings = new PointMoveSettings { TapMax = TimeSpan.FromSeconds(config.tapMaxSeconds) };
             var pointer = edges.Pointer ?? disposables.Add(new XrPointer(scene.pushToTalk, xr.Hands,
                 scene.origin.GetComponent<XRInputModalityManager>(), scene.nubiCollider));
-            var resolver = new MoveTargetResolver(xr.World, scene.nubi, settings, new LocomotionSettings());
+            var resolver = new MoveTargetResolver(xr.World, scene.nubi, xr.User, settings, new LocomotionSettings());
             scene.moveReticle.Construct(f.Clock);
             var targeting = new PointerTargeting(pointer, resolver, scene.moveReticle);
             var pinch = disposables.Add(new TapHoldClassifier(edges.Voice ?? scene.pushToTalk, f.Clock, settings.TapMax,
