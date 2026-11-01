@@ -264,11 +264,41 @@ namespace Jolly.Tests.EditMode.Vision
             Assert.That(_clock.PendingDelays, Is.Zero);
         });
 
-        SamSegmenter Segmenter()
+        [UnityTest]
+        public IEnumerator Segment_EveryAttemptThatMayHaveReachedSamIsBilled() => UniTask.ToCoroutine(async () =>
+        {
+            _transport.Hang().Hang();
+            var task = Segmenter(new SamOptions(Model, 0.0025m, TimeSpan.FromSeconds(5), maxAttempts: 2))
+                .Segment(VisionFixtures.Jpeg(640, 428), SegmentPrompt.ForText("pen"), CancellationToken.None);
+
+            for (var i = 0; i < 20; i++)
+                _clock.Advance(TimeSpan.FromSeconds(1));
+
+            await AsyncAssert.Throws<ProviderException>(() => task);
+            Assert.That(_transport.Requests, Has.Count.EqualTo(2));
+            Assert.That(_usage.Records.Single().Images, Is.EqualTo(2));
+        });
+
+        [UnityTest]
+        public IEnumerator Segment_ARetryAfterARejectedAttemptBillsOnlyTheAnsweredImage() => UniTask.ToCoroutine(async () =>
+        {
+            _transport.Fail(new HttpFailureException(429, "{}"))
+                      .Respond(SamStreams.FromRecorded(VisionFixtures.Sam(VisionFixtures.PenConcept)));
+            var task = Segmenter(new SamOptions(Model, 0.0025m, TimeSpan.FromSeconds(5), maxAttempts: 2))
+                .Segment(VisionFixtures.Jpeg(640, 428), SegmentPrompt.ForText("pen"), CancellationToken.None);
+
+            for (var i = 0; i < 20; i++)
+                _clock.Advance(TimeSpan.FromSeconds(1));
+
+            await task;
+            Assert.That(_usage.Records.Single().Images, Is.EqualTo(1));
+        });
+
+        SamSegmenter Segmenter(SamOptions options = null)
         {
             var secrets = new InMemorySecrets().With(SecretKeys.MetaApiKey, "fake-key");
             var client = new MetaSseClient(_transport, new RetryExecutor(_clock, new FakeRandom(), _log), _clock);
-            return new SamSegmenter(new MetaApiEndpoint(secrets), client, _usage, _clock, _log, Options);
+            return new SamSegmenter(new MetaApiEndpoint(secrets), client, _usage, _clock, _log, options ?? Options);
         }
 
         JObject SentBody() => JObject.Parse(Encoding.UTF8.GetString(_transport.Requests.Single().Body));
