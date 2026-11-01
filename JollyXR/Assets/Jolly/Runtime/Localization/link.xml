@@ -1,3 +1,7 @@
 <linker>
     <!-- Types of Jolly.Localization reached only by reflection (ADR-0015). -->
+    <!-- Polish.asset references this only through [SerializeReference] metadata. -->
+    <assembly fullname="Unity.Localization">
+        <type fullname="UnityEngine.Localization.Metadata.FallbackLocale" preserve="all"/>
+    </assembly>
 </linker>
