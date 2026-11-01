@@ -24,6 +24,12 @@ Each work package appends bullets under its own heading only (`docs/scope.md` §
 ### WP3
 
 ### WP4
+- `OneBitMaskDecoder`: C# port of the SAM 3.1 `one_bit` mask codec (SAM License, `LICENSE-SAM.txt` beside it), bit-exact against the live pen and mug masks.
+- `SamOutputParser` (box/mask grammar, inclusive boxes, multi-object, empty output) and `SamPromptFormatter` (concept, point with hand negatives, box; `w`/`h` from the encoded image).
+- `SamSegmenter : ISegmenter` over a narrow `IMetaApiJsonClient` port: usage reservation per image, `one_bit` + confidence, masks decoded on the thread pool, IClock-driven 5 s timeout.
+- `SparkObjectIdentifier : IObjectIdentifier` over `IChatModel`: streamed `LABEL|NOUN_PHRASE` header then speakable answer deltas, 8 s timeout, early stop disposes the model stream.
+- `JpegImageEncoder : IImageEncoder` (Core/Imaging): thread-pool JPEG encode with the top-row-first → bottom-up flip ImageConversion needs.
+- R6 harness `tools/vision-eval/vision_eval.py` and report skeleton `docs/perf/vision-eval.md` (live run pending real room frames).
 
 ### WP5
 
