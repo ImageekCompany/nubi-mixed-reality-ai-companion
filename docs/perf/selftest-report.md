@@ -1,9 +1,37 @@
 # Device self-test report
 
-Latest: 2026-11-01, 11:43–11:51 UTC, final verification of `main` `4d228c8` after the occlusion, room, character, Jolly and device-fix merges: three release runs of the default build and one of `--character jolly` (section below). Before that: 11:26–11:38 UTC, six release runs for the device-finding fixes (`3f35f7f`, `6cd06e6`, `4e298d8`; section below). Before that: 09:39–09:45 UTC, three release runs of `main` `dd14847` after the turn-gc and coverage-gate merges (section below). Before that: 08:37–09:27 UTC, the turn-GC and cold-first-turn pass on `fix/turn-gc` (ADR-0023): three "before" runs of `main`, three "after" runs, development IL2CPP (the only player that reports GC per frame), four allocation-profile runs and one release verification run. Before that: 08:20–08:47 UTC, the performance and latency pass on `fix/perf-latency` (ADR-0019), release IL2CPP. Earlier: 06:38–06:50 UTC from `fix/integration-review`, 06:00–06:14 UTC from `feat/wp9-integration`.
+Latest: 2026-11-01, 13:03 UTC, one release run of `6f0383c` with the `highlight_part` / `find_object` scenarios and the hand debounce (ADR-0033; section below). Before that: 11:43–11:51 UTC, final verification of `main` `4d228c8` after the occlusion, room, character, Jolly and device-fix merges: three release runs of the default build and one of `--character jolly` (section below). Before that: 11:26–11:38 UTC, six release runs for the device-finding fixes (`3f35f7f`, `6cd06e6`, `4e298d8`; section below). Before that: 09:39–09:45 UTC, three release runs of `main` `dd14847` after the turn-gc and coverage-gate merges (section below). Before that: 08:37–09:27 UTC, the turn-GC and cold-first-turn pass on `fix/turn-gc` (ADR-0023): three "before" runs of `main`, three "after" runs, development IL2CPP (the only player that reports GC per frame), four allocation-profile runs and one release verification run. Before that: 08:20–08:47 UTC, the performance and latency pass on `fix/perf-latency` (ADR-0019), release IL2CPP. Earlier: 06:38–06:50 UTC from `fix/integration-review`, 06:00–06:14 UTC from `feat/wp9-integration`.
 Device: Quest 3 `2G0YC1ZF7P090N`, Horizon OS v209. Build: `tools/ci/build.sh` (IL2CPP ARM64 release, 58 MB APK).
 Nobody wore the headset. The room was dim (camera mean luma 23–45 of 255) and had no Space Setup. Command: `tools/device/selftest.sh` (headless: `prox_close`, `guardian_pause 1`, 16 MiB logcat buffer; all restored afterwards).
 Raw outputs (`selftest_results.json`, `logcat.txt`, `vrapi.txt`) are under `artifacts/selftest/`, which is git-ignored.
+
+## SAM text-prompt tools under the self-test, hand debounce (6f0383c)
+
+`main` with `8d34dba` (hand meshes follow a 200 ms debounced tracked state) and `6f0383c` (`vision_highlight_part`, `vision_find_object`; ADR-0033). `tools/ci/test.sh` (EditMode 1050/1050, PlayMode 351/351, pure logic 92.6 %, 0 `warning CS`), `tools/device/build.sh` (IL2CPP ARM64 release, 59 MB, `QuestBuild` 0 errors / 5 warnings, SHA-256 `843ed2100a3a…`), then one `tools/device/selftest.sh` (13:03 UTC). That build stays installed (installed APK SHA-256 matches) and `guardian_pause` read back 0. Dark room (mean luma 7), no Space Setup.
+
+| Scenario | Result |
+|---|---|
+| `offline_greeting` | PASS, caption 28 ms |
+| `voice_greeting` | DEGRADED, first audio 3,165 ms, no tool |
+| `voice_come_here` | DEGRADED, 2,375 ms, `navmesh=fallback`, `come_here` |
+| `vision_capture_and_identify` | DEGRADED (still), 2,159 ms; tool → answer audio 1,874 ms, mask 1,238 ms |
+| `vision_highlight_part` | **PASS**: "Which part of the the mug should I hold?" → `highlight_part`, SAM text prompt on the identify turn's capture (`frame=vision_still`, `sam.done ms=512 prompt=Text objects=1`); tool → part mask **514 ms**, tool → answer audio **1,332 ms**, release → first audio 1,264 ms. "Hold it by the handle on the side. That keeps your fingers safe from the heat." |
+| `vision_find_object` | DEGRADED: "Nubi, where is my mug? Show me." → the model called `look_at`, not `find_object` (`found=0`, no SAM call); "Your mug is right there. I'm looking at it now." First audio 2,500 ms |
+| `barge_in` | PASS, silence 42 ms |
+| `perf_idle` | PASS, 72.0 fps, p95 13.9 ms, 15 draw / 13 SetPass, 33,536 tris, 546 MB |
+| Overall, spend | DEGRADED, $0.0255 |
+
+| Metric | Before (4d228c8, 4 runs) | This run |
+|---|---|---|
+| `evt=hands.tracked` lines per run (nobody wearing the headset) | 38–56 (each flip toggled the hand mesh) | **3**: the launch state, then one phantom left hand that stayed tracked for 320 ms (14:04:56.938 → 57.258) and so passed the 200 ms hold |
+| `evt=hands.visual` changes after launch | one per flip | 2 (that one phantom) |
+
+Findings:
+
+- **`highlight_part` works on the headset.** The part mask arrived 514 ms after the tool started, on the same `EncodedImage` the identify turn captured, and the spoken answer 1.3 s after the tool start, inside the 2.5 s DoD budget. This is the second half of the demo's vision beat, now with device evidence.
+- **`find_object` was not exercised.** With the mug already in scene memory from the identify turn, the model answered "where is my mug?" with `look_at` on the remembered object instead of a fresh search. The scenario reports DEGRADED with the tool name, as designed. speculation: asking for an object the session has not seen yet, or running the scenario before the identify turn, would make `find_object` the obvious choice; the ordering stays as is for now because the remembered-object answer is reasonable behaviour.
+- **Phantom hand flicker: 38–56 → 1 event.** The 200 ms hold dropped every blip but one that lasted 320 ms. A longer hold would drop that too, at the cost of a later real hand; the release-checklist hands item (with a wearer) decides.
+- **Compositor stale frames 3.73 % over the whole run** (288 of 7,723), against 2.79–3.24 % in the 3e99cb5 runs. The run is about 20 s longer (two more turns). Not split into launch / turns / idle for this single run. speculation: the same compositor-side rise as in the 3e99cb5 section; the per-frame hand read is two property reads per frame.
 
 ## Cartoon voice merged, character voices, device-regression fixes (3e99cb5)
 

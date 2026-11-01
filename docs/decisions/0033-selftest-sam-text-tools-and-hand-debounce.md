@@ -17,6 +17,7 @@
 ## Consequences
 - A self-test run makes two more voice turns and 1–2 more SAM calls (about +$0.005).
 - A real hand appears 200 ms after tracking starts and stays 200 ms after it is lost. The pinch push-to-talk and the XRI interactors still read the raw subsystem; only the mesh is debounced.
+- First device run (selftest-report.md, 6f0383c): `vision_highlight_part` PASS (part mask 514 ms, answer 1.3 s after the tool start); in `vision_find_object` the model answered with `look_at` on the remembered mug, so `find_object` still has no device evidence; `evt=hands.tracked` fell from 38–56 lines per run to 3 (one 320 ms phantom passed the hold).
 - `TrackingDebounce` lives in `Jolly.XR`, which the EditMode test assembly does not reference, so its tests are plain `[Test]`s in PlayMode next to `OcclusionPolicyTests`, as for the other pure XR logic.
 
 ## Alternatives

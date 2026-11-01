@@ -153,7 +153,7 @@ Not run: the headset was owned by another task. Automated cover: EditMode (detec
 
 ## Hand tracking device checks (ADR-0030)
 
-Headless evidence on `4d228c8`: `evt=hands.subsystem state=running id=OpenXR Hands` and `evt=hands.monitor visuals=4` at launch. With nobody wearing the headset, `evt=hands.tracked left=true` flips on and off about once a second (38–56 times per run). Each check below needs a wearer; record `adb logcat -s Unity | grep "evt=hands"`.
+Headless evidence on `4d228c8`: `evt=hands.subsystem state=running id=OpenXR Hands` and `evt=hands.monitor visuals=4` at launch. With nobody wearing the headset, `evt=hands.tracked left=true` flips on and off about once a second (38–56 times per run). Since ADR-0033 the hand mesh and `evt=hands.tracked` follow a 200 ms debounced state: 3 lines in the 6f0383c run, one phantom of 320 ms. Each check below needs a wearer; record `adb logcat -s Unity | grep "evt=hands"`.
 
 1. Put the controllers down: both hands appear as translucent meshes over the real hands within ~1 s and follow the fingers without visible lag; they disappear when a hand leaves the view. Pick up a controller: that side switches back to the controller.
 2. Settings panel: point with an open hand, pinch on a button and on a toggle; then poke the same controls with a fingertip. Both work, and neither starts a voice turn (pinching while the ray hovers UI must not talk).
