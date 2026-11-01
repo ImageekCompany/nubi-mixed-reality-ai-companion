@@ -109,8 +109,6 @@ Each work package appends bullets under its own heading only (`docs/scope.md` §
 - `README.md` (pitch, theme fit, Meta tooling, architecture, performance budget, privacy, getting started, status, roadmap), MIT `LICENSE`, and `THIRD_PARTY.md` with the versions resolved in `packages-lock.json`, non-OSI licences, committed third-party files and why Meta's Jolly mascot is not included.
 - `docs/demo-script.md` (six-beat shot list, per-beat fallbacks, Nov 9 live-finals runbook, rehearsal log) and `docs/perf/README.md` (OVR Metrics, Unity Profiler and `evt=turn.latency` percentile method).
 
-### WP12
-
 ### Integration review fixes
 - A press while a gaze/palm/poke line plays now silences it; Clear memory waits for Idle and deletes every persona's file; a missing microphone plays the Error line, not the offline one.
 - The crisis hand-off runs for every persona; a tool call outside the offered list is refused; Psychologist is shown as Listener / Słuchacz and may switch persona by voice; persona prompts cover every tool and no longer assume an older user; tool preambles stay neutral.
@@ -123,6 +121,7 @@ Each work package appends bullets under its own heading only (`docs/scope.md` §
 - Pipelines warmed at boot from a `GraphicsStateCollection` recorded by a development-player self-test (`GraphicsWarmup`, `GraphicsStateImport`, docs/perf/README.md §7).
 - Launch warm-up: one discarded camera capture (Camera2 lens pose, CPU-image conversion, JPEG encoder) and one ASR connection without a handshake (not billed).
 - Every Responses request carries a `prompt_cache_key` (hash of model, instructions and tool names): tool-bearing requests were never cached without one.
+- The vision request tells the model it has no tools: persona prompts ask for `capture_and_identify`, and on the headset one vision reply spent 40 s reasoning aloud about the missing tool.
 - Vision output cap 600 → 1,024 tokens (a device call ended `finish=Length`); summary output cap 300 → 1,024, and a summary call that ends without text no longer replaces the summary.
 
 ### LLM memory and prompt caching (ADR-0020)
@@ -136,3 +135,14 @@ Each work package appends bullets under its own heading only (`docs/scope.md` §
 - `PinchPushToTalk` is hands only: the empty `controllerTalk` action reference is gone from the component and `Main.unity`, which gains `SceneRefs.controllerPushToTalk`.
 - Tests: `InputTestFixture` PlayMode tests on the real OpenXR layouts (A/X, trigger/grip/B/Y, hand devices, tracked-hand gate, disable) and EditMode tests for the composite. `Jolly.Tests.PlayMode` references `Unity.InputSystem.TestFramework` and `Unity.XR.OpenXR`.
 - README: Controls section; the "no controller push-to-talk" limitation is replaced by "unverified on the headset".
+
+### Audit fixes (ADR-0022)
+- Clear memory, a replaced place and an evicted place or object now erase their spatial anchors on the headset (`ISpatialAnchors.Erase`, `ARAnchorManager.TryEraseAnchorAsync`).
+- The device self-test keeps its memory in `selftest/memory/`, emptied per run, instead of reading and writing the user's.
+- `Jolly.Spikes` (camera-frame and mic dumps) is compiled only with `JOLLY_SPIKES`, so release APKs no longer contain it.
+- `RedactingLog` also redacts exception text; place names and the summary can no longer close the prompt's `<context>` block.
+- A failed usage save is logged (`evt=usage.save_failed`) and retried instead of throwing out of `OnDestroy`, which skipped the app's teardown. An interaction line cut short by teardown no longer touches the destroyed character.
+- `push-secrets.sh` force-stops the app (secrets are read at launch) and warns when `.env` is readable by other accounts.
+- Removed: the never-wired file-ASR fallback (`MuseFileSpeechToText`, `UnityWebRequestAsrFileClient`, `MuseTranscribeRequest`; spike R4 made it unnecessary), the unused `MetaApiEndpoint.Get`, the unused `Unity.AI.Navigation` reference of `Jolly.XR`, and the renders of Meta's Jolly mascot from `docs/research/samples/`.
+- `ClipPcm` resamples an off-rate clip with the anti-aliased `Resampler` instead of its own linear interpolation.
+- Tests: duplicated fakes merged into `Fakes/Common` (one per port, no aliases); ASR tests use `RecordingUsageMeter`, which rejects a double settle like the real meter; locomotion tests bake with the production `NavMeshBaker`.

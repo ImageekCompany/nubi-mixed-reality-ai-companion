@@ -11,14 +11,11 @@ using UnityEngine;
 
 namespace Jolly.Tests.EditMode.Offline
 {
-    // Same-named fakes from other WPs also live in Jolly.Testing; these tests are written against this WP's.
-    using FakeSpeechOutput = Jolly.Testing.Offline.FakeSpeechOutput;
-
     public sealed class OfflineResponderTests
     {
         AudioClip _clip;
         FakeCannedLines _lines;
-        FakeSpeechOutput _speech;
+        ClipSpeechOutput _speech;
         FakeClock _clock;
         RecordingLog _log;
         List<(int id, string text)> _captions;
@@ -29,7 +26,7 @@ namespace Jolly.Tests.EditMode.Offline
         {
             _clip = AudioClip.Create("line", 2400, 1, 24000, false);
             _lines = new FakeCannedLines();
-            _speech = new FakeSpeechOutput();
+            _speech = new ClipSpeechOutput();
             _clock = new FakeClock();
             _log = new RecordingLog();
             _captions = new List<(int, string)>();

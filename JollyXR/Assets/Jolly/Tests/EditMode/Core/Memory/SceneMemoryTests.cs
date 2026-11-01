@@ -12,9 +12,6 @@ using UnityEngine;
 
 namespace Jolly.Tests.EditMode.Core.Memory
 {
-    // Same-named fakes from other WPs also live in Jolly.Testing; these tests are written against this WP's.
-    using FakeSpatialAnchors = Jolly.Testing.Conversation.FakeSpatialAnchors;
-
     public sealed class SceneMemoryTests
     {
         static readonly CancellationToken None = CancellationToken.None;
@@ -99,6 +96,46 @@ namespace Jolly.Tests.EditMode.Core.Memory
 
             Assert.That(scene.Places.Select(p => p.Name), Is.EquivalentTo(new[] { "sofa", "kitchen" }));
             Assert.That(scene.TryGetPlace("Sofa", out var sofa) && sofa.Pose.position == Vector3.right, Is.True);
+        }
+
+        [Test]
+        public void RememberPlace_ReplacedOrEvicted_ErasesTheOldAnchor()
+        {
+            var scene = Create(new MemoryLimits { Places = 2 });
+            scene.RememberPlace(Place("sofa", Vector3.zero, "a1"));
+            _clock.Advance(TimeSpan.FromSeconds(1));
+            scene.RememberPlace(Place("desk", Vector3.one, "a2"));
+            _clock.Advance(TimeSpan.FromSeconds(1));
+
+            scene.RememberPlace(Place("sofa", Vector3.right, "a3"));
+            _clock.Advance(TimeSpan.FromSeconds(1));
+            scene.RememberPlace(Place("kitchen", Vector3.up));
+
+            Assert.That(_anchors.Erased, Is.EqualTo(new[] { "a1", "a2" }));
+        }
+
+        [Test]
+        public void AddObject_Evicted_ErasesItsAnchor()
+        {
+            var scene = Create(new MemoryLimits { SceneObjects = 1 });
+            scene.AddObject("mug", Vector3.zero, "s", "a1");
+
+            scene.AddObject("pen", Vector3.one, "s");
+
+            Assert.That(_anchors.Erased, Is.EqualTo(new[] { "a1" }));
+        }
+
+        [Test]
+        public void Clear_ErasesEveryAnchoredObjectAndPlace()
+        {
+            var scene = Create();
+            scene.AddObject("mug", Vector3.zero, "s", "a1");
+            scene.AddObject("pen", Vector3.zero, "s");
+            scene.RememberPlace(Place("sofa", Vector3.zero, "a2"));
+
+            scene.Clear();
+
+            Assert.That(_anchors.Erased, Is.EquivalentTo(new[] { "a1", "a2" }));
         }
 
         [Test]

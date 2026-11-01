@@ -15,7 +15,7 @@ namespace Jolly.Tests.EditMode.Architecture
         static readonly string[] XrPackages =
         {
             "Unity.XR.ARFoundation", "Unity.XR.ARSubsystems", "Unity.XR.CoreUtils", "Unity.XR.Hands",
-            "Unity.XR.Interaction.Toolkit", "Unity.InputSystem", "Unity.AI.Navigation",
+            "Unity.XR.Interaction.Toolkit", "Unity.InputSystem",
         };
         static readonly string[] JollyRuntime =
         {

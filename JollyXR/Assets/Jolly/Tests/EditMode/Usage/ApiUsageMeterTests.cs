@@ -15,6 +15,7 @@ namespace Jolly.Tests.EditMode.Usage
         string _dir;
         string _path;
         FakeClock _clock;
+        RecordingLog _log;
         readonly List<IDisposable> _meters = new();
 
         [SetUp]
@@ -23,6 +24,7 @@ namespace Jolly.Tests.EditMode.Usage
             _dir = Path.Combine(Path.GetTempPath(), "jolly-usage-" + Guid.NewGuid().ToString("N"));
             _path = Path.Combine(_dir, "usage.json");
             _clock = new FakeClock();
+            _log = new RecordingLog();
         }
 
         [TearDown]
@@ -161,7 +163,7 @@ namespace Jolly.Tests.EditMode.Usage
         [Test]
         public void Dispose_FlushesPendingState()
         {
-            var meter = new ApiUsageMeter(PriceTableTests.MetaPrices(), _path, 1m, _clock);
+            var meter = new ApiUsageMeter(PriceTableTests.MetaPrices(), _path, 1m, _clock, _log);
             meter.TryReserve(0.01m, out var id);
             meter.Record(id, new UsageRecord(Spark, 1000, 0, 0));
 
@@ -169,6 +171,23 @@ namespace Jolly.Tests.EditMode.Usage
 
             Assert.That(Meter().SpentUsd, Is.EqualTo(1000 * 1.25m / 1_000_000m));
             Assert.That(_clock.PendingDelays, Is.Zero);
+        }
+
+        [Test]
+        public void Flush_WriteFails_LogsAndRetriesOnTheNextFlush()
+        {
+            File.WriteAllText(_dir, "a file where the directory should be");
+            var meter = Meter();
+            meter.TryReserve(0.01m, out var id);
+            meter.Record(id, new UsageRecord(Spark, 1000, 0, 0));
+
+            Assert.That(() => meter.Flush(), Throws.Nothing);
+            Assert.That(_log.Contains(LogLevel.Error, "evt=usage.save_failed"), Is.True);
+
+            File.Delete(_dir);
+            meter.Flush();
+
+            Assert.That(Meter().SpentUsd, Is.EqualTo(1000 * 1.25m / 1_000_000m));
         }
 
         [Test]
@@ -226,7 +245,7 @@ namespace Jolly.Tests.EditMode.Usage
 
         ApiUsageMeter Meter(decimal cap = 1m)
         {
-            var meter = new ApiUsageMeter(PriceTableTests.MetaPrices(), _path, cap, _clock);
+            var meter = new ApiUsageMeter(PriceTableTests.MetaPrices(), _path, cap, _clock, _log);
             _meters.Add(meter);
             return meter;
         }

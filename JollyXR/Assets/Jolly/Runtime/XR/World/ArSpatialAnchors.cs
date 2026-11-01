@@ -12,7 +12,8 @@ namespace Jolly.XR.World
     /// <summary>
     /// Persistent anchors for taught places (remember_place / walk_to). The id is the persistent GUID returned by
     /// ARAnchorManager.TrySaveAnchorAsync; on meta-openxr it equals the anchor's trackableId and survives sessions within
-    /// one Space Setup. Anchors loaded this session are cached so walk_to resolves them without another load.
+    /// one Space Setup. Anchors loaded this session are cached so walk_to resolves them without another load. Erase
+    /// removes both the live anchor and its persisted data, so forgotten places do not outlive Clear memory on the device.
     /// </summary>
     public sealed class ArSpatialAnchors : ISpatialAnchors
     {
@@ -77,6 +78,26 @@ namespace Jolly.XR.World
             }
             _loaded[anchorId] = loaded.value;
             return PoseOf(loaded.value);
+        }
+
+        public async UniTask Erase(string anchorId, CancellationToken ct)
+        {
+            if (string.IsNullOrEmpty(anchorId) || !Guid.TryParseExact(anchorId, "N", out var guid))
+                return;
+            var wasLoaded = _loaded.Remove(anchorId, out var anchor);
+            if (!SupportsPersistence(out var descriptor))
+                return;
+            if (wasLoaded && anchor != null)
+                _anchors.TryRemoveAnchor(anchor);
+            if (!descriptor.supportsEraseAnchor)
+                return;
+
+            var erased = await _anchors.TryEraseAnchorAsync(new SerializableGuid(guid), ct);
+            if (!erased.IsSuccess())
+            {
+                ct.ThrowIfCancellationRequested();
+                _log.Write(LogLevel.Warning, "xr", $"evt=anchor.erase_failed status={erased.statusCode}");
+            }
         }
 
         bool SupportsPersistence(out XRAnchorSubsystemDescriptor descriptor)

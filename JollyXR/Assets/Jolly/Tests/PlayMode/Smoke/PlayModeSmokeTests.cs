@@ -25,7 +25,7 @@ namespace Jolly.Tests.PlayMode.Smoke
             Assert.That(Time.frameCount, Is.GreaterThan(frame));
             Object.Destroy(go);
             await UniTask.NextFrame();
-            Assert.That(go == null, Is.True, "destroyed GameObject compares equal to null");
+            LogAssert.NoUnexpectedReceived();
         });
     }
 }

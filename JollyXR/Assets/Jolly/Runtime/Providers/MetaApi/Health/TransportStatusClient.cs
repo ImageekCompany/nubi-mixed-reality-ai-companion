@@ -4,7 +4,7 @@ using Jolly.Net.Http;
 
 namespace Jolly.Providers.MetaApi.Health
 {
-    /// <summary>The probe's status call over the shared <see cref="IHttpTransport"/> (one UnityWebRequest path in the app).</summary>
+    /// <summary>The probe's status call over the shared <see cref="IHttpTransport"/>, so it gets the same timeout and cancellation handling as the model calls.</summary>
     public sealed class TransportStatusClient : IHttpStatusClient
     {
         readonly IHttpTransport _http;

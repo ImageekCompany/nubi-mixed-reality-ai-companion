@@ -6,7 +6,7 @@ using Jolly.Contracts;
 namespace Jolly.Providers.MetaApi.Health
 {
     /// <summary>
-    /// GET {base}/v1/models with the API key: true on 2xx, and on 429 since a rate-limited server is still reachable
+    /// GET {base}/models (the base includes /v1) with the API key: true on 2xx, and on 429 since a rate-limited server is still reachable
     /// (ReportFailure(RateLimited) is state-neutral too). The 3 s timeout runs on IClock (PlayerLoop in the app,
     /// deterministic in tests) and cancels the request. A 401 also raises <see cref="Unauthorized"/>, because
     /// <see cref="IHealthProbe.Ping"/> can only answer reachable or not; wire it to IConnectivityMonitor.ReportFailure.

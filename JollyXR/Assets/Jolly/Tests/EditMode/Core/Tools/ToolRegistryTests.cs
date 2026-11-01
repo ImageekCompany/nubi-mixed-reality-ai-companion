@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using Jolly.Contracts;
 using Jolly.Core.Tools;
+using Jolly.Testing;
 using Jolly.Testing.Conversation;
 using NUnit.Framework;
 

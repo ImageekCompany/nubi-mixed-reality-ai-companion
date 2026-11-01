@@ -15,8 +15,6 @@ using NUnit.Framework;
 
 namespace Jolly.Tests.EditMode.Chat
 {
-    using FakePersonaProvider = Jolly.Testing.Conversation.FakePersonaProvider;
-
     /// <summary>
     /// The rolling summary over the real Responses model and recorded streams (synthetic conversation, contributor model,
     /// 2026-11-01): the reasoning tokens share max_output_tokens with the text (architecture §8).

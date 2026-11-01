@@ -8,18 +8,13 @@ using Jolly.Testing.Conversation;
 
 namespace Jolly.Tests.EditMode.Core.Tools
 {
-    // Same-named fakes from other WPs also live in Jolly.Testing; these tests are written against this WP's.
-    using FakeLocalizer = Jolly.Testing.Conversation.FakeLocalizer;
-    using FakeSpatialAnchors = Jolly.Testing.Conversation.FakeSpatialAnchors;
-    using FakeWorldQuery = Jolly.Testing.Conversation.FakeWorldQuery;
-
     /// <summary>Camera at the origin looking down +Z at a wall 2 m away; a 64×64 image with f = 64 px.</summary>
     sealed class VisionFixture : IDisposable
     {
         public readonly FakeClock Clock = new();
         public readonly RecordingLog Log = new();
         public readonly FakeCameraFrameSource Camera = new();
-        public readonly FakeUserPose User = new();
+        public readonly FakeUserPoseProvider User = new();
         public readonly FakeWorldQuery World = new() { WallZ = 2f };
         public readonly ScriptedSegmenter Segmenter = new();
         public readonly ScriptedObjectIdentifier Identifier = new();

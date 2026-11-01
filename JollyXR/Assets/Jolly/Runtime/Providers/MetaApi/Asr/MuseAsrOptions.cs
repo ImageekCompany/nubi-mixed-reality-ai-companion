@@ -14,13 +14,11 @@ namespace Jolly.Providers.MetaApi.Asr
 
         public string Model { get; }
         public Uri RealtimeEndpoint { get; set; } = new("wss://api.meta.ai/v1/asr/realtime");
-        public Uri FileEndpoint { get; set; } = new("https://api.meta.ai/v1/asr/transcribe");
         /// <summary>
         /// Connect + handshake + ack (architecture §11; the server allows 10 s for the ack). Measured on Quest: ack
         /// 1.0–2.9 s after session start.
         /// </summary>
         public TimeSpan AckTimeout { get; set; } = TimeSpan.FromSeconds(5);
-        public TimeSpan FileTimeout { get; set; } = TimeSpan.FromSeconds(10);
         public double MaxAheadSeconds { get; set; } = 5.0;
         /// <summary>Reserved per request before connecting: one minute at $0.18/h.</summary>
         public decimal ReserveUsd { get; set; } = 0.003m;

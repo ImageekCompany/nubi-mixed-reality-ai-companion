@@ -42,6 +42,8 @@ namespace Jolly.Contracts
         /// <summary>Creates and persists an anchor. Returns its id, or null if persistence is unsupported (the caller keeps the pose only).</summary>
         UniTask<string> CreateAndSave(Pose pose, CancellationToken ct);
         UniTask<Pose?> TryResolve(string anchorId, CancellationToken ct);
+        /// <summary>Deletes the persisted anchor. An unknown id, or a platform without erase, is a no-op.</summary>
+        UniTask Erase(string anchorId, CancellationToken ct);
     }
 
     public enum ConversationState { Idle, Listening, Thinking, Speaking, Acting }

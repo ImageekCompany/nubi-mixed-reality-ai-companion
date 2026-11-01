@@ -13,7 +13,7 @@ namespace Jolly.Tests.PlayMode.Presentation
 {
     public sealed class SettingsPanelTests
     {
-        FakeLocalizer _localizer;
+        EchoLocalizer _localizer;
         FakePersonaProvider _personas;
         FakeUsageMeter _usage;
         InMemoryPreferencesStore _store;
@@ -24,9 +24,10 @@ namespace Jolly.Tests.PlayMode.Presentation
         [SetUp]
         public void SetUp()
         {
-            _localizer = new FakeLocalizer();
-            _personas = new FakePersonaProvider();
-            _usage = new FakeUsageMeter();
+            _localizer = new EchoLocalizer();
+            _personas = new FakePersonaProvider(FakePersonaProvider.Profile("companion"), FakePersonaProvider.Profile("mentor"),
+                FakePersonaProvider.Profile("guru"), FakePersonaProvider.Profile("psychologist"));
+            _usage = new FakeUsageMeter(0.53m, 5m);
             _store = new InMemoryPreferencesStore { Stored = new UserPreferencesSnapshot { CaptionSize = 1 } };
             _clock = new FakeClock();
             _panel = PresentationAssets.Instantiate<SettingsPanel>("SettingsPanel");

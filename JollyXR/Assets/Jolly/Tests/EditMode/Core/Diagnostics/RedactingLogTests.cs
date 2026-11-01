@@ -32,6 +32,20 @@ namespace Jolly.Tests.EditMode.Core.Diagnostics
         }
 
         [Test]
+        public void Write_WithException_RedactsItsTextAndPassesNoExceptionOn()
+        {
+            var inner = new RecordingLog();
+            var log = new RedactingLog(inner, new[] { "witTokenValue123" });
+
+            log.Write(LogLevel.Error, "llm", "evt=llm.failed",
+                new ProviderException("llm", ProviderErrorKind.Unauthorized, "bad key LLM_42_secretpart token witTokenValue123"));
+
+            Assert.That(inner.Entries[0].Exception, Is.Null);
+            Assert.That(inner.Entries[0].Message, Does.StartWith("evt=llm.failed\n").And.Contain("bad key *** token ***"));
+            Assert.That(inner.Entries[0].Message, Does.Not.Contain("secretpart").And.Not.Contain("witTokenValue123"));
+        }
+
+        [Test]
         public void Write_IgnoresShortOrEmptySecretValues()
         {
             var inner = new RecordingLog();

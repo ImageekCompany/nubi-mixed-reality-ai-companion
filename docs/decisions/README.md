@@ -23,5 +23,6 @@
 | [0019](0019-perf-latency-warmups-and-prompt-cache.md) | Launch warm-ups (pipelines, camera, ASR TLS), prompt cache key, self-test frame diagnostics | accepted |
 | [0020](0020-summary-budget-and-prompt-cache-order.md) | Summary token budget, truncation-safe summaries and a cache-stable prompt order | accepted |
 | [0021](0021-controller-push-to-talk.md) | Controller push-to-talk: hold A or X, bound by device layout | accepted |
+| [0022](0022-audit-fixes-anchors-selftest-memory-spikes.md) | Audit fixes: anchor erase, self-test memory, spike assemblies, log redaction | accepted |
 
 Review findings and their accept/reject decisions: [review-log.md](review-log.md).

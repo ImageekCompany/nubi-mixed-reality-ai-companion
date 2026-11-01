@@ -4,6 +4,7 @@
 # Usage: tools/device/push-secrets.sh            (ANDROID_SERIAL selects the device, as for adb)
 #   ENV_FILE=path/.env   NUBI_PACKAGE=com.nubi.companion   TMPDIR=where the temp JSON is written
 # Only META_API_KEY, WIT_AI_CLIENT_TOKEN and WIT_AI_APP_ID are pushed; the Wit *server* token stays on the dev machine.
+# The app parses secrets once at boot, so the script force-stops it: the next launch uses the new values.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -12,6 +13,9 @@ PKG="${NUBI_PACKAGE:-com.nubi.companion}"
 DEST="/sdcard/Android/data/$PKG/files"
 
 [[ -f "$ENV_FILE" ]] || { echo "missing $ENV_FILE" >&2; exit 1; }
+if (( $(stat -f %Lp "$ENV_FILE" 2>/dev/null || stat -c %a "$ENV_FILE") % 100 != 0 )); then
+  echo "warning: $ENV_FILE is readable by other accounts; run: chmod 600 $ENV_FILE" >&2
+fi
 TMP="$(mktemp "${TMPDIR:-/tmp}/nubi-secrets.XXXXXX")"
 trap 'rm -f "$TMP"' EXIT
 
@@ -38,4 +42,5 @@ PY
 
 adb shell mkdir -p "$DEST"
 adb push "$TMP" "$DEST/secrets.json" >/dev/null
-echo "pushed $DEST/secrets.json"
+adb shell am force-stop "$PKG"
+echo "pushed $DEST/secrets.json; $PKG stopped so the next launch reads it"

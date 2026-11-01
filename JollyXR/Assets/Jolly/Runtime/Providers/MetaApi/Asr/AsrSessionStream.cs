@@ -7,7 +7,7 @@ using Jolly.Contracts;
 namespace Jolly.Providers.MetaApi.Asr
 {
     /// <summary>
-    /// The shell both ASR adapters share. The session runs from the moment <c>Transcribe</c> is called, not from the
+    /// The session shell of the realtime ASR adapter. The session runs from the moment <c>Transcribe</c> is called, not from the
     /// first enumeration (contracts §5 "connects immediately"), so a caller that enumerates only at PTT release still
     /// overlaps the 1.0–2.9 s handshake with the user speaking; events wait in a channel until read. The session ends
     /// on the caller's token or when the reader stops enumerating early. A missing key fails it as Unauthorized.

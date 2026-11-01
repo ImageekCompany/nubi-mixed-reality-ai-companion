@@ -58,7 +58,8 @@ namespace Jolly.App.Adapters
             }
             finally
             {
-                if (_machine.State == ConversationState.Idle)
+                // On teardown the character may already be destroyed, and nothing needs the hand-back.
+                if (!_appCt.IsCancellationRequested && _machine.State == ConversationState.Idle)
                     _character.SetConversationState(ConversationState.Idle);
             }
         }
