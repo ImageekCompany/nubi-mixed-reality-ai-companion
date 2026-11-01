@@ -109,6 +109,21 @@ namespace Jolly.Tests.EditMode.Chat
         }
 
         [Test]
+        public void FromHttp_BodyThatIsNotAnErrorEnvelope_KeepsTheBareStatus()
+        {
+            Assert.That(MetaErrors.FromHttp(new HttpFailureException(500, "{\"error\":")).Message, Is.EqualTo("HTTP 500"));
+            Assert.That(MetaErrors.FromHttp(new HttpFailureException(500, "{\"error\":{\"message\":42}}")).Message, Is.EqualTo("HTTP 500"));
+        }
+
+        [TestCase(0, ProviderErrorKind.Network)]
+        [TestCase(204, ProviderErrorKind.Protocol)]
+        [TestCase(302, ProviderErrorKind.Protocol)]
+        public void KindOfStatus_NonErrorStatuses_AreNetworkOrProtocol(int status, ProviderErrorKind kind)
+        {
+            Assert.That(MetaErrors.KindOfStatus(status), Is.EqualTo(kind));
+        }
+
+        [Test]
         public void FromHttp_NetworkError_IsNetworkKind()
         {
             var e = MetaErrors.FromHttp(HttpFailureException.Network("Cannot resolve destination host"));
@@ -122,6 +137,8 @@ namespace Jolly.Tests.EditMode.Chat
         [TestCase("server_shutting_down", ProviderErrorKind.Server)]
         [TestCase("invalid_api_key", ProviderErrorKind.Unauthorized)]
         [TestCase("gateway_timeout", ProviderErrorKind.Timeout)]
+        [TestCase("invalid_request_error", ProviderErrorKind.BadRequest)]
+        [TestCase("invalid_request", ProviderErrorKind.BadRequest)]
         [TestCase(null, ProviderErrorKind.Server)]
         public void FromStreamError_MapsCodeToKind(string code, ProviderErrorKind kind)
         {

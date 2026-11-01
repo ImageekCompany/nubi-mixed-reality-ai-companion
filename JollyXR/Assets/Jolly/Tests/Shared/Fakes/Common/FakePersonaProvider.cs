@@ -25,6 +25,10 @@ namespace Jolly.Testing
         public string PendingSwitchId { get; private set; }
         public int ApplyCount { get; private set; }
         public Dictionary<string, string> Greetings { get; } = new();
+        /// <summary>ApplySwitch returns false and keeps the request pending, as a profile that fails to load does.</summary>
+        public bool RefuseSwitch { get; set; }
+        /// <summary>ApplySwitch throws this (a bug in the provider).</summary>
+        public Exception SwitchFailure { get; set; }
         public event Action<PersonaProfile> Changed;
         public event Action SwitchRequested;
 
@@ -46,7 +50,9 @@ namespace Jolly.Testing
 
         public UniTask<bool> ApplySwitch(string id, CancellationToken ct)
         {
-            if (!_profiles.TryGetValue(id, out var profile))
+            if (SwitchFailure != null)
+                return UniTask.FromException<bool>(SwitchFailure);
+            if (RefuseSwitch || !_profiles.TryGetValue(id, out var profile))
                 return UniTask.FromResult(false);
             ApplyCount++;
             PendingSwitchId = null;

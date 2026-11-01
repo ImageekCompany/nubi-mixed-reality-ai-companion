@@ -37,7 +37,13 @@ Flag provenance:
 ! grep -rn "cancelImmediately: *true" JollyXR/Assets/Jolly --include=*.cs
 ```
 
-- [ ] EditMode exit 0. All Core, Net, Providers and Audio logic is covered. Each WP's required tests exist (`scope.md`).
+Coverage (`com.unity.testtools.codecoverage` 1.3.0, flags from its `Documentation~/CoverageBatchmode.md`): `test.sh` adds `-debugCodeOptimization -enableCodeCoverage -coverageResultsPath artifacts/coverage -coverageOptions "dontClear;assemblyFilters:+Jolly.*,-Jolly.Tests.*,-Jolly.Testing,-Jolly.Editor*,-Jolly.Spikes*"` to both runs, and `generateHtmlReport` to the last, whose report merges both. `tools/ci/coverage.sh` then reads `artifacts/coverage/Report/Summary.xml`, writes line coverage per assembly to `artifacts/coverage-summary.txt`, and fails a full run when Core + Net + Providers.MetaApi + Providers.Wit + Audio together fall below the threshold. The threshold is the last measured value minus 2 points (91.6 % from 93.6 % on 2026-11-01); raise it with the measurement, never lower it to pass.
+
+What the number does not see:
+- Code that runs after `UniTask.SwitchToThreadPool` records no hits. `SamObjectDecoder` reads 0 % although `SamSegmenterTests` assert the decoded masks; `JpegImageEncoder`'s encode is the same.
+- The UnityWebRequest, `ClientWebSocket` and microphone shells (`HttpTransport`, `SseDownloadHandler`, `ClientWebSocketConnection`, `WitSynthesisRequest`, `WitDownloadHandler`, `UnityMicrophone`) have no test because no test touches the network or a device (item 1.3). They are most of what Net (62.5 %) and Wit (60.8 %) leave uncovered, and the device self-test is their evidence.
+
+- [ ] EditMode exit 0. All Core, Net, Providers and Audio logic is covered: `coverage.sh` passes its threshold. Each WP's required tests exist (`scope.md`).
 - [ ] PlayMode exit 0, including the E2E voice turn, barge-in, `capture_and_identify` with fakes, the offline path, and `NoGcAllocInSteadyStateIdle`.
 - [ ] No test hits the network unless it is `[Category("Live")]`.
 

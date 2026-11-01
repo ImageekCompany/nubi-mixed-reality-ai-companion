@@ -205,6 +205,45 @@ namespace Jolly.Tests.EditMode.Vision
         });
 
         [UnityTest]
+        public IEnumerator Segment_IncompleteResponse_IsAProtocolErrorNamingTheReason() => UniTask.ToCoroutine(async () =>
+        {
+            _transport.Respond(SamStreams.Incomplete("max_output_tokens"));
+
+            var e = await AsyncAssert.Throws<ProviderException>(() =>
+                Segmenter().Segment(VisionFixtures.Jpeg(640, 428), SegmentPrompt.ForText("pen"), CancellationToken.None));
+
+            Assert.That(e.Kind, Is.EqualTo(ProviderErrorKind.Protocol));
+            Assert.That(e.Message, Does.Contain("max_output_tokens"));
+            Assert.That(_usage.OpenReservations, Is.Zero);
+        });
+
+        [UnityTest]
+        public IEnumerator Segment_ErrorEvent_IsMappedFromItsCodeWithTheResponseId() => UniTask.ToCoroutine(async () =>
+        {
+            _transport.Respond(SamStreams.Error("rate_limit_exceeded"));
+
+            var e = await AsyncAssert.Throws<ProviderException>(() =>
+                Segmenter().Segment(VisionFixtures.Jpeg(640, 428), SegmentPrompt.ForText("pen"), CancellationToken.None));
+
+            Assert.That((e.Kind, e.RequestId), Is.EqualTo((ProviderErrorKind.RateLimited, "resp_test")));
+            Assert.That(e.Message, Does.Contain("slow down"));
+            Assert.That(_usage.OpenReservations, Is.Zero);
+        });
+
+        [UnityTest]
+        public IEnumerator Segment_MalformedEventData_IsAProtocolError() => UniTask.ToCoroutine(async () =>
+        {
+            _transport.Respond(SamStreams.MalformedAfterCreated());
+
+            var e = await AsyncAssert.Throws<ProviderException>(() =>
+                Segmenter().Segment(VisionFixtures.Jpeg(640, 428), SegmentPrompt.ForText("pen"), CancellationToken.None));
+
+            Assert.That(e.Kind, Is.EqualTo(ProviderErrorKind.Protocol));
+            Assert.That(e.Message, Does.StartWith("malformed SAM stream event"));
+            Assert.That(_usage.OpenReservations, Is.Zero);
+        });
+
+        [UnityTest]
         public IEnumerator Segment_RejectedWithAStatus_IsMappedAndSettledAsUnbilled() => UniTask.ToCoroutine(async () =>
         {
             _transport.Fail(new HttpFailureException(400, "{\"error\":{\"message\":\"w/h mismatch\"}}"));

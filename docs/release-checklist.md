@@ -4,13 +4,13 @@ Audit of [`definition-of-done.md`](definition-of-done.md) on `main` at `3f35562`
 
 Legend: ✅ met, with evidence · ⚠️ partial · ❌ not met · 🧑 needs a human (headset wearer, video, portal, or an owner decision).
 
-**Totals: 24 DoD items: 15 ✅, 6 ⚠️, 3 ❌/🧑. Release-audit extras: 4 ✅, 1 🧑.**
+**Totals: 24 DoD items: 16 ✅, 5 ⚠️, 3 ❌/🧑. Release-audit extras: 4 ✅, 1 🧑.**
 
 ## 1. Automated tests
 
 | # | Item | State | Evidence |
 |---|---|---|---|
-| 1.1 | EditMode exit 0; Core/Net/Providers/Audio covered; each WP's required tests exist | ⚠️ | `tools/ci/test.sh` → `[test] EditMode total=904 passed=904 failed=0 skipped=0 inconclusive=0`, exit 0, 58 s wall for the whole script. Coverage is not measured (no coverage package), so "all logic is covered" is a claim, not a number. |
+| 1.1 | EditMode exit 0; Core/Net/Providers/Audio covered; each WP's required tests exist | ✅ | `tools/ci/test.sh` → `[test] EditMode total=927 passed=927 failed=0 skipped=0 inconclusive=0`, exit 0, 60 s wall for the whole script (branch `feat/coverage-gate`, 2026-11-01). Coverage is now measured (`com.unity.testtools.codecoverage` 1.3.0, EditMode + PlayMode merged) and gated by `tools/ci/coverage.sh`. Line coverage before → after the 23 new tests: Core 96.7 → 97.7 %, Providers.MetaApi 94.9 → 96.2 %, Audio 89.3 %, Net 61.9 → 62.5 %, Providers.Wit 60.8 %; **pure logic 92.7 → 93.6 % (5,949/6,357 lines), threshold 91.6 %**; all `Jolly.*` runtime 83.7 → 84.3 %. Net and Wit are low because their UnityWebRequest/WebSocket shells are untestable without the network; thread-pool code reads 0 % (DoD §1). |
 | 1.2 | PlayMode exit 0 incl. E2E voice turn, barge-in, `capture_and_identify`, offline path, `NoGcAllocInSteadyStateIdle` | ✅ | `[test] PlayMode total=216 passed=216 failed=0`. The tests exist: `VoiceTurn_ListensThinksCallsTheToolAndSpeaksWithCaptions`, `BargeIn_SilencesWithin…`, `CaptureAndIdentify_SegmentsTheStillFrameAndSpeaksTheVisionAnswer`, `Offline_PressPlaysACannedLineWithoutTheCloud`, `NoGcAllocInSteadyStateIdle`. |
 | 1.3 | No test hits the network unless `[Category("Live")]` | ✅ | No `Live` tests exist. `grep -rnE "new (UnityWebRequest\|ClientWebSocket\|HttpClient)" Tests` is empty; the three test files that contain URLs assert them against `FakeHttpTransport` / `FakeWebSocket`. |
 
@@ -23,7 +23,7 @@ Legend: ✅ met, with evidence · ⚠️ partial · ❌ not met · 🧑 needs a 
 | 2.3 | No `FindObjectOfType`/`FindFirstObjectByType`/singletons/`Resources.Load` | ✅ | `test.sh` static gate passed. |
 | 2.4 | No secret material; `.env`, `secrets.json`, `Meta+Muse+Jolly*` untracked | ✅ | `git grep -nE "LLM_[0-9]+_\|Bearer [A-Za-z0-9]"` hits only synthetic keys in `Tests/` (the DoD line now excludes `Tests/`); empty outside. `git check-ignore` matches `.env`, `StreamingAssets/secrets*.json*`, `Meta+Muse+Jolly*`. See also extra A below. |
 | 2.5 | Release builds have no `JOLLY_DEBUG_CAPTURE` / `JOLLY_DEBUG_LOG` | ✅ | `ProjectSettings.asset` has `scriptingDefineSymbols: {}`; the `test.sh` gate passed. `build.log` does not print defines, so the evidence is the settings file the build used, not the log. |
-| 2.6 | asmdef graph matches `architecture.md` §2, enforced by a test | ✅ | `Tests/EditMode/Architecture/AssemblyGraphTests.cs`, part of the 904 passing. |
+| 2.6 | asmdef graph matches `architecture.md` §2, enforced by a test | ✅ | `Tests/EditMode/Architecture/AssemblyGraphTests.cs`, part of the 927 passing. |
 | 2.7 | `unity-architect-reviewer` pass leaves no open critical items | ✅ | Post-merge audit (Unity architecture, security, quality) at `a078010`; every finding is fixed or explicitly deferred in `decisions/review-log.md` "Post-merge audit" and ADR-0022. Not re-run on the two fix commits since. |
 
 ## 3. Build

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
@@ -11,7 +12,8 @@ namespace Jolly.Testing
     {
         public List<string> Partials { get; } = new();
         public string Final { get; set; } = "Hi newbie";
-        public ProviderException Failure { get; set; }
+        /// <summary>Thrown after the audio ends: a ProviderException is a provider failure, anything else a bug.</summary>
+        public Exception Failure { get; set; }
         /// <summary>Never sends the final (the Listening watchdog case).</summary>
         public bool Hang { get; set; }
         public SttOptions LastOptions { get; private set; }

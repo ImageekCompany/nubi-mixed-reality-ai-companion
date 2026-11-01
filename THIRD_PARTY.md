@@ -60,6 +60,8 @@ Licences:
 | `com.unity.timeline` | 6.6.0 | UCL. Installed because uLipSync uses it without declaring the dependency |
 | `com.unity.test-framework` | 1.8.0 | UCL |
 | `com.unity.test-framework.performance` (transitive) | 6.6.0 | UCL |
+| `com.unity.testtools.codecoverage` | 1.3.0 | UCL (`LICENSE.md` in the package). Editor-only, never in the player; it bundles ReportGenerator (Apache 2.0) and OpenCover's model (MIT) per its `Third Party Notices.md`. The 6000.6.6f1 editor ships this exact version (`PackageManager/Editor/com.unity.testtools.codecoverage-1.3.0.tgz`) |
+| `com.unity.settings-manager` (transitive, from code coverage) | 2.1.1 | UCL |
 | `com.unity.burst`, `com.unity.collections`, `com.unity.mathematics`, `com.unity.editorcoroutines`, `com.unity.profiling.core`, `com.unity.nuget.mono-cecil`, `com.unity.searcher`, `com.unity.graph-authoring` (all transitive) | per `packages-lock.json` | UCL, or Unity Companion Package License for `searcher`; `burst` and `graph-authoring` ship no licence file in the cache |
 | `com.unity.modules.*` | 1.0.0 | Built-in engine modules, under the Editor terms |
 

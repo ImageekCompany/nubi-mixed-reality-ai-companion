@@ -39,6 +39,29 @@ namespace Jolly.Tests.EditMode.Vision.Doubles
 
         public static List<SseEvent> EndingBeforeOutput() => new() { Created("resp_test"), new SseEvent(null, SseEvent.DoneSentinel) };
 
+        public static List<SseEvent> Incomplete(string reason) => new()
+        {
+            Created("resp_test"),
+            Event("response.incomplete", new JObject
+            {
+                ["response"] = new JObject { ["id"] = "resp_test", ["status"] = "incomplete",
+                    ["incomplete_details"] = new JObject { ["reason"] = reason } },
+            }),
+        };
+
+        /// <summary>The top-level "error" event, which carries code and message without a response object.</summary>
+        public static List<SseEvent> Error(string code) => new()
+        {
+            Created("resp_test"),
+            Event("error", new JObject { ["code"] = code, ["message"] = "slow down" }),
+        };
+
+        public static List<SseEvent> MalformedAfterCreated() => new()
+        {
+            Created("resp_test"),
+            new SseEvent("response.output_text.delta", "{\"type\":\"response.output_text.delta\",\"delta\":"),
+        };
+
         static List<SseEvent> Head(string id, string text, bool withDone, params SseEvent[] tail)
         {
             var events = new List<SseEvent> { Created(id), Event("response.in_progress", new JObject()) };

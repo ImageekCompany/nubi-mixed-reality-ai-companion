@@ -35,6 +35,23 @@ namespace Jolly.Tests.EditMode.Core.Tools
         }
 
         [Test]
+        public void FindObject_MoreInstancesThanTheCap_OutlinesOnlyTheFirstOnesAndKeepsTheNearest()
+        {
+            _f.Settings.MaxInstances = 2;
+            _f.User.Head = new Pose(new Vector3(-1, 0, 0), Quaternion.identity);
+            _f.Segmenter.Returns(ScriptedSegmenter.Square(4, 24, 8, id: 1), ScriptedSegmenter.Square(40, 24, 8, id: 2),
+                ScriptedSegmenter.Square(56, 24, 8, id: 3));
+
+            var output = ToolHarness.Output(ToolHarness.Run(_f.Find(), "{\"noun_phrase\":\"keys\"}"));
+
+            Assert.That((int)output["found"], Is.EqualTo(2));
+            Assert.That(_f.Presenter.Shown.Single().objects.Select(o => o.Id), Is.EqualTo(new[] { 1, 2 }));
+            Assert.That(_f.Character.LastLook.Value.Point.x, Is.LessThan(0), "the first, left instance stays the nearest");
+            Assert.That((float)output["distance_m"],
+                Is.EqualTo(Vector3.Distance(_f.User.Head.position, _f.Character.LastLook.Value.Point)).Within(0.01f));
+        }
+
+        [Test]
         public void FindObject_NothingFound()
         {
             var result = ToolHarness.Run(_f.Find(), "{\"noun_phrase\":\"keys\"}");
