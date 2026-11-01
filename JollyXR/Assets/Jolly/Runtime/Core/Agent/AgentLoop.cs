@@ -95,7 +95,7 @@ namespace Jolly.Core.Agent
                         break;
                     }
                     request.Input = transcript.Input(contextItem, _memory.Recent);
-                    open = new ToolRoundExecutor(_registry, _clock, context, events, ct, _log);
+                    open = new ToolRoundExecutor(_registry, request.Tools, _clock, context, events, ct, _log);
                     var result = await StreamRound(turn.TurnId, round, request, open, events, ct);
                     await open.WhenAll();
                     transcript.AddRound(result.OutputItems, open);

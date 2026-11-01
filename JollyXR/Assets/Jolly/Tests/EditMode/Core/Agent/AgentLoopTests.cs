@@ -201,6 +201,23 @@ namespace Jolly.Tests.EditMode.Core.Agent
         }
 
         [Test]
+        public void ToolNotOfferedToThePersona_IsRefusedWithoutExecuting()
+        {
+            _f.Tool("look_at");
+            var camera = _f.Tool("capture_and_identify");
+            _f.Personas.Current.AllowedTools = new[] { "look_at" };
+            _f.Model.Enqueue().Call("c1", "capture_and_identify");
+            _f.Model.Enqueue().Text("Sorry.");
+
+            AgentFixture.Completed(_f.Run());
+
+            Assert.That(_f.Model.Requests[0].Tools.Select(t => t.Name), Is.EqualTo(new[] { "look_at" }));
+            Assert.That(camera.Started, Is.Zero);
+            var result = _f.Model.Inputs[1].Single(i => i.Kind == ItemKind.ToolResult).Json;
+            Assert.That(result, Does.StartWith("{\"error\":\"unknown_tool\""));
+        }
+
+        [Test]
         public void ToolTimeout_ReturnsTimeoutResult()
         {
             var slow = _f.Tool("slow", manual: true, timeout: TimeSpan.FromSeconds(3));
