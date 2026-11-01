@@ -21,7 +21,7 @@ namespace Jolly.Tests.PlayMode.XR
         GameObject _root;
         FakeHandSource _hands;
         FakeClock _clock;
-        StubPreferences _preferences;
+        FakeUserPreferences _preferences;
         PinchPushToTalk _ptt;
         List<string> _events;
 
@@ -34,7 +34,7 @@ namespace Jolly.Tests.PlayMode.XR
             head.position = new Vector3(0f, 1.6f, 0f);
             _hands = new FakeHandSource();
             _clock = new FakeClock();
-            _preferences = new StubPreferences();
+            _preferences = new FakeUserPreferences();
             _ptt = _root.AddComponent<PinchPushToTalk>();
             _ptt.Construct(_hands, _clock, head, _preferences);
             _events = new List<string>();

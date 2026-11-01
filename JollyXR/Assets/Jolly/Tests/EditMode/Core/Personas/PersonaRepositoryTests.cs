@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Threading;
 using Jolly.Contracts;
 using Jolly.Core.Personas;
+using Jolly.Testing;
 using Jolly.Testing.Conversation;
 using NUnit.Framework;
 

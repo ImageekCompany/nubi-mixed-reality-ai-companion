@@ -1,5 +1,6 @@
 using System.Linq;
 using Jolly.Contracts;
+using Jolly.Testing;
 using Jolly.Testing.Conversation;
 using NUnit.Framework;
 

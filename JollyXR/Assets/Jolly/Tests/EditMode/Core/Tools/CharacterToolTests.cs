@@ -13,16 +13,11 @@ using UnityEngine;
 
 namespace Jolly.Tests.EditMode.Core.Tools
 {
-    // Same-named fakes from other WPs also live in Jolly.Testing; these tests are written against this WP's.
-    using FakePersonaProvider = Jolly.Testing.Conversation.FakePersonaProvider;
-    using FakeSpatialAnchors = Jolly.Testing.Conversation.FakeSpatialAnchors;
-    using FakeWorldQuery = Jolly.Testing.Conversation.FakeWorldQuery;
-
     public sealed class CharacterToolTests
     {
         RecordingCharacterController _character;
         FakeWorldQuery _world;
-        FakeUserPose _user;
+        FakeUserPoseProvider _user;
         SceneMemory _scene;
         FakeSpatialAnchors _anchors;
         FakeClock _clock;
@@ -33,7 +28,7 @@ namespace Jolly.Tests.EditMode.Core.Tools
         {
             _character = new RecordingCharacterController { Position = new Vector3(0, 0.05f, 0) };
             _world = new FakeWorldQuery();
-            _user = new FakeUserPose();
+            _user = new FakeUserPoseProvider();
             _anchors = new FakeSpatialAnchors();
             _clock = new FakeClock();
             _log = new RecordingLog();

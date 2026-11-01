@@ -81,33 +81,4 @@ namespace Jolly.Testing.Conversation
             return this;
         }
     }
-
-    public sealed class FakeConnectivityMonitor : IConnectivityMonitor
-    {
-        public Connectivity State { get; set; } = Connectivity.Online;
-        public event Action<Connectivity> Changed { add { } remove { } }
-        public void ReportSuccess(string provider) { }
-        public void ReportFailure(string provider, ProviderErrorKind kind) { }
-        public UniTask<Connectivity> ProbeNow(CancellationToken ct) => UniTask.FromResult(State);
-        public void Dispose() { }
-    }
-
-    public sealed class FakeUsageMeter : IApiUsageMeter
-    {
-        public decimal SpentUsd => 0m;
-        public decimal HardCapUsd => 1m;
-        public bool IsCapReached { get; set; }
-        public event Action<decimal> SpentChanged { add { } remove { } }
-
-        public bool TryReserve(decimal estimatedUsd, out long reservationId)
-        {
-            reservationId = 1;
-            return !IsCapReached;
-        }
-
-        public decimal Record(long reservationId, in UsageRecord usage) => 0m;
-        public decimal RecordEstimate(long reservationId, string model, long estInputTokens, long estOutputTokens) => 0m;
-        public void Flush() { }
-        public void Dispose() { }
-    }
 }

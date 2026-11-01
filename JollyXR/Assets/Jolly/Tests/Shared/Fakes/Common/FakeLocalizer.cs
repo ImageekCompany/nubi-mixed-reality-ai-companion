@@ -4,7 +4,7 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using Jolly.Contracts;
 
-namespace Jolly.Testing.Conversation
+namespace Jolly.Testing
 {
     /// <summary>ILocalizer over a (language, table, key) dictionary. Missing entries return the key, like UnityLocalizer.</summary>
     public sealed class FakeLocalizer : ILocalizer

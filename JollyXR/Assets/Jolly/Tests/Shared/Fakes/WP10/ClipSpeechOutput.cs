@@ -9,7 +9,7 @@ namespace Jolly.Testing.Offline
 {
     /// <summary>ISpeechOutput for clips only. A clip "plays" until the test calls <see cref="StartCurrent"/>
     /// (first sample) and <see cref="FinishCurrent"/> (last sample).</summary>
-    public sealed class FakeSpeechOutput : ISpeechOutput
+    public sealed class ClipSpeechOutput : ISpeechOutput
     {
         readonly List<(AudioClip clip, int utteranceId)> _played = new();
         UniTaskCompletionSource _current;
@@ -46,7 +46,7 @@ namespace Jolly.Testing.Offline
         }
 
         public UniTask Play(IUniTaskAsyncEnumerable<PcmChunk> pcm, int utteranceId, CancellationToken ct) =>
-            throw new NotSupportedException("FakeSpeechOutput plays clips only.");
+            throw new NotSupportedException("ClipSpeechOutput plays clips only.");
 
         public void Flush()
         {

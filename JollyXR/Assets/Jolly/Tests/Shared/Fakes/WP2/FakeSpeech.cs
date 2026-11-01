@@ -9,19 +9,6 @@ using UnityEngine;
 
 namespace Jolly.Testing.Conversation
 {
-    /// <summary>Output that plays nothing by itself; tests raise <see cref="FirstSamplePlayed"/> through the queue fake.</summary>
-    public sealed class FakeSpeechOutput : ISpeechOutput
-    {
-        public bool IsPlaying { get; set; }
-        public int Flushes { get; private set; }
-        public event Action<int> FirstSamplePlayed;
-
-        public UniTask Play(IUniTaskAsyncEnumerable<PcmChunk> pcm, int utteranceId, CancellationToken ct) => UniTask.CompletedTask;
-        public UniTask PlayClip(AudioClip clip, int utteranceId, CancellationToken ct) => UniTask.CompletedTask;
-        public void Flush() => Flushes++;
-        public void RaiseFirstSample(int utteranceId) => FirstSamplePlayed?.Invoke(utteranceId);
-    }
-
     /// <summary>
     /// Records sentences. <see cref="PlayNext"/> starts the oldest unplayed one (raising its first sample),
     /// <see cref="Drain"/> plays everything and completes <see cref="WhenDrained"/>, and <see cref="DrainUnplayed"/>

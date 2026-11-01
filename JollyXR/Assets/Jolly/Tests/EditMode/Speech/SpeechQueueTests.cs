@@ -13,7 +13,7 @@ namespace Jolly.Tests.EditMode.Speech
     {
         FakeTextToSpeech _tts;
         ScriptedSpeechOutput _output;
-        FixedUserPreferences _preferences;
+        FakeUserPreferences _preferences;
         SpeechQueue _queue;
 
         [SetUp]
@@ -21,7 +21,7 @@ namespace Jolly.Tests.EditMode.Speech
         {
             _tts = new FakeTextToSpeech();
             _output = new ScriptedSpeechOutput();
-            _preferences = new FixedUserPreferences();
+            _preferences = new FakeUserPreferences();
             _queue = new SpeechQueue(_tts, _output, _preferences);
         }
 

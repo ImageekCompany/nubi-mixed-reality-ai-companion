@@ -9,6 +9,8 @@ namespace Jolly.Testing
         public event Action OpenPalm;
         public event Action Poke;
 
+        public bool HasSubscribers => GazeDwell != null || OpenPalm != null || Poke != null;
+
         public void RaiseGazeDwell() => GazeDwell?.Invoke();
         public void RaiseOpenPalm() => OpenPalm?.Invoke();
         public void RaisePoke() => Poke?.Invoke();

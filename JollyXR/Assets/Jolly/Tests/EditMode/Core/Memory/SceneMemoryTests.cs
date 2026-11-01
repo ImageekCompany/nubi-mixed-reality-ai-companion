@@ -12,9 +12,6 @@ using UnityEngine;
 
 namespace Jolly.Tests.EditMode.Core.Memory
 {
-    // Same-named fakes from other WPs also live in Jolly.Testing; these tests are written against this WP's.
-    using FakeSpatialAnchors = Jolly.Testing.Conversation.FakeSpatialAnchors;
-
     public sealed class SceneMemoryTests
     {
         static readonly CancellationToken None = CancellationToken.None;

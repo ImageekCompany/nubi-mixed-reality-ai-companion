@@ -4,9 +4,10 @@ using UnityEngine;
 
 namespace Jolly.Testing
 {
+    /// <summary>IUserPoseProvider with a settable head (standing height by default), pointing ray and hand key points.</summary>
     public sealed class FakeUserPoseProvider : IUserPoseProvider
     {
-        public Pose Head { get; set; } = Pose.identity;
+        public Pose Head { get; set; } = new(new Vector3(0, 1.6f, 0), Quaternion.identity);
         /// <summary>Null means no hand is pointing.</summary>
         public Ray? PointingRay { get; set; }
         public List<Vector3> HandKeyPoints { get; } = new();

@@ -5,7 +5,7 @@ using Cysharp.Threading.Tasks;
 using Jolly.Contracts;
 using Jolly.Core.Personas;
 
-namespace Jolly.Testing.Conversation
+namespace Jolly.Testing
 {
     public sealed class FakePersonaProvider : IPersonaProvider, IPersonaDirectory
     {

@@ -4,7 +4,7 @@ using Cysharp.Threading.Tasks;
 using Jolly.Contracts;
 using UnityEngine;
 
-namespace Jolly.Testing.Conversation
+namespace Jolly.Testing
 {
     /// <summary>
     /// In-memory anchors. <see cref="Supported"/> false mimics a platform without persistence (returns null ids);
@@ -17,6 +17,7 @@ namespace Jolly.Testing.Conversation
 
         public bool Supported { get; set; } = true;
         public bool Hang { get; set; }
+        public List<string> Erased { get; } = new();
 
         public UniTask<string> CreateAndSave(Pose pose, CancellationToken ct)
         {
@@ -31,6 +32,13 @@ namespace Jolly.Testing.Conversation
 
         public UniTask<Pose?> TryResolve(string anchorId, CancellationToken ct) =>
             UniTask.FromResult(_anchors.TryGetValue(anchorId, out var pose) ? pose : (Pose?)null);
+
+        public UniTask Erase(string anchorId, CancellationToken ct)
+        {
+            Erased.Add(anchorId);
+            _anchors.Remove(anchorId);
+            return UniTask.CompletedTask;
+        }
 
         /// <summary>Simulates a recenter: the anchor now resolves to a different world pose.</summary>
         public void Move(string anchorId, Pose pose) => _anchors[anchorId] = pose;

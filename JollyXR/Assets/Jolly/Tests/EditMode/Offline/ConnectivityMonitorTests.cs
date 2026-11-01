@@ -15,7 +15,7 @@ namespace Jolly.Tests.EditMode.Offline
         FakeClock _clock;
         ScriptedHealthProbe _probe;
         InMemorySecrets _secrets;
-        StubUsageMeter _meter;
+        FakeUsageMeter _meter;
         bool _reachable;
         List<Connectivity> _changes;
         ConnectivityMonitor _monitor;
@@ -27,7 +27,7 @@ namespace Jolly.Tests.EditMode.Offline
             _clock = new FakeClock();
             _probe = new ScriptedHealthProbe();
             _secrets = new InMemorySecrets().With(SecretKeys.MetaApiKey, "key-a");
-            _meter = new StubUsageMeter();
+            _meter = new FakeUsageMeter();
             _reachable = true;
             _changes = new List<Connectivity>();
             _cts = new CancellationTokenSource();

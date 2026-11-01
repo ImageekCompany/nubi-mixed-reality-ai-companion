@@ -15,7 +15,7 @@ namespace Jolly.Tests.PlayMode.Presentation
     public sealed class ToolBadgeViewTests
     {
         FakeConversationEvents _events;
-        FakeLocalizer _localizer;
+        EchoLocalizer _localizer;
         FakeClock _clock;
         ToolBadgeView _view;
         GameObject _root;
@@ -24,7 +24,7 @@ namespace Jolly.Tests.PlayMode.Presentation
         public void SetUp()
         {
             _events = new FakeConversationEvents();
-            _localizer = new FakeLocalizer();
+            _localizer = new EchoLocalizer();
             _clock = new FakeClock();
             _view = PresentationAssets.Instantiate<ToolBadgeView>("ToolBadges");
             _root = _view.transform.root.gameObject;

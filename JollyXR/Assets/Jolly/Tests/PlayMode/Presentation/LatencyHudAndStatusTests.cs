@@ -12,14 +12,14 @@ namespace Jolly.Tests.PlayMode.Presentation
     public sealed class LatencyHudAndStatusTests
     {
         FakeConversationEvents _events;
-        FakeLocalizer _localizer;
+        EchoLocalizer _localizer;
         GameObject _root;
 
         [SetUp]
         public void SetUp()
         {
             _events = new FakeConversationEvents();
-            _localizer = new FakeLocalizer();
+            _localizer = new EchoLocalizer();
         }
 
         [TearDown]

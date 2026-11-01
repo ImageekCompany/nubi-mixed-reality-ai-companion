@@ -3,6 +3,7 @@ using Jolly.Contracts;
 
 namespace Jolly.Testing
 {
+    /// <summary>IVoiceActivation driven by the test; a repeated Press or Release is ignored, like a held button.</summary>
     public sealed class FakeVoiceActivation : IVoiceActivation
     {
         public bool IsHeld { get; private set; }

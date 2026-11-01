@@ -127,7 +127,7 @@ namespace Jolly.Tests.EditMode.Core.Conversation
         [Test]
         public void BudgetCap_WinsOverOnlineConnectivity()
         {
-            _f.Usage.IsCapReached = true;
+            _f.Usage.ReachCap();
 
             _f.Talk();
 

@@ -18,7 +18,7 @@ namespace Jolly.Tests.EditMode.Asr
 
         FakeClock _clock;
         FakeWebSocket _socket;
-        FakeUsageMeter _meter;
+        RecordingUsageMeter _meter;
         RecordingLog _log;
         InMemorySecrets _secrets;
         Channel<PcmChunk> _audio;
@@ -29,7 +29,7 @@ namespace Jolly.Tests.EditMode.Asr
         {
             _clock = new FakeClock();
             _socket = new FakeWebSocket();
-            _meter = new FakeUsageMeter();
+            _meter = new RecordingUsageMeter();
             _log = new RecordingLog();
             _secrets = new InMemorySecrets().With(SecretKeys.MetaApiKey, "KEY");
             _audio = Channel.CreateSingleConsumerUnbounded<PcmChunk>();
@@ -57,7 +57,7 @@ namespace Jolly.Tests.EditMode.Asr
             Assert.That(_socket.ConnectedUri, Is.EqualTo(new Uri("wss://api.meta.ai/v1/asr/realtime")));
             Assert.That(_socket.Sent, Is.Empty, "no handshake: the server starts no session");
             Assert.That(_socket.IsDisposed, Is.True);
-            Assert.That(_meter.LastReservedUsd, Is.Zero);
+            Assert.That(_meter.Reservations, Is.Empty);
             Assert.That(_meter.Records, Is.Empty);
         }
 
