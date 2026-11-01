@@ -30,6 +30,8 @@ namespace Jolly.App
         [Tooltip("Empty offers every tool.")]
         public string[] allowedTools = Array.Empty<string>();
         public bool persistMemory = true;
+        [Tooltip("A persona built for difficult conversations: the content validator requires no memory, a safety notice " +
+                 "and no camera tools. The deterministic crisis hand-off itself runs for every persona.")]
         public bool crisisHandoff;
         public Mood defaultMood;
         public Color accentColor = Color.white;
@@ -59,7 +61,6 @@ namespace Jolly.App
                 Voices = byLanguage,
                 AllowedTools = allowedTools.Length == 0 ? null : allowedTools,
                 PersistMemory = persistMemory,
-                CrisisHandoff = crisisHandoff,
                 DefaultMood = defaultMood,
             };
         }

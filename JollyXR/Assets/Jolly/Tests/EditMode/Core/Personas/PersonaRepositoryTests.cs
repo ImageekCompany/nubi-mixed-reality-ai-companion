@@ -25,10 +25,10 @@ namespace Jolly.Tests.EditMode.Core.Personas
                 .With("pl", PersonaRepository.Table, "companion.prompt", "Jesteś ciepłym towarzyszem.");
         }
 
-        static PersonaDefinition Definition(string id, bool persist = true, bool crisis = false, string notice = null) => new()
+        static PersonaDefinition Definition(string id, bool persist = true, string notice = null) => new()
         {
             Id = id, DisplayNameKey = id + ".name", SystemPromptKey = id + ".prompt", SafetyNoticeKey = notice,
-            GreetingKey = id + ".greeting", AllowedTools = new[] { "stop" }, PersistMemory = persist, CrisisHandoff = crisis,
+            GreetingKey = id + ".greeting", AllowedTools = new[] { "stop" }, PersistMemory = persist,
             DefaultMood = Mood.Happy,
             Voices = new Dictionary<string, VoiceSpec> { ["en"] = new() { VoiceId = id + "-en", Speed = 90 } },
         };
@@ -36,7 +36,7 @@ namespace Jolly.Tests.EditMode.Core.Personas
         PersonaRepository Create() => new(new[]
         {
             Definition("companion"), Definition("guru"),
-            Definition("psychologist", persist: false, crisis: true, notice: "psychologist.notice"),
+            Definition("psychologist", persist: false, notice: "psychologist.notice"),
         }, "companion", _localizer);
 
         [Test]
@@ -90,7 +90,6 @@ namespace Jolly.Tests.EditMode.Core.Personas
             Assert.That(raised, Is.SameAs(personas.Current));
             Assert.That(raised.SafetyNotice, Is.EqualTo("I am not a therapist."));
             Assert.That(raised.PersistMemory, Is.False);
-            Assert.That(raised.CrisisHandoff, Is.True);
         }
 
         [Test]

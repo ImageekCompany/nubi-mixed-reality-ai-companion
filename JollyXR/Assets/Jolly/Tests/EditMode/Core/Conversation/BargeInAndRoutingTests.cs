@@ -135,13 +135,35 @@ namespace Jolly.Tests.EditMode.Core.Conversation
         }
 
         [Test]
-        public void MicUnavailable_RoutesOffline()
+        public void MicUnavailable_PlaysTheErrorLineNotTheOfflineOne()
         {
             _f.Mic.IsAvailable = false;
 
             _f.Talk();
 
-            Assert.That(_f.Offline.Categories, Is.EqualTo(new[] { LineCategory.Offline }));
+            Assert.That(_f.Offline.Categories, Is.EqualTo(new[] { LineCategory.Error }));
+            Assert.That(_f.Mic.Sessions, Is.Empty);
+        }
+
+        [Test]
+        public void PressWhileAnInteractionLinePlaysAtIdle_SilencesItAndListens()
+        {
+            _f.Output.IsPlaying = true;
+
+            _f.Voice.Press();
+
+            Assert.That(_f.Output.Flushes, Is.EqualTo(1));
+            Assert.That(_f.Queue.Clears, Is.EqualTo(1));
+            Assert.That(_f.State, Is.EqualTo(ConversationState.Listening));
+        }
+
+        [Test]
+        public void PressAtIdleWithNothingPlaying_FlushesNothing()
+        {
+            _f.Voice.Press();
+
+            Assert.That(_f.Output.Flushes, Is.Zero);
+            Assert.That(_f.State, Is.EqualTo(ConversationState.Listening));
         }
 
         [Test]
@@ -160,12 +182,8 @@ namespace Jolly.Tests.EditMode.Core.Conversation
         }
 
         [Test]
-        public void CrisisPersona_SpeaksTheHandoffBeforeTheModelAndAnnotatesTheTurn()
+        public void CrisisWords_TheDefaultCompanionSpeaksTheHandoffBeforeTheModelAndAnnotatesTheTurn()
         {
-            _f.Dispose();
-            _f = new ConversationFixture("en", Jolly.Testing.Conversation.FakePersonaProvider.Profile("psychologist",
-                persistMemory: false, crisisHandoff: true)).Start();
-
             _f.Talk("Sometimes I want to die.");
 
             Assert.That(_f.Offline.Categories, Is.EqualTo(new[] { LineCategory.CrisisHandoff }));
@@ -173,12 +191,12 @@ namespace Jolly.Tests.EditMode.Core.Conversation
         }
 
         [Test]
-        public void NonCrisisPersona_NeverHandsOff()
+        public void NoCrisisWords_NeverHandsOff()
         {
-            _f.Talk("Sometimes I want to die.");
+            _f.Talk("Sometimes I want a nap.");
 
             Assert.That(_f.Offline.Categories, Is.Empty);
-            Assert.That(_f.Agent.Turns.Single().Text, Is.EqualTo("Sometimes I want to die."));
+            Assert.That(_f.Agent.Turns.Single().Text, Is.EqualTo("Sometimes I want a nap."));
         }
     }
 }

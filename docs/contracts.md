@@ -867,7 +867,6 @@ namespace Jolly.Contracts
         public VoiceSpec Voice { get; set; }                   // resolved for the current locale
         public IReadOnlyList<string> AllowedTools { get; set; }
         public bool PersistMemory { get; set; }
-        public bool CrisisHandoff { get; set; }
         public Mood DefaultMood { get; set; }
     }
 
@@ -1008,7 +1007,7 @@ namespace Jolly.Contracts
 |---|---|---|
 | `ConversationStateMachine` | `ConversationState State`; `bool Fire(ConversationTrigger t)`; `bool ToolsRunning, SpeechPending, TurnEnded { get; }` (latched flags, set by the triggers below and reset on `PttPressed`); `event Action<ConversationState,ConversationState> Changed` | `enum ConversationTrigger { PttPressed, OfflinePttPressed, FinalText, FinalEmpty, SttFailed, ToolStarted, ToolsDone, FirstAudio, SpeechDrained, TurnCompleted, TurnFailed, Watchdog }`. Guards read only the latched flags, so `Fire` needs no payload. Table in architecture §6 |
 | `ConversationController` | ctor(`IVoiceActivation, TurnRouter, TurnPipeline, BargeInCoordinator, ConversationStateMachine, IPersonaProvider, IConversationMemory, IClock, ILog`); `UniTask RunAsync(CancellationToken appCt)`; `void Interrupt()` | Thin loop: owns `sessionCts` and `turnCts`, the watchdogs, and applies a pending persona switch when Idle |
-| `TurnRouter` | ctor(`IConnectivityMonitor, IApiUsageMeter, CrisisGuard, StopGuard`); `TurnRoute Route(bool sttAvailable)` | `enum TurnRoute { Online, Offline, Unauthorized, BudgetReached }`; pure |
+| `TurnRouter` | ctor(`IConnectivityMonitor, IApiUsageMeter, CrisisGuard, StopGuard`); `TurnRoute Route(bool sttAvailable)` | `enum TurnRoute { Online, Offline, Unauthorized, BudgetReached, MicUnavailable }`; pure. `MicUnavailable` plays the Error line, not the offline one |
 | `TurnPipeline` | ctor(`IAudioCapture, ISpeechToText, ICameraFrameSource, IImageEncoder, IAgentLoop, SpeechQueue, IOfflineResponder, ICharacterController, CrisisGuard, StopGuard, TranscriptAliases, ILocalizer, IConversationEvents` impl, `ILatencyTracker`); `UniTask RunOnline(int turnId, CancellationToken turnCt)`; `UniTask RunOffline(int turnId, LineCategory c, CancellationToken turnCt)` | One turn: mic → STT → (pre-capture at release) → guards → agent → speech |
 | `BargeInCoordinator` | ctor(`ISpeechOutput, SpeechQueue, ILatencyTracker`); `void BargeIn(CancellationTokenSource turnCts)` | Cancels the turn, flushes audio, marks `BargeIn`. Memory commit on cancel is done by `AgentLoop` (contracts §3) |
 | `AgentLoop : IAgentLoop` | ctor(`IChatModel, IToolRegistry, IConversationMemory, ISceneMemory, IPersonaProvider, ILocalizer, IUserPreferences, ILog, IClock, ILatencyTracker`) | |

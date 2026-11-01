@@ -16,6 +16,9 @@ namespace Jolly.Core.Memory
     /// </summary>
     public sealed class ConversationMemory : IConversationMemory
     {
+        const string FilePrefix = "conversation.";
+        const string FileSuffix = ".json";
+
         readonly string _directory;
         readonly IPersonaProvider _personas;
         readonly MemoryLimits _limits;
@@ -86,11 +89,14 @@ namespace Jolly.Core.Memory
             return UniTask.CompletedTask;
         }
 
+        /// <summary>Deletes every persona's file: a kept one would be carried back into the others on the next switch.</summary>
         public void Clear()
         {
             ResetInMemory();
-            if (_personaId != null)
-                AtomicFile.Delete(PathFor(_personaId));
+            if (!Directory.Exists(_directory))
+                return;
+            foreach (var path in Directory.GetFiles(_directory, FilePrefix + "*" + FileSuffix))
+                AtomicFile.Delete(path);
         }
 
         void ResetInMemory()
@@ -131,6 +137,6 @@ namespace Jolly.Core.Memory
             return chars;
         }
 
-        string PathFor(string personaId) => Path.Combine(_directory, "conversation." + personaId + ".json");
+        string PathFor(string personaId) => Path.Combine(_directory, FilePrefix + personaId + FileSuffix);
     }
 }

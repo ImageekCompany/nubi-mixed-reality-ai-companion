@@ -11,6 +11,8 @@ namespace Jolly.Core.Agent
     /// Runs one model round's tool calls as they stream in (architecture §7). Parallel calls start at once; a Locomotion call
     /// supersedes a still-running one; an Exclusive call waits for the round's earlier non-Locomotion calls only. Each call
     /// has its own <see cref="ToolDefinition.Timeout"/>. Per-call tasks never throw, so abandoned ones are safe on cancel.
+    /// A call to a registered tool that was not offered this turn (persona allow-list, seated mode) is refused like an
+    /// unknown one: the allow-list is a privacy promise and must not depend on the model.
     /// </summary>
     sealed class ToolRoundExecutor
     {
@@ -28,6 +30,7 @@ namespace Jolly.Core.Agent
         }
 
         readonly IToolRegistry _registry;
+        readonly IReadOnlyList<ToolDefinition> _offered;
         readonly IClock _clock;
         readonly ToolContext _context;
         readonly ITurnEventSink _events;
@@ -36,10 +39,11 @@ namespace Jolly.Core.Agent
         readonly List<Call> _calls = new();
         Call _locomotion;
 
-        public ToolRoundExecutor(IToolRegistry registry, IClock clock, ToolContext context, ITurnEventSink events,
-                                 CancellationToken turnCt, ILog log)
+        public ToolRoundExecutor(IToolRegistry registry, IReadOnlyList<ToolDefinition> offered, IClock clock,
+                                 ToolContext context, ITurnEventSink events, CancellationToken turnCt, ILog log)
         {
             _registry = registry;
+            _offered = offered;
             _clock = clock;
             _context = context;
             _events = events;
@@ -73,6 +77,11 @@ namespace Jolly.Core.Agent
             _events.Write(new AgentEvent(AgentEventKind.ToolStarted, toolName: request.Name, callId: request.CallId));
 
             _calls.Add(call);
+            if (!IsOffered(request.Name))
+            {
+                Finish(call, ToolResult.Failure("unknown_tool", $"unknown tool '{request.Name}'"));
+                return;
+            }
             var known = _registry.TryGet(request.Name, out var tool);
             if (!_registry.TryValidate(request.Name, request.ArgumentsJson, out var args, out var error))
             {
@@ -111,6 +120,16 @@ namespace Jolly.Core.Agent
                     into.Add(ConversationItem.Call(call.Request.CallId, call.Request.Name, call.Request.ArgumentsJson));
                 into.Add(ConversationItem.Result(call.Request.CallId, call.Result?.OutputJson ?? Interrupted));
             }
+        }
+
+        bool IsOffered(string name)
+        {
+            foreach (var definition in _offered)
+            {
+                if (definition.Name == name)
+                    return true;
+            }
+            return false;
         }
 
         UniTask[] Prerequisites(Call current)

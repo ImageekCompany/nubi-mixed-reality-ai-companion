@@ -14,7 +14,7 @@ namespace Jolly.Tests.EditMode.Core.Conversation
         public void SetUp()
         {
             _f = new ConversationFixture("en", FakePersonaProvider.Profile("companion"), FakePersonaProvider.Profile("guru"),
-                FakePersonaProvider.Profile("psychologist", persistMemory: false, crisisHandoff: true,
+                FakePersonaProvider.Profile("psychologist", persistMemory: false,
                     safetyNotice: "I am not a therapist."));
             _f.Personas.Greetings["guru"] = "Greetings, seeker.";
             _f.Personas.Greetings["psychologist"] = "Hello, I am here to listen.";

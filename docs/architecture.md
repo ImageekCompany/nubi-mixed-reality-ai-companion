@@ -423,7 +423,7 @@ Verified live on 2026-11-01 (`api-spend.md`).
 
 **Persistence format.** Stores never `JsonConvert` contract types: `Vector3`/`Pose` fail with "Self referencing loop detected for property 'normalized'", and `ConversationItem`'s `private set` properties deserialize silently as defaults. Each store maps to Core DTOs with public float fields (`x,y,z`, `qx..qw`) and writes them with `JsonTextWriter` (reads with `JsonTextReader`), matching the hot-path style. Each store has a round-trip EditMode test.
 
-Scene context sent to the model has the form `Seen recently: obj_3 white enamel mug (near sofa, 2 min ago) …; Places: sofa, desk.` Ids are what the model passes to `look_at`/`walk_to`/`highlight_part`. The conversation summary prompt is told to refer to objects by label, never by `obj_N`. **Clear memory** (settings button) deletes the conversation and scene JSON files and resets the in-memory stores; usage is kept.
+Scene context sent to the model has the form `Seen recently: obj_3 white enamel mug (near sofa, 2 min ago) …; Places: sofa, desk.` Ids are what the model passes to `look_at`/`walk_to`/`highlight_part`. The conversation summary prompt is told to refer to objects by label, never by `obj_N`. **Clear memory** (settings button) deletes every persona's conversation file and the scene JSON file and resets the in-memory stores; usage is kept. Like a persona switch, it waits until the conversation is Idle with no turn running, so a turn in flight cannot commit itself back into the emptied store.
 
 ## 9. Personas and safety
 
@@ -438,10 +438,10 @@ Fields:
 
 Shipped personas: **Companion** (default, demo), **Mentor**, **Guru**, **Psychologist** (not demoed).
 
-Psychologist:
-- `persistMemory=false`, `crisisHandoff=true`.
+Psychologist (shown to users as **Listener**; the id stays `psychologist`):
+- `persistMemory=false`, `crisisHandoff=true`. The asset flag marks a persona built for difficult conversations; the content validator then requires no memory, a safety notice and no camera tools.
 - The safety notice is spoken and captioned once per session: not a therapist; for emergencies contact local services.
-- `CrisisGuard` (Core) runs *before* the model call on the final transcript. It matches a localized keyword list (`Lines` table, `crisis.keywords`). On a match it speaks the localized `CrisisHandoff` line (emergency number plus a crisis line, e.g. 988 in the US), then continues the turn with an instruction appended. This makes the hand-off deterministic, not model-dependent.
+- `CrisisGuard` (Core) runs *before* the model call on the final transcript, **for every persona**: the person most likely to say it is the hero user talking to the default Companion. It matches a localized keyword list (`Lines` table, `crisis.keywords`). On a match it speaks the localized `CrisisHandoff` line (emergency number plus a crisis line, e.g. 988 in the US), then continues the turn with an instruction appended. This makes the hand-off deterministic, not model-dependent.
 
 ## 10. Localization
 

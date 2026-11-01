@@ -6,13 +6,13 @@ namespace Jolly.Core.Conversation
 {
     /// <summary>
     /// Rewrites known ASR mishearings before captions and the model. Whole-word, case-insensitive.
-    /// Live ASR heard "Hi Nubi" as "Hi newbie" (2026-11-01).
+    /// Live ASR heard "Hi Nubi" as "Hi newbie" and "Nubi, come here" as "Nobi, come here" (2026-11-01).
     /// </summary>
     public sealed class TranscriptAliases
     {
         public static readonly TranscriptAliases Default = new(new Dictionary<string, string>
         {
-            ["newbie"] = "Nubi", ["noobie"] = "Nubi", ["nubie"] = "Nubi", ["newby"] = "Nubi",
+            ["newbie"] = "Nubi", ["noobie"] = "Nubi", ["nubie"] = "Nubi", ["newby"] = "Nubi", ["nobi"] = "Nubi",
         });
 
         readonly Dictionary<string, string> _aliases;

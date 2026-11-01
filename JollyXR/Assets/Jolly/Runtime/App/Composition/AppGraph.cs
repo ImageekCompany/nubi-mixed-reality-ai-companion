@@ -75,8 +75,7 @@ namespace Jolly.App.Composition
             Conversation = ConversationServices.Build(f, config, Cloud, Xr, Speech, Personas, Localizer, Preferences,
                 scene.nubi, edges.Voice ?? scene.pushToTalk, scene.maskOverlay, d);
             d.Add(new StatusRelay(Cloud.Connectivity, scene.permissions, scene.status));
-            d.Add(new SettingsRouter(scene.settings, Personas, Localizer, Conversation.Conversation, Conversation.Scene,
-                f.Log, appCt));
+            d.Add(new SettingsRouter(scene.settings, Personas, Localizer, Conversation.Controller, f.Log, appCt));
             var offline = Speech.Offline;
             offline.CaptionStarted += f.Events.RaiseCaptionStarted;
             d.Add(new Subscription(() => offline.CaptionStarted -= f.Events.RaiseCaptionStarted));

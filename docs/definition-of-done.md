@@ -120,10 +120,10 @@ Hero user: an older adult at home. Hero object: a TV remote (alternatives: moka 
 
 **Required beats (must tier only; 10 consecutive clean runs before recording):**
 1. Launch. Nubi appears on the floor, idles, blinks and looks at the user. Pinch-hold: "Hi Nubi, come here." Live partial caption (with "Nubi", not "newbie"), ack sound, the answer starts in ≤ 2 s with lipsync and a caption; Nubi walks around the furniture (hidden behind it if occluders are in) and stops about 1 m in front of the user.
-2. Hold up the TV remote, point at it: "What is this and how do I turn on subtitles?" Mask outline on the real object ≤ 2 s (hand-ray point prompt if R1 passed); the answer is spoken as it streams; tool badges show SAM 3.1 and Spark; Nubi looks at the object.
+2. Hold up the TV remote, point at it: "What is this, and which button turns it on?" Mask outline on the real object ≤ 2 s (hand-ray point prompt if R1 passed); the answer is spoken as it streams; `highlight_part` then outlines the button (SAM text prompt); tool badges show SAM 3.1 and Spark; Nubi looks at the object. (Changed from "how do I turn on subtitles?", which depends on the TV menu and invites a made-up answer.)
 3. "Follow me." The user walks about 3 m and Nubi follows. "Stop." Nubi stops at once (local `StopGuard`).
-4. Start a long answer, then pinch mid-sentence. Audio stops ≤ 150 ms, Nubi listens, and a walk in progress continues.
-5. Turn Wi-Fi off and pinch: "Are you there?" Nubi plays an offline canned line with lipsync. Idle behaviours continue, and a palm gesture triggers a line. Turn Wi-Fi on: the next turn is online.
+4. Start a long answer, then pinch mid-sentence. Audio stops ≤ 150 ms and Nubi listens. (A walk in progress continuing is tested in EditMode and shown only as an optional beat until it is seen on a scanned floor.)
+5. Turn Wi-Fi off and pinch: "Are you there?" Nubi plays an offline canned line with lipsync. Idle behaviours continue; a palm gesture triggering a line is optional until a wearer has confirmed it on the headset. Turn Wi-Fi on: the next turn is online.
 6. Check `docs/api-spend.md`: the run's cost is logged, and the usage meter in Settings matches it within 10%.
 
 **Optional beats (should tier; run only if that tier shipped; the video uses at most two):**

@@ -28,11 +28,11 @@ namespace Jolly.Testing.Conversation
         public event Action<PersonaProfile> Changed;
         public event Action SwitchRequested;
 
-        public static PersonaProfile Profile(string id, bool persistMemory = true, bool crisisHandoff = false,
+        public static PersonaProfile Profile(string id, bool persistMemory = true,
                                              string safetyNotice = null) => new()
         {
             Id = id, DisplayName = id, SystemPrompt = "You are " + id + ".", SafetyNotice = safetyNotice,
-            Voice = new VoiceSpec { VoiceId = "voice-" + id }, PersistMemory = persistMemory, CrisisHandoff = crisisHandoff,
+            Voice = new VoiceSpec { VoiceId = "voice-" + id }, PersistMemory = persistMemory,
         };
 
         public bool RequestSwitch(string id)

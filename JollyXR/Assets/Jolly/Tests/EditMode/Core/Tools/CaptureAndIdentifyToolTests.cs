@@ -185,6 +185,18 @@ namespace Jolly.Tests.EditMode.Core.Tools
         }
 
         [Test]
+        public void EmptyVisionAnswer_SpeaksTheHoldCloserLineInsteadOfEndingSilently()
+        {
+            _f.Identifier.Answer = Array.Empty<string>();
+
+            var result = ToolHarness.Run(_f.Capture(), "{\"question\":\"q\"}", ContextWith(null));
+
+            Assert.That(result.OutputJson, Is.EqualTo("{\"error\":\"vision_empty\"}"));
+            Assert.That(result.SpokenText, Is.EqualTo("I couldn't see it clearly, can you hold it closer?"));
+            Assert.That(result.EndsTurn, Is.True);
+        }
+
+        [Test]
         public void VisionProviderError_IsReportedToTheModel()
         {
             _f.Identifier.Failure = new ProviderException("vision", ProviderErrorKind.RateLimited, "429");

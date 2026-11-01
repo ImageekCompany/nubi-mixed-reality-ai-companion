@@ -9,6 +9,7 @@ namespace Jolly.Tests.EditMode.Core.Conversation
     public sealed class GuardTests
     {
         [TestCase("Hi newbie, come here.", "Hi Nubi, come here.")]
+        [TestCase("Nobi, come here.", "Nubi, come here.")]
         [TestCase("NOOBIE stop", "Nubi stop")]
         [TestCase("newbies are welcome", "newbies are welcome")]
         [TestCase("hey nubie! and newby?", "hey Nubi! and Nubi?")]

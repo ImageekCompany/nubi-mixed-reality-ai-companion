@@ -19,7 +19,6 @@ namespace Jolly.Core.Personas
         /// <summary>Null offers every registered tool.</summary>
         public IReadOnlyList<string> AllowedTools { get; set; }
         public bool PersistMemory { get; set; } = true;
-        public bool CrisisHandoff { get; set; }
         public Mood DefaultMood { get; set; }
     }
 }

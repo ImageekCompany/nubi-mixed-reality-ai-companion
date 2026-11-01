@@ -106,5 +106,14 @@ Each work package appends bullets under its own heading only (`docs/scope.md` §
 - `InteractionTriggers`: gaze dwell and open palm → Greeting, poke → WhoAmI. At most one request per 20 s across all signals, and signals that arrive while Nubi cannot speak don't count toward the limit.
 
 ### WP11
+- `README.md` (pitch, theme fit, Meta tooling, architecture, performance budget, privacy, getting started, status, roadmap), MIT `LICENSE`, and `THIRD_PARTY.md` with the versions resolved in `packages-lock.json`, non-OSI licences, committed third-party files and why Meta's Jolly mascot is not included.
+- `docs/demo-script.md` (six-beat shot list, per-beat fallbacks, Nov 9 live-finals runbook, rehearsal log) and `docs/perf/README.md` (OVR Metrics, Unity Profiler and `evt=turn.latency` percentile method).
 
 ### WP12
+
+### Integration review fixes
+- A press while a gaze/palm/poke line plays now silences it; Clear memory waits for Idle and deletes every persona's file; a missing microphone plays the Error line, not the offline one.
+- The crisis hand-off runs for every persona; a tool call outside the offered list is refused; Psychologist is shown as Listener / Słuchacz and may switch persona by voice; persona prompts cover every tool and no longer assume an older user; tool preambles stay neutral.
+- An empty vision answer speaks the hold-closer line instead of ending the turn silently; the ASR stream reports success at its first item; "Nobi" is aliased to "Nubi".
+- Self-test: adb-only trigger (no intent extra), render counters and a 71.5 fps floor in `perf_idle`, Wit-synthesised voice clips, compositor stale-frame share in `selftest.sh`, install retry. Release players no longer capture stack traces for Info logs, and canned clips no longer warn.
+- README, demo script, THIRD_PARTY and the self-test report updated from three device runs (release → first audio p50 1.57 s over 9 turns, barge-in silence 28–54 ms, 72.0 fps idle, 12 draw calls).

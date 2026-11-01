@@ -2,33 +2,32 @@ using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using Jolly.Contracts;
+using Jolly.Core.Conversation;
 using Jolly.Presentation;
 
 namespace Jolly.App.Adapters
 {
     /// <summary>
     /// Routes the settings panel's requests that are not preferences (contracts §9.1): a persona switch is recorded and
-    /// applied by the controller when Idle, a language goes to the localizer, and Clear memory resets both stores and
-    /// deletes their files (usage is kept, architecture §8).
+    /// applied by the controller when Idle, a language goes to the localizer, and Clear memory goes to the controller,
+    /// which also defers it until Idle.
     /// </summary>
     public sealed class SettingsRouter : IDisposable
     {
         readonly SettingsPanel _panel;
         readonly IPersonaProvider _personas;
         readonly ILocalizer _localizer;
-        readonly IConversationMemory _conversation;
-        readonly ISceneMemory _scene;
+        readonly ConversationController _conversation;
         readonly ILog _log;
         readonly CancellationToken _appCt;
 
         public SettingsRouter(SettingsPanel panel, IPersonaProvider personas, ILocalizer localizer,
-                              IConversationMemory conversation, ISceneMemory scene, ILog log, CancellationToken appCt)
+                              ConversationController conversation, ILog log, CancellationToken appCt)
         {
             _panel = panel;
             _personas = personas;
             _localizer = localizer;
             _conversation = conversation;
-            _scene = scene;
             _log = log;
             _appCt = appCt;
             _panel.PersonaSelected += OnPersonaSelected;
@@ -66,11 +65,6 @@ namespace Jolly.App.Adapters
             }
         }
 
-        void OnClearMemory()
-        {
-            _conversation.Clear();
-            _scene.Clear();
-            _log.Write(LogLevel.Info, "settings", "evt=memory.cleared");
-        }
+        void OnClearMemory() => _conversation.ClearMemory();
     }
 }

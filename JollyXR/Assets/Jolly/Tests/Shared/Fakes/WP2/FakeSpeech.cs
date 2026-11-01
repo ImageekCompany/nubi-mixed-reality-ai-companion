@@ -12,7 +12,7 @@ namespace Jolly.Testing.Conversation
     /// <summary>Output that plays nothing by itself; tests raise <see cref="FirstSamplePlayed"/> through the queue fake.</summary>
     public sealed class FakeSpeechOutput : ISpeechOutput
     {
-        public bool IsPlaying => false;
+        public bool IsPlaying { get; set; }
         public int Flushes { get; private set; }
         public event Action<int> FirstSamplePlayed;
 
