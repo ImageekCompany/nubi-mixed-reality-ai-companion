@@ -10,7 +10,7 @@
 Open source (MIT). Unity 6.6 + OpenXR. Built for the Meta AI Developer Hackathon 2026, Indie track. The whole repository history falls inside the hackathon window (first commit 2026-11-01).
 
 > **Demo video:** link added at submission (≤ 2:45; script in [`docs/demo-script.md`](docs/demo-script.md)).
-> **Project status:** the subsystems are built and tested, and the end-to-end wiring is in progress. See [Status](#status) before you build.
+> **Project status:** integrated and running on Quest 3. A scripted self-test runs the whole pipeline on the headset (real ASR → Spark → SAM → Wit → speaker) and reports latency and frame rate; see [Status](#status) and [Performance](#performance-budget).
 
 `JollyXR` is the repository's codename. Nubi is an original character and is unrelated to Meta's "Jolly" mascot (see [Character](#character-and-the-jolly-question)).
 
@@ -68,17 +68,17 @@ We read the rules and the rubric from the event page (`docs/research/hackathon.m
 The demo runs as six beats. The full shot list is in [`docs/demo-script.md`](docs/demo-script.md).
 
 1. **"Hi Nubi, come here."** You pinch and hold to talk. A live caption follows your words (with "Nubi", not "newbie"), you hear a short acknowledgement, and the answer starts streaming with lip-sync. Nubi walks around your furniture and stops about 1 m in front of you.
-2. **"What is this, and how do I turn on subtitles?"** You hold up the TV remote and point at it. An outline appears on the real remote, the answer is spoken as it streams, Nubi looks at the object, and tool badges show **SAM 3.1** and **Spark** firing.
+2. **"What is this, and which button turns it on?"** You hold up the TV remote and point at it. An outline appears on the real remote, the answer is spoken as it streams, then `highlight_part` outlines the power button itself. That is two SAM prompt types on one object: your pointing hand, then a text-prompted part. Tool badges show **SAM 3.1** and **Spark** firing.
 3. **"Follow me." … "Stop."** Nubi follows you across the room and stops at once. "Stop" is matched on the device, before any model call.
-4. **Barge-in.** You pinch in the middle of a long answer. The audio fades out within a 150 ms target, Nubi listens, and a walk that was already in progress carries on.
-5. **Wi-Fi off.** "Are you there?" Nubi answers with a baked offline line, still lip-synced, and its idle behaviour carries on. An open palm toward Nubi triggers a greeting. Turn Wi-Fi back on and the next turn is online again.
+4. **Barge-in.** You pinch in the middle of a long answer. The audio fades out within a 150 ms target (54 ms on the headset), and Nubi listens.
+5. **Wi-Fi off.** "Are you there?" Nubi answers with a baked offline line, still lip-synced, and its idle behaviour carries on. Turn Wi-Fi back on and the next turn is online again.
 6. **Cost.** The usage meter in Settings shows what the session cost, checked against [`docs/api-spend.md`](docs/api-spend.md).
 
-**Should-tier tools are built and tested but not yet in the demo:**
+**Built and tested but not in the main demo:**
 - `find_object` ("where are my glasses?") highlights every match.
-- `highlight_part` ("which button is the guide?") works on the last capture.
 - `remember_place` and `walk_to("sofa")` use persisted anchors.
 - `set_persona` switches personas by voice.
+- Gaze, open-palm and poke greetings (not yet confirmed with a person wearing the headset).
 
 The full tool catalogue is in `JollyXR/Assets/Jolly/Runtime/Core/Tools`.
 
@@ -139,36 +139,36 @@ graph TD
 - **Barge-in cancellation tree.** `appCts` → `sessionCts` (persona/locale) → `turnCts` (LLM stream, TTS requests, tools, ASR socket). A pinch cancels the turn first and then flushes audio with a 20 ms fade. Locomotion runs outside `turnCts`, so an interruption stops the talking, not the walking. `UnityWebRequest` aborts on the PlayerLoop.
 - **Streaming audio output without `AudioClip`s.** `StreamingSpeechOutput` is a clip-less `AudioSource` whose `OnAudioFilterRead` pulls 24 kHz PCM from a ring and resamples it to the device rate. `Flush()` silences exactly what is playing, and "first sample played" is measured where the sample is actually consumed, not where it is read ahead. uLipSync sits after the filter on the same GameObject, so the mouth follows the audio you hear.
 - **Lock-free SPSC ring** (`SpscFloatRing`) between the main thread and the audio thread: `Volatile` read/write, no locks and no allocations in the audio callback.
-- **Allocation discipline.** Pooled 32 KB `DownloadHandlerScript` buffers for SSE and Wit (the parameterless constructor allocates per chunk), `ArrayPool`-backed `PcmChunk`s with idempotent dispose, reader-based JSON on hot paths, one persistent native camera buffer, and no LINQ, closures or string concatenation in `Update` or audio callbacks. The target is 0 B/frame at steady idle. The PlayMode gate that enforces it lands with integration ([Status](#status)).
+- **Allocation discipline.** Pooled 32 KB `DownloadHandlerScript` buffers for SSE and Wit (the parameterless constructor allocates per chunk), `ArrayPool`-backed `PcmChunk`s with idempotent dispose, reader-based JSON on hot paths, one persistent native camera buffer, and no LINQ, closures or string concatenation in `Update` or audio callbacks. The target is 0 B/frame at steady idle, enforced by the PlayMode test `NoGcAllocInSteadyStateIdle` on the real scene (no main-thread `GC.Alloc` sample over 120 idle frames); on the headset, 30 s of idle ran with 0 GC collections.
 - **IL2CPP WebSocket.** `System.Net.WebSockets.ClientWebSocket` works on Quest IL2CPP (measured: 469–652 ms cold TLS connect, 150 ms warm). Receives resume on the main thread before writing to the channel, so every provider stream yields on the main thread.
 - **Passthrough Camera Access.** The meta-openxr camera subsystem gives a 1728² YUV CPU image, converted straight to 640 px in 12–14 ms (75 ms at full resolution). Intrinsics match Camera2 `LENS_INTRINSIC_CALIBRATION` exactly. Extrinsics are read from Camera2 `LENS_POSE_*` over JNI (they are gyroscope-relative). Image timestamps are `CLOCK_MONOTONIC`, and the head pose is interpolated at that timestamp. The pixel ↔ world math (`CameraMath`) is EditMode-tested. Source: `docs/research/device-spike.md`.
 - **Runtime NavMesh sized for a living room.** Floor plane outlines are triangulated into mesh colliders, and bounding boxes are baked as Not Walkable (`NavMeshBuilder.BuildNavMeshData`, agent radius 0.15 m). `NavMeshSurface` would use the 0.5 m Humanoid agent, which erases a living room (ADR-0017). Rebuilds are throttled to once per 2 s.
 - **Table-driven conversation state machine.** Three latched flags and per-state watchdogs. It is tested exhaustively, including every barge-in edge.
-- **Safety and robustness.** `CrisisGuard` runs before the model and hands off deterministically. `StopGuard` stops Nubi locally. Retries happen only before the first streamed byte, with full jitter and `Retry-After` capped at 8 s. A five-state connectivity monitor (Online, Degraded, Offline, Unauthorized, BudgetReached) runs a backed-off health probe.
-- **Quality gates** (`tools/ci/test.sh`): `-warnaserror+` on every assembly; no `async void`; no `System.Threading.Tasks.Task` (UniTask everywhere); no `CancellationTokenSource.CancelAfter` (it fires on a thread-pool timer); no debug-capture defines in shipped settings. At merge `8565f55`: **EditMode 881/881, PlayMode 196/196, zero compiler warnings, and an IL2CPP APK that builds.**
+- **Safety and robustness.** `CrisisGuard` runs before the model, for every persona, and hands off deterministically. A persona's tool allow-list is enforced when a call executes, not only in the list sent to the model. `StopGuard` stops Nubi locally. Retries happen only before the first streamed byte, with full jitter and `Retry-After` capped at 8 s. A five-state connectivity monitor (Online, Degraded, Offline, Unauthorized, BudgetReached) runs a backed-off health probe.
+- **Quality gates** (`tools/ci/test.sh`): `-warnaserror+` on every assembly; no `async void`; no `System.Threading.Tasks.Task` (UniTask everywhere); no `CancellationTokenSource.CancelAfter` (it fires on a thread-pool timer); no debug-capture defines in shipped settings; a content validator for personas, string tables and line clips. Current: **EditMode 891/891, PlayMode 207/207, zero compiler warnings, and an IL2CPP APK that builds.**
+- **A self-checking pipeline on the headset.** `tools/device/selftest.sh` installs the release APK, arms a built-in self-test and runs six scenarios with nobody wearing the headset. Bundled voice clips go through the real microphone pipeline to Muse ASR, Spark (with tools), SAM, Wit and the speaker. It also forces the network off and on, barges in, and samples frame time and render counters. It writes a PASS/DEGRADED/FAIL table and the run's API cost ([`docs/perf/selftest-report.md`](docs/perf/selftest-report.md), ADR-0018). It found bugs that no desk test could, including a health-probe URL that kept the app offline and a vision turn that ended in silence.
 
 ## Performance budget
 
-Targets come from [`docs/definition-of-done.md`](docs/definition-of-done.md) §4–5. "Measured" values come from the Quest 3 device spike (Horizon OS v209, IL2CPP, 2026-11-01; [`docs/research/device-spike.md`](docs/research/device-spike.md)). That spike ran a near-empty scene, so it is **not** an app-level result. **TBD** values are filled from the on-device self-test and the OVR Metrics captures after integration. Method: [`docs/perf/README.md`](docs/perf/README.md).
+Targets come from [`docs/definition-of-done.md`](docs/definition-of-done.md) §4–5. Measured values come from the on-device self-test of the full app (Quest 3, Horizon OS v209, IL2CPP release build, three runs on 2026-11-01; [`docs/perf/selftest-report.md`](docs/perf/selftest-report.md)), in a dim room with no Space Setup and nobody wearing the headset. Rows marked **unmeasured** need the OVR Metrics capture or a development-build Profiler session; the self-test report keeps the full DoD coverage table. Method: [`docs/perf/README.md`](docs/perf/README.md).
 
-| Metric | Target | Measured so far |
+| Metric | Target | Measured |
 |---|---|---|
-| Frame rate (passthrough, Nubi visible) | ≥ 72 fps sustained | 72/72 fps, near-empty scene (spike); app: **TBD** |
-| GPU / CPU utilisation | headroom for 72 fps | 24 % / 13 % with app GPU ≈ 2.2 ms, near-empty scene; app: **TBD** |
-| Stale frames | < 1 % over 10 min | **TBD** |
-| Draw calls / SetPass | ≤ 200 / ≤ 60 | **TBD** |
-| Triangles | ≤ 300k scene; Nubi ≤ 30k | Nubi **25,248** tris, 2 materials, one 1024² texture |
-| GC alloc | 0 B/frame idle; ≤ 4 KB/frame in a turn | **TBD** (gate: `NoGcAllocInSteadyStateIdle`) |
-| Memory (`app_rss_MB`) | ≤ 1,500 MB peak | **TBD** |
-| Thermal / battery | 30 min, no throttling below 72 fps; ≤ 20 % per 30 min | **TBD** |
-| PTT release → first answer audio | p50 ≤ 2.0 s | **TBD** (components below) |
-| ASR final after end-of-stream | p50 ≤ 300 ms | **166–208 ms** (device) |
-| Wit TTS first byte | p50 ≤ 400 ms | **465–800 ms** (device; Mac 341 ms), **at risk**, see [limitations](#known-limitations) |
-| Pinch → silence | p50 ≤ 150 ms | **TBD** |
-| Camera frame → 640 px RGBA | — | **12–14 ms** convert, frame age 31–46 ms at acquire |
-| `capture_and_identify` → mask visible | p50 ≤ 2.0 s | SAM 416 ms warm, from device on a test image (n=1); **TBD** end to end |
-| Spark vision first text | — | 1.51 s streamed at `minimal` (desk); 1.62 s non-streamed (device, n=1) |
-| Network loss → offline line | ≤ 2.0 s | **TBD** |
+| Frame rate (passthrough, Nubi visible) | ≥ 72 fps sustained | **72.0 fps** average, p95 frame 13.9 ms (30 s idle, 3 runs) |
+| Stale frames | < 1 % over 10 min | idle **0.18 %**; during turns **1.15 %** (just over); a 0.5 s hitch at launch |
+| Draw calls / SetPass | ≤ 200 / ≤ 60 | **12 / 11** max per frame (idle) |
+| Triangles | ≤ 300k scene; Nubi ≤ 30k | **27,178** max per frame; Nubi 25,248 tris, 2 materials, one 1024² texture |
+| GC alloc | 0 B/frame idle; ≤ 4 KB/frame in a turn | idle: PlayMode gate `NoGcAllocInSteadyStateIdle` passes, and 0 GC collections in 30 s on the headset; per turn: unmeasured |
+| Memory | `app_rss_MB` ≤ 1,500 MB peak | system used memory **530 MB** (idle); `app_rss_MB` unmeasured |
+| CPU main thread, thermal, battery | p95 ≤ 11 ms; 30 min without throttling; ≤ 20 % per 30 min | unmeasured |
+| **PTT release → first answer audio** | p50 ≤ 2.0 s | p50 **1.57 s**, max 1.97 s over 9 online turns, including each launch's first turn (n=9, not yet the 20 the DoD asks for) |
+| PTT release → ASR final | p50 ≤ 300 ms | **207–464 ms** |
+| ASR final → first LLM text | p50 ≤ 1.3 s | **0.39–1.37 s** |
+| Pinch → silence | p50 ≤ 150 ms | **28–54 ms** |
+| Network loss → offline line | ≤ 2.0 s | Offline detected in < 1 s; offline line captioned **14–27 ms** after the press |
+| `capture_and_identify` → mask visible | p50 ≤ 2.0 s | SAM returns 0.5–0.8 s after the call (live frame); mask-shown time unmeasured |
+| `capture_and_identify` → answer audio | p50 ≤ 2.5 s | unmeasured; the vision header alone arrives 2.8–3.1 s after the call on a dim frame, so this is **at risk** |
+| Camera frame → 640 px RGBA | — | **12–14 ms** convert, frame age 31–46 ms at acquire (device spike) |
 
 ## Privacy and security
 
@@ -179,19 +179,19 @@ Targets come from [`docs/definition-of-done.md`](docs/definition-of-done.md) §4
 - **Transcripts and model text are not logged in release builds.** That logging goes through a `[Conditional("JOLLY_DEBUG_LOG")]` extension, so the compiler removes the call and its arguments.
 - **`safety_identifier`** is a truncated SHA-256 of a random per-install GUID, never a hardware id.
 - **Camera content is treated as data, not instructions.** Labels coming back from vision output are sanitised and placed in a user-role context block that is marked as untrusted.
-- **Clear memory** in Settings deletes the conversation and scene files.
+- **Clear memory** in Settings deletes every persona's conversation file and the scene file. It waits for a running turn to end, so that turn can't write itself back.
 
 ## Accessibility
 
 - **Captions** for both you and Nubi, on by default, in three text sizes.
-- **Hands-only operation.** Push-to-talk works on either hand or on the dominant hand only. Pinches are ignored while you hover UI or poke Nubi, and while your palm faces you (the system-menu gesture). A controller button also works.
+- **Hands-only operation.** Push-to-talk works on either hand or on the dominant hand only. Pinches are ignored while you hover UI or poke Nubi, and while your palm faces you (the system-menu gesture).
 - **Seated mode.** Nubi comes to you, and the walking tools are withheld from the model.
 - **Speech rate and volume settings.** The mask highlight uses an outline *and* a fill, so it doesn't rely on colour alone.
 
 ## Localization
 
 Unity Localization 1.5.13, with locales `en` (default) and `pl`.
-- The `UI` and `Crisis` string tables ship in English and Polish.
+- The `UI`, `Lines`, `Personas` and `Crisis` string tables ship in English and Polish.
 - ASR takes a language bias per locale.
 - Wit has no Polish voice for this app (only `en_US`, `en_CA` and `en_GB` were listed), so Polish replies are captions-only.
 - Baked offline lines are English today.
@@ -237,28 +237,42 @@ No test touches the network. Providers are tested against SSE, ASR and SAM respo
 
 ### On-device check
 
-Latency and readiness come from logfmt log lines:
+The scripted self-test runs the whole app on the headset without anyone wearing it (about 2 minutes and $0.02–0.03 of API calls per run):
+
+```bash
+NUBI_TMPDIR=<short temp dir> tools/device/selftest.sh   # --build to build first; exit 1 on any FAIL
+```
+
+It prints one row per scenario (offline line, two voice turns, `capture_and_identify`, barge-in, 30 s of idle performance), the compositor's stale-frame share and the run's cost. A dark room or a room without Space Setup shows up as DEGRADED, not FAIL. Only adb can arm it: it starts when `selftest.json` exists in the app's files folder, and the script writes that file.
+
+During normal use, latency and readiness come from logfmt log lines:
 
 ```bash
 adb logcat -G 16M && adb logcat -s Unity | grep -E "evt=(loc.ready|turn.latency)"
 ```
 
-`evt=loc.ready table=… entries=N` shows that the localization tables came through Addressables. Each turn prints one `evt=turn.latency` line with its `PttReleased`, `AsrFinal`, `LlmFirstText`, `TtsFirstByte` and `FirstAudioPlayed` marks. The scripted on-device self-test arrives with integration (WP9).
+`evt=loc.ready table=… entries=N` shows that the localization tables came through Addressables. Each turn prints one `evt=turn.latency` line with its `PttReleased`, `AsrFinal`, `LlmFirstText`, `TtsFirstByte` and `FirstAudioPlayed` marks.
 
 ## Status
 
-As of merge `8565f55` (2026-11-02). This section is updated as integration lands.
+As of `fix/integration-review` (2026-11-01), merged into `main`.
 
 | Area | State |
 |---|---|
-| Net, Responses chat, usage meter, ASR (realtime + file), SAM + one-bit decoder, Spark vision, Wit TTS, streaming audio, conversation core and agent loop, tools, memory, offline mode, XR layer (permissions, PTT, camera, NavMesh, anchors, interaction signals), Nubi character, presentation views, localization | **Built and tested** (881 EditMode + 196 PlayMode tests) |
-| Transport on Quest 3: IL2CPP WebSocket ASR, Wit TTS, passthrough CPU image + intrinsics + extrinsics, SAM and Spark called from the device | **Verified on device** (spike, 2026-11-01) |
-| Composition root (`JollyBootstrap`), persona assets, `JollyConfig`, `Lines`/`Personas` tables, end-to-end PlayMode tests, zero-GC gate | **In progress** (WP9) |
-| Camera extrinsics marker test (≤ 3 cm at 1 m), lit-room SAM quality, lip-sync on device, end-to-end latency p50, OVR Metrics captures | **Pending** the headset session |
+| All subsystems (Net, Responses chat, usage meter, ASR, SAM + one-bit decoder, Spark vision, Wit TTS, streaming audio, conversation core, agent loop, tools, memory, offline mode, XR layer, Nubi, presentation, localization) | **Built and tested**: EditMode 891/891, PlayMode 207/207 |
+| Composition root (`JollyBootstrap` → `AppGraph`), four personas, `JollyConfig`, `Lines`/`Personas` tables (en, pl), end-to-end PlayMode tests on the real scene, zero-GC idle gate | **Done** |
+| Full app on Quest 3: voice turns, `capture_and_identify` on the live passthrough frame, barge-in, offline lines, idle performance | **Verified by the on-device self-test** (three runs, every scenario PASS except `come_here`, which is DEGRADED without Space Setup) |
+| Walking on a scanned floor, the camera extrinsics marker test (≤ 3 cm at 1 m), mask placement in a lit room, pinch/gaze/palm/poke with a wearer, OVR Metrics and Profiler captures, 20-turn latency run | **Pending** a session with a person in a lit room with Space Setup |
 
 ## Known limitations
 
-- **Wit TTS first-byte latency on the device (0.5–0.8 s)** is above the 400 ms stage budget. The answer still starts streaming before the full reply exists, but the 2 s first-audio target is at risk until it is measured end to end.
+- **Walking is unverified on a real floor.** The test room has no Space Setup, so `come_here` answers "I can't reach you just yet". The NavMesh code is EditMode-tested.
+- **Interaction triggers and the pinch are unverified with a wearer.** With nobody wearing the headset, hand tracking produced phantom pinches, so the self-test drives push-to-talk itself.
+- **No controller push-to-talk.** The scene's controller binding is empty; push-to-talk is hand pinch only.
+- **Stale frames during turns are 1.15 %**, just over the 1 % target, and there is a 0.5 s hitch at launch. Idle is 0.18 %.
+- **Vision answers are slower than the stage budget.** The vision header arrives 2.8–3.1 s after the tool call on a dim frame. The mask (SAM, 0.5–0.8 s) appears first, and a preamble covers the wait.
+- **The first turn after launch opens cold connections** (ASR acknowledgement 1.8–2.3 s vs ~0.8 s warm). In the self-test it still stayed under 2 s, but the demo script uses a warm-up turn.
+- **Prompt caching rarely hits** on the main chat route (once in about 18 requests over three self-test runs), so most turns pay for ~2.2k uncached input tokens and some time to first token. The cause is not known yet.
 - **Polish TTS is not available.** Polish replies are captions-only.
 - **The camera pose is gyroscope-relative.** The mapping from that pose to the OpenXR head pose is still to be confirmed by the marker test. Until then, the mask overlay and pointing may be off by a few centimetres.
 - **No server-side cancel for streaming responses.** A barge-in aborts the HTTP stream on the client and books an estimate of the aborted request.
@@ -272,7 +286,7 @@ These items are **not built.** They are where the architecture is designed to go
 - **Meta glasses.** The same brain (ASR → Spark tools → SAM → TTS) with a camera that already sees what you see. This is the natural form factor for low-vision help.
 - **Android XR and Pico through OpenXR.** `Jolly.XR` is already free of Meta types, so a new platform needs a frame-source adapter beside `Jolly.XR.MetaQuest`. Note that the Meta SDK licence restricts its components to Meta hardware.
 - **Offline and private models.** On-device STT and TTS, or a LAN host for open-weight Muse Glimmer (Apache-2.0) behind `IChatModel`, so nothing leaves the home.
-- **A therapist-grade private mode.** The Psychologist persona is designed with no memory persistence and a deterministic crisis hand-off. It only makes sense once it runs on private models with professional review, so it is not demoed.
+- **A therapist-grade private mode.** The Listener persona (id `psychologist`) keeps no memory, uses no camera tools and gives a safety notice. A real counselling mode only makes sense once it runs on private models with professional review, so it is not demoed, and the app never calls it a psychologist.
 - **Hands-free conversation.** Playback-gated VAD for voice barge-in, and a wake word.
 
 ## License
@@ -289,7 +303,7 @@ The original idea used Meta's Muse mascot, Jolly. We found no licence for that m
 
 ## Design decisions
 
-Seventeen ADRs record every key choice and its alternatives: [`docs/decisions/`](docs/decisions/README.md). Examples are OpenXR + meta-openxr instead of the Meta XR SDK (0002), Responses API routing (0004), Wit over raw HTTP (0006), a plain composition root (0009), secrets provisioning (0010) and the integration deviations (0017). Review findings are in [`review-log.md`](docs/decisions/review-log.md). API spend is tracked call by call in [`docs/api-spend.md`](docs/api-spend.md), and is under $1 of the $140 budget so far.
+Eighteen ADRs record every key choice and its alternatives: [`docs/decisions/`](docs/decisions/README.md). Examples are OpenXR + meta-openxr instead of the Meta XR SDK (0002), Responses API routing (0004), Wit over raw HTTP (0006), a plain composition root (0009), secrets provisioning (0010) the integration deviations (0017) and the device self-test (0018). Review findings are in [`review-log.md`](docs/decisions/review-log.md). API spend is tracked call by call in [`docs/api-spend.md`](docs/api-spend.md), and is under $1 of the $140 budget so far.
 
 ## Credits
 

@@ -3,7 +3,7 @@
 This page explains how to measure the targets in [`definition-of-done.md`](../definition-of-done.md) §4 (performance) and §5 (latency), and where to put the results.
 
 - Raw captures (CSV, `.data`, logcat dumps) go to `artifacts/`, which is git-ignored.
-- Committed summaries go here: `docs/perf/report.md` for frame time, memory and thermals, and [`vision-eval.md`](vision-eval.md) for the R6 vision/SAM evaluation.
+- Committed summaries go here: `docs/perf/report.md` for frame time, memory and thermals (until the first OVR Metrics capture, the DoD coverage table in [`selftest-report.md`](selftest-report.md) records what is measured and what is not), and [`vision-eval.md`](vision-eval.md) for the R6 vision/SAM evaluation.
 
 Always measure on a **Quest 3** with passthrough on and Nubi visible, during the scripted conversation (the six beats of [`demo-script.md`](../demo-script.md), looped). Record the Horizon OS version (`adb shell getprop ro.vros.build.version`) and the commit in every summary.
 
@@ -74,7 +74,7 @@ Use the development APK.
 
 5. Save the capture (`.data`) to `artifacts/perf/` and copy the numbers into `report.md`.
 
-The idle-allocation target is also enforced without a headset. The PlayMode test `NoGcAllocInSteadyStateIdle` (added with the WP9 integration) records the `GC.Alloc` marker over steady-state idle frames and fails on any byte. If you find an allocation in the Profiler first, turn it into a failing test, then fix it.
+The idle-allocation target is also enforced without a headset. The PlayMode test `SteadyStateAllocationTests.NoGcAllocInSteadyStateIdle` counts `GC.Alloc` samples on the main thread over 120 steady-state idle frames and fails on any sample. If you find an allocation in the Profiler first, turn it into a failing test, then fix it.
 
 ## 5. Latency: `evt=turn.latency`
 

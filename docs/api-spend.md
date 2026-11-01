@@ -20,5 +20,8 @@ Rows before 2026-11-01 02:00 (research phase, `docs/research/*.md`) were not ite
 | 2026-11-01 | WP1: record Responses SSE fixtures (text, commentary + function_call, parallel calls, incomplete) and verify round-2 replay of a function_call without its item id (200, cached 497) — synthetic prompts | muse-spark-1.3-contributor | 6 | in ~2.5k / out ~440 | 0.0004 |
 | 2026-11-01 | WP7: canned-line bake (`CannedLineBaker`, 31 lines + 1 timed-out retry) and `/voices` listing | Wit.ai (not Meta API budget) | 33 | ~1.9k chars | 0.00 |
 | 2026-11-01 | WP9: device self-test (`tools/device/selftest.sh`), 3 paid runs on Quest 3 (runs 1-2 never left Offline because of the probe URL bug, $0). Per run: ~5 voice turns (Muse ASR + Spark), 1 vision call + 1 SAM image on the CC0 mug still. Spend from the app's own meter: 0.0159 + 0.0207 + 0.0252 | muse-spark-1.3, sam-3.1, muse-voice-transcribe-1.0 (+ Wit, free) | ~15 agent + 3 vision Spark calls, 3 SAM, ~15 ASR sessions | in ~32k / out ~3k; 3 images; ~35 s audio | 0.062 |
+| 2026-11-01 | integration review (device reviewer): self-test re-run on `main` 9441aa8, 1 paid run (app meter) | muse-spark-1.3, sam-3.1, muse-voice-transcribe-1.0 (+ Wit, free) | ~5 agent + 1 vision Spark calls, 1 SAM, 5 ASR sessions | ~1 image; ~12 s audio | 0.0229 |
+| 2026-11-01 | integration fix pass: self-test voice clips re-synthesised (4× Wit `/synthesize`) | Wit.ai (not Meta API budget) | 4 | ~140 chars | 0.00 |
+| 2026-11-01 | integration fix pass: device self-test, 3 paid runs on `fix/integration-review` (app meter: 0.0232 + 0.0243 + 0.0260) | muse-spark-1.3, sam-3.1, muse-voice-transcribe-1.0 (+ Wit, free) | ~24 Spark calls, 3 SAM, 15 ASR sessions | in ~40k / out ~4k; 3 images; ~35 s audio | 0.0735 |
 
-Running total (est.): **≤ $0.60**
+Running total (est.): **≤ $0.70**
