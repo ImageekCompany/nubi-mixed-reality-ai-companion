@@ -172,10 +172,54 @@ namespace Jolly.Tests.EditMode.Usage
         }
 
         [Test]
-        public void Constructor_CorruptFile_StartsFromZero()
+        public void Settle_AnAlreadySettledReservation_ThrowsWithoutChargingAgain()
+        {
+            var meter = Meter();
+            meter.TryReserve(0.01m, out var id);
+            meter.Record(id, new UsageRecord(Spark, 1000, 0, 0));
+            var spent = meter.SpentUsd;
+
+            Assert.That(() => meter.RecordEstimate(id, Spark, 1000, 0), Throws.InvalidOperationException);
+            Assert.That(() => meter.Record(id, new UsageRecord(Spark, 1000, 0, 0)), Throws.InvalidOperationException);
+            Assert.That(meter.SpentUsd, Is.EqualTo(spent));
+            Assert.That(meter.TotalsFor(Spark).Requests, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void Settle_AnUnknownReservation_ThrowsWithoutCharging()
+        {
+            var meter = Meter();
+
+            Assert.That(() => meter.Record(42, new UsageRecord(Spark, 1000, 0, 0)), Throws.InvalidOperationException);
+            Assert.That(meter.SpentUsd, Is.Zero);
+        }
+
+        [TestCase("{not json")]
+        [TestCase("{\"version\":1,\"spentUsd\":\"x\"}")]
+        [TestCase("{\"version\":1,\"spentUsd\":{}}")]
+        [TestCase("{\"version\":1,\"spentUsd\":1e40}")]
+        [TestCase("{\"version\":1,\"spentUsd\":1,\"models\":{\"m\":{\"usd\":{}}}}")]
+        [TestCase("{\"version\":1,\"spentUsd\":1,\"models\":{\"m\":5}}")]
+        [TestCase("{\"version\":1,\"spentUsd\":1,\"models\":{\"m\":[1]}}")]
+        [TestCase("[]")]
+        public void Constructor_CorruptFile_StartsFromZeroAndMovesTheFileAside(string content)
         {
             Directory.CreateDirectory(_dir);
-            File.WriteAllText(_path, "{not json");
+            File.WriteAllText(_path, content);
+
+            var meter = Meter();
+
+            Assert.That(meter.SpentUsd, Is.Zero);
+            Assert.That(File.Exists(_path), Is.False);
+            Assert.That(File.ReadAllText(_path + ".bad"), Is.EqualTo(content));
+        }
+
+        [Test]
+        public void Constructor_UnreadableFile_StartsFromZero()
+        {
+            Directory.CreateDirectory(_dir);
+            File.WriteAllText(_path, "{\"version\":1,\"spentUsd\":1}");
+            using var exclusive = new FileStream(_path, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
 
             Assert.That(Meter().SpentUsd, Is.Zero);
         }

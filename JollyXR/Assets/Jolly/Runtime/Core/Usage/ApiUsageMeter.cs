@@ -8,7 +8,8 @@ namespace Jolly.Core.Usage
 {
     /// <summary>
     /// Persisted spend meter with reservations (contracts §2). Main thread only. Saves are debounced to 2 s on IClock;
-    /// <see cref="Flush"/> and <see cref="Dispose"/> write pending state at once.
+    /// <see cref="Flush"/> and <see cref="Dispose"/> write pending state at once. Settling a reservation that is unknown
+    /// or already settled throws instead of charging twice.
     /// </summary>
     public sealed class ApiUsageMeter : IApiUsageMeter
     {
@@ -84,8 +85,9 @@ namespace Jolly.Core.Usage
 
         decimal Settle(long reservationId, in UsageRecord usage, bool estimated)
         {
-            if (_reservations.Remove(reservationId, out var reserved))
-                _reserved -= reserved;
+            if (!_reservations.Remove(reservationId, out var reserved))
+                throw new InvalidOperationException($"Reservation {reservationId} is unknown or already settled.");
+            _reserved -= reserved;
 
             var cost = _prices.Cost(usage);
             var totals = Totals(usage.Model);

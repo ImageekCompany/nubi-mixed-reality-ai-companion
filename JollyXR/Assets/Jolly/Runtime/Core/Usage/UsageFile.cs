@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -11,7 +12,10 @@ namespace Jolly.Core.Usage
     {
         const int Version = 1;
 
-        /// <summary>False when the file is missing or unreadable; the meter then starts from zero.</summary>
+        /// <summary>
+        /// False when the file is missing or unreadable; the meter then starts from zero. An unreadable file is moved
+        /// to usage.json.bad first, so the next save cannot overwrite the only record of past spend.
+        /// </summary>
         public static bool TryLoad(string path, out decimal spentUsd, Dictionary<string, UsageTotals> models)
         {
             spentUsd = 0m;
@@ -29,10 +33,11 @@ namespace Jolly.Core.Usage
                 }
                 return true;
             }
-            catch (JsonException)
+            catch (Exception e) when (IsUnreadable(e))
             {
                 spentUsd = 0m;
                 models.Clear();
+                MoveAside(path);
                 return false;
             }
         }
@@ -63,6 +68,26 @@ namespace Jolly.Core.Usage
                 File.Replace(tmp, path, null);
             else
                 File.Move(tmp, path);
+        }
+
+        // JToken casts of a well-formed document with the wrong shape throw the BCL exceptions, not JsonException.
+        static bool IsUnreadable(Exception e) =>
+            e is JsonException or FormatException or InvalidCastException or ArgumentException or InvalidOperationException
+                or OverflowException or IOException or UnauthorizedAccessException;
+
+        static void MoveAside(string path)
+        {
+            var bad = path + ".bad";
+            try
+            {
+                if (File.Exists(bad))
+                    File.Delete(bad);
+                File.Move(path, bad);
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+                // Still in use or read-only: leave it where it is.
+            }
         }
 
         static UsageTotals Read(JToken t) => new()

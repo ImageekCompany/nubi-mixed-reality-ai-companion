@@ -4,7 +4,8 @@ using Jolly.Contracts;
 
 namespace Jolly.Testing
 {
-    /// <summary>IApiUsageMeter that records every call and charges a fixed price per settled request.</summary>
+    /// <summary>IApiUsageMeter that records every call and charges a fixed price per settled request. Like the real meter,
+    /// it throws when a reservation is settled twice.</summary>
     public sealed class RecordingUsageMeter : IApiUsageMeter
     {
         public readonly struct Estimate
@@ -52,14 +53,14 @@ namespace Jolly.Testing
 
         public decimal Record(long reservationId, in UsageRecord usage)
         {
-            _open.Remove(reservationId);
+            Settle(reservationId);
             _records.Add(usage);
             return Charge();
         }
 
         public decimal RecordEstimate(long reservationId, string model, long estInputTokens, long estOutputTokens)
         {
-            _open.Remove(reservationId);
+            Settle(reservationId);
             _estimates.Add(new Estimate(reservationId, model, estInputTokens, estOutputTokens));
             return Charge();
         }
@@ -67,6 +68,12 @@ namespace Jolly.Testing
         public void Flush() => Flushes++;
 
         public void Dispose() { }
+
+        void Settle(long reservationId)
+        {
+            if (!_open.Remove(reservationId))
+                throw new InvalidOperationException($"Reservation {reservationId} is unknown or already settled.");
+        }
 
         decimal Charge()
         {
