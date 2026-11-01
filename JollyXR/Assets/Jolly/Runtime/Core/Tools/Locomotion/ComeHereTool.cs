@@ -24,8 +24,8 @@ namespace Jolly.Core.Tools
         }
 
         public ToolDefinition Definition { get; } = new(ToolNames.ComeHere,
-            "Walk to the user and face them, only when the user asks you to come to them or closer (\"come here\"); " +
-            "never for a greeting, an introduction or small talk.",
+            "Call this whenever the user asks you to come, come here, come closer or come to them, including after a " +
+            "greeting ('Hi, come here'): walk to the user and face them. Not for a greeting on its own.",
             ToolSchemas.Empty, TimeSpan.FromSeconds(3), ToolConcurrency.Locomotion);
 
         public UniTask<ToolResult> Execute(IToolArguments args, ToolContext context, CancellationToken ct)

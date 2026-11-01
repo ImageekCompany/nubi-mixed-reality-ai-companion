@@ -138,11 +138,14 @@ namespace Jolly.Tests.EditMode.Core.Tools
         [Test]
         public void MovementTools_DescriptionsSayTheyNeedTheUsersRequest()
         {
-            // A greeting ("Hi Nubi, who are you?") called come_here in 4 of 7 device runs (selftest-report.md, 4d228c8).
+            // A greeting ("Hi Nubi, who are you?") called come_here in 4 of 7 device runs (selftest-report.md, 4d228c8);
+            // with only that exclusion, "Nubi, come here" got no call in 2 of 3 runs at f311081 (ADR-0035).
             var come = new ComeHereTool(_character, _user, _world, _settings).Definition.Description;
             var follow = new FollowUserTool(_character, _settings).Definition.Description;
 
-            Assert.That(come, Does.Contain("only when the user asks").And.Contain("never for a greeting"));
+            Assert.That(come, Does.StartWith("Call this whenever the user asks you to come"));
+            Assert.That(come, Does.Contain("come closer").And.Contain("'Hi, come here'"));
+            Assert.That(come, Does.Contain("Not for a greeting on its own."));
             Assert.That(follow, Does.Contain("only when the user asks"));
         }
 

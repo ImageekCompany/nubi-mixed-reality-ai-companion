@@ -17,6 +17,13 @@ namespace Jolly.Tests.EditMode.Core.Tools
         public void TearDown() => _f.Dispose();
 
         [Test]
+        public void FindObject_DescriptionNamesTheSearchPhrasings()
+        {
+            Assert.That(_f.Find().Definition.Description,
+                        Does.StartWith("Locate a named object the user is searching for ('where is my X', 'find my X')"));
+        }
+
+        [Test]
         public void FindObject_OutlinesEveryInstanceAndLooksAtTheNearest()
         {
             _f.User.Head = new Pose(new Vector3(-1, 0, 0), Quaternion.identity);

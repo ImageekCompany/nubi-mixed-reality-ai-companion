@@ -29,7 +29,8 @@ namespace Jolly.Core.Tools
         }
 
         public ToolDefinition Definition { get; } = new(ToolNames.FindObject,
-            "Find and highlight every visible instance of something the user is looking for, e.g. 'glasses' or 'keys'.",
+            "Locate a named object the user is searching for ('where is my X', 'find my X'), even one you have seen " +
+            "before: a fresh look that highlights every visible instance, e.g. 'glasses' or 'keys'.",
             Schema, TimeSpan.FromSeconds(8), ToolConcurrency.Exclusive);
 
         public async UniTask<ToolResult> Execute(IToolArguments args, ToolContext context, CancellationToken ct)

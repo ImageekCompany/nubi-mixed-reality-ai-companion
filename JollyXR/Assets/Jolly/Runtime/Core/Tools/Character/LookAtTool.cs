@@ -35,7 +35,8 @@ namespace Jolly.Core.Tools
 
         public ToolDefinition Definition { get; } = new(ToolNames.LookAt,
             "Turn your head and eyes toward the user, the object the user is pointing at, a seen object, or a piece " +
-            "of furniture from the room scan. Use it when you talk about something in the room.",
+            "of furniture from the room scan. Use it when you talk about something in the room; never for finding or " +
+            "locating an object the user is looking for; use find_object for that.",
             Schema, TimeSpan.FromSeconds(1), ToolConcurrency.Parallel);
 
         public UniTask<ToolResult> Execute(IToolArguments args, ToolContext context, CancellationToken ct)

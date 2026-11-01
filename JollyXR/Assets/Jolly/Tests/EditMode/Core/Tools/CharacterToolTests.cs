@@ -38,6 +38,14 @@ namespace Jolly.Tests.EditMode.Core.Tools
         LookAtTool LookAt() => new(_character, _user, _world, _scene, new LocomotionSettings());
 
         [Test]
+        public void LookAt_DescriptionSendsObjectSearchesToFindObject()
+        {
+            // "Nubi, where is my mug?" with the mug in scene memory called look_at on device (selftest-report.md, f311081).
+            Assert.That(LookAt().Definition.Description,
+                        Does.Contain("never for finding or locating an object the user is looking for; use find_object for that"));
+        }
+
+        [Test]
         public void LookAt_User()
         {
             var result = ToolHarness.Run(LookAt(), "{\"target\":\"user\"}");

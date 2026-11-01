@@ -81,7 +81,7 @@ namespace Jolly.Tests.EditMode.Core.Agent
         }
 
         [Test]
-        public void Instructions_MoveOnlyWhenAskedAndAnswerGreetingsInWords()
+        public void Instructions_MoveInTheTurnTheUserAsksAndAnswerAGreetingAloneInWords()
         {
             _f.Tool(ToolNames.ComeHere);
             _f.Model.Enqueue().Text("Hi!");
@@ -89,7 +89,8 @@ namespace Jolly.Tests.EditMode.Core.Agent
             AgentFixture.Completed(_f.Run("Hi Nubi, who are you?"));
 
             Assert.That(_f.Model.Requests[0].Instructions,
-                        Does.Contain("Move only when the user asks you to").And.Contain("greeting"));
+                        Does.Contain("If the user asks you to come or to go somewhere, call the movement tool in this turn;")
+                            .And.Contain("answer a greeting alone in words, with at most a gesture."));
         }
 
         [Test]
