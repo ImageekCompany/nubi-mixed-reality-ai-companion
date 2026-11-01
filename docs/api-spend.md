@@ -55,4 +55,6 @@ Rows before 2026-11-01 02:00 (research phase, `docs/research/*.md`) were not ite
 
 | 2026-11-02 | review of ADR-0042/0043: 1 device self-test run of the `--character jolly` release build `4963f5b` (app meter 0.0255) | muse-spark-1.3, sam-3.1, muse-voice-transcribe-1.0 (+ Wit, free) | ~8 Spark calls, 2 SAM, ~7 ASR sessions | 2 images; ~15 s audio | 0.026 |
 
-Running total (est.): **≤ $2.07** (sum of the rows: 2.066)
+| 2026-11-02 | point and tap to move (ADR-0044): 1 device self-test run of the `--character jolly` release build `7124bc7` (app meter 0.0252); `tap_to_move` itself spent $0 | muse-spark-1.3, sam-3.1, muse-voice-transcribe-1.0 (+ Wit, free) | ~8 Spark calls, 2 SAM, ~7 ASR sessions | 2 images; ~15 s audio | 0.025 |
+
+Running total (est.): **≤ $2.10** (sum of the rows: 2.091)
