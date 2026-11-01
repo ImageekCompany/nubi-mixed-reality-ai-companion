@@ -3,6 +3,8 @@ using System.Globalization;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using Jolly.Contracts;
+using Jolly.Net.Http;
+using Jolly.Providers.MetaApi.Common;
 
 namespace Jolly.Providers.MetaApi.Vision
 {
@@ -14,7 +16,6 @@ namespace Jolly.Providers.MetaApi.Vision
     /// </summary>
     public sealed class SparkObjectIdentifier : IObjectIdentifier
     {
-        const string Provider = "meta.vision";
         const string LogCategory = "vision";
 
         readonly IChatModel _chat;
@@ -36,7 +37,7 @@ namespace Jolly.Providers.MetaApi.Vision
                 throw new ArgumentNullException(nameof(image));
             if (request == null)
                 throw new ArgumentNullException(nameof(request));
-            return new IdentificationStream(this, VisionRequestBuilder.Build(image, request, _options.MaxOutputTokens), ct);
+            return new IdentificationStream(this, VisionRequestBuilder.Build(image, request, _options), ct);
         }
 
         sealed class IdentificationStream : IUniTaskAsyncEnumerable<IdentificationEvent>
@@ -55,24 +56,28 @@ namespace Jolly.Providers.MetaApi.Vision
         sealed class Enumerator : IUniTaskAsyncEnumerator<IdentificationEvent>
         {
             readonly SparkObjectIdentifier _owner;
-            readonly ClockDeadline _deadline;
+            readonly CancellationTokenSource _caller;
+            readonly StreamTimeout _deadline;
             readonly IUniTaskAsyncEnumerator<ModelEvent> _model;
             readonly IdentificationStreamParser _parser = new();
             readonly double _started;
             bool _modelDone;
+            bool _disposed;
 
             public Enumerator(SparkObjectIdentifier owner, ModelRequest request, CancellationToken ct, CancellationToken enumeratorCt)
             {
                 _owner = owner;
                 _started = owner._clock.Now;
-                _deadline = new ClockDeadline(owner._clock, owner._options.Timeout, ct, enumeratorCt);
+                _caller = CancellationTokenSource.CreateLinkedTokenSource(ct, enumeratorCt);
+                _deadline = new StreamTimeout(owner._clock, _caller.Token);
+                _deadline.Restart(owner._options.Timeout);
                 try
                 {
                     _model = owner._chat.Stream(request, _deadline.Token).GetAsyncEnumerator(_deadline.Token);
                 }
                 catch
                 {
-                    _deadline.Dispose();
+                    ReleaseTokens();
                     throw;
                 }
             }
@@ -103,10 +108,9 @@ namespace Jolly.Providers.MetaApi.Vision
                 {
                     hasNext = await _model.MoveNextAsync();
                 }
-                catch (OperationCanceledException) when (_deadline.IsExpired)
+                catch (OperationCanceledException) when (_deadline.HasFired && !_caller.IsCancellationRequested)
                 {
-                    throw new ProviderException(Provider, ProviderErrorKind.Timeout,
-                        $"Vision answer did not complete within {_owner._options.Timeout.TotalSeconds:F1} s.");
+                    throw MetaErrors.Timeout("vision answer incomplete", _owner._options.Timeout);
                 }
 
                 if (!hasNext || _model.Current.Kind == ModelEventKind.Completed)
@@ -130,14 +134,23 @@ namespace Jolly.Providers.MetaApi.Vision
 
             public async UniTask DisposeAsync()
             {
+                if (_disposed)
+                    return;
+                _disposed = true;
                 try
                 {
                     await _model.DisposeAsync();
                 }
                 finally
                 {
-                    _deadline.Dispose();
+                    ReleaseTokens();
                 }
+            }
+
+            void ReleaseTokens()
+            {
+                _deadline.Dispose();
+                _caller.Dispose();
             }
         }
     }

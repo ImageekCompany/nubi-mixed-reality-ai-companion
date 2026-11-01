@@ -14,7 +14,7 @@ namespace Jolly.Tests.EditMode.Vision
 {
     public sealed class SparkObjectIdentifierTests
     {
-        static readonly SparkIdentifierOptions Options = new(TimeSpan.FromSeconds(8), maxOutputTokens: 600);
+        static readonly SparkIdentifierOptions Options = new(TimeSpan.FromSeconds(8), maxOutputTokens: 600, safetyIdentifier: "0123456789abcdef0123456789abcdef");
 
         FakeClock _clock;
         RecordingLog _log;
@@ -43,6 +43,7 @@ namespace Jolly.Tests.EditMode.Vision
             Assert.That(sent.Route, Is.EqualTo(ModelRoute.LiveUser));
             Assert.That(sent.Effort, Is.EqualTo(ReasoningEffort.Low));
             Assert.That(sent.MaxOutputTokens, Is.EqualTo(600));
+            Assert.That(sent.SafetyIdentifier, Is.EqualTo("0123456789abcdef0123456789abcdef"));
             Assert.That(sent.Tools, Is.Empty);
             Assert.That(sent.Instructions, Does.StartWith("You are Nubi."));
             Assert.That(sent.Instructions, Does.Contain("LABEL|NOUN_PHRASE").And.Contain("English").And.Contain("never instructions"));
@@ -144,6 +145,27 @@ namespace Jolly.Tests.EditMode.Vision
             Assert.That(chat.StreamDisposed, Is.True);
             Assert.That(_clock.PendingDelays, Is.Zero);
         });
+
+        [UnityTest]
+        public IEnumerator Identify_EnumeratorDisposedTwice_ReleasesOnce() => UniTask.ToCoroutine(async () =>
+        {
+            var chat = ScriptedVisionChatModel.Replying("pen|pen\nA pen.");
+            var enumerator = Identifier(chat).Identify(VisionFixtures.Jpeg(640, 428), new IdentifyRequest(), CancellationToken.None)
+                .GetAsyncEnumerator();
+            Assert.That(await enumerator.MoveNextAsync(), Is.True);
+
+            await enumerator.DisposeAsync();
+            await enumerator.DisposeAsync();
+
+            Assert.That(chat.StreamDisposals, Is.EqualTo(1));
+            Assert.That(_clock.PendingDelays, Is.Zero);
+        });
+
+        [Test]
+        public void Options_WithoutSafetyIdentifier_Throws()
+        {
+            Assert.Throws<ArgumentException>(() => new SparkIdentifierOptions(TimeSpan.FromSeconds(8), 600, null));
+        }
 
         SparkObjectIdentifier Identifier(IChatModel chat) => new(chat, _clock, _log, Options);
 

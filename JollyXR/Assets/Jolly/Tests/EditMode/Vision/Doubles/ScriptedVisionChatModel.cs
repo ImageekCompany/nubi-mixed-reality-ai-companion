@@ -18,7 +18,8 @@ namespace Jolly.Tests.EditMode.Vision.Doubles
         }
 
         public ModelRequest LastRequest { get; private set; }
-        public bool StreamDisposed { get; private set; }
+        public int StreamDisposals { get; private set; }
+        public bool StreamDisposed => StreamDisposals > 0;
 
         public static ScriptedVisionChatModel Replying(params string[] deltas)
         {
@@ -70,7 +71,7 @@ namespace Jolly.Tests.EditMode.Vision.Doubles
 
             public UniTask DisposeAsync()
             {
-                _owner.StreamDisposed = true;
+                _owner.StreamDisposals++;
                 _cts.Dispose();
                 return UniTask.CompletedTask;
             }

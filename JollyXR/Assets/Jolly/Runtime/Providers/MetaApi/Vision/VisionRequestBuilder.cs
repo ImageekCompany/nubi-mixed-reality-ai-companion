@@ -15,7 +15,7 @@ namespace Jolly.Providers.MetaApi.Vision
             "language and NOUN_PHRASE is a 1-3 word English segmentation phrase for the same object. " +
             "Then a newline, then answer the user's question in at most 2 short spoken sentences. No markdown.";
 
-        public static ModelRequest Build(EncodedImage image, IdentifyRequest request, int maxOutputTokens) => new()
+        public static ModelRequest Build(EncodedImage image, IdentifyRequest request, SparkIdentifierOptions options) => new()
         {
             Route = ModelRoute.LiveUser,
             Instructions = string.IsNullOrEmpty(request.PersonaInstructions)
@@ -27,7 +27,8 @@ namespace Jolly.Providers.MetaApi.Vision
                 ConversationItem.UserImage(image),
             },
             Effort = request.Effort,
-            MaxOutputTokens = maxOutputTokens,
+            MaxOutputTokens = options.MaxOutputTokens,
+            SafetyIdentifier = options.SafetyIdentifier,
         };
     }
 }
