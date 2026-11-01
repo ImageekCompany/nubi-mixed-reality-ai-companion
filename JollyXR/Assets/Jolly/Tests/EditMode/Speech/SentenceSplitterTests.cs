@@ -61,6 +61,17 @@ namespace Jolly.Tests.EditMode.Speech
             Assert.That(TakeAll(splitter), Is.EqualTo(new[] { expected }));
         }
 
+        [TestCase("Oh no. That's a cup. ", "Oh no.", "That's a cup.")]
+        [TestCase("No. I can't see it. ", "No.", "I can't see it.")]
+        public void TryTake_NoFollowedByAPeriod_EndsTheSentence(string text, string first, string second)
+        {
+            var splitter = new SentenceSplitter();
+
+            splitter.Append(text);
+
+            Assert.That(TakeAll(splitter), Is.EqualTo(new[] { first, second }));
+        }
+
         [Test]
         public void TryTake_DecimalNumbers_DoNotSplit()
         {

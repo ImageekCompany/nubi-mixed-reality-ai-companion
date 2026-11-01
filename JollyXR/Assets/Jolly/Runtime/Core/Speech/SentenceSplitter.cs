@@ -15,7 +15,7 @@ namespace Jolly.Core.Speech
         const int ChunkLength = 120;
 
         static readonly string[] Abbreviations =
-            { "mr", "mrs", "ms", "dr", "prof", "sr", "jr", "st", "vs", "e.g", "i.e", "no", "approx", "mt", "fig" };
+            { "mr", "mrs", "ms", "dr", "prof", "sr", "jr", "st", "vs", "e.g", "i.e", "approx", "mt", "fig" };
 
         readonly StringBuilder _buffer = new(MaxLength * 2);
         bool _isFirstChunk = true;
