@@ -1,9 +1,31 @@
 # Device self-test report
 
-Latest: 2026-11-01, 09:39–09:45 UTC, three release runs of `main` `dd14847` after the turn-gc and coverage-gate merges (section below). Before that: 08:37–09:27 UTC, the turn-GC and cold-first-turn pass on `fix/turn-gc` (ADR-0023): three "before" runs of `main`, three "after" runs, development IL2CPP (the only player that reports GC per frame), four allocation-profile runs and one release verification run. Before that: 08:20–08:47 UTC, the performance and latency pass on `fix/perf-latency` (ADR-0019), release IL2CPP. Earlier: 06:38–06:50 UTC from `fix/integration-review`, 06:00–06:14 UTC from `feat/wp9-integration`.
+Latest: 2026-11-01, 11:26–11:38 UTC, six release runs for the device-finding fixes (`3f35f7f`, `6cd06e6`, `4e298d8`; section below). Before that: 09:39–09:45 UTC, three release runs of `main` `dd14847` after the turn-gc and coverage-gate merges (section below). Before that: 08:37–09:27 UTC, the turn-GC and cold-first-turn pass on `fix/turn-gc` (ADR-0023): three "before" runs of `main`, three "after" runs, development IL2CPP (the only player that reports GC per frame), four allocation-profile runs and one release verification run. Before that: 08:20–08:47 UTC, the performance and latency pass on `fix/perf-latency` (ADR-0019), release IL2CPP. Earlier: 06:38–06:50 UTC from `fix/integration-review`, 06:00–06:14 UTC from `feat/wp9-integration`.
 Device: Quest 3 `2G0YC1ZF7P090N`, Horizon OS v209. Build: `tools/ci/build.sh` (IL2CPP ARM64 release, 58 MB APK).
 Nobody wore the headset. The room was dim (camera mean luma 23–45 of 255) and had no Space Setup. Command: `tools/device/selftest.sh` (headless: `prox_close`, `guardian_pause 1`, 16 MiB logcat buffer; all restored afterwards).
 Raw outputs (`selftest_results.json`, `logcat.txt`, `vrapi.txt`) are under `artifacts/selftest/`, which is git-ignored.
+
+## Device-finding fixes: late Responses, self-test verdicts, cold Wit (3f35f7f, 6cd06e6, 4e298d8)
+
+`tools/device/build.sh` (IL2CPP ARM64 release, 0 `Assets/Jolly` diagnostics), `push-secrets.sh`, `selftest.sh` headless; `guardian_pause` read back 0. "Before" is `6cd06e6` (fixes 1 and 2), "after" adds the Wit warm-up. The dim room (mean luma 18–19) switched vision to the bundled still in every run.
+
+| Metric | Before (1 run) | After (5 runs) | dd14847 (3 runs) |
+|---|---|---|---|
+| First sentence queued → first audio, first turn | 417 ms | 417, 140, 180, 222, 402 ms (p50 222) | 472, 166, 543 ms |
+| Same, later turns | 122–266 ms | 109–527 ms (p50 167) | 99–278 ms |
+| `evt=warmup.tts` (now a discarded synthesis) | 609 ms (`/voices`) | 524, 359, 310, 369, 321 ms | 589–635 ms |
+| Release → first audio, first turn | 3,177 ms | 2,444, 2,763, 2,524, 2,330, 3,162 ms | 2,126–2,876 ms |
+| Tool start → answer audio | 2,138 ms | 1,722, 2,097, 1,358, 2,235, 1,848 ms | 1,959–8,332 ms |
+| Responses first-event timeouts / hold lines | 0 / 0 | 0 / 0 | 3 timeouts |
+| Overall | DEGRADED | DEGRADED ×5 (no FAIL) | FAIL, DEGRADED, DEGRADED |
+
+What was found and done:
+
+- **Late Responses first event (3f35f7f).** Request → first event was 0.3–1.4 s in all 52 first rounds logged on the device, but three calls in the dd14847 runs got nothing for 6 s; with 2 attempts that was 12 s of silence after the release acknowledgement before the error line. A round with no first event after 2 s now raises `AgentEventKind.Delayed` and Nubi says a canned Acknowledge line ("One moment."), once more 4 s later during the retry; the first-event timeout is 4 s (a double stall ends in the Error line after ~8 s, and the vision retry now fits its 8 s budget). Config: `voiceFirstEventSeconds`, `holdLineSeconds`, `holdLineRepeatSeconds`. No stall happened in these six runs, so the path is covered by EditMode tests only (late first event, timeout then retry success, timeout then retry failure, with the real `ResponsesChatModel` over `FakeHttpTransport`). UnityWebRequest has no per-request connection control, so the retry cannot ask for a fresh connection; the aborted attempt's connection is not reused.
+- **Self-test false pass (6cd06e6).** `capture_and_identify:failed` counted as completed and latency budgets were notes. `TurnChecks`: a failed key tool FAILs, another failed tool and release → first audio > 2.0 s or tool → answer audio > 2.5 s DEGRADE with the reason, no answer after the tool FAILs. The first voice turn is now DEGRADED in every run, which is what it is.
+- **Cold first sentence (4e298d8).** The connection was kept: from the dev Mac (Python, one kept-alive connection, 13 trials, 2 s and 10 s idle gaps) the first `/synthesize` after `/voices` took p50 143 ms, after a synthesized "Hi." 88 ms, later requests 83 ms; the reused connection only skipped TLS. The synthesis path itself was cold. The warm-up now synthesizes "Hi." in the persona's voice through the normal streaming request. On the Quest the first-turn p50 halved, but 2 of 5 runs were still ~400 ms. speculation: per-request Wit variance and Quest Wi-Fi power saving after ~10 s idle; later turns also reach 348–527 ms now and then. Whether UnityWebRequest uses HTTP/2 to api.wit.ai cannot be read from the player logs.
+
+Spend: 6 runs, app meter $0.0764; `api-spend.md` has the row.
 
 ## Release runs of main after the merges (dd14847)
 
