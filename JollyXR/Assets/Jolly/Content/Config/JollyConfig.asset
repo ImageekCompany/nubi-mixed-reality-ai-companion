@@ -70,6 +70,11 @@ MonoBehaviour:
   - Crisis
   editorCameraStill: {fileID: 4900000, guid: 8d67d578542784ffc9f64d6a7139c4be, type: 3}
   graphicsStates: {fileID: -6766982352335285333, guid: a8b84f8a4598141d2ada90910ffb4606, type: 3}
+  occlusion:
+    preference: 2
+    softEdges: 1
+    sceneMeshFallback: 1
+    depthStaleSeconds: 0.5
   acknowledgeOnRelease: 1
   headPoseLeadSeconds: 0
   minimumLogLevel: 1
