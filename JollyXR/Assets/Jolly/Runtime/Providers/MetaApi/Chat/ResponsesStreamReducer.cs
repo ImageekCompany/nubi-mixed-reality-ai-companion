@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Text;
 using Jolly.Contracts;
@@ -47,7 +48,21 @@ namespace Jolly.Providers.MetaApi.Chat
                 return;
 
             var json = Parse(sse.Data);
-            switch ((string)json["type"] ?? sse.EventName)
+            try
+            {
+                Reduce(json, sse.EventName, output);
+            }
+            catch (Exception e) when (e is ArgumentException or InvalidCastException or InvalidOperationException
+                                          or FormatException or OverflowException)
+            {
+                // A field of an unexpected JSON type: JToken casts and indexers throw these, not JsonException.
+                throw MetaErrors.Protocol("malformed stream event: " + e.Message);
+            }
+        }
+
+        void Reduce(JObject json, string eventName, List<ModelEvent> output)
+        {
+            switch ((string)json["type"] ?? eventName)
             {
                 case "response.created":
                     _responseId = (string)json.SelectToken("response.id");
@@ -67,14 +82,14 @@ namespace Jolly.Providers.MetaApi.Chat
                     OnItemDone(json["item"] as JObject, output);
                     break;
                 case "response.completed":
-                    Complete(json["response"], _hasCalls ? FinishReason.ToolCalls : FinishReason.Stop, output);
+                    Complete(json["response"] as JObject, _hasCalls ? FinishReason.ToolCalls : FinishReason.Stop, output);
                     break;
                 case "response.incomplete":
                     var reason = (string)json.SelectToken("response.incomplete_details.reason");
-                    Complete(json["response"], reason == "max_output_tokens" ? FinishReason.Length : FinishReason.Incomplete, output);
+                    Complete(json["response"] as JObject, reason == "max_output_tokens" ? FinishReason.Length : FinishReason.Incomplete, output);
                     break;
                 case "response.failed":
-                    var error = json.SelectToken("response.error");
+                    var error = json.SelectToken("response.error") as JObject;
                     throw MetaErrors.FromStreamError((string)error?["code"], (string)error?["message"], _responseId);
                 case "error":
                     throw MetaErrors.FromStreamError((string)json["code"], (string)json["message"], _responseId);
@@ -113,9 +128,9 @@ namespace Jolly.Providers.MetaApi.Chat
             }
         }
 
-        void Complete(JToken response, FinishReason finish, List<ModelEvent> output)
+        void Complete(JObject response, FinishReason finish, List<ModelEvent> output)
         {
-            var usage = response?["usage"];
+            var usage = response?["usage"] as JObject;
             IsCompleted = true;
             output.Add(new ModelEvent(ModelEventKind.Completed, result: new ModelTurnResult
             {

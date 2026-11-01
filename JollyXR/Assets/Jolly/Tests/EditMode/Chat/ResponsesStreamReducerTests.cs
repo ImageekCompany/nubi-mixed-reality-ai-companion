@@ -117,6 +117,45 @@ namespace Jolly.Tests.EditMode.Chat
         }
 
         [Test]
+        public void ResponseFailedWithNullError_ThrowsProviderException()
+        {
+            var reducer = new ResponsesStreamReducer(Model);
+
+            var e = Assert.Throws<ProviderException>(() => reducer.Apply(
+                new SseEvent("response.failed", "{\"type\":\"response.failed\",\"response\":{\"error\":null}}"), new List<ModelEvent>()));
+
+            Assert.That(e.Kind, Is.EqualTo(ProviderErrorKind.Server));
+        }
+
+        [TestCase("{\"type\":\"response.completed\",\"response\":{\"id\":\"r\",\"usage\":null}}")]
+        [TestCase("{\"type\":\"response.completed\",\"response\":null}")]
+        [TestCase("{\"type\":\"response.completed\",\"response\":{\"id\":\"r\",\"usage\":{\"input_tokens_details\":null}}}")]
+        public void CompletedWithNullUsage_CompletesWithZeroUsage(string data)
+        {
+            var reducer = new ResponsesStreamReducer(Model);
+            var output = new List<ModelEvent>();
+
+            reducer.Apply(new SseEvent("response.completed", data), output);
+
+            var usage = output.Last().Result.Usage;
+            Assert.That(usage.InputTokens, Is.Zero);
+            Assert.That(usage.CachedInputTokens, Is.Zero);
+            Assert.That(usage.OutputTokens, Is.Zero);
+        }
+
+        [TestCase("{\"type\":\"response.output_text.delta\",\"delta\":{}}")]
+        [TestCase("{\"type\":\"response.output_item.done\",\"item\":{\"type\":\"message\",\"content\":[1]}}")]
+        [TestCase("{\"type\":\"response.completed\",\"response\":{\"usage\":{\"input_tokens\":\"many\"}}}")]
+        public void FieldOfTheWrongJsonType_ThrowsProtocol(string data)
+        {
+            var reducer = new ResponsesStreamReducer(Model);
+
+            var e = Assert.Throws<ProviderException>(() => reducer.Apply(new SseEvent(null, data), new List<ModelEvent>()));
+
+            Assert.That(e.Kind, Is.EqualTo(ProviderErrorKind.Protocol));
+        }
+
+        [Test]
         public void DoneWithoutCompletion_ThrowsProtocol()
         {
             var reducer = new ResponsesStreamReducer(Model);
