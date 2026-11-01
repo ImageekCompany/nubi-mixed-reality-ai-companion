@@ -7,6 +7,9 @@ namespace Jolly.App.SelfTest
     /// <summary>Records what the conversation shows the user during one scenario: states, captions, transcripts and tools.</summary>
     public sealed class TurnObserver : IDisposable
     {
+        /// <summary>Appended to a tool name in <see cref="ToolsCompleted"/> when its result was not ok.</summary>
+        public const string FailedSuffix = ":failed";
+
         readonly IConversationEvents _events;
         readonly IClock _clock;
 
@@ -78,6 +81,6 @@ namespace Jolly.App.SelfTest
             ToolsStarted.Add(name);
         }
 
-        void OnToolCompleted(string callId, string name, bool ok) => ToolsCompleted.Add(ok ? name : name + ":failed");
+        void OnToolCompleted(string callId, string name, bool ok) => ToolsCompleted.Add(ok ? name : name + FailedSuffix);
     }
 }

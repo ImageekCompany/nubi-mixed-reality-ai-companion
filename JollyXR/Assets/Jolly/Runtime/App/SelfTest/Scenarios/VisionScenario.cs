@@ -27,9 +27,11 @@ namespace Jolly.App.SelfTest.Scenarios
             try
             {
                 var r = await VoiceTurnScenario.Run(c, Name, c.Assets.whatIsThis, ToolNames.CaptureAndIdentify, ct);
+                var toolToAnswer = ToolToAnswerAudioMs(c.Observer);
                 r.Metric("camera", camera.Live.Availability.ToString()).Metric("mean_luma", luma)
                  .Metric("frame", camera.UseStill ? "bundled_still" : "live")
-                 .Metric("tool_to_answer_audio_ms", ToolToAnswerAudioMs(c.Observer));
+                 .Metric("tool_to_answer_audio_ms", toolToAnswer);
+                TurnChecks.ToolToAnswer(r, toolToAnswer);
                 if (camera.UseStill)
                     r.Degrade("camera frame unusable (dark room or no camera): identified the bundled still instead");
                 return r;

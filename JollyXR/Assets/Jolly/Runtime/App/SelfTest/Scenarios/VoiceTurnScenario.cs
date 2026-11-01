@@ -6,13 +6,11 @@ namespace Jolly.App.SelfTest.Scenarios
 {
     /// <summary>
     /// One full spoken turn through the real Muse ASR → Spark → Wit TTS → output + lip-sync, from a bundled clip.
-    /// Checks the transcript, the reply and, when given, the tool the model should call.
+    /// Checks the transcript, the reply, the first-audio budget and the tools (<see cref="TurnChecks"/>).
     /// </summary>
     public static class VoiceTurnScenario
     {
         const double MinSimilarity = 0.5;
-        const double BudgetMs = 2000;
-        const double MaxFirstAudioMs = 4000;
 
         public static async UniTask<ScenarioResult> Run(SelfTestContext c, string name, SelfTestAssets.Utterance utterance,
                                                         string expectedTool, CancellationToken ct)
@@ -39,19 +37,9 @@ namespace Jolly.App.SelfTest.Scenarios
             r.Check(idle, "did not return to Idle within 40 s");
             r.Check(similarity >= MinSimilarity, "transcript too far from the spoken text");
             r.Check(c.Observer.Captions.Count > 0, "no reply caption");
-            r.Check(firstAudio <= MaxFirstAudioMs, "no reply audio within 4 s of release");
-            if (firstAudio > BudgetMs)
-                r.Notes.Add("first audio over the 2.0 s budget");
-            if (expectedTool != null)
-                CheckTool(c, r, expectedTool);
+            TurnChecks.FirstAudio(r, firstAudio);
+            TurnChecks.Tools(r, c.Observer.ToolsStarted, c.Observer.ToolsCompleted, expectedTool);
             return r;
-        }
-
-        static void CheckTool(SelfTestContext c, ScenarioResult r, string tool)
-        {
-            r.Check(c.Observer.ToolsStarted.Contains(tool), "the model did not call " + tool);
-            r.Check(c.Observer.ToolsCompleted.Contains(tool) || c.Observer.ToolsCompleted.Contains(tool + ":failed"),
-                tool + " did not complete");
         }
     }
 }
