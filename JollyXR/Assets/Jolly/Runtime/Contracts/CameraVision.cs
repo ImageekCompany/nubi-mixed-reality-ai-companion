@@ -32,7 +32,7 @@ namespace Jolly.Contracts
         public int Width { get; }
         public int Height { get; }
         public CameraIntrinsics Intrinsics { get; }  // already scaled to Width/Height
-        public Pose CameraPoseWorld { get; }         // +Z forward through the image, at acquisition
+        public Pose CameraPoseWorld { get; }         // Unity pose: +Z forward through the image, +Y image up, at acquisition
         public double Timestamp { get; }             // IClock.Now at acquisition
         public void Dispose() { var r = _release; _release = null; r?.Invoke(this); }
     }

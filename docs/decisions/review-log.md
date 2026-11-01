@@ -78,3 +78,17 @@ Live probes run for this pass (≈ $0.01, `docs/api-spend.md`):
 | J smaller fix: occlusion | scope §1 Should 3, architecture §5.5 `SceneOccluders` |
 | J reorder should tier; cuts; badges + HUD to must | scope §1 |
 | J additions A `find_object`, B part highlighting | contracts §4.2, architecture §5.3.1, scope §1. Part phrase verified live |
+
+# Integration: WP1–WP10 merge, 2026-11-02
+
+Deviations reported by the work packages are accepted in ADR-0017; the architecture text is amended to match.
+
+| Item | Decision | Where |
+|---|---|---|
+| WP2: commit text on interrupt comes from `TurnSpeech`, not `SpeechQueue.SpokenSoFar` | Comment-only contract fix | `Contracts/ChatAgent.cs` `IAgentLoop.RunTurn` xmldoc, contracts §3 and §9 |
+| WP5/WP8: image y sign differs between the architecture formula and the code | Code is right for a +Y-up Unity pose; contract comment pins the convention | `Contracts/CameraVision.cs` `CameraPoseWorld`, contracts §6, architecture §5.3, ADR-0017 |
+| WP1: `response.incomplete` completes instead of throwing | Accepted | architecture §7, ADR-0017 |
+| WP5: `NavMeshBuilder` instead of `NavMeshSurface` | Accepted | architecture §5.5, ADR-0017 |
+| WP6: procedural look-at, `Speed` in m/s, ±40° head yaw, polled motion, editor code in the runtime assembly | Accepted; editor code moved to the new `Jolly.Editor.Character`, `Unity.Animation.Rigging` reference dropped | architecture §2/§5.5, `AssemblyGraphTests`, ADR-0017 |
+| WP10/WP8: provider ids, health-probe 401, settings events | Documented, no contract code change | contracts §9.1 |
+| Shared `PixelToCameraDir` in Contracts, `IHealthProbe.Ping` returning a status | Deferred to WP9 (contract code changes not needed to compile) | ADR-0017 |

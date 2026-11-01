@@ -262,7 +262,7 @@ namespace Jolly.Contracts
         /// <summary>
         /// Runs one user turn: up to 4 model rounds, executing tool calls as they stream in.
         /// Buffers the turn's items and commits them once with IConversationMemory.CommitTurn when the turn ends.
-        /// On cancellation it still commits: the user text, the assistant text actually spoken (SpeechQueue.SpokenSoFar)
+        /// On cancellation it still commits: the user text, the assistant text actually spoken (spokenSoFar, read when ct fires)
         /// plus " [interrupted]", and {"error":"interrupted"} for every ToolCall without a ToolResult
         /// (Responses rejects an orphan function_call with 400 "No tool output found", live 2026-11-01).
         /// Provider failures surface as a Failed event; cancellation then throws OperationCanceledException.
@@ -587,7 +587,7 @@ namespace Jolly.Contracts
         public int Width { get; }
         public int Height { get; }
         public CameraIntrinsics Intrinsics { get; }  // already scaled to Width/Height
-        public Pose CameraPoseWorld { get; }         // +Z forward through the image, at acquisition
+        public Pose CameraPoseWorld { get; }         // Unity pose: +Z forward through the image, +Y image up, at acquisition
         public double Timestamp { get; }             // IClock.Now at acquisition
         public void Dispose() { var r = _release; _release = null; r?.Invoke(this); }
     }
@@ -1009,7 +1009,7 @@ namespace Jolly.Contracts
 | `BargeInCoordinator` | ctor(`ISpeechOutput, SpeechQueue, ILatencyTracker`); `void BargeIn(CancellationTokenSource turnCts)` | Cancels the turn, flushes audio, marks `BargeIn`. Memory commit on cancel is done by `AgentLoop` (contracts §3) |
 | `AgentLoop : IAgentLoop` | ctor(`IChatModel, IToolRegistry, IConversationMemory, ISceneMemory, IPersonaProvider, ILocalizer, IUserPreferences, ILog, IClock, ILatencyTracker`) | |
 | `SentenceSplitter` | `void Append(string delta)`; `bool TryTake(out string sentence)`; `string Flush()` | Pure, allocation-light |
-| `SpeechQueue` | ctor(`ITextToSpeech, ISpeechOutput, IUserPreferences`); `void Enqueue(string sentence, VoiceSpec voice, int utteranceId)`; `UniTask WhenDrained(CancellationToken)`; `void Clear()`; `string SpokenSoFar` | Prefetch depth 1. Speech only: canned lines go through `IOfflineResponder`; the TTS-unavailable locale check lives in `TurnPipeline` |
+| `SpeechQueue` | ctor(`ITextToSpeech, ISpeechOutput, IUserPreferences`); `void Enqueue(string sentence, VoiceSpec voice, int utteranceId)`; `UniTask WhenDrained(CancellationToken)`; `void Clear()`; `string SpokenSoFar` | Prefetch depth 1. Speech only: canned lines go through `IOfflineResponder`; the TTS-unavailable locale check lives in `TurnPipeline`. `SpokenSoFar` spans turns; the interrupt commit uses `TurnSpeech`'s per-turn record (ADR-0017) |
 | `TranscriptAliases` | ctor(`IReadOnlyDictionary<string,string>` per locale); `string Apply(string transcript)` | Whole-word, case-insensitive. Live: "Hi Nubi" was heard as "Hi newbie" (2026-11-01). Ships `newbie, noobie, nubie, newby → Nubi` |
 | `StopGuard` | `bool Matches(string transcript)` | Localized "stop"/"wait"/"stay" as a whole short utterance; on a match `ICharacterController.Stop()` runs before the model call, and the turn continues |
 | `MetaModelResolver` (`Providers/MetaApi/Common`) | `string Resolve(ModelRoute route, string modelId)` | Throws `ProviderException(BadRequest)` when `route == LiveUser` and the id ends in `-contributor`. Unconditional (not `Debug.Assert`); used by every MetaApi adapter |
@@ -1020,3 +1020,11 @@ namespace Jolly.Contracts
 | `IdleScheduler` | ctor(`ICharacterController, IClock, IRandom, IdleConfig`); `UniTask RunAsync(Func<bool> isConversationIdle, CancellationToken)` | Runs a behaviour only when `isConversationIdle() && !character.IsMoving && character.Mode == LocomotionMode.None` |
 | `CrisisGuard` | `bool Matches(string transcript)` | Localized keywords |
 | `CameraMath` (`Core/Spatial`, owned by WP5) | `Ray PixelToWorldRay(Vector2 px, CameraIntrinsics k, Pose cam)`; `bool WorldToPixel(Vector3 p, CameraIntrinsics k, Pose cam, out Vector2 px)` | Pure; EditMode-tested. Used for hand-ray → SAM points and hand-joint negative points |
+
+### 9.1 Notes from the WP1–WP10 merge
+
+Recorded at integration so WP9 wires against what was built; none of these changed contract code.
+- **Constructor shapes in the table above are superseded by the code** for `ConversationController`, `TurnPipeline` and `BargeInCoordinator` (WP2: they take `PersonaSwitcher`, `MemoryKeeper`, `TurnSpeech`, `ILocalizer` and the composed turn parts), and for `ConnectivityMonitor`, `OfflineResponder` and `InteractionTriggers` (WP10). The WP fix reports list the exact signatures.
+- **Provider ids** in `ProviderException.Provider` and `IConnectivityMonitor.Report*`: `meta` (every MetaApi HTTP/SSE call), `meta.asr` (Muse ASR), `wit` (Wit TTS), `meta-passthrough` (camera). `ConnectivityMonitor` treats `meta` and `meta.*` as using `META_API_KEY`; a 401 from any other provider does not mark the key rejected.
+- **`IHealthProbe.Ping` cannot report a 401.** `MetaHealthProbe` raises an `Unauthorized` event, which the composition root routes to `ReportFailure("meta", ProviderErrorKind.Unauthorized)`. A 429 counts as reachable.
+- **Persona, language and clear-memory requests are not on `IUserPreferences`.** `SettingsPanel` raises `PersonaSelected`, `LanguageSelected` and `ClearMemoryRequested`; the composition root routes them to the controller and localizer.
