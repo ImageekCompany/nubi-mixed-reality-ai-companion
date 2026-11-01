@@ -2,7 +2,7 @@
 
 Recording day: Tue Nov 3, 12:00–16:30 CET. Beats and fallbacks: [`../demo-script.md`](../demo-script.md). Plan: [`production-plan.md`](production-plan.md). Character for this session: ☐ Nubi ☐ Jolly (per the Jolly decision).
 
-Build: commit `________` · APK SHA-256 `________` · capture method: `________`
+Build: commit `________` · APK SHA-256 `________` · capture method: Quest system recorder (passthrough verified in its recordings 2026-11-01; `adb screenrecord` and scrcpy show no passthrough)
 
 ## Pre-flight (30 min before the first take)
 
@@ -16,7 +16,7 @@ Build: commit `________` · APK SHA-256 `________` · capture method: `________`
 
 **Headset**
 - [ ] Charged > 80 %, USB-C power bank nearby
-- [ ] Rebooted (ADR-0034); then capture props set and read back (`getprop | grep -i capture`)
+- [ ] Rebooted (ADR-0034); then `tools/demo/record.sh props 1920x1080 30 20000000` (sets and reads back `debug.oculus.capture.*`; lost on reboot)
 - [ ] Release APK installed (SHA-256 matches above), secrets pushed
 - [ ] Do Not Disturb on; no pending system update
 - [ ] Storage: at least 10 GB free (`adb shell df -h /sdcard`)
@@ -25,7 +25,7 @@ Build: commit `________` · APK SHA-256 `________` · capture method: `________`
 - [ ] Launched; `evt=character.selected id=________` in logcat matches this session's character
 - [ ] Warm-up greeting said off camera ("Hi Nubi, who are you?" / "Hi Jolly, who are you?")
 - [ ] One capture of the remote at the hero position: no `evt=vision.too_dark`; luma written: ____
-- [ ] Settings: Clear memory · persona Companion · captions Large · panel closed again
+- [ ] Settings (left palm toward you → wrist button, left ☰, or "open settings"): Clear memory · persona Companion · captions Large · panel closed again (X, or it closes itself after 20 s and on every talk pinch)
 - [ ] Usage meter start value: $______
 
 **Other cameras and audio**
@@ -35,9 +35,10 @@ Build: commit `________` · APK SHA-256 `________` · capture method: `________`
 
 ## Per take
 
-- [ ] Start headset recording → start phone → start room recorder → **one clap in view of the headset and the phone**
+- [ ] Start headset recording **in the headset** (universal menu → Camera → Record video; adb cannot start it) → start phone → start room recorder → **one clap in view of the headset and the phone**
 - [ ] Hold still 2 s, then the beat; hold still 2 s after the character finishes
-- [ ] Stop all three; write the take in the log below with ✓ / ✗ and the reason
+- [ ] Stop all three; `tools/demo/record.sh pull` and `tools/demo/check-frame.sh artifacts/demo/raw/<file>.mp4` (FAIL = black behind the character: stop and escalate); write the take in the log below with ✓ / ✗ and the reason
+- [ ] Between takes: `tools/demo/reset.sh --warmup` (force-stop, memory cleared, relaunch, waits for the warm-up), then the throwaway greeting
 
 ## Shots
 
@@ -51,7 +52,7 @@ Build: commit `________` · APK SHA-256 `________` · capture method: `________`
 | ☐ | B3 Follow / Stop | 1:30–1:47 | Headset + phone wide | "Follow me." Walk ~3 m slowly, look back over the shoulder. "Stop." | Follows at 1–1.5 m; stops at once | |
 | ☐ | B4 Barge-in | 1:47–2:02 | Headset | "Tell me everything about this remote." Pinch mid-sentence: "That's enough, thanks." | Audio cuts; listening; short reply | |
 | ☐ | B5 Offline | 2:02–2:24 | Headset | Hold the phone in view, switch its hotspot off. Wait for the Offline pill. Pinch: "Are you there?" Hotspot on, wait for the pill to clear, pinch: "Thanks, Nubi. See you later!" / "Thanks, Jolly. See you later!" | Offline pill; baked line with lip-sync; pill gone; warm online reply (wave is a bonus) | |
-| ☐ | B6 Cost | PiP 2:18–2:22 | Headset | Open the settings panel (wrist or menu), look at the usage line 4 s | Legible $ value; before/after values in the log | |
+| ☐ | B6 Cost | PiP 2:18–2:22 | Headset | Open the settings panel (wrist button, left ☰ or "open settings"), look down at the usage line 4 s: at 0.7 m the panel is taller than the recorded frame, so frame the bottom rows; touch a control if it takes longer than 20 s | Legible $ value; before/after values in the log | |
 | ☐ | FULL-1 Uncut run | (second video) | Headset + phone | Beats 1–5 in one take, no stops | Everything above, unbroken | |
 | ☐ | FULL-2 Uncut run | (spare) | Headset + phone | Same | | |
 | ☐ | X1 Hotspot switch close-up | cutaway | Headset | The phone's hotspot toggle filling the view, seen through passthrough | Legible toggle | |
@@ -63,7 +64,7 @@ Keep going on each beat until 2 clean takes exist (at least 3 attempts each). Be
 ## After the session
 
 - [ ] Usage meter end value: $______ → `docs/api-spend.md` row and rehearsal log
-- [ ] All headset files pulled to `artifacts/demo/raw/` (git-ignored) and backed up to a second disk
+- [ ] All headset files pulled to `artifacts/demo/raw/` (git-ignored; `tools/demo/record.sh list` / `pull`) and backed up to a second disk
 - [ ] Logcat of the session saved next to them; per kept take: release → first audio ___ ms, mask ___ ms, barge-in silence ___ ms
 - [ ] Phone and room-recorder files copied, named by take
 - [ ] Capture props noted (they reset on the next reboot)
