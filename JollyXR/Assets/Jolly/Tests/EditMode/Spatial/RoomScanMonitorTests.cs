@@ -163,6 +163,19 @@ namespace Jolly.Tests.EditMode.Spatial
         }
 
         [Test]
+        public void Offer_WithoutSpaceSetupToOpen_NeverRaised()
+        {
+            _scene.CanRequestCapture = false;
+
+            TickAt(0);
+            TickAt(8);
+            TickAt(30);
+
+            Assert.That(_monitor.Status, Is.EqualTo(RoomScanStatus.Unscanned));
+            Assert.That(_offers, Is.EqualTo(0));
+        }
+
+        [Test]
         public void Offer_Disabled_NeverRaised()
         {
             _settings.OfferScan = false;

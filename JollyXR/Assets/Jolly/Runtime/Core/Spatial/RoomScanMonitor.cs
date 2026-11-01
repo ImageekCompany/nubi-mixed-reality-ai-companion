@@ -86,7 +86,7 @@ namespace Jolly.Core.Spatial
             SetStatus(_detector.Update(now, _scene.PermissionGranted, _scene.HasScannedFloor));
             UpdateFallback();
 
-            if (Status == RoomScanStatus.Unscanned && _settings.OfferScan && !_offered && _canSpeak())
+            if (Status == RoomScanStatus.Unscanned && _settings.OfferScan && CanRequestScan && !_offered && _canSpeak())
             {
                 _offered = true;
                 OfferScan?.Invoke();
