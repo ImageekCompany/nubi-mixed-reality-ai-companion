@@ -78,7 +78,16 @@ namespace Jolly.Tests.EditMode.Offline
             Assert.That(_http.LastBearer, Is.EqualTo("LLM_1_secret"));
         }
 
+        [Test]
+        public void Ping_On429_ReturnsTrueBecauseTheServerAnswered()
+        {
+            _http.Status = 429;
+
+            Assert.That(Result(Create().Ping(CancellationToken.None)), Is.True);
+        }
+
         [TestCase(500)]
+        [TestCase(403)]
         [TestCase(404)]
         [TestCase(0)]
         public void Ping_OnAnyOtherStatus_ReturnsFalse(long status)

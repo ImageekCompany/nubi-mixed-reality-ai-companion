@@ -6,7 +6,8 @@ using Jolly.Contracts;
 namespace Jolly.Providers.MetaApi.Health
 {
     /// <summary>
-    /// GET {base}/v1/models with the API key: true on 2xx. The 3 s timeout runs on IClock (PlayerLoop in the app,
+    /// GET {base}/v1/models with the API key: true on 2xx, and on 429 since a rate-limited server is still reachable
+    /// (ReportFailure(RateLimited) is state-neutral too). The 3 s timeout runs on IClock (PlayerLoop in the app,
     /// deterministic in tests) and cancels the request. A 401 also raises <see cref="Unauthorized"/>, because
     /// <see cref="IHealthProbe.Ping"/> can only answer reachable or not; wire it to IConnectivityMonitor.ReportFailure.
     /// </summary>
@@ -15,6 +16,7 @@ namespace Jolly.Providers.MetaApi.Health
         public static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(3);
 
         const string LogCategory = "health";
+        const long TooManyRequests = 429;
 
         readonly IHttpStatusClient _http;
         readonly ISecretsProvider _secrets;
@@ -48,7 +50,7 @@ namespace Jolly.Providers.MetaApi.Health
                 var status = await _http.GetStatus(_url, key, request.Token);
                 if (status == 401)
                     Unauthorized?.Invoke();
-                return status >= 200 && status < 300;
+                return status is >= 200 and < 300 or TooManyRequests;
             }
             catch (OperationCanceledException) when (ct.IsCancellationRequested)
             {
