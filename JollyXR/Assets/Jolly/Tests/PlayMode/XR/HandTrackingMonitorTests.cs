@@ -51,26 +51,78 @@ namespace Jolly.Tests.PlayMode.XR
         }
 
         [UnityTest]
-        public IEnumerator VisualChange_IsLoggedOnceAtTheNextPoll()
+        public IEnumerator TrackedHand_HeldForTheHold_IsShownAndLoggedOnce()
+        {
+            var right = false;
+            _monitor.ReadTrackingFrom(side => side == Handedness.Right && right);
+            yield return null;
+            _log.Clear();
+
+            right = true;
+            yield return null;
+            Assert.That(_rightMesh.enabled, Is.False, "not yet held for 0.2 s");
+            Assert.That(Messages(), Is.Empty);
+
+            _clock.Advance(TimeSpan.FromSeconds(0.25));
+            yield return null;
+            yield return null;
+
+            Assert.That(_rightMesh.enabled, Is.True);
+            Assert.That(Messages(), Is.EqualTo(new[]
+            {
+                "evt=hands.tracked left=false right=true",
+                "evt=hands.visual left=false right=true",
+            }));
+        }
+
+        [UnityTest]
+        public IEnumerator PhantomBlip_NeitherShowsTheHandNorLogs()
+        {
+            // The 4d228c8 headless runs: a hand "tracked" for a moment about once a second, with nobody wearing the headset.
+            var left = false;
+            _monitor.ReadTrackingFrom(side => side == Handedness.Left && left);
+            yield return null;
+            _log.Clear();
+
+            left = true;
+            yield return null;
+            _clock.Advance(TimeSpan.FromSeconds(0.1));
+            yield return null;
+            left = false;
+            _clock.Advance(TimeSpan.FromSeconds(0.3));
+            yield return null;
+            yield return null;
+
+            Assert.That(Messages(), Is.Empty);
+        }
+
+        [UnityTest]
+        public IEnumerator UntrackedHand_StaysHiddenWhateverElseShowsIt()
         {
             yield return null;
             _log.Clear();
 
             _rightMesh.enabled = true;
             yield return null;
-            Assert.That(Messages(), Is.Empty, "polls at 4 Hz");
-
-            _clock.Advance(TimeSpan.FromSeconds(0.3));
-            yield return null;
             _clock.Advance(TimeSpan.FromSeconds(0.3));
             yield return null;
 
-            Assert.That(Messages(), Is.EqualTo(new[] { "evt=hands.visual left=false right=true" }));
+            Assert.That(_rightMesh.enabled, Is.False);
+            Assert.That(Messages(), Is.Empty);
+        }
+
+        [Test]
+        public void Construct_TakesTheShowAndHideFromTheMeshControllers()
+        {
+            var controller = _root.GetComponentInChildren<XRHandMeshController>();
+
+            Assert.That(controller.showMeshWhenTrackingIsAcquired, Is.False);
+            Assert.That(controller.hideMeshWhenTrackingIsLost, Is.False);
         }
 
         string[] Messages() => _log.Entries.Where(e => e.Level == LogLevel.Info).Select(e => e.Message).ToArray();
 
-        // The XR Hands mesh controller hides its renderer while the hand is untracked, as on the rig.
+        // As on the rig: the XR Hands mesh controller hides its renderer while the hand is untracked, until Construct.
         static Renderer AddVisual(Transform parent, Handedness side)
         {
             // Inactive until wired: the mesh controller reads its renderer in OnEnable.
