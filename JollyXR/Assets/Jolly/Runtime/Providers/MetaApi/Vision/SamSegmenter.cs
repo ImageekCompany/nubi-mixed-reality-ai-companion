@@ -71,7 +71,7 @@ namespace Jolly.Providers.MetaApi.Vision
             var reader = new SamStreamReader();
             try
             {
-                var stream = await _client.Open(request, _options.Timeout, _options.Timeout, _options.RetryPolicy, ct);
+                var stream = await _client.Open(request, _options.Timeout, _options.Timeout, _options.RetryPolicy, new OpenAttempts(), ct);
                 try
                 {
                     while (!reader.Apply(stream.Current) && await stream.MoveNext()) { }
