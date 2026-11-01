@@ -63,6 +63,14 @@ namespace Jolly.Core.Spatial
             return world;
         }
 
+        /// <summary>True when <paramref name="point"/> lies over the footprint grown by <paramref name="margin"/> on
+        /// every side (floor plane only; the height is the caller's to check).</summary>
+        public static bool Contains(SceneSurface surface, Vector3 point, float margin)
+        {
+            var local = Quaternion.Inverse(Yaw(surface.Pose.rotation)) * (point - surface.Pose.position);
+            return Mathf.Abs(local.x) <= surface.Size.x * 0.5f + margin && Mathf.Abs(local.z) <= surface.Size.z * 0.5f + margin;
+        }
+
         /// <summary>Where Nubi looks: the centre of the surface's top.</summary>
         public static Vector3 LookPoint(SceneSurface surface)
         {
