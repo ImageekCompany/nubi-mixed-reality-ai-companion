@@ -82,6 +82,7 @@ Implication: for a target of under 2 s to first audio, use `reasoning_effort:"mi
 - Roles: `developer` (preferred) and `system` (accepted, same precedence), plus `user`, `assistant` and `tool` [docs:protocols/chat-completions].
 - Chat Completions does **not** carry reasoning across turns. Responses API (`previous_response_id`) does. The docs recommend Responses for agent loops [docs:tool-calling].
 - Prompt caching works automatically. The second tool turn showed `cached_tokens: 625` of 772 (live). `prompt_cache_key` is available [docs:protocols/chat-completions].
+- **On the Responses API with tools, caching needs `prompt_cache_key`** (live 2026-11-01, `muse-spark-1.3`, an app-shaped 2,718-token request with 11 tools, `safety_identifier`, `include`, `store:false`): two identical requests without a key both read `cached_tokens: 0` (first text 1.29 / 1.09 s); with a key, the repeat read **2,673** cached tokens and its first text came at 0.85 s (vs 1.14 s for the keyed first call). Every agent call on the headset had shown `cached=0` before the app sent a key. Requests without tools (the vision probe below) cached without a key.
 - Non-streaming requests can 504 (`gateway_timeout`). Streaming is exempt once the first event arrives [docs:error-handling].
 - `safety_identifier` (≤64 chars, a hashed user id) is recommended [docs:protocols/chat-completions].
 
@@ -155,6 +156,18 @@ The Responses API uses `{"type":"input_image","image_url":"<string>"}` (a plain 
 | HEIC (`data:image/heic`) | 400 `"unsupported media type at messages[1].content[1]: \`image/heic\`. Supported: JPEG, PNG, GIF, WebP, ICO."` |
 | Truncated JPEG (300 bytes) | 400 `"invalid image data at messages[1].content[1]: the \`image/jpeg\` payload could not be decoded (it may be corrupt or truncated)."` |
 | `{"type":"file","file":{"file_id":"file-…"}}` after a `/v1/files` upload | 200 ("Mug"). This shape is a guess and is not shown for images on the docs page I read, but it worked live |
+
+**Vision latency probes (live 2026-11-01, `/v1/responses` streaming, the app's `VisionRequestBuilder` prompt with the Companion persona, `minimal` effort, from the dev Mac on a warm connection):**
+
+| Image | Model | Prompt | First text (= header) | Reasoning tokens |
+|---|---|---|---|---|
+| dark device frame `cam_640_none.jpg` (7 KB) | 1.3 | app | 1.62 s | 227 |
+| `mug_640.jpg` (31 KB) | 1.3 | app | 1.81 s | 274 |
+| `mug_640.jpg` | 1.3 | "reply at once, without deliberating" | 2.29 s | 401 |
+| `mug_640.jpg` | 1.2 | app | 2.68 s | 259 |
+| `pen_640.jpg` darkened | 1.2 | app | 2.42 s | 348 |
+
+Time to the header is reasoning time: 230–500 reasoning tokens at `minimal`, varying run to run on the same input. Telling the model to skip deliberation made it reason more, and `muse-spark-1.2` was slower, not faster. The image is 300–400 of ~800–1,000 input tokens, so a smaller image or a lower JPEG quality changes the prefill and upload by tens of milliseconds at most; neither was worth a paid call. On the headset one call ran into the 600-token output cap (`finish=Length out=600`), which is why the cap is now 1,024.
 
 Limits [docs:image-understanding]:
 - Inline image: 50 MB max. Files API: 1 GiB.

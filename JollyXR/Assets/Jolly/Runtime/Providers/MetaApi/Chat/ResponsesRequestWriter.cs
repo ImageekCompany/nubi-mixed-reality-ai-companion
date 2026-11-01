@@ -67,6 +67,8 @@ namespace Jolly.Providers.MetaApi.Chat
                     w.WritePropertyName("safety_identifier");
                     w.WriteValue(request.SafetyIdentifier);
                 }
+                w.WritePropertyName("prompt_cache_key");
+                w.WriteValue(PromptCacheKey.For(model, request));
                 w.WriteEndObject();
             }
             return new ResponsesRequestBody(_sb.ToString(), _inputChars);

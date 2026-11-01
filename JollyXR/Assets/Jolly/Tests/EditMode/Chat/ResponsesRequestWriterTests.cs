@@ -30,6 +30,24 @@ namespace Jolly.Tests.EditMode.Chat
             Assert.That(body["tools"], Is.Null);
         }
 
+        [Test]
+        public void Write_PromptCacheKey_DependsOnlyOnTheStaticPrefix()
+        {
+            var tool = new ToolDefinition("walk_to", "Walk somewhere.", WalkSchema, TimeSpan.FromSeconds(3), ToolConcurrency.Locomotion);
+            ModelRequest Request(string instructions, string user, params ToolDefinition[] tools) =>
+                new() { Instructions = instructions, Input = new[] { ConversationItem.User(user) }, Tools = tools };
+
+            var first = (string)Write(Request("Be Nubi.", "hi", tool))["prompt_cache_key"];
+            var otherTurn = (string)Write(Request("Be Nubi.", "what is this?", tool))["prompt_cache_key"];
+            var otherPersona = (string)Write(Request("Be a mentor.", "hi", tool))["prompt_cache_key"];
+            var otherTools = (string)Write(Request("Be Nubi.", "hi"))["prompt_cache_key"];
+
+            Assert.That(first, Does.Match("^jolly-[0-9a-f]{16}$"));
+            Assert.That(otherTurn, Is.EqualTo(first), "the turn's input must not change the routing key");
+            Assert.That(otherPersona, Is.Not.EqualTo(first));
+            Assert.That(otherTools, Is.Not.EqualTo(first));
+        }
+
         [TestCase(ReasoningEffort.Minimal, "minimal")]
         [TestCase(ReasoningEffort.Low, "low")]
         [TestCase(ReasoningEffort.Medium, "medium")]
