@@ -18,7 +18,7 @@ namespace Jolly.Contracts
 
     public sealed class PlaceRecord
     {
-        public string Name { get; set; }          // normalised: trimmed, lower-case
+        public string Name { get; set; }          // normalised: PromptText-sanitised, lower-case
         public Pose Pose { get; set; }
         public string AnchorId { get; set; }
         public DateTimeOffset CreatedAt { get; set; }

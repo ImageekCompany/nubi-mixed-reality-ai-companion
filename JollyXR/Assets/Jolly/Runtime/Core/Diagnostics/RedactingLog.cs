@@ -7,7 +7,8 @@ namespace Jolly.Core.Diagnostics
 {
     /// <summary>
     /// Defence in depth in front of the log sink: masks Meta API keys, bearer tokens and the configured secret values.
-    /// Callers must still never log secrets; this only limits the damage when one slips through.
+    /// Callers must still never log secrets; this only limits the damage when one slips through. Exceptions are folded
+    /// into the message and redacted too: provider errors carry the server's message verbatim, which can echo input.
     /// </summary>
     public sealed class RedactingLog : ILog
     {
@@ -32,8 +33,11 @@ namespace Jolly.Core.Diagnostics
 
         public void Write(LogLevel level, string category, string message, Exception exception = null)
         {
-            if (_inner.IsEnabled(level))
-                _inner.Write(level, category, Redact(message), exception);
+            if (!_inner.IsEnabled(level))
+                return;
+            if (exception != null)
+                message = message + "\n" + exception;
+            _inner.Write(level, category, Redact(message));
         }
 
         string Redact(string message)

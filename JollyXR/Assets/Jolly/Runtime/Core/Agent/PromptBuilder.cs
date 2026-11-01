@@ -64,6 +64,8 @@ namespace Jolly.Core.Agent
             var summary = _memory.Summary ?? string.Empty;
             if (summary.Length > _settings.SummaryContextChars)
                 summary = summary.Substring(0, _settings.SummaryContextChars);
+            // The summary is model output over dialogue and camera-derived results: it must not close the fence below.
+            summary = summary.Replace('<', ' ').Replace('>', ' ');
             var scene = _scene.BuildPromptContext(_settings.SceneContextChars);
             if (summary.Length == 0 && scene.Length == 0)
                 return null;

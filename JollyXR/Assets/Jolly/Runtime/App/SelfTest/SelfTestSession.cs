@@ -15,7 +15,9 @@ namespace Jolly.App.SelfTest
     /// <c>persistentDataPath/selftest.json</c> exists (or, off-device, the <c>-selftest</c> argument is given). The flag is
     /// consumed at once, so the next normal launch is a normal app. There is deliberately no intent path on Android: the
     /// launcher activity is exported, so any app could start a paid, offline-forcing run; only adb can write the flag. It replaces only the edges a person would provide
-    /// (voice and the pinch, microphone, a lit room, the network switch); everything between them runs for real.
+    /// (voice and the pinch, microphone, a lit room, the network switch); everything between them runs for real. Memory
+    /// starts empty in a scratch directory, so the user's summary never reaches a self-test request and the scripted
+    /// turns never reach the user's memory.
     /// </summary>
     public sealed class SelfTestSession
     {
@@ -94,6 +96,10 @@ namespace Jolly.App.SelfTest
 
         void Rewire(Edges edges, Foundation foundation, SceneRefs scene)
         {
+            var memory = Path.Combine(_dataRoot, "selftest", "memory");
+            if (Directory.Exists(memory))
+                Directory.Delete(memory, recursive: true);
+            edges.Paths.RedirectMemory(memory);
             _realReachability = edges.IsNetworkReachable;
             edges.IsNetworkReachable = () => !ForceOffline && _realReachability();
             Microphone = new ClipMicrophone(edges.Microphone, foundation.Clock);

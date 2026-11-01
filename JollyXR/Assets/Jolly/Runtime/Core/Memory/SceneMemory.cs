@@ -11,7 +11,8 @@ namespace Jolly.Core.Memory
 {
     /// <summary>
     /// Seen objects (LRU, most recent first) and taught places (architecture §8). Only anchored entries survive a reload:
-    /// raw positions are stale after a recenter. Object ids come from a persisted counter and are never reused.
+    /// raw positions are stale after a recenter. Object ids come from a persisted counter and are never reused. An anchor
+    /// whose entry is replaced, evicted or cleared is erased from the device in the background.
     /// </summary>
     public sealed class SceneMemory : ISceneMemory
     {
@@ -50,7 +51,10 @@ namespace Jolly.Core.Memory
             };
             _objects.Insert(0, seen);
             if (_objects.Count > _limits.SceneObjects)
+            {
+                EraseAnchor(_objects[^1].AnchorId);
                 _objects.RemoveAt(_objects.Count - 1);
+            }
             return seen;
         }
 
@@ -69,14 +73,24 @@ namespace Jolly.Core.Memory
         public void RememberPlace(PlaceRecord place)
         {
             var name = NormalizeName(place.Name);
-            _places.RemoveAll(p => p.Name == name);
+            var index = _places.FindIndex(p => p.Name == name);
+            if (index >= 0)
+            {
+                if (_places[index].AnchorId != place.AnchorId)
+                    EraseAnchor(_places[index].AnchorId);
+                _places.RemoveAt(index);
+            }
             _places.Add(new PlaceRecord
             {
                 Name = name, Pose = place.Pose, AnchorId = place.AnchorId,
                 CreatedAt = place.CreatedAt == default ? _clock.UtcNow : place.CreatedAt,
             });
             if (_places.Count > _limits.Places)
-                _places.Remove(Oldest());
+            {
+                var oldest = Oldest();
+                EraseAnchor(oldest.AnchorId);
+                _places.Remove(oldest);
+            }
         }
 
         public bool TryGetPlace(string name, out PlaceRecord place)
@@ -107,8 +121,11 @@ namespace Jolly.Core.Memory
 
             foreach (var dto in places)
             {
-                if (await Resolve(dto.anchor, ct) is { } pose)
-                    _places.Add(dto.ToRecord(pose));
+                if (await Resolve(dto.anchor, ct) is not { } pose)
+                    continue;
+                var place = dto.ToRecord(pose);
+                place.Name = NormalizeName(place.Name);
+                _places.Add(place);
             }
             foreach (var dto in objects)
             {
@@ -131,6 +148,10 @@ namespace Jolly.Core.Memory
 
         public void Clear()
         {
+            foreach (var o in _objects)
+                EraseAnchor(o.AnchorId);
+            foreach (var p in _places)
+                EraseAnchor(p.AnchorId);
             ResetInMemory();
             AtomicFile.Delete(_filePath);
         }
@@ -140,6 +161,24 @@ namespace Jolly.Core.Memory
             _objects.Clear();
             _places.Clear();
             LastCapture = null;
+        }
+
+        void EraseAnchor(string anchorId)
+        {
+            if (!string.IsNullOrEmpty(anchorId))
+                EraseInBackground(anchorId).Forget();
+        }
+
+        async UniTaskVoid EraseInBackground(string anchorId)
+        {
+            try
+            {
+                await _anchors.Erase(anchorId, CancellationToken.None);
+            }
+            catch (Exception e)
+            {
+                _log.Write(LogLevel.Warning, "memory", "evt=memory.anchor_erase_failed", e);
+            }
         }
 
         UniTask<Pose?> Resolve(string anchorId, CancellationToken ct) =>
@@ -156,6 +195,7 @@ namespace Jolly.Core.Memory
             return oldest;
         }
 
-        static string NormalizeName(string name) => (name ?? string.Empty).Trim().ToLowerInvariant();
+        // Place names come from model tool arguments and are echoed into the context block, so they get the label rules.
+        string NormalizeName(string name) => PromptText.Sanitize(name, _limits.LabelChars).ToLowerInvariant();
     }
 }
