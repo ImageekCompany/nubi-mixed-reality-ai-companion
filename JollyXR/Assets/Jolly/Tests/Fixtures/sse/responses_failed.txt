@@ -1,0 +1,17 @@
+event: response.created
+data: {"response":{"background":false,"created_at":1793495760.0,"error":null,"id":"resp_handwritten_failed","incomplete_details":null,"model":"muse-spark-1.3-contributor","object":"response","output":[],"status":"in_progress","store":false},"sequence_number":0,"type":"response.created"}
+
+event: response.in_progress
+data: {"response":{"background":false,"created_at":1793495760.0,"error":null,"id":"resp_handwritten_failed","incomplete_details":null,"model":"muse-spark-1.3-contributor","object":"response","output":[],"status":"in_progress","store":false},"sequence_number":1,"type":"response.in_progress"}
+
+event: response.output_item.added
+data: {"item":{"content":[],"id":"msg_handwritten","role":"assistant","status":"in_progress","type":"message"},"output_index":0,"sequence_number":2,"type":"response.output_item.added"}
+
+event: response.output_text.delta
+data: {"content_index":0,"delta":"Let me","item_id":"msg_handwritten","logprobs":[],"output_index":0,"sequence_number":3,"type":"response.output_text.delta"}
+
+event: response.failed
+data: {"response":{"background":false,"created_at":1793495760.0,"error":{"code":"server_error","message":"The server had an error while processing your request."},"id":"resp_handwritten_failed","incomplete_details":null,"model":"muse-spark-1.3-contributor","object":"response","output":[],"status":"failed","store":false},"sequence_number":4,"type":"response.failed"}
+
+data: [DONE]
+
