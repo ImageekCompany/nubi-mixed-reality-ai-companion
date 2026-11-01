@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using Jolly.XR.Navigation;
 using NUnit.Framework;
 using UnityEngine;
@@ -118,6 +119,32 @@ namespace Jolly.Tests.PlayMode.XR
 
             _baker.Tick(now: 2.1);
             Assert.That(OnNavMesh(new Vector3(1f, 0f, 1f), 0.3f, out _), Is.False);
+        }
+
+        [UnityTest]
+        public IEnumerator Build_TriangulatedLShapedFloorMesh_LeavesTheNotchUnwalkable()
+        {
+            // 4 x 4 m with the +x +z 2 x 2 m quadrant cut out, clockwise like an ARPlane boundary.
+            var outline = new List<Vector2>
+            {
+                new(-2f, -2f), new(-2f, 2f), new(0f, 2f), new(0f, 0f), new(2f, 0f), new(2f, -2f),
+            };
+            var mesh = new Mesh();
+            Assert.That(FloorMesh.TryBuild(outline, mesh, new List<Vector3>(), new List<int>()), Is.True);
+            var go = new GameObject("floor-mesh") { layer = Layer };
+            go.transform.SetParent(_root.transform);
+            var floor = go.AddComponent<MeshCollider>();
+            floor.sharedMesh = mesh;
+            _baker.AddWalkable(floor);
+            yield return null;
+
+            _baker.Rebuild(now: 0);
+
+            Assert.That(OnNavMesh(new Vector3(-1f, 0f, 1f), 0.1f, out var inside), Is.True, "the L's arm is walkable");
+            Assert.That(inside.y, Is.EqualTo(0f).Within(0.1f));
+            Assert.That(OnNavMesh(new Vector3(-1f, 0f, -1f), 0.1f, out _), Is.True);
+            Assert.That(OnNavMesh(new Vector3(1.2f, 0f, 1.2f), 0.5f, out _), Is.False, "the notch is outside the room");
+            Object.Destroy(mesh);
         }
 
         [UnityTest]

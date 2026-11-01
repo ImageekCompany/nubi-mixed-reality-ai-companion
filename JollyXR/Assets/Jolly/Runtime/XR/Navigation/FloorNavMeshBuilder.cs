@@ -100,7 +100,10 @@ namespace Jolly.XR.Navigation
         void UpsertPlane(ARPlane plane)
         {
             if ((plane.classifications & PlaneClassifications.Floor) == 0)
+            {
+                Remove(plane.trackableId);
                 return;
+            }
             var entry = GetOrCreate(plane.trackableId, plane.transform);
             if (!BuildFloorMesh(plane, entry.Mesh))
                 return;
@@ -122,7 +125,8 @@ namespace Jolly.XR.Navigation
         {
             if (!_colliders.Remove(id, out var entry))
                 return;
-            _baker.Remove(entry.Collider);
+            if (entry.Collider != null)
+                _baker.Remove(entry.Collider);
             entry.Destroy();
         }
 
@@ -141,17 +145,7 @@ namespace Jolly.XR.Navigation
             _outline.Clear();
             foreach (var point in plane.boundary)
                 _outline.Add(point);
-            if (!PolygonTriangulator.Triangulate(_outline, _triangles))
-                return false;
-
-            _vertices.Clear();
-            foreach (var point in _outline)
-                _vertices.Add(new Vector3(point.x, 0f, point.y));
-            mesh.Clear();
-            mesh.SetVertices(_vertices);
-            mesh.SetTriangles(_triangles, 0);
-            mesh.RecalculateBounds();
-            return true;
+            return FloorMesh.TryBuild(_outline, mesh, _vertices, _triangles);
         }
     }
 }
