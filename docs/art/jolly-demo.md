@@ -8,24 +8,26 @@ the same 22 bones, 13 shape keys and 15 clips.
 Jolly is Meta's character (docs/research/character.md §3). The source print
 (`Meta+Muse+Jolly+v2+Whole.glb/.stl`) has no known licence. Everything built from it is local-only and
 is **never committed, pushed, published, or shipped in a build or video you distribute** without
-permission from Meta. That covers the FBX, textures, materials, prefab, controller, report, `.blend` and
-renders, plus their `.meta` files. Nubi stays the public default.
+permission from Meta. That covers the FBX, textures, materials, definition, controller, baked lines, report,
+`.blend` and renders, plus their `.meta` files. Nubi stays the public default.
 
 Only the generic pipeline is committed: `tools/blender/build_jolly.py`, this page and the `.gitignore`
-entries. The script has no mesh, texture or image data in it. It reads the body from `--src` at build
-time. Its few landmark constants (cut heights, eye and shoulder positions) were measured on that print.
+entries (`Assets/Jolly/Local/`, and the older `Assets/Jolly/Art/Private/`, kept ignored). The script has no
+mesh, texture or image data in it. It reads the body from `--src` at build time. Its few landmark constants (cut
+heights, eye and shoulder positions) were measured on that print.
 
-Where the outputs go (all git-ignored):
+Where the outputs go (all git-ignored, under `JollyXR/Assets/Jolly/Local/Characters/Jolly/`, the folder the
+character swap reads local definitions from):
 
 | Output | Path |
 |---|---|
-| FBX, face presets, validation report | `JollyXR/Assets/Jolly/Art/Private/JollyDemo/Jolly.fbx`, `Jolly_FacePresets.json`, `build_report.json` |
-| Albedo and fur normal map (1024²) | `JollyXR/Assets/Jolly/Art/Private/JollyDemo/Textures/T_Jolly_{Albedo,Normal}.png` |
-| Unity assets (step 2) | `…/JollyDemo/Materials/M_Jolly_{Fur,Gloss}.mat`, `…/Animator/Jolly.overrideController`, `…/Jolly.prefab` |
+| FBX, face presets, validation report | `Jolly.fbx`, `Jolly_FacePresets.json`, `build_report.json` |
+| Albedo and fur normal map (1024²) | `Textures/T_Jolly_{Albedo,Normal}.png` |
+| Unity assets (step 2) | `Materials/M_Jolly_{Fur,Gloss}.mat`, `JollyCharacter.asset`, `Animator/Jolly.controller`, `Animator/JollyUpperBody.mask`, `Lines/en/*.wav` |
 | `.blend`, turntable, viseme sheet, clip sheets | `tools/blender/out/jolly/` |
 
 Before you commit anything near these paths, check them:
-`git check-ignore -v JollyXR/Assets/Jolly/Art/Private/JollyDemo/Jolly.fbx JollyXR/Assets/Jolly/Art/Private.meta`
+`git check-ignore -v JollyXR/Assets/Jolly/Local/Characters/Jolly/Jolly.fbx JollyXR/Assets/Jolly/Local.meta`
 and `git status --short` must not list them. On a branch that does not have these `.gitignore` lines yet,
 put the same two patterns in `.git/info/exclude`.
 
@@ -62,8 +64,7 @@ downloaded or stored.
 
 ## 2. Unity
 
-There is no committed importer for Jolly, so the import settings are written once into `Jolly.fbx.meta`.
-They are the same as `NubiModelPostprocessor`:
+`Jolly.fbx` has a sibling `Jolly_FacePresets.json`, so `CharacterModelPostprocessor` imports it like Nubi:
 
 - Generic rig, avatar created from this model, Bake Axis Conversion on, Optimize Game Objects off,
   blend shapes on, no cameras, lights or visibility, not readable, Optimal compression.
@@ -75,45 +76,43 @@ They are the same as `NubiModelPostprocessor`:
 
 Unity assets:
 
-- `Jolly.overrideController` overrides every clip in `Nubi.controller` with the Jolly clip of the same
-  name (14 overrides).
-- `Jolly.prefab` mirrors `NubiPrefabBuilder`: a `Model` child with that Animator, a `NubiCharacterController`
-  bound to `Jolly_Mesh`, `Jolly_FacePresets.json` and Chest/Neck/Head/Eye_L/Eye_R, a disabled NavMeshAgent
-  (r 0.24, h 0.9), a capsule (r 0.32, h 0.88) and Nubi's blob-shadow material at 0.78 × 0.62.
-
-These assets were made by a throwaway editor script, kept outside `Assets` at
-`tools/blender/out/jolly/unity-builder/`. To regenerate them, copy that folder to
-`JollyXR/Assets/Jolly/Art/Private/_Build/Editor/`, then run:
-
-```sh
-Unity -batchmode -quit -projectPath JollyXR -executeMethod Jolly.Editor.JollyDemoBuild.JollyDemoBuilder.Build
-Unity -batchmode -quit -projectPath JollyXR -executeMethod Jolly.Editor.JollyDemoBuild.JollyDemoBuilder.Screenshots -shotDir tools/blender/out/jolly
-```
-
-Delete `_Build` afterwards, so CI never compiles it.
-
-## 3. Swapping it in
-
-Characters are swapped by definition now (ADR-0026, `docs/characters.md`), and local ones are found only
-under `Assets/Jolly/Local/Characters/<Name>/`. The outputs above predate that: `Jolly.prefab` binds the
-pre-swap controller fields and is not used, and nothing under `Art/Private/` is picked up. To use the skin,
-create `Assets/Jolly/Local/Characters/Jolly/JollyCharacter.asset` (the path and id `docs/characters.md`
-expects) whose `model` is `Jolly.fbx`, then select it as `docs/characters.md` describes. It needs:
+- The materials were made once by hand on `Jolly/Character/NubiSkin`; the FBX's material remaps point at them.
+- `JollyCharacter.asset` is a `CharacterDefinition` (docs/characters.md) copied from Nubi's (same rig, face
+  channels, look-at bones, feet and tuning) with Jolly's identity, model and body:
 
 | Field | Jolly value |
 |---|---|
-| id / display name | `jolly` / "Jolly (local demo)" |
-| model | `Jolly.fbx` (instantiated into the Nubi shell) |
-| animator controller | `Jolly.overrideController`. Any controller whose clips bind `Nubi_Rig/Root/…` works |
-| face presets | `Jolly_FacePresets.json` (same table as Nubi's) |
-| face mesh, shape-key names | `Jolly_Mesh`; the 13 names above |
-| rig bones for look-at | `Chest, Neck, Head, Eye_L, Eye_R` |
-| feet for the contact shadow | `Foot_L`, `Foot_R` (ADR-0024) |
-| height / agent radius / capsule | 0.86 m / 0.24 m / r 0.32, h 0.88 |
-| locomotion clip speeds | Walk 0.49 m/s, Hop 0.90 m/s (same gait as Nubi) |
-| eye look-at limits | Nubi's (±16° yaw, ±8° pitch). The pivots sit 0.30 m behind the eyes |
-| contact shadow radius | (0.39, 0.31): the 0.78 × 0.62 quad |
-| local only | by its folder: never in `JollyConfig.characters`, Addressables groups, builds you share, or screenshots in the repo |
+| id / display name / aliases | `jolly` / `Jolly` / `Jolie`, `Jollie` |
+| model, face presets, face mesh | `Jolly.fbx`, `Jolly_FacePresets.json`, `Jolly_Mesh` (the 13 shape keys above) |
+| animator controller | `Animator/Jolly.controller`, built by `CharacterAnimatorBuilder` from the definition |
+| rig bones | Nubi's: `Chest, Neck, Head, Eye_L, Eye_R`, upper body `Spine`, feet `Foot_L`/`Foot_R` (ADR-0024) |
+| height / agent radius / collider radius | 0.88 m / 0.24 m / 0.32 m |
+| contact shadow radius | (0.39, 0.31) |
+| locomotion, look and face tuning | Nubi's (Walk 0.49 m/s, Hop 0.90 m/s, ±16° / ±8° eyes; the pivots sit 0.30 m behind the eyes) |
+| line clips | `Lines/en/greeting_01` and `whoami_01..03` saying "Jolly", baked with Wit voice Charlie |
+
+To regenerate the definition and its controller, copy the throwaway builder kept outside `Assets` at
+`tools/blender/out/jolly/unity-builder/` to `JollyXR/Assets/Jolly/Local/_Setup/Editor/`, then run:
+
+```sh
+Unity -batchmode -quit -projectPath JollyXR -executeMethod Jolly.Editor.JollyCharacterSetup.Setup.Build
+```
+
+Delete `Local/_Setup` afterwards, so its assembly never reaches a test run. It keeps baked line clips. To (re)bake
+them, run `CannedLineBaker.BakeCharacterBatch` as docs/characters.md §4b shows (the first request after a cold start
+can time out; run it again and it bakes only what is missing).
+
+## 3. Using it
+
+The definition is found because it lives under `Assets/Jolly/Local/` (ADR-0026). Select it as docs/characters.md §6
+describes: Play mode with **Jolly ▸ Character ▸ Play As Selected Definition**, or an APK with
+`tools/device/build.sh --character jolly`, whose build log lists
+`[CharacterSceneProcessor] scene=Main character=jolly local=1 paths=[Assets/Jolly/Local/Characters/Jolly/JollyCharacter.asset]`. A build without
+`--character` contains nothing from `Local/`. Never add it to `JollyConfig.characters`, Addressables groups, builds
+you share, or screenshots in the repo.
+
+The character says its own name: persona prompts, greetings and canned lines fill `{name}` with "Jolly", and live ASR
+mishearings `Jolie`/`Jollie` become "Jolly".
 
 ## Validation (latest local build)
 

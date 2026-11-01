@@ -39,7 +39,8 @@ namespace Jolly.Editor.Tools
                 local = local.FindAll(d => baked != null && string.Equals(d.id, baked, StringComparison.OrdinalIgnoreCase));
                 if (baked != null && local.Count == 0 && !IsCommitted(bootstrap, baked))
                     throw new BuildFailedException($"{CharacterArg} '{baked}' matches no character definition.");
-                Debug.Log($"[CharacterSceneProcessor] scene={scene.name} character={baked ?? "default"} local={local.Count}");
+                Debug.Log($"[CharacterSceneProcessor] scene={scene.name} character={baked ?? "default"} local={local.Count} " +
+                          $"paths=[{string.Join(", ", local.ConvertAll(AssetDatabase.GetAssetPath))}]");
             }
 
             var so = new SerializedObject(bootstrap);

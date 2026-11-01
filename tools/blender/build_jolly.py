@@ -10,8 +10,8 @@ Usage (from the repo root):
         --python tools/blender/build_jolly.py -- --src <mesh.glb|mesh.stl> [--no-render] [--clips Walk,Wave]
 
 Outputs (all git-ignored):
-    JollyXR/Assets/Jolly/Art/Private/JollyDemo/Jolly.fbx, Jolly_FacePresets.json, build_report.json
-    JollyXR/Assets/Jolly/Art/Private/JollyDemo/Textures/T_Jolly_Albedo.png, T_Jolly_Normal.png
+    JollyXR/Assets/Jolly/Local/Characters/Jolly/Jolly.fbx, Jolly_FacePresets.json, build_report.json
+    JollyXR/Assets/Jolly/Local/Characters/Jolly/Textures/T_Jolly_Albedo.png, T_Jolly_Normal.png
     tools/blender/out/jolly/Jolly.blend and jolly_*.png renders
 
 Drop-in contract: the same 22 bones, 13 shape keys and 15 clips as Nubi (docs/art/nubi/build_report.json).
@@ -49,7 +49,7 @@ from nubi import render as R  # noqa: E402
 from nubi.clips import CLIPS  # noqa: E402
 
 REPO = Path(__file__).resolve().parents[2]
-DEFAULT_OUT_DIR = REPO / "JollyXR" / "Assets" / "Jolly" / "Art" / "Private" / "JollyDemo"
+DEFAULT_OUT_DIR = REPO / "JollyXR" / "Assets" / "Jolly" / "Local" / "Characters" / "Jolly"
 DEFAULT_RENDER_DIR = REPO / "tools" / "blender" / "out" / "jolly"
 
 # ------------------------------------------------------------- scan fit ----
