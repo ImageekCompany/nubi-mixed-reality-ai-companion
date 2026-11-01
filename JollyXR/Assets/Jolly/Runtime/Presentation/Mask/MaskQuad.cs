@@ -8,6 +8,7 @@ namespace Jolly.Presentation
     {
         static readonly int MaskTexId = Shader.PropertyToID("_MaskTex");
         static readonly int FadeId = Shader.PropertyToID("_Fade");
+        static readonly int MaskTexelSizeId = Shader.PropertyToID("_MaskTex_TexelSize");
 
         readonly GameObject _gameObject;
         readonly MeshRenderer _renderer;
@@ -36,6 +37,9 @@ namespace Jolly.Presentation
             _gameObject.transform.SetPositionAndRotation(pose.position, pose.rotation);
             _gameObject.transform.localScale = new Vector3(size.x, size.y, 1f);
             _properties.SetTexture(MaskTexId, _texture);
+            // Set explicitly: _TexelSize is not guaranteed for textures bound through a property block, and the
+            // outline (the non-colour cue, architecture §11) vanishes when it is zero.
+            _properties.SetVector(MaskTexelSizeId, new Vector4(1f / _texture.width, 1f / _texture.height, _texture.width, _texture.height));
             SetFade(1f);
             _gameObject.SetActive(true);
         }
