@@ -85,6 +85,8 @@ namespace Jolly.Audio.Output
         {
             if (_disposed)
                 return;
+            // Before the cancellations: their continuations may already write the next utterance, which must survive.
+            _player.DiscardQueued();
             _flushing.AddRange(_utterances);
             _utterances.Clear();
             foreach (var utterance in _flushing)
@@ -97,8 +99,6 @@ namespace Jolly.Audio.Output
             foreach (var utterance in _flushing)
                 utterance.Played.TrySetCanceled();
             _flushing.Clear();
-
-            _player.DiscardQueued();
         }
 
         public void Tick()

@@ -171,6 +171,33 @@ namespace Jolly.Tests.EditMode.Speech
         }
 
         [Test]
+        public void Flush_WhenACancelledPlayStartsTheNextOneSynchronously_KeepsTheNewAudio()
+        {
+            var old = new ControlledPcmStream().EmitConstant(Rate, Half);
+            var fresh = new ControlledPcmStream().EmitConstant(2000, Half / 2);
+            PlayAfterCancellation(_output.Play(old, 1, CancellationToken.None), fresh).Forget();
+
+            _output.Flush();
+            Render(960);
+            var data = Render(480);
+
+            Assert.That(data[100], Is.EqualTo(0.25f));
+            Assert.That(_firstSamples, Is.EqualTo(new[] { 2 }));
+        }
+
+        async UniTaskVoid PlayAfterCancellation(UniTask play, IUniTaskAsyncEnumerable<PcmChunk> next)
+        {
+            try
+            {
+                await play;
+            }
+            catch (OperationCanceledException)
+            {
+                _output.Play(next, 2, CancellationToken.None).Forget();
+            }
+        }
+
+        [Test]
         public void Play_CallerCancellation_CancelsAndStopsWaiting()
         {
             using var cts = new CancellationTokenSource();

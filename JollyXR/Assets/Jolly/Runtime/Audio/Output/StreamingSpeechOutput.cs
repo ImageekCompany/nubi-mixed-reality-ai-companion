@@ -19,35 +19,49 @@ namespace Jolly.Audio.Output
 
         SpeechRingPlayer _player;
         SpeechOutput _output;
+        AudioSource _source;
 
-        public ISpeechLevel Level => _player;
-        public bool IsPlaying => _output.IsPlaying;
+        public ISpeechLevel Level => EnsureBuilt().Player;
+        public bool IsPlaying => EnsureBuilt().Output.IsPlaying;
 
         public event Action<int> FirstSamplePlayed
         {
-            add => _output.FirstSamplePlayed += value;
-            remove => _output.FirstSamplePlayed -= value;
+            add => EnsureBuilt().Output.FirstSamplePlayed += value;
+            remove => EnsureBuilt().Output.FirstSamplePlayed -= value;
         }
 
         public UniTask Play(IUniTaskAsyncEnumerable<PcmChunk> pcm, int utteranceId, CancellationToken ct)
-            => _output.Play(pcm, utteranceId, ct);
+            => EnsureBuilt().Output.Play(pcm, utteranceId, ct);
 
-        public UniTask PlayClip(AudioClip clip, int utteranceId, CancellationToken ct) => _output.PlayClip(clip, utteranceId, ct);
+        public UniTask PlayClip(AudioClip clip, int utteranceId, CancellationToken ct)
+            => EnsureBuilt().Output.PlayClip(clip, utteranceId, ct);
 
-        public void Flush() => _output.Flush();
+        public void Flush() => EnsureBuilt().Output.Flush();
+
+        /// <summary>Wiring may reach this component before Awake, e.g. while its GameObject is still inactive.</summary>
+        (SpeechRingPlayer Player, SpeechOutput Output) EnsureBuilt()
+        {
+            if (_output == null)
+            {
+                var player = new SpeechRingPlayer(SpeechSampleRate, AudioSettings.outputSampleRate, SpeechSampleRate * RingSeconds);
+                _output = new SpeechOutput(player);
+                Volatile.Write(ref _player, player);
+            }
+            return (_player, _output);
+        }
 
         void Awake()
         {
-            _player = new SpeechRingPlayer(SpeechSampleRate, AudioSettings.outputSampleRate, SpeechSampleRate * RingSeconds);
-            _output = new SpeechOutput(_player);
+            EnsureBuilt().Player.SetOutputSampleRate(AudioSettings.outputSampleRate);
             AudioSettings.OnAudioConfigurationChanged += OnAudioConfigurationChanged;
 
-            var source = GetComponent<AudioSource>();
-            source.clip = null;
-            source.loop = true;
-            source.playOnAwake = false;
-            source.Play();
+            _source = GetComponent<AudioSource>();
+            _source.clip = null;
+            _source.loop = true;
+            _source.playOnAwake = false;
         }
+
+        void OnEnable() => EnsureSourcePlaying();
 
         void Update() => _output.Tick();
 
@@ -64,6 +78,18 @@ namespace Jolly.Audio.Output
             _output?.Dispose();
         }
 
-        void OnAudioConfigurationChanged(bool deviceWasChanged) => _player.SetOutputSampleRate(AudioSettings.outputSampleRate);
+        // An audio reset or device change stops every source; without a running source OnAudioFilterRead never runs
+        // and every Play would wait forever.
+        void OnAudioConfigurationChanged(bool deviceWasChanged)
+        {
+            _player.SetOutputSampleRate(AudioSettings.outputSampleRate);
+            EnsureSourcePlaying();
+        }
+
+        void EnsureSourcePlaying()
+        {
+            if (isActiveAndEnabled && !_source.isPlaying)
+                _source.Play();
+        }
     }
 }
