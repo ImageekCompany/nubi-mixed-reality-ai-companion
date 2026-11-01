@@ -77,6 +77,19 @@ namespace Jolly.Tests.EditMode.Speech
             Assert.That(tts.MaxCharacters, Is.EqualTo(240));
         }
 
+        [TestCase("EN", true)]
+        [TestCase("en_US", true)]
+        [TestCase("EN-us", true)]
+        [TestCase("eng", false)]
+        [TestCase("es-ES", false)]
+        [TestCase(null, false)]
+        public void TextToSpeech_Supports_IgnoresCaseAndSeparator(string tag, bool expected)
+        {
+            var tts = new WitTextToSpeech(new InMemorySecrets(), new FakeClock());
+
+            Assert.That(tts.Supports(tag), Is.EqualTo(expected));
+        }
+
         [Test]
         public void TextToSpeech_WithoutToken_FailsAsUnauthorizedWithoutNetwork()
         {

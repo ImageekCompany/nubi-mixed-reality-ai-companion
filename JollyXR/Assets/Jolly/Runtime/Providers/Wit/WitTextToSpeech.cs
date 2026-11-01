@@ -33,7 +33,9 @@ namespace Jolly.Providers.Wit
 
         /// <summary>Our Wit app lists only en_US, en_CA and en_GB voices (live /voices, 2026-11-01).</summary>
         public bool Supports(string languageTag)
-            => languageTag != null && (languageTag == "en" || languageTag.StartsWith("en-", StringComparison.OrdinalIgnoreCase));
+            => languageTag != null
+               && languageTag.StartsWith("en", StringComparison.OrdinalIgnoreCase)
+               && (languageTag.Length == 2 || languageTag[2] == '-' || languageTag[2] == '_');
 
         public IUniTaskAsyncEnumerable<PcmChunk> Synthesize(string text, VoiceSpec voice, CancellationToken ct)
         {
