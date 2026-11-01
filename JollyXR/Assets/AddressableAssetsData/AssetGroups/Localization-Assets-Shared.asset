@@ -15,6 +15,11 @@ MonoBehaviour:
   m_GroupName: Localization-Assets-Shared
   m_GUID: fdadffd19d04943b99d496a4ebff67d3
   m_SerializeEntries:
+  - m_GUID: 0a4aff9fd56cb467282e2bedb5c0f3c2
+    m_Address: Assets/Jolly/Content/Localization/Tables/Crisis Shared Data.asset
+    m_ReadOnly: 1
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 489c9b8e0bb904f43ade3af7bd9f84cd
     m_Address: Assets/Jolly/Content/Localization/Tables/UI Shared Data.asset
     m_ReadOnly: 1

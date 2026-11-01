@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e9620f8c34305754d8cc9a7e49e852d9, type: 3}
+  m_Name: Crisis_pl
+  m_EditorClassIdentifier: Unity.Localization::UnityEngine.Localization.Tables.StringTable
+  m_LocaleId:
+    m_Code: pl
+  m_SharedData: {fileID: 11400000, guid: 0a4aff9fd56cb467282e2bedb5c0f3c2, type: 2}
+  m_Metadata:
+    m_Items: []
+  m_TableData:
+  - m_Id: 552591360
+    m_Localized: "zabi\u0107 si\u0119|zabij\u0119 si\u0119|samob\xF3jstwo|samob\xF3jcze|nie chc\u0119 \u017Cy\u0107|chc\u0119 umrze\u0107|skrzywdzi\u0107 si\u0119|odebra\u0107 sobie \u017Cycie"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 560979968
+    m_Localized: "stop|st\xF3j|czekaj|zaczekaj|zosta\u0144|przesta\u0144"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 565174272
+    m_Localized: "nubi|prosz\u0119|teraz|tam|tu|no|hej|ok|okej"
+    m_Metadata:
+      m_Items: []
+  references:
+    version: 2
+    RefIds: []

@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e9620f8c34305754d8cc9a7e49e852d9, type: 3}
+  m_Name: Crisis_en
+  m_EditorClassIdentifier: Unity.Localization::UnityEngine.Localization.Tables.StringTable
+  m_LocaleId:
+    m_Code: en
+  m_SharedData: {fileID: 11400000, guid: 0a4aff9fd56cb467282e2bedb5c0f3c2, type: 2}
+  m_Metadata:
+    m_Items: []
+  m_TableData:
+  - m_Id: 552591360
+    m_Localized: kill myself|killing myself|suicide|suicidal|end my life|want to die|hurt myself|self harm|don't want to live|no reason to live
+    m_Metadata:
+      m_Items: []
+  - m_Id: 560979968
+    m_Localized: stop|wait|stay|halt|freeze|hold on|stand still
+    m_Metadata:
+      m_Items: []
+  - m_Id: 565174272
+    m_Localized: nubi|please|now|ok|okay|hey|there|right|just|it|that
+    m_Metadata:
+      m_Items: []
+  references:
+    version: 2
+    RefIds: []
