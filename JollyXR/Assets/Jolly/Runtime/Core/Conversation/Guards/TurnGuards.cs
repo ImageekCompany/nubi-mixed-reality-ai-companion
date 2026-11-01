@@ -20,6 +20,7 @@ namespace Jolly.Core.Conversation
         readonly StopGuard _stop;
         readonly ComeGuard _come;
         readonly CrisisGuard _crisis;
+        readonly QuestionCue _question;
         readonly ICharacterController _character;
         readonly IToolRegistry _tools;
         readonly IPersonaProvider _personas;
@@ -27,13 +28,14 @@ namespace Jolly.Core.Conversation
         readonly ConversationEvents _events;
         readonly ILog _log;
 
-        public TurnGuards(StopGuard stop, ComeGuard come, CrisisGuard crisis, ICharacterController character,
+        public TurnGuards(StopGuard stop, ComeGuard come, CrisisGuard crisis, QuestionCue question, ICharacterController character,
                           IToolRegistry tools, IPersonaProvider personas, IUserPreferences preferences,
                           ConversationEvents events, ILog log)
         {
             _stop = stop;
             _come = come;
             _crisis = crisis;
+            _question = question;
             _character = character;
             _tools = tools;
             _personas = personas;
@@ -73,6 +75,9 @@ namespace Jolly.Core.Conversation
 
         /// <summary>Every persona: the hand-off must never depend on which mode the person happens to be in.</summary>
         public bool NeedsCrisisHandoff(string transcript) => _crisis.Matches(transcript);
+
+        /// <summary>Only a question gets the acknowledgement (ADR-0040).</summary>
+        public bool IsQuestion(string transcript) => _question.Matches(transcript);
 
         bool IsOffered(string name, out PersonaProfile persona)
         {

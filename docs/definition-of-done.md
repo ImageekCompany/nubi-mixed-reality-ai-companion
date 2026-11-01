@@ -107,7 +107,7 @@ These are parsed from the `evt=turn.latency` log lines (`adb logcat -s Unity | g
 
 | Stage | p50 target | p90 target | Desk evidence |
 |---|---|---|---|
-| PTT release → acknowledgement clip audible | ≤ 150 ms | ≤ 250 ms | local clip |
+| PTT release → acknowledgement clip audible (questions only, played at the final, ADR-0040) | ≤ 350 ms | ≤ 650 ms | ASR final + local clip |
 | PTT release → ASR final | ≤ 300 ms | ≤ 600 ms | 145 ms live (`meta-model-api.md` §5.2) |
 | ASR final → LLM first text delta | ≤ 1,300 ms | ≤ 2,200 ms | 0.98–1.4 s standard minimal |
 | First text → first sentence queued | ≤ 150 ms | ≤ 400 ms | splitter |
@@ -125,7 +125,7 @@ These are parsed from the `evt=turn.latency` log lines (`adb logcat -s Unity | g
 Hero user: an older adult at home. Hero object: a TV remote (alternatives: moka pot, thermostat; never medication). The video is ≤ 2:45 and shows exactly these six beats; everything else is b-roll or README.
 
 **Required beats (must tier only; 10 consecutive clean runs before recording):**
-1. Launch. Nubi appears on the floor, idles, blinks and looks at the user. Pinch-hold: "Hi Nubi, come here." Live partial caption (with "Nubi", not "newbie"), ack sound, the answer starts in ≤ 2 s with lipsync and a caption; Nubi walks around the furniture (hidden behind it if occluders are in) and stops about 1 m in front of the user.
+1. Launch. Nubi appears on the floor, idles, blinks and looks at the user. Pinch-hold: "Hi Nubi, come here." Live partial caption (with "Nubi", not "newbie"), no acknowledgement (ADR-0040), the canned "On my way!" line starts at once with lipsync and a caption (ADR-0037); Nubi walks around the furniture (hidden behind it if occluders are in) and stops about 1 m in front of the user.
 2. Hold up the TV remote, point at it: "What is this, and which button turns it on?" Mask outline on the real object ≤ 2 s (hand-ray point prompt if R1 passed); the answer is spoken as it streams; `highlight_part` then outlines the button (SAM text prompt); tool badges show SAM 3.1 and Spark; Nubi looks at the object. (Changed from "how do I turn on subtitles?", which depends on the TV menu and invites a made-up answer.)
 3. "Follow me." The user walks about 3 m and Nubi follows. "Stop." Nubi stops at once (local `StopGuard`).
 4. Start a long answer, then pinch mid-sentence. Audio stops ≤ 150 ms and Nubi listens. (A walk in progress continuing is tested in EditMode and shown only as an optional beat until it is seen on a scanned floor.)

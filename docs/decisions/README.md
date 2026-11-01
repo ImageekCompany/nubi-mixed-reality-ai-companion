@@ -35,9 +35,10 @@
 | [0034](0034-latency-turns-and-stale-frames-are-device-state.md) | `selftest.sh --turns N` for a 20-turn latency sample; stale frames are headset state (reboot before a demo); the camera keeps its post-graph start | accepted |
 | [0035](0035-positive-movement-and-find-tool-descriptions.md) | Positive `come_here` / `find_object` triggers and a live tool-selection eval; `come_here` still missed 3 of 5 at `minimal` | accepted |
 | [0036](0036-local-come-here-guard.md) | A local `ComeGuard` starts `come_here` on a short come request before the model; self-test runs log each model reply (`evt=llm.reply`) | accepted; the model round after a guard walk superseded by 0037 |
-| [0037](0037-guard-walk-skips-the-model-and-find-object-gaze.md) | A guard walk answers with a canned ComingOver line and no model round; `find_object` results say Nubi is already looking | accepted |
+| [0037](0037-guard-walk-skips-the-model-and-find-object-gaze.md) | A guard walk answers with a canned ComingOver line and no model round; `find_object` results say Nubi is already looking | accepted; the kept release acknowledgement superseded by 0040 |
 | [0038](0038-hedged-first-event.md) | A voice request with no first event after 2.5 s is hedged with an identical second request; the sequential voice retry is dropped | accepted |
 | [0039](0039-dark-room-vision-guard.md) | A camera frame below mean luma 25 skips SAM and Spark (`too_dark`); the model asks for light in one sentence | accepted |
+| [0040](0040-acknowledge-questions-only.md) | The acknowledgement plays at the final and only for a question the guards left to the model; commands and guard walks get none | accepted |
 
 Numbers 0027–0029 are unused and were not reserved on a dropped branch: no commit on any branch (`git log --all`) adds or mentions an ADR with those numbers.
 

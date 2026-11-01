@@ -1,6 +1,6 @@
 # 0037. A guard walk answers with a canned line and no model round; `find_object` says Nubi is already looking
 
-- Status: accepted (supersedes the "turn still goes to the model" part of ADR-0036)
+- Status: accepted (supersedes the "turn still goes to the model" part of ADR-0036); "the release acknowledgement is kept" superseded by [ADR-0040](0040-acknowledge-questions-only.md)
 - Date: 2026-11-01
 
 ## Context

@@ -206,6 +206,17 @@ namespace Jolly.Tests.EditMode.Core.Conversation
         }
 
         [Test]
+        public void ComeHere_GuardWalks_NoAcknowledgementBeforeTheComingOverLine()
+        {
+            _f.Timings.AcknowledgeQuestions = true;
+
+            _f.Talk("Nubi, come here.");
+
+            Assert.That(_f.Offline.Categories, Is.EqualTo(new[] { LineCategory.ComingOver }),
+                "\"Good question. On my way!\" on the demo's hero line (8bd9560 device run 1)");
+        }
+
+        [Test]
         public void ComeHere_GuardWalks_BothSidesLandInTheHistoryTheNextTurnReplays()
         {
             _f.Talk("Hi Nubi, come here.");

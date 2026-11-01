@@ -254,22 +254,62 @@ namespace Jolly.Tests.EditMode.Core.Conversation
         }
 
         [Test]
-        public void Acknowledge_PlaysAtReleaseNotAtPress()
+        public void Acknowledge_AQuestionGetsOneAtTheFinalBeforeTheModelAnswers()
         {
-            _f.Timings.AcknowledgeOnRelease = true;
+            _f.Timings.AcknowledgeQuestions = true;
             _f.Agent.Hold();
+            _f.Stt.Final = "Nubi, what is this?";
 
             _f.Voice.Press();
             Assert.That(_f.Offline.Categories, Is.Empty);
             _f.Voice.Release();
 
             Assert.That(_f.Offline.Categories, Is.EqualTo(new[] { LineCategory.Acknowledge }));
+            Assert.That(_f.Agent.Turns.Single().Text, Is.EqualTo("Nubi, what is this?"));
+        }
+
+        [TestCase("Find my keys.")]
+        [TestCase("Can you find my keys?")]
+        [TestCase("Tell me a joke.")]
+        public void Acknowledge_ACommandGetsNone(string final)
+        {
+            _f.Timings.AcknowledgeQuestions = true;
+            _f.Agent.Hold();
+
+            _f.Talk(final);
+
+            Assert.That(_f.Offline.Categories, Is.Empty);
+            Assert.That(_f.Agent.Turns.Single().Text, Is.EqualTo(final));
+        }
+
+        [Test]
+        public void Acknowledge_StopGuardTurnGetsNoneEvenWhenItSoundsLikeAQuestion()
+        {
+            _f.Timings.AcknowledgeQuestions = true;
+            _f.Agent.Hold();
+
+            _f.Talk("Wait, Nubi?");
+
+            Assert.That(_f.Character.StopCount, Is.EqualTo(1));
+            Assert.That(_f.Offline.Categories, Is.Empty);
+        }
+
+        [Test]
+        public void Acknowledge_CrisisQuestionGetsOnlyTheHandoff()
+        {
+            _f.Timings.AcknowledgeQuestions = true;
+            _f.Agent.Hold();
+
+            _f.Talk("Why do I want to die?");
+
+            Assert.That(_f.Offline.Categories, Is.EqualTo(new[] { LineCategory.CrisisHandoff }));
         }
 
         [Test]
         public void Acknowledge_IsSkippedWhenTheTurnEndedBeforeTheRelease()
         {
-            _f.Timings.AcknowledgeOnRelease = true;
+            _f.Timings.AcknowledgeQuestions = true;
+            _f.Stt.Final = "What is this?";
             _f.Stt.Failure = new ProviderException("stt", ProviderErrorKind.Server, "scripted");
             _f.Voice.Press();
             _f.Mic.Last.Stop();

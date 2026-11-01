@@ -125,9 +125,9 @@ sequenceDiagram
   H->>C: Released
   C->>M: Stop() (completes Chunks → endStream within one frame)
   C->>C: pre-capture camera frame + JPEG encode (on device, no API cost) → UserTurn.PreCaptured
-  C->>O: play ack clip ("Hmm!") ≤150 ms, state Thinking
-  S-->>C: Final (≈145 ms after endStream, measured)
+  S-->>C: Final (≈145 ms after endStream, measured), state Thinking
   C->>C: TranscriptAliases ("newbie" → "Nubi"), StopGuard, ComeGuard, CrisisGuard
+  C->>O: a question the guards left alone: play ack clip ("Hmm!") (ADR-0040)
   C->>A: RunTurn(UserTurn)
   A->>L: Stream(instructions + summary + scene ctx + recent + user, tools)
   L-->>A: TextDelta (phase "commentary" preamble)

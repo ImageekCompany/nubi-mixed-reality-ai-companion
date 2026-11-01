@@ -183,7 +183,7 @@ namespace Jolly.Core.Conversation
 
         /// <summary>
         /// The source stays alive until its turn has finished, so late cleanup never meets a disposed token; it is then
-        /// cancelled, which ends work that outlived the turn (an acknowledgement waiting for a release).
+        /// cancelled, which ends work that outlived the turn (a filler line started with Forget).
         /// </summary>
         CancellationTokenSource NewTurn()
         {

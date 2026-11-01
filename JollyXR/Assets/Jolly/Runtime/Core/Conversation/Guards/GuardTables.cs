@@ -13,6 +13,9 @@ namespace Jolly.Core.Conversation
         public const string StopFillers = "stop.fillers";
         public const string ComeTriggers = "come.triggers";
         public const string ComeFillers = "come.fillers";
+        public const string QuestionOpeners = "question.openers";
+        public const string QuestionRequests = "question.requests";
+        public const string QuestionFillers = "question.fillers";
 
         internal static string Fallback(string key, string languageTag) => (key, languageTag) switch
         {
@@ -26,6 +29,12 @@ namespace Jolly.Core.Conversation
             (ComeTriggers, _) => "come here|come to me|come closer|come over here",
             (ComeFillers, "pl") => "nubi|proszę|cześć|hej|witaj",
             (ComeFillers, _) => "nubi|please|hi|hey|hello",
+            (QuestionOpeners, "pl") => "co|czy|gdzie|kto|kogo|dlaczego|czemu|jak|jaki|jaka|jakie|kiedy|który|która|które|ile|skąd|dokąd",
+            (QuestionOpeners, _) => "what|where|who|whom|whose|why|how|when|which|is|isn|are|aren|am|was|were|do|does|did|has|should|shall|may|might",
+            (QuestionRequests, "pl") => "możesz|czy możesz|czy mógłbyś|czy mogłabyś|mógłbyś|mogłabyś",
+            (QuestionRequests, _) => "can you|could you|would you|will you|can u|could u",
+            (QuestionFillers, "pl") => "nubi|hej|cześć|no|okej|ok|proszę",
+            (QuestionFillers, _) => "nubi|hey|hi|hello|so|um|uh|oh|okay|ok|and|please",
             _ => "",
         };
     }

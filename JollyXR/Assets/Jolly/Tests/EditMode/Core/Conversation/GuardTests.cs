@@ -209,7 +209,7 @@ namespace Jolly.Tests.EditMode.Core.Conversation
                 events.ToolStarted += (id, name) => Tools.Add("start:" + id);
                 events.ToolCompleted += (id, name, ok) => Tools.Add("done:" + id);
                 Guards = new TurnGuards(new StopGuard(localizer), new ComeGuard(localizer), new CrisisGuard(localizer),
-                    Character, registry, Personas, new FakeUserPreferences(), events, Log);
+                    new QuestionCue(localizer), Character, registry, Personas, new FakeUserPreferences(), events, Log);
             }
         }
 
@@ -240,6 +240,48 @@ namespace Jolly.Tests.EditMode.Core.Conversation
             var localizer = new FakeLocalizer("pl");
 
             Assert.That(new CrisisGuard(localizer).Matches("Nie chcę żyć."), Is.True);
+        }
+
+        [TestCase("What is this?", true)]
+        [TestCase("Nubi, what is this", true)]
+        [TestCase("Hey Nubi, where are my keys", true)]
+        [TestCase("Is it going to rain today", true)]
+        [TestCase("I wonder if it's going to rain?", true)]
+        [TestCase("Nubi, come here.", false)]
+        [TestCase("Hi Nubi, come here.", false)]
+        [TestCase("Find my keys.", false)]
+        [TestCase("Tell me a joke.", false)]
+        [TestCase("Can you find my keys?", false)]
+        [TestCase("Nubi, could you come here?", false)]
+        [TestCase("Stop, Nubi!", false)]
+        [TestCase("This is what I made.", false)]
+        [TestCase("Don't touch that.", false)]
+        [TestCase("", false)]
+        public void QuestionCue_MatchesQuestionsNotCommandsOrPoliteRequests(string transcript, bool expected)
+        {
+            Assert.That(new QuestionCue(new FakeLocalizer()).Matches(transcript), Is.EqualTo(expected));
+        }
+
+        [Test]
+        public void QuestionCue_Polish_UsesBuiltInFallback()
+        {
+            var cue = new QuestionCue(new FakeLocalizer("pl"));
+
+            Assert.That(cue.Matches("Nubi, co to jest"), Is.True);
+            Assert.That(cue.Matches("Czy będzie padać"), Is.True);
+            Assert.That(cue.Matches("Czy możesz tu podejść?"), Is.False);
+            Assert.That(cue.Matches("Chodź tu."), Is.False);
+        }
+
+        [Test]
+        public void QuestionCue_UsesLocalizedTableForCurrentLanguage()
+        {
+            var localizer = new FakeLocalizer().With(GuardTables.Table, GuardTables.QuestionOpeners, "pray tell");
+
+            var cue = new QuestionCue(localizer);
+
+            Assert.That(cue.Matches("Pray tell, Nubi"), Is.True);
+            Assert.That(cue.Matches("what is this"), Is.False);
         }
     }
 }

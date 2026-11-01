@@ -31,7 +31,7 @@ namespace Jolly.App.Composition
                                                  RoomContext roomContext, Action<string> modelReplies, DisposableStack disposables)
         {
             var limits = new MemoryLimits();
-            var timings = new ConversationTimings { AcknowledgeOnRelease = config.acknowledgeOnRelease };
+            var timings = new ConversationTimings { AcknowledgeQuestions = config.acknowledgeQuestions };
             var conversation = new ConversationMemory(f.Paths.MemoryDirectory, personas, limits, f.Log);
             var scene = new SceneMemory(f.Paths.SceneMemory, xr.Anchors, f.Clock, limits, f.Log);
             var tools = ToolCatalog.Build(f, config, cloud, xr, character, scene, personas, localizer, masks, room, out var frames);
@@ -46,8 +46,8 @@ namespace Jolly.App.Composition
 
             var listener = new TurnListener(speech.Microphone, cloud.SpeechToText, frames, aliases,
                 localizer, f.Events, f.Latency, f.Log, timings);
-            var guards = new TurnGuards(new StopGuard(localizer), new ComeGuard(localizer), new CrisisGuard(localizer), character,
-                tools, personas, preferences, f.Events, f.Log);
+            var guards = new TurnGuards(new StopGuard(localizer), new ComeGuard(localizer), new CrisisGuard(localizer),
+                new QuestionCue(localizer), character, tools, personas, preferences, f.Events, f.Log);
             var turnSpeech = disposables.Add(new TurnSpeech(speech.Queue, speech.Splitter, speech.Output, f.Machine,
                 f.Events, f.Latency, f.Clock));
             var pipeline = new TurnPipeline(listener, guards, turnSpeech, agent, speech.Offline, conversation, personas,

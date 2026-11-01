@@ -55,8 +55,6 @@ namespace Jolly.Core.Conversation
         {
             _latency.BeginTurn(turnId);
             _latency.Mark(turnId, LatencyMark.PttPressed);
-            if (_timings.AcknowledgeOnRelease)
-                Acknowledge(released, turnCt).Forget();
 
             HeardTurn heard;
             try
@@ -123,13 +121,23 @@ namespace Jolly.Core.Conversation
             await FinishSpeaking(turnId, turnCt);
         }
 
-        /// <summary>The text for the agent, or null when the come guard's walk answers the turn without it.</summary>
+        /// <summary>
+        /// The text for the agent, or null when the come guard's walk answers the turn without it. Only a question the
+        /// guards left alone is acknowledged (ADR-0040): "Good question." before "On my way!" on the demo's opening line
+        /// read as two fillers, and a command gets its answer, not a filler.
+        /// </summary>
         async UniTask<string> ApplyGuards(string text, CancellationToken ct)
         {
-            _guards.ApplyStop(text);
+            var stopped = _guards.ApplyStop(text);
             var walking = await _guards.ApplyComeHere(text, ct);
             if (!_guards.NeedsCrisisHandoff(text))
-                return walking ? null : text;
+            {
+                if (walking)
+                    return null;
+                if (!stopped && _timings.AcknowledgeQuestions && _guards.IsQuestion(text))
+                    Acknowledge(ct).Forget();
+                return text;
+            }
             await _offline.Respond(LineCategory.CrisisHandoff, _speech.NextUtteranceId(), ct);
             return text + TurnGuards.CrisisNote;
         }
@@ -137,8 +145,8 @@ namespace Jolly.Core.Conversation
         /// <summary>
         /// The guard has started the walk, so a canned ComingOver line answers instead of a model round (ADR-0037): on
         /// the demo's opening line the round cost 2.1 s to first audio and once two first-event timeouts and no reply.
-        /// The release acknowledgement was queued at release, before any final, so the line plays right after it. Both
-        /// sides are committed to memory as the agent would, so the next turn has the context.
+        /// No acknowledgement precedes it (ADR-0040). Both sides are committed to memory as the agent would, so the next
+        /// turn has the context.
         /// </summary>
         async UniTask ComeOver(int turnId, string userText, CancellationToken ct)
         {
@@ -231,12 +239,7 @@ namespace Jolly.Core.Conversation
             _latency.Mark(turnId, LatencyMark.TurnCompleted);
         }
 
-        async UniTaskVoid Acknowledge(UniTask released, CancellationToken ct)
-        {
-            if (await released.AttachExternalCancellation(ct).SuppressCancellationThrow())
-                return;
-            await PlayFiller("evt=ack.failed", ct);
-        }
+        async UniTaskVoid Acknowledge(CancellationToken ct) => await PlayFiller("evt=ack.failed", ct);
 
         /// <summary>The model is late (AgentEventKind.Delayed): a short canned "One moment." instead of silence. The
         /// Acknowledge lines are reused (no new clips to bake per character); ICannedLines avoids repeating the release one.</summary>

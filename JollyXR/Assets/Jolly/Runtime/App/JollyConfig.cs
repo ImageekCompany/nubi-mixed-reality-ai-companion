@@ -96,7 +96,8 @@ namespace Jolly.App
         public float visionMinMeanLuma = 25f;
 
         [Header("Behaviour")]
-        public bool acknowledgeOnRelease = true;
+        [Tooltip("Play a short canned acknowledgement at the final when it is a question for the model (ADR-0040).")]
+        public bool acknowledgeQuestions = true;
         [Tooltip("Seconds the OpenXR head pose is predicted ahead of LateUpdate (R1 marker test).")]
         public float headPoseLeadSeconds;
         public LogLevel minimumLogLevel = LogLevel.Info;

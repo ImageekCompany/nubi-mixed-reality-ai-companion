@@ -38,7 +38,7 @@ namespace Jolly.Tests.EditMode.Core.Conversation
         public readonly ToolRegistry Tools = new();
         public readonly FakeWorldQuery World = new();
         public readonly ConversationStateMachine Machine;
-        public readonly ConversationTimings Timings = new() { AcknowledgeOnRelease = false };
+        public readonly ConversationTimings Timings = new() { AcknowledgeQuestions = false };
         public readonly ConversationMemory Memory;
         public readonly SceneMemory Scene;
         public readonly ConversationController Controller;
@@ -66,7 +66,7 @@ namespace Jolly.Tests.EditMode.Core.Conversation
             var listener = new TurnListener(Mic, Stt, frames, TranscriptAliases.ForName("Nubi", new[] { "newbie" }), Localizer, Events, latency, Log, Timings);
             Tools.Register(new ComeHereTool(Character, new FakeUserPoseProvider(), World, new LocomotionSettings()));
             var guards = new TurnGuards(new StopGuard(Localizer), new ComeGuard(Localizer), new CrisisGuard(Localizer),
-                Character, Tools, Personas, new FakeUserPreferences(), Events, Log);
+                new QuestionCue(Localizer), Character, Tools, Personas, new FakeUserPreferences(), Events, Log);
             var speech = new TurnSpeech(Queue, new FakeSentenceSplitter(), Output, Machine, Events, latency, Clock);
             var pipeline = new TurnPipeline(listener, guards, speech, Agent, Offline, Memory, Personas, Machine, Events,
                 latency, Localizer, Log, Timings);
