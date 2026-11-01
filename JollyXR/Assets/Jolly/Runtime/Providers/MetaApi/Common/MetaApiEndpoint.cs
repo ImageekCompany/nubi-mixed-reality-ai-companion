@@ -4,7 +4,10 @@ using Jolly.Net.Http;
 
 namespace Jolly.Providers.MetaApi.Common
 {
-    /// <summary>Base URL and bearer auth for api.meta.ai. The key is read per request, so a re-pushed secrets file applies.</summary>
+    /// <summary>
+    /// Base URL and bearer auth for api.meta.ai. The key comes from the secrets parsed at boot, so a re-pushed secrets
+    /// file applies only after the app restarts (tools/device/push-secrets.sh force-stops it).
+    /// </summary>
     public sealed class MetaApiEndpoint
     {
         public const string DefaultBaseUrl = "https://api.meta.ai/v1";
@@ -22,9 +25,6 @@ namespace Jolly.Providers.MetaApi.Common
         public HttpRequestSpec PostStreaming(string path, string json) =>
             Authorized(new HttpRequestSpec(HttpRequestSpec.Post, Url(path), Encoding.UTF8.GetBytes(json), "application/json"))
                 .WithHeader("Accept", "text/event-stream");
-
-        /// <summary>Throws ProviderException(Unauthorized) when META_API_KEY is missing, before anything is sent.</summary>
-        public HttpRequestSpec Get(string path) => Authorized(new HttpRequestSpec(HttpRequestSpec.Get, Url(path)));
 
         string Url(string path) => _baseUrl + "/" + path.TrimStart('/');
 

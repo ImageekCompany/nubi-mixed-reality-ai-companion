@@ -20,7 +20,8 @@ Requirement 17 says secrets stay local-only. ToS §3.1 forbids sharing the key, 
 - The README documents a server-side proxy as the production path.
 
 ## Consequences
-- The judges' build needs the key pushed separately. The README gives the exact command and a `tools/push-secrets.sh`.
+- The judges' build needs the key pushed separately. The README gives the exact command and a `tools/device/push-secrets.sh`.
+- Secrets are parsed once at launch (and `RedactingLog` masks only those values), so a re-pushed or rotated key applies after a restart. `push-secrets.sh` force-stops the app for that reason, and warns when `.env` is readable by other local accounts (keep it `chmod 600`).
 - The existing `.gitignore` already excludes `.env` and `StreamingAssets/secrets*`.
 
 ## Alternatives
