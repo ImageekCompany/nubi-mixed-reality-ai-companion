@@ -3,25 +3,37 @@ using Cysharp.Threading.Tasks;
 using Jolly.Contracts;
 using Jolly.Core.Tools;
 using Jolly.Providers.MetaApi.Asr;
+using Jolly.Providers.Wit;
 
 namespace Jolly.App.Composition
 {
     /// <summary>
     /// Moves first-use costs from the first turn to the launch (Quest, 2026-11-01): one discarded camera capture, which
     /// reads the Camera2 lens pose over JNI (20 ms on the main thread) and initialises the CPU-image conversion and the
-    /// JPEG encoder (a 53 ms frame at the first PTT release before), and an ASR connection opened and dropped without a
-    /// handshake. Neither is billed: nothing reaches a model.
+    /// JPEG encoder (a 53 ms frame at the first PTT release before), an ASR connection opened and dropped without a
+    /// handshake, and the Wit TTS connection, opened by a <c>GET /voices</c> and kept for the first sentence (ADR-0023).
+    /// None is billed: nothing reaches a model. The Meta Responses connection needs no step here: the connectivity
+    /// monitor's launch probe (<c>GET /v1/models</c>) already opens it.
     /// </summary>
     public static class StartupWarmup
     {
         const double CameraWaitSeconds = 10;
 
-        public static async UniTask Run(FrameGrabber frames, MuseRealtimeSpeechToText asr, IClock clock, ILog log,
-                                        CancellationToken ct)
+        public static async UniTask Run(FrameGrabber frames, MuseRealtimeSpeechToText asr, WitTextToSpeech tts, IClock clock,
+                                        ILog log, CancellationToken ct)
         {
             var started = clock.Now;
-            await UniTask.WhenAll(Camera(frames, clock, log, ct), asr.WarmUp(ct));
+            await UniTask.WhenAll(Camera(frames, clock, log, ct), asr.WarmUp(ct), Tts(tts, clock, log, ct));
             log.Write(LogLevel.Info, "app", $"evt=warmup.done ms={(clock.Now - started) * 1000:0}");
+        }
+
+        static async UniTask Tts(WitTextToSpeech tts, IClock clock, ILog log, CancellationToken ct)
+        {
+            if (tts == null)
+                return;
+            var started = clock.Now;
+            var status = await tts.WarmUp(ct);
+            log.Write(LogLevel.Info, "app", $"evt=warmup.tts status={status} ms={(clock.Now - started) * 1000:0}");
         }
 
         static async UniTask Camera(FrameGrabber frames, IClock clock, ILog log, CancellationToken ct)

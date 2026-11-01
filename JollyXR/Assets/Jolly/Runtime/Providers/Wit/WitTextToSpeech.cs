@@ -3,6 +3,7 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using Cysharp.Threading.Tasks.Linq;
 using Jolly.Contracts;
+using UnityEngine.Networking;
 
 namespace Jolly.Providers.Wit
 {
@@ -45,6 +46,28 @@ namespace Jolly.Providers.Wit
             var body = WitProtocol.SynthesizeBody(text, voice);
             var request = UniTaskAsyncEnumerable.Create<PcmChunk>((writer, token) => Stream(body, writer, token, ct));
             return PcmStreamTimeout.Apply(request, _clock, _firstChunkTimeout, _idleTimeout, WitProtocol.Provider);
+        }
+
+        /// <summary>
+        /// Opens the HTTPS connection to api.wit.ai with one <c>GET /voices</c> (nothing is synthesized), so DNS, TCP and
+        /// TLS are paid at launch instead of by the first sentence: UnityWebRequest keeps the connection for the next
+        /// request to the host. Returns the HTTP status, 0 without a token or a response. Throws only on cancellation.
+        /// </summary>
+        public async UniTask<long> WarmUp(CancellationToken ct)
+        {
+            if (!_secrets.TryGet(SecretKeys.WitClientToken, out var token))
+                return 0;
+            using var request = UnityWebRequest.Get(WitProtocol.VoicesUrl);
+            request.SetRequestHeader("Authorization", "Bearer " + token);
+            try
+            {
+                await request.SendWebRequest().ToUniTask(cancellationToken: ct);
+            }
+            catch (UnityWebRequestException)
+            {
+                // Any answer, even an error status, has opened the connection.
+            }
+            return request.responseCode;
         }
 
         async UniTask Stream(string body, IAsyncWriter<PcmChunk> writer, CancellationToken enumerationCt, CancellationToken callerCt)
