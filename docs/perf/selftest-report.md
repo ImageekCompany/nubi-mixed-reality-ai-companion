@@ -1,9 +1,48 @@
 # Device self-test report
 
-Latest: 2026-11-01, 11:26–11:38 UTC, six release runs for the device-finding fixes (`3f35f7f`, `6cd06e6`, `4e298d8`; section below). Before that: 09:39–09:45 UTC, three release runs of `main` `dd14847` after the turn-gc and coverage-gate merges (section below). Before that: 08:37–09:27 UTC, the turn-GC and cold-first-turn pass on `fix/turn-gc` (ADR-0023): three "before" runs of `main`, three "after" runs, development IL2CPP (the only player that reports GC per frame), four allocation-profile runs and one release verification run. Before that: 08:20–08:47 UTC, the performance and latency pass on `fix/perf-latency` (ADR-0019), release IL2CPP. Earlier: 06:38–06:50 UTC from `fix/integration-review`, 06:00–06:14 UTC from `feat/wp9-integration`.
+Latest: 2026-11-01, 11:43–11:51 UTC, final verification of `main` `4d228c8` after the occlusion, room, character, Jolly and device-fix merges: three release runs of the default build and one of `--character jolly` (section below). Before that: 11:26–11:38 UTC, six release runs for the device-finding fixes (`3f35f7f`, `6cd06e6`, `4e298d8`; section below). Before that: 09:39–09:45 UTC, three release runs of `main` `dd14847` after the turn-gc and coverage-gate merges (section below). Before that: 08:37–09:27 UTC, the turn-GC and cold-first-turn pass on `fix/turn-gc` (ADR-0023): three "before" runs of `main`, three "after" runs, development IL2CPP (the only player that reports GC per frame), four allocation-profile runs and one release verification run. Before that: 08:20–08:47 UTC, the performance and latency pass on `fix/perf-latency` (ADR-0019), release IL2CPP. Earlier: 06:38–06:50 UTC from `fix/integration-review`, 06:00–06:14 UTC from `feat/wp9-integration`.
 Device: Quest 3 `2G0YC1ZF7P090N`, Horizon OS v209. Build: `tools/ci/build.sh` (IL2CPP ARM64 release, 58 MB APK).
 Nobody wore the headset. The room was dim (camera mean luma 23–45 of 255) and had no Space Setup. Command: `tools/device/selftest.sh` (headless: `prox_close`, `guardian_pause 1`, 16 MiB logcat buffer; all restored afterwards).
 Raw outputs (`selftest_results.json`, `logcat.txt`, `vrapi.txt`) are under `artifacts/selftest/`, which is git-ignored.
+
+## Final verification of main (4d228c8)
+
+`tools/ci/test.sh` (EditMode 1030/1030, PlayMode 312/312, pure logic 92.6 %, 0 `warning CS`), `tools/ci/build.sh` (IL2CPP ARM64 release, 59 MB, `QuestBuild` 0 errors / 2 warnings, SHA-256 `b6dd6e49…`), installed, `push-secrets.sh`, then `tools/device/selftest.sh` three times (11:43, 11:45, 11:46 UTC). Then `tools/device/build.sh --character jolly` (63 MB, `[CharacterSceneProcessor] … character=jolly local=1`) and one self-test (11:49 UTC). The default build was reinstalled afterwards (installed APK SHA-256 matches) and `guardian_pause` read back 0. Same dim room (mean luma 16–19, vision used the bundled still), no Space Setup.
+
+| Scenario | Run 1 | Run 2 | Run 3 | Jolly |
+|---|---|---|---|---|
+| `offline_greeting` | PASS, caption 28 ms | PASS, 8 ms | PASS, 28 ms | PASS, 28 ms (Jolly's own line) |
+| `voice_greeting` | DEGRADED, 3,971 ms (called `come_here`) | DEGRADED, 2,803 ms (called `come_here`) | DEGRADED, 2,178 ms | DEGRADED, 2,161 ms, "I'm Jolly, your little friendly companion…" |
+| `voice_come_here` | **PASS**, 1,958 ms, `navmesh=fallback walk=Arrived` | DEGRADED, 2,763 ms, `walk=Arrived` | DEGRADED, 2,068 ms, `walk=Arrived` | PASS, 1,957 ms, `walk=Arrived` |
+| `vision_capture_and_identify` | DEGRADED (still; 2,510 ms); tool → answer audio 1,525 ms, mask 1,100 ms | DEGRADED (still); 1,570 ms, mask 1,809 ms | DEGRADED (still); 1,626 ms, mask 1,460 ms | DEGRADED (still); 1,848 ms, mask 1,238 ms |
+| `barge_in` | PASS, silence 40 ms | PASS, 52 ms | PASS, 52 ms | PASS, 28 ms |
+| `perf_idle` | PASS, 72.0 fps, p95 13.9 ms, 17 draw / 15 SetPass, 33,746 tris, 543 MB | PASS, 72.0 fps, 17 / 15, 33,746, 543 MB | PASS, 72.0 fps, 17 / 15, 33,744, 540 MB | PASS, 72.0 fps, 17 / 15, 33,432, 561 MB |
+| Overall, spend | DEGRADED, $0.0146 | DEGRADED, $0.0122 | DEGRADED, $0.0102 | DEGRADED, $0.0135 |
+
+No scenario FAILed, no Responses first-event timeout, no hold line (request → first event 429–1,220 ms in all 16 rounds).
+
+| Metric | Target | Default build, 3 runs | dd14847 (3 runs) |
+|---|---|---|---|
+| Release → first audio, online turns | p50 ≤ 2.0 s | p50 **2,090**, 1,459–3,971 ms (n=12) | p50 1,833 (n=11) |
+| Request → first event / first event → first text | — | 429–1,220 / 195–1,943 ms | 830–1,163 / 539–1,040 (first turns) |
+| First sentence queued → first audio | — | 97–399 ms; `warmup.tts` 698, 311, 521 ms | 99–543 ms |
+| Tool start → answer audio | p50 ≤ 2.5 s | 1,525, 1,570, 1,626 ms | 2,458, 1,959, 8,332 ms |
+| Tool start → mask | p50 ≤ 2.0 s | 1,100, 1,809, 1,460 ms | 930, 653, 598 ms |
+| Stale frames, turns / idle / whole run | < 1 % | 0.67 / 0.04 / 1.95, 0.69 / 0.22 / 2.16, 0.79 / 0.18 / 2.22 % | 0.61 / 0.04 / 0.98, 0.69 / 0.18 / 1.59, 0.75 / 0.09 / 1.66 % |
+| Stale frames, launch (to first scenario + 2 s) | — | 96, 100, 98 frames; worst app frame 410, 403, 410 ms | 42, 68, 76; worst 332–342 ms |
+| Idle draw / SetPass / triangles / memory | ≤ 200 / ≤ 60 / ≤ 300k / — | 17 / 15 / 33.7k / 540–543 MB | 13–22 / 11–13 / 27–35k / 511–521 MB |
+
+Findings:
+
+- **Launch hitch grew (regression).** The whole-run stale share doubled (0.98–1.66 → 1.95–2.22 %) while turns and idle are unchanged; the difference is the launch window, about 30–55 more stale frames, and the worst app frame went from ~340 to ~410 ms. In every run the 410 ms frame lands between `evt=hands.subsystem state=running` and `evt=occlusion.mode mode=depth` (e.g. 12:43:43.861 / .878 / .882). speculation: the environment-depth start or the hand mesh/visualizer activation on that frame; a development-build Profiler capture of the launch would tell which. Turns stay under 1 %.
+- **Phantom hand tracking.** With nobody wearing the headset, `evt=hands.tracked left=true` flips on and off about once a second (56, 43, 38 and 46 times per run), each time toggling the hand visual. The self-test does not forward the pinch, so no turn was affected. Whether it shows with a wearer is a release-checklist item (hands, below).
+- **Walking on the fallback floor works headless.** `voice_come_here` now reports `navmesh=fallback walk=Arrived` in all four runs (was DEGRADED, no NavMesh); `room.status status=Unscanned` and `room.degraded walkable=fallback radius_m=1.5` ~8 s after launch.
+- **Occlusion starts in depth mode.** `occlusion.mode mode=scene_meshes` at start, then `mode=depth` ~0.4 s later, no occlusion errors.
+- **Release → first audio p50 is over 2.0 s** (2,090 vs 1,833 ms). TTS is not the cause (first sentence → audio p50 ~150 ms); the spread is model time (request → first text 1.2–3.2 s), and runs 1–2's greeting called `come_here` as before. speculation: the room tools and context line add ~100–200 input tokens per round (in 1,814–2,219, mostly cached); n=12 is too small to separate that from server variance.
+- **Mask slower** (1.1–1.8 s vs 0.6–0.9 s), still under 2.0 s. speculation: SAM server latency; nothing on the client path changed.
+- **Jolly** (`--character jolly`): `evt=character.selected id=jolly`, it introduces itself as Jolly in both voice turns ("I'm Jolly, your little friendly companion here at home…", "I'm Jolly, by the way."), plays its own offline line, and memory is ~20 MB higher (561 MB). The self-test clips still say "Nubi"; ASR heard "newbie"/"Nobi" and Jolly answered anyway.
+
+Spend: 4 runs, app meter $0.0505; `api-spend.md` has the row.
 
 ## Device-finding fixes: late Responses, self-test verdicts, cold Wit (3f35f7f, 6cd06e6, 4e298d8)
 

@@ -33,5 +33,6 @@ Rows before 2026-11-01 02:00 (research phase, `docs/research/*.md`) were not ite
 | 2026-11-01 | release check of `main` dd14847 after the turn-gc and coverage-gate merges: 3 device self-test runs, release IL2CPP (app meter 0.0127 + 0.0128 + 0.0126) | muse-spark-1.3, sam-3.1, muse-voice-transcribe-1.0 (+ Wit, free) | ~20 Spark calls, 3 SAM, ~15 ASR sessions | 3 images; ~35 s audio | 0.038 |
 | 2026-11-01 | voice audition judge: Wit TTS re-check of 6 voice candidates (18 lines + 30 TTFB probes, free) and intelligibility check with the ASR file endpoint (`/v1/asr/transcribe`) on the long and sensitive lines, 4 repeats | muse-voice-transcribe-1.0 (+ Wit, free) | 16 | ~176 s audio | 0.009 |
 | 2026-11-01 | device-finding fixes (late Responses, self-test verdicts, Wit warm-up): 6 device self-test runs, release IL2CPP (app meter 0.0139 + 0.0130 + 0.0112 + 0.0140 + 0.0110 + 0.0133). Wit TTFB A/B from the dev Mac (~40 `/synthesize` + `/voices`, free) | muse-spark-1.3, sam-3.1, muse-voice-transcribe-1.0 (+ Wit, free) | ~40 Spark calls, 6 SAM, ~30 ASR sessions | 6 images; ~70 s audio | 0.076 |
+| 2026-11-01 | final verification of `main` 4d228c8: 3 device self-test runs of the default release build and 1 of `--character jolly` (app meter 0.0146 + 0.0122 + 0.0102 + 0.0135) | muse-spark-1.3, sam-3.1, muse-voice-transcribe-1.0 (+ Wit, free) | ~26 Spark calls, 4 SAM, ~20 ASR sessions | 4 images; ~45 s audio | 0.051 |
 
-Running total (est.): **≤ $1.27** (sum of the rows: 1.263)
+Running total (est.): **≤ $1.32** (sum of the rows: 1.314)

@@ -6,6 +6,18 @@ Legend: ✅ met, with evidence · ⚠️ partial · ❌ not met · 🧑 needs a 
 
 **Totals: 24 DoD items: 16 ✅, 5 ⚠️, 3 ❌/🧑. Release-audit extras: 4 ✅, 1 🧑.**
 
+## Final verification of `main` at `4d228c8` (2026-11-01, 11:40–11:52 UTC)
+
+After the occlusion, room-awareness, character-swap, Jolly pipeline and device-fix merges. Details in [`perf/selftest-report.md`](perf/selftest-report.md) "Final verification of main". The per-item table below is from the `3f35562` audit; these lines supersede its numbers where they differ.
+
+- **1.1 / 1.2 / 2.1:** `tools/ci/test.sh` → EditMode 1030/1030, PlayMode 312/312, content validation passed, pure logic coverage 92.6 % (threshold 91.6 %), no `warning CS` in any log.
+- **3.1:** `tools/ci/build.sh` → `Result=Succeeded errors=0 warnings=2`, 59 MB. `tools/device/build.sh --character jolly` → succeeded, `local=1`, 63 MB, 0 `Assets/Jolly` diagnostics.
+- **3.2 / 3.3:** installed and launched on `2G0YC1ZF7P090N`; `loc.ready` for all four tables; `offline_greeting` PASS in 4 of 4 runs.
+- **4.1:** 72.0 fps idle, p95 13.9 ms, 17 draw / 15 SetPass, 33.7k triangles, 540–543 MB (Jolly 561 MB). Stale frames: turns 0.67–0.79 %, idle ≤ 0.22 %, **whole run 1.95–2.22 %** (was 0.98–1.66 %): the launch hitch grew to ~100 stale frames and a ~410 ms frame when hand tracking and environment depth start. ⚠️
+- **5.1:** release → first audio p50 **2,090 ms** over 12 online turns (was 1,833), over the 2.0 s target; tool → answer audio 1,525–1,626 ms; mask 1.1–1.8 s. ⚠️
+- **Room:** `voice_come_here` walks on the fallback floor (`navmesh=fallback walk=Arrived`) in 4 of 4 runs.
+- **Character:** default build logs `evt=character.selected id=nubi`; the Jolly build logs `id=jolly` and introduces itself as Jolly. The headset was left on the default build.
+
 ## 1. Automated tests
 
 | # | Item | State | Evidence |
@@ -95,6 +107,9 @@ Legend: ✅ met, with evidence · ⚠️ partial · ❌ not met · 🧑 needs a 
     - **Fallback boxes:** with depth available, set `preference: SceneMeshes` in a development build → the boxes line up with the furniture (box pose = centre is assumed, as for the NavMesh colliders), and captions, the settings panel, status indicator and tool badges stay visible with a box between them and the eyes.
     - **Cost:** OVR Metrics app GPU time and stale frames, 2 min each with `preference` Off, EnvironmentDepth hard and EnvironmentDepth soft, Nubi in view; record the deltas in `perf/selftest-report.md` (budget: ≤ 1 ms GPU for occlusion, 72 fps held). Profiler: no per-frame GC from the occlusion frame callback.
     - **Pipeline warm-up:** re-record `QuestVulkan.graphicsstate` with depth active (`docs/perf/README.md` §7), so the occlusion shader variants do not compile on the first depth frame.
+11. **Room awareness** (wearer; ADR-0025): checks A–C in "Room awareness device checks" below.
+12. **Hands** (wearer; ADR-0030): checks in "Hand tracking device checks" below.
+13. **Jolly demo skin** (wearer, `tools/device/build.sh --character jolly`; ADR-0026): checks in "Jolly demo skin device checks" below. Reinstall the default build afterwards.
 
 ## Room awareness device checks (ADR-0025, `feat/mr-room-awareness`)
 
@@ -122,3 +137,26 @@ Not run: the headset was owned by another task. Automated cover: EditMode (detec
 4. Ask about a seen object by name after `capture_and_identify` ("walk to the mug"): `walk_to` with the label works and Nubi faces it; "look at the couch" turns Nubi's head toward the couch.
 5. Box orientation: with a couch at an angle to the room, Nubi still stops beside the long side, not diagonally inside the box. This checks that `ARBoundingBox` pose is the box centre with an up-aligned rotation (assumed, not documented in AR Foundation).
 6. Seated mode on: `go_to_surface` is not offered; the model says it cannot walk to furniture while the user is seated.
+
+## Hand tracking device checks (ADR-0030)
+
+Headless evidence on `4d228c8`: `evt=hands.subsystem state=running id=OpenXR Hands` and `evt=hands.monitor visuals=4` at launch. With nobody wearing the headset, `evt=hands.tracked left=true` flips on and off about once a second (38–56 times per run). Each check below needs a wearer; record `adb logcat -s Unity | grep "evt=hands"`.
+
+1. Put the controllers down: both hands appear as translucent meshes over the real hands within ~1 s and follow the fingers without visible lag; they disappear when a hand leaves the view. Pick up a controller: that side switches back to the controller.
+2. Settings panel: point with an open hand, pinch on a button and on a toggle; then poke the same controls with a fingertip. Both work, and neither starts a voice turn (pinching while the ray hovers UI must not talk).
+3. Pinch with nothing under the ray: push-to-talk starts and stops on release, as with the controller.
+4. Poke Nubi with a fingertip: Nubi reacts (`InteractionSignals.Poke`).
+5. Palm-up Horizon OS menu gesture: the system menu opens and no interactor fires on our UI or Nubi.
+6. Phantom tracking: with the headset worn and both hands resting out of view for 30 s, count `hands.tracked` flips and note any phantom pinch or turn start.
+7. Hands in front of Nubi at 0.3–1 m are also covered by the occlusion check (human action 10).
+
+## Jolly demo skin device checks (ADR-0026, `docs/characters.md`)
+
+Headless evidence on `4d228c8` (`tools/device/build.sh --character jolly`, one self-test): `evt=character.selected id=jolly`; Jolly says "I'm Jolly, your little friendly companion here at home…" and "I'm Jolly, by the way."; its own offline line plays; 72.0 fps idle, 33.4k triangles, 561 MB. Each check below needs a wearer.
+
+1. Jolly's mesh, textures and materials look right in passthrough (no pink materials, no missing albedo), stands on the floor, and its blob shadow sits under the feet.
+2. Lip-sync and face presets move with the speech; blink and idle animations play; no T-pose between states.
+3. Say "Hi Jolly" and "Jolly, come here": the wake name and the ASR aliases are recognised; Jolly walks and turns like Nubi.
+4. Offline (Wi-Fi off): the baked Jolly lines play with captions, and the name lines say "Jolly", never "Nubi".
+5. Settings: Nubi and Jolly are both selectable; switching swaps the character, voice and name; note whether the choice survives a relaunch.
+6. Reinstall the default build afterwards (`tools/ci/build.sh`, `adb install -r`) and confirm `evt=character.selected id=nubi`.
