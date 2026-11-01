@@ -20,6 +20,7 @@ namespace Jolly.App
         [SerializeField] JollyConfig config;
         [SerializeField] SceneRefs scene = new();
         [SerializeField] SelfTestAssets selfTestAssets;
+        [SerializeField] CharacterChoice characters = new();
 
         readonly CancellationTokenSource _app = new();
         Edges _edges;
@@ -41,6 +42,7 @@ namespace Jolly.App
             }
             var edges = _edges ?? Edges.ForPlayer();
             var foundation = Foundation.Build(config, edges);
+            CharacterSelection.Apply(scene.nubi, config, characters, edges.Paths, foundation.Log);
             GraphicsWarmup.Start(config.graphicsStates, foundation.Log);
             var selfTest = SelfTestSession.TryStart(edges, selfTestAssets, foundation, scene);
             selfTest?.Frames.Run(ct).Forget();

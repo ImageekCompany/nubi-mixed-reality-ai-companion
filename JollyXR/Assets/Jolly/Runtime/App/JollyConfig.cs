@@ -1,4 +1,5 @@
 using System;
+using Jolly.Character;
 using Jolly.Contracts;
 using Jolly.Localization;
 using Jolly.XR.Occlusion;
@@ -56,6 +57,13 @@ namespace Jolly.App
         public string[] preloadTables = { "UI", "Lines", "Personas", "Crisis" };
         [Tooltip("Editor and Link only: the still image served as the camera frame (meta-openxr gives no CPU image there).")]
         public TextAsset editorCameraStill;
+
+        [Header("Character (docs/characters.md)")]
+        [Tooltip("Shown unless persistentDataPath/character.txt or build.sh --character names another; also the fallback.")]
+        public CharacterDefinition defaultCharacter;
+        [Tooltip("Committed characters selectable by id. Local, git-ignored ones are added to the processed scene at " +
+                 "build or Play time and are never listed here.")]
+        public CharacterDefinition[] characters = Array.Empty<CharacterDefinition>();
 
         [Header("Rendering")]
         [Tooltip("Pipelines warmed at boot; recorded by a development-player self-test (docs/perf/README.md §7).")]

@@ -4,14 +4,17 @@ using Cysharp.Threading.Tasks;
 using Jolly.Contracts;
 using UnityEngine;
 using UnityEngine.AI;
+using UnityEngine.Rendering;
 
 namespace Jolly.Character
 {
     /// <summary>
-    /// Nubi's <see cref="ICharacterController"/>: a thin MonoBehaviour shell that orders the plain-C# parts per frame.
-    /// Update: relocation pop → locomotion → body yaw → Animator parameters. The Animator then evaluates, and LateUpdate
-    /// layers the look-at on the animated bones, writes the face (clip preset/mood → lip-sync → blink) and shapes the
-    /// contact shadow from the animated feet.
+    /// The companion's <see cref="ICharacterController"/>: a thin MonoBehaviour shell that orders the plain-C# parts per
+    /// frame. Update: relocation pop → locomotion → body yaw → Animator parameters. The Animator then evaluates, and
+    /// LateUpdate layers the look-at on the animated bones, writes the face (clip preset/mood → lip-sync → blink) and
+    /// shapes the contact shadow from the animated feet.
+    /// Everything character-specific comes from its <see cref="CharacterDefinition"/>: the prefab ships Nubi's model and
+    /// definition, and <see cref="TryUse"/> swaps in another before <see cref="Construct"/> (ADR-0026).
     /// Inert until <see cref="Construct"/> is called by the composition root.
     /// </summary>
     [DisallowMultipleComponent]
@@ -22,17 +25,21 @@ namespace Jolly.Character
         /// <summary>Never zero: a zero scale makes the transform matrix singular.</summary>
         const float PopMinScale = 0.01f;
 
-        [SerializeField] Animator _animator;
+        const string ModelName = "Model";
+
+        [SerializeField] CharacterDefinition _definition;
+        [Tooltip("The instance of the definition's model, a child of this root.")]
+        [SerializeField] GameObject _model;
         [SerializeField] NavMeshAgent _agent;
-        [SerializeField] SkinnedMeshRenderer _faceMesh;
-        [SerializeField] TextAsset _facePresets;
-        [SerializeField] NubiRigBones _bones = new();
-        [SerializeField] ContactShadowRig _shadowRig = new();
-        [SerializeField] NubiCharacterSettings _settings = new();
+        [SerializeField] CapsuleCollider _collider;
+        [SerializeField] MeshRenderer _contactShadow;
 
         IUserPoseProvider _user;
         ILipSyncDriver _lipSync;
         IClock _clock;
+        CharacterRig _rig;
+        NubiRigBones _bones;
+        NubiCharacterSettings _settings;
         AgentLocomotion _locomotion;
         CharacterAnimator _parameters;
         GestureDriver _gestures;
@@ -56,10 +63,60 @@ namespace Jolly.Character
         bool _popMoved;
 
         public bool IsConstructed => _locomotion != null;
-        public NubiCharacterSettings Settings => _settings;
-        public Animator Animator => _animator;
-        public SkinnedMeshRenderer FaceMesh => _faceMesh;
-        public ContactShadowRig ShadowRig => _shadowRig;
+        public CharacterDefinition Definition => _definition;
+        public NubiCharacterSettings Settings => _definition != null ? _definition.tuning : null;
+        /// <summary>Null until the character is bound by <see cref="TryUse"/> or <see cref="Construct"/>.</summary>
+        public Animator Animator => _rig?.Animator;
+        public SkinnedMeshRenderer FaceMesh => _rig?.Face;
+        /// <summary>Null until <see cref="Construct"/>, and when the character has no feet bones to follow.</summary>
+        public ContactShadowRig ShadowRig { get; private set; }
+
+        /// <summary>
+        /// Swaps in another character before <see cref="Construct"/>: instantiates its model under this root and binds
+        /// it. On failure nothing changes and <paramref name="error"/> says why.
+        /// </summary>
+        public bool TryUse(CharacterDefinition character, out string error)
+        {
+            if (IsConstructed)
+                throw new InvalidOperationException("Swap the character before Construct.");
+            if (character == null)
+            {
+                error = "no definition";
+                return false;
+            }
+            if (character == _definition)
+            {
+                error = null;
+                return true;
+            }
+            if (!character.IsUsable(out error))
+                return false;
+
+            var model = Instantiate(character.model, transform, false);
+            model.name = ModelName;
+            if (!CharacterRig.TryBind(model, character, out var rig, out error))
+            {
+                model.SetActive(false);
+                Destroy(model);
+                return false;
+            }
+            foreach (var renderer in model.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+            {
+                renderer.shadowCastingMode = ShadowCastingMode.Off;
+                renderer.receiveShadows = false;
+                renderer.skinnedMotionVectors = false;
+            }
+            if (_model != null)
+            {
+                // Destroy is deferred to the end of the frame; inactive, the old Animator stops at once.
+                _model.SetActive(false);
+                Destroy(_model);
+            }
+            _model = model;
+            _definition = character;
+            _rig = rig;
+            return true;
+        }
 
         public void Construct(IUserPoseProvider user, ILipSyncDriver lipSync, IClock clock, IRandom random)
         {
@@ -70,20 +127,37 @@ namespace Jolly.Character
             _clock = clock ?? throw new ArgumentNullException(nameof(clock));
             if (random == null)
                 throw new ArgumentNullException(nameof(random));
-            if (_animator == null || _agent == null || _faceMesh == null || _facePresets == null || !_bones.IsComplete
-                || !_shadowRig.IsComplete)
-                throw new InvalidOperationException("Nubi prefab references are not bound; rebuild it with Jolly/Character/Rebuild Nubi Assets.");
+            if (_definition == null || _model == null || _agent == null)
+                throw new InvalidOperationException("Character prefab references are not bound; rebuild it with Jolly/Character/Rebuild Nubi Assets.");
+            if (!_definition.IsUsable(out var unusable))
+                throw new InvalidOperationException($"Character '{_definition.name}' is not usable: {unusable}.");
+            if (_rig == null && !CharacterRig.TryBind(_model, _definition, out _rig, out var unbound))
+                throw new InvalidOperationException($"Character '{_definition.id}' does not bind: {unbound}.");
 
-            var presets = FacePresetTable.Parse(_facePresets.text);
-            _parameters = new CharacterAnimator(_animator, _settings.locomotion);
-            _gestures = new GestureDriver(_animator);
+            CharacterBody.Apply(_definition, _model.transform, _agent, _collider,
+                _contactShadow != null ? _contactShadow.transform : null);
+            _settings = _definition.tuning;
+            _bones = _rig.Bones;
+            var animator = _rig.Animator;
+            var presets = FacePresetTable.Parse(_definition.facePresets.text);
+            _parameters = new CharacterAnimator(animator, _settings.locomotion);
+            _gestures = new GestureDriver(animator);
             _look = new LookAtDriver(_bones, transform, _settings.look);
-            _expression = new ClipExpressionSelector(_animator, presets, _settings.locomotion);
+            _expression = new ClipExpressionSelector(animator, presets, _settings.locomotion);
             _mouth = new MouthSmoother(_settings.face);
             _blink = new BlinkScheduler(random, _settings.face);
             _mixer = new FaceMixer(_settings.face);
-            _faceRenderer = new FaceRenderer(_faceMesh);
-            _shadow = new ContactShadow(_shadowRig, transform, _settings.shadow);
+            _faceRenderer = new FaceRenderer(_rig.Face, _definition.face, _rig.Jaw, _definition.jaw.openRotation);
+            if (_contactShadow != null && _rig.HasFeet)
+            {
+                // After CharacterBody.Apply, so the shadow's standing size is this character's.
+                ShadowRig = new ContactShadowRig
+                {
+                    shadow = _contactShadow, footLeft = _rig.FootLeft, footRight = _rig.FootRight,
+                    footRestHeight = _rig.FootRestHeight * _definition.scale,
+                };
+                _shadow = new ContactShadow(ShadowRig, transform, _settings.shadow);
+            }
             _locomotion = new AgentLocomotion(_agent, clock, _settings.locomotion);
             _scale = transform.localScale;
         }
@@ -157,7 +231,7 @@ namespace Jolly.Character
             _mouth.Step(_lipSync.Current, dt);
             _mixer.Mix(_expression.Select(_speed), MoodFace.For(_mood), _mouth, _blink.Tick(dt), dt);
             _faceRenderer.Write(_mixer.Output);
-            _shadow.Update();
+            _shadow?.Update();
         }
 
         void OnDestroy()

@@ -93,63 +93,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 44f60d449477a48caaac542d0a411386, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Jolly.Character::Jolly.Character.NubiCharacterController
-  _animator: {fileID: 323592156862461749}
+  _definition: {fileID: 11400000, guid: bc9008628540b49cfb45f59d3c19743f, type: 2}
+  _model: {fileID: 6473463915910936565}
   _agent: {fileID: 2309759254501483826}
-  _faceMesh: {fileID: 2984828755443286049}
-  _facePresets: {fileID: 4900000, guid: 5dbd089ec334d431485906dab8c2ef0c, type: 3}
-  _bones:
-    chest: {fileID: 480374623791313919}
-    neck: {fileID: 5821477269732406454}
-    head: {fileID: 5088263511123701544}
-    eyeLeft: {fileID: 3392950928838806050}
-    eyeRight: {fileID: 1764446182841397419}
-  _shadowRig:
-    shadow: {fileID: 3661460483952312250}
-    footLeft: {fileID: 2860580923807866449}
-    footRight: {fileID: 4671886358992702834}
-    footRestHeight: 0.06
-  _settings:
-    locomotion:
-      walkSpeed: 0.6
-      catchUpSpeed: 1.2
-      catchUpDistance: 2.5
-      acceleration: 3
-      sampleRadius: 0.5
-      turnSpeed: 240
-      timeoutSlack: 3
-      followRepathInterval: 0.25
-      followRepathDistance: 0.3
-      walkClipSpeed: 0.49
-      hopClipSpeed: 0.9
-      hopAbove: 0.65
-      minPlaybackRate: 0.7
-      maxPlaybackRate: 1.5
-    look:
-      eyeYawMax: 16
-      eyePitchMax: 8
-      eyeLead: 10
-      headYawMax: 40
-      headPitchMax: 20
-      bodyTurnBeyond: 45
-      bodySettleWithin: 5
-      blendSeconds: 0.25
-      chestShare: 0.2
-      neckShare: 0.3
-    face:
-      presetFadeSeconds: 0.15
-      mouthAttackSeconds: 0.06
-      mouthReleaseSeconds: 0.09
-      blinkIntervalMin: 2
-      blinkIntervalMax: 6
-      doubleBlinkChance: 0.15
-      doubleBlinkGap: 0.12
-      blinkCloseSeconds: 0.06
-      blinkHoldSeconds: 0.03
-      blinkOpenSeconds: 0.09
-      happyEyesBlinkSuppress: 0.5
-    shadow:
-      fadeHeight: 0.3
-      scaleAtFadeHeight: 0.6
+  _collider: {fileID: 7826674937544273546}
+  _contactShadow: {fileID: 3661460483952312250}
 --- !u!1 &7494739193936473874
 GameObject:
   m_ObjectHideFlags: 0
@@ -313,53 +261,13 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 636a5a7644956419d8e0b373d5bd178c, type: 3}
---- !u!95 &323592156862461749 stripped
-Animator:
-  m_CorrespondingSourceObject: {fileID: 5866666021909216657, guid: 636a5a7644956419d8e0b373d5bd178c, type: 3}
-  m_PrefabInstance: {fileID: 6131427639495428772}
-  m_PrefabAsset: {fileID: 0}
---- !u!4 &480374623791313919 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: -3189227076451141285, guid: 636a5a7644956419d8e0b373d5bd178c, type: 3}
-  m_PrefabInstance: {fileID: 6131427639495428772}
-  m_PrefabAsset: {fileID: 0}
---- !u!4 &1764446182841397419 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: -3644636371929449969, guid: 636a5a7644956419d8e0b373d5bd178c, type: 3}
-  m_PrefabInstance: {fileID: 6131427639495428772}
-  m_PrefabAsset: {fileID: 0}
---- !u!4 &2860580923807866449 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: -962108123270572811, guid: 636a5a7644956419d8e0b373d5bd178c, type: 3}
-  m_PrefabInstance: {fileID: 6131427639495428772}
-  m_PrefabAsset: {fileID: 0}
---- !u!137 &2984828755443286049 stripped
-SkinnedMeshRenderer:
-  m_CorrespondingSourceObject: {fileID: -253599043350787451, guid: 636a5a7644956419d8e0b373d5bd178c, type: 3}
-  m_PrefabInstance: {fileID: 6131427639495428772}
-  m_PrefabAsset: {fileID: 0}
---- !u!4 &3392950928838806050 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: -432035401152610170, guid: 636a5a7644956419d8e0b373d5bd178c, type: 3}
-  m_PrefabInstance: {fileID: 6131427639495428772}
-  m_PrefabAsset: {fileID: 0}
---- !u!4 &4671886358992702834 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 1568074107933935574, guid: 636a5a7644956419d8e0b373d5bd178c, type: 3}
-  m_PrefabInstance: {fileID: 6131427639495428772}
-  m_PrefabAsset: {fileID: 0}
---- !u!4 &5088263511123701544 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 1407955733625906572, guid: 636a5a7644956419d8e0b373d5bd178c, type: 3}
-  m_PrefabInstance: {fileID: 6131427639495428772}
-  m_PrefabAsset: {fileID: 0}
---- !u!4 &5821477269732406454 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 422562420750958098, guid: 636a5a7644956419d8e0b373d5bd178c, type: 3}
-  m_PrefabInstance: {fileID: 6131427639495428772}
-  m_PrefabAsset: {fileID: 0}
 --- !u!4 &5953069926374600015 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 636a5a7644956419d8e0b373d5bd178c, type: 3}
+  m_PrefabInstance: {fileID: 6131427639495428772}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &6473463915910936565 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 636a5a7644956419d8e0b373d5bd178c, type: 3}
   m_PrefabInstance: {fileID: 6131427639495428772}
   m_PrefabAsset: {fileID: 0}

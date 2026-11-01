@@ -53,7 +53,7 @@ namespace Jolly.Tests.EditMode.Architecture
                 "Unity.RenderPipelines.Core.Runtime", "Unity.RenderPipelines.Universal.Runtime",
             },
             ["Jolly.Editor.Character"] = new[] { "Jolly.Character", "Jolly.Contracts" },
-            ["Jolly.Editor"] = With("Jolly.App", "Jolly.Core", "Jolly.Contracts", "Jolly.Providers.Wit", UniTask,
+            ["Jolly.Editor"] = With("Jolly.App", "Jolly.Character", "Jolly.Editor.Character", "Jolly.Core", "Jolly.Contracts", "Jolly.Providers.Wit", UniTask,
                 "Unity.Localization", "Unity.Localization.Editor"),
             ["Jolly.Testing"] = With("Jolly.Contracts", "Jolly.Core", "Jolly.Net", UniTask),
             ["Jolly.Tests.EditMode"] = EditModeTests,

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using Jolly.Character;
 using Jolly.Contracts;
 using UnityEditor;
@@ -10,25 +11,54 @@ using P = Jolly.Character.NubiAnimatorParameters;
 namespace Jolly.Editor.Character
 {
     /// <summary>
-    /// Generates Nubi.controller (architecture §5.5). Base: Locomotion blend tree (Idle/Walk/Hop by Speed, playback
+    /// Generates a character's Animator controller (architecture §5.5) from its definition, with states named after the
+    /// canonical clips (<see cref="CharacterClips"/>). Base: Locomotion blend tree (Idle/Walk/Hop by Speed, playback
     /// rate from LocomotionRate) and a Sad idle for the Concerned mood. Conversation and Gesture are upper-body
     /// override layers whose Empty state writes nothing (write defaults off), so the layer below shows through.
     /// </summary>
-    public static class NubiAnimatorBuilder
+    public static class CharacterAnimatorBuilder
     {
         const float GestureFadeSeconds = 0.2f;
 
-        public static AnimatorController Build(GameObject model, IReadOnlyDictionary<string, AnimationClip> clips,
-                                               LocomotionSettings locomotion)
+        [MenuItem("Jolly/Character/Build Animator For Selected Definition")]
+        static void BuildSelected()
         {
-            var mask = BuildUpperBodyMask(model);
-            AssetDatabase.DeleteAsset(NubiAssetPaths.Controller);
-            var controller = AnimatorController.CreateAnimatorControllerAtPath(NubiAssetPaths.Controller);
+            if (Selection.activeObject is not CharacterDefinition definition)
+            {
+                Debug.LogError("[CharacterAnimatorBuilder] Select a CharacterDefinition asset first.");
+                return;
+            }
+            Build(definition);
+            AssetDatabase.SaveAssets();
+        }
+
+        /// <summary>Writes <c>Animator/&lt;Id&gt;.controller</c> and its mask next to the definition and assigns it.</summary>
+        public static AnimatorController Build(CharacterDefinition definition)
+        {
+            var folder = Path.GetDirectoryName(AssetDatabase.GetAssetPath(definition))?.Replace('\\', '/') + "/Animator/";
+            var name = string.IsNullOrEmpty(definition.id)
+                ? definition.name
+                : char.ToUpperInvariant(definition.id[0]) + definition.id.Substring(1);
+            return Build(definition, folder + name + ".controller", folder + name + "UpperBody.mask");
+        }
+
+        public static AnimatorController Build(CharacterDefinition definition, string controllerPath, string maskPath)
+        {
+            var clips = CharacterClipSet.Resolve(definition);
+            var missing = CharacterClipSet.Missing(clips);
+            if (missing.Count > 0)
+                throw new InvalidOperationException($"'{definition.name}' lacks clips: {string.Join(", ", missing)}.");
+
+            var mask = BuildUpperBodyMask(definition.model, definition.bones.upperBody, maskPath);
+            AssetDatabase.DeleteAsset(controllerPath);
+            var controller = AnimatorController.CreateAnimatorControllerAtPath(controllerPath);
             AddParameters(controller);
-            BuildBase(controller, clips, locomotion);
+            BuildBase(controller, clips, definition.tuning.locomotion);
             BuildConversation(AddLayer(controller, P.ConversationLayer, mask), clips);
             BuildGestures(AddLayer(controller, P.GestureLayer, mask), clips);
             EditorUtility.SetDirty(controller);
+            definition.animatorController = controller;
+            EditorUtility.SetDirty(definition);
             return controller;
         }
 
@@ -58,16 +88,16 @@ namespace Jolly.Editor.Character
             tree.blendType = BlendTreeType.Simple1D;
             tree.blendParameter = P.SpeedName;
             tree.useAutomaticThresholds = false;
-            tree.AddChild(clips["Idle"], 0f);
-            tree.AddChild(clips["Walk"], 0.25f);
-            tree.AddChild(clips["Walk"], s.hopAbove);
-            tree.AddChild(clips["Hop"], s.hopAbove + 0.15f);
+            tree.AddChild(clips[CharacterClips.Idle], 0f);
+            tree.AddChild(clips[CharacterClips.Walk], 0.25f);
+            tree.AddChild(clips[CharacterClips.Walk], s.hopAbove);
+            tree.AddChild(clips[CharacterClips.Hop], s.hopAbove + 0.15f);
             locomotion.speedParameter = P.LocomotionRateName;
             locomotion.speedParameterActive = true;
             locomotion.writeDefaultValues = false;
             machine.defaultState = locomotion;
 
-            var sad = AddState(machine, "Sad", clips["Sad"]);
+            var sad = AddState(machine, CharacterClips.Sad, clips[CharacterClips.Sad]);
             var toSad = Transition(locomotion.AddTransition(sad), 0.4f);
             toSad.AddCondition(AnimatorConditionMode.Equals, (int)Mood.Concerned, P.MoodName);
             toSad.AddCondition(AnimatorConditionMode.Less, 0.05f, P.SpeedName);
@@ -78,9 +108,9 @@ namespace Jolly.Editor.Character
         static void BuildConversation(AnimatorStateMachine machine, IReadOnlyDictionary<string, AnimationClip> clips)
         {
             machine.defaultState = AddState(machine, P.EmptyState, null);
-            Pose(machine, "Talk", P.TalkingName, clips);
-            Pose(machine, "Think", P.ThinkingName, clips);
-            Pose(machine, "Listen", P.ListeningName, clips);
+            Pose(machine, CharacterClips.Talk, P.TalkingName, clips);
+            Pose(machine, CharacterClips.Think, P.ThinkingName, clips);
+            Pose(machine, CharacterClips.Listen, P.ListeningName, clips);
             var toEmpty = Transition(machine.AddAnyStateTransition(machine.defaultState), 0.3f);
             toEmpty.canTransitionToSelf = false;
             toEmpty.AddCondition(AnimatorConditionMode.IfNot, 0f, P.TalkingName);
@@ -143,16 +173,16 @@ namespace Jolly.Editor.Character
             return t;
         }
 
-        /// <summary>Spine and everything above it: gestures and talk poses leave the legs to the base layer.</summary>
-        static AvatarMask BuildUpperBodyMask(GameObject model)
+        /// <summary>The upper-body bone and everything under it: gestures and talk poses leave the legs to the base layer.</summary>
+        static AvatarMask BuildUpperBodyMask(GameObject model, string upperBody, string path)
         {
-            NubiAssetPaths.EnsureFolderFor(NubiAssetPaths.UpperBodyMask);
-            AssetDatabase.DeleteAsset(NubiAssetPaths.UpperBodyMask);
-            var mask = new AvatarMask { name = "NubiUpperBody" };
+            NubiAssetPaths.EnsureFolderFor(path);
+            AssetDatabase.DeleteAsset(path);
+            var mask = new AvatarMask { name = Path.GetFileNameWithoutExtension(path) };
             mask.AddTransformPath(model.transform, true);
             for (var i = 0; i < mask.transformCount; i++)
-                mask.SetTransformActive(i, mask.GetTransformPath(i).Contains("/Spine"));
-            AssetDatabase.CreateAsset(mask, NubiAssetPaths.UpperBodyMask);
+                mask.SetTransformActive(i, Array.IndexOf(mask.GetTransformPath(i).Split('/'), upperBody) >= 0);
+            AssetDatabase.CreateAsset(mask, path);
             return mask;
         }
     }

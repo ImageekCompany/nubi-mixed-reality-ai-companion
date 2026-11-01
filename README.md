@@ -330,6 +330,8 @@ These items are **not built.** They are where the architecture is designed to go
 
 The original idea used Meta's Muse mascot, Jolly. We found no licence for that model, and the hackathon rules require entrants to warrant that they infringe no copyright or trademark. So the mascot is **not in this repository**, and nothing derived from it is either. Nubi is an original character, generated entirely by a Python script, and designed to differ from Jolly in silhouette, colour, face and materials (see [`docs/art/nubi/README.md`](docs/art/nubi/README.md), ADR-0011).
 
+Characters are data: a model, a face-preset file and a `CharacterDefinition` asset, selected at launch without code changes ([`docs/characters.md`](docs/characters.md), ADR-0026). Nubi is the default and the only committed character. Local characters live in a git-ignored folder, and a build includes one only when it is named explicitly.
+
 ## Design decisions
 
 Twenty-three ADRs record every key choice and its alternatives: [`docs/decisions/`](docs/decisions/README.md). Examples are OpenXR + meta-openxr instead of the Meta XR SDK (0002), Responses API routing (0004), Wit over raw HTTP (0006), a plain composition root (0009), secrets provisioning (0010) the integration deviations (0017) and the device self-test (0018). Review findings are in [`review-log.md`](docs/decisions/review-log.md). API spend is tracked call by call in [`docs/api-spend.md`](docs/api-spend.md), and is about $1 of the $140 budget so far.

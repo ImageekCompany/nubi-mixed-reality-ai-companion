@@ -27,6 +27,7 @@
 | [0023](0023-turn-gc-websocket-upgrade-and-wit-warmup.md) | Turn GC: own WebSocket upgrade, packed ASR frames, slim Responses envelopes; Wit warm-up | accepted |
 | [0024](0024-real-world-occlusion-and-contact-shadow.md) | Real-world occlusion (environment depth, scene-mesh fallback) and a feet-driven contact shadow | accepted |
 | [0025](0025-mr-room-awareness.md) | Room awareness: Space Setup offer, fallback floor, real furniture | accepted |
+| [0026](0026-swappable-characters-and-local-demo-skins.md) | Swappable characters: a definition asset per character, local demo skins that never reach git | accepted |
 | [0030](0030-hands-interaction-rig.md) | Hand-tracked XR rig: the XRI Hands Interaction Demo rig variant | accepted |
 
 Review findings and their accept/reject decisions: [review-log.md](review-log.md).

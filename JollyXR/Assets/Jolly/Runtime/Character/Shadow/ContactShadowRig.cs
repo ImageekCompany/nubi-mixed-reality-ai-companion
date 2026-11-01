@@ -1,17 +1,17 @@
-using System;
 using UnityEngine;
 
 namespace Jolly.Character
 {
-    /// <summary>The blob shadow quad and the bones it reads. Bound by the prefab builder.</summary>
-    [Serializable]
+    /// <summary>
+    /// The blob shadow quad and the feet it reads, taken from the bound character at Construct (ADR-0024, ADR-0026).
+    /// </summary>
     public sealed class ContactShadowRig
     {
-        [Tooltip("Child quad on the floor plane with Jolly/Character/BlobShadow.")]
+        /// <summary>Child quad on the floor plane with Jolly/Character/BlobShadow.</summary>
         public MeshRenderer shadow;
         public Transform footLeft;
         public Transform footRight;
-        [Tooltip("Height of the lower foot bone above the root in the bind pose, m.")]
+        /// <summary>Height of the lower foot bone above the character root in the bind pose, m.</summary>
         public float footRestHeight;
 
         public bool IsComplete => shadow != null && footLeft != null && footRight != null;

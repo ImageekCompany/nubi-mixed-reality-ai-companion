@@ -28,6 +28,11 @@ JollyXR/Assets/StreamingAssets/secrets*.json*
 # Third-party character source (no license; local-only)
 Meta+Muse+Jolly*
 assets-src/private/
+# Local demo characters and everything derived from them: FBX, textures, materials, controllers, definitions,
+# renders and their .meta files (docs/characters.md, ADR-0026). Never committed; nothing committed references them.
+JollyXR/Assets/Jolly/Local/
+JollyXR/Assets/Jolly/Local.meta
+docs/art/local/
 
 # Blender build outputs (regenerate with tools/blender/build_nubi.py)
 tools/blender/out/

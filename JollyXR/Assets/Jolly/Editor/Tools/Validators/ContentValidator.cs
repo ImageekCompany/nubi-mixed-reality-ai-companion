@@ -6,7 +6,8 @@ namespace Jolly.Editor.Tools.Validators
 {
     /// <summary>
     /// Checks the shipped content against the rules the runtime assumes but cannot check cheaply: config references,
-    /// persona safety settings and texts in every locale, baked clips, self-test clip imports and the scene wiring.
+    /// persona safety settings and texts in every locale, baked clips, self-test clip imports, the character rig
+    /// contract and the scene wiring.
     /// Menu Jolly/Validate Content; batch <c>-executeMethod Jolly.Editor.Tools.Validators.ContentValidator.RunBatch</c>
     /// (tools/ci/test.sh) exits 1 on any problem.
     /// </summary>
@@ -44,6 +45,7 @@ namespace Jolly.Editor.Tools.Validators
             }
             ConfigRules.Check(config, problems);
             PersonaRules.Check(config, problems);
+            CharacterRules.Check(config, problems);
             SceneRules.Check(ScenePath, problems);
             return problems;
         }
