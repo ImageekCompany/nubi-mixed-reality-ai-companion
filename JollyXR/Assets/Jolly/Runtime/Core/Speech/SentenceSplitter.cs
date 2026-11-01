@@ -1,4 +1,5 @@
 using System.Text;
+using Jolly.Core.Conversation;
 
 namespace Jolly.Core.Speech
 {
@@ -8,7 +9,7 @@ namespace Jolly.Core.Speech
     /// chunk, to start audio sooner), and never longer than <see cref="MaxLength"/>. Call <see cref="TryTake"/> until it
     /// returns false before <see cref="Flush"/>.
     /// </summary>
-    public sealed class SentenceSplitter
+    public sealed class SentenceSplitter : ISentenceSplitter
     {
         public const int MaxLength = 240;
         const int FirstChunkLength = 60;

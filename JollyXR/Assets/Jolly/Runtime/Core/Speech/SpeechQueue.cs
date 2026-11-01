@@ -4,6 +4,7 @@ using System.Text;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using Jolly.Contracts;
+using Jolly.Core.Conversation;
 
 namespace Jolly.Core.Speech
 {
@@ -11,7 +12,7 @@ namespace Jolly.Core.Speech
     /// Speaks sentences in order through TTS and the speech output, synthesizing sentence n+1 while n plays
     /// (at most two requests in flight, ADR-0006). Main thread only.
     /// </summary>
-    public sealed class SpeechQueue : IDisposable
+    public sealed class SpeechQueue : ISpeechQueue, IDisposable
     {
         const int MaxInFlight = 2;
         const int MinWitSpeed = 50;
