@@ -95,7 +95,9 @@ adb pull "$FILES/selftest_results.json" "$OUT/selftest_results.json" >/dev/null
 adb logcat -d -v time -s Unity:V > "$OUT/logcat.txt" || true
 grep -E "evt=(selftest|turn.latency)" "$OUT/logcat.txt" > "$OUT/selftest_events.txt" || true
 # Compositor stale frames over the whole run (DoD §4: < 1%); the app cannot see these itself.
-adb logcat -d -v time -s VrApi:I > "$OUT/vrapi.txt" || true
+# Only the app's own lines: the home shell logs VrApi too until the app takes over.
+APP_PID="$(grep -m1 -oE 'I/Unity +\( *[0-9]+\)' "$OUT/logcat.txt" | grep -oE '[0-9]+' || true)"
+adb logcat -d -v time -s VrApi:I | grep -E "\( *${APP_PID:-x}\):" > "$OUT/vrapi.txt" || true
 awk '/FPS=/ { split(substr($0, index($0, "FPS=") + 4), f, "/"); frames += f[1]
               if (match($0, /Stale=[0-9]+/)) stale += substr($0, RSTART + 6, RLENGTH - 6) }
      END { if (frames > 0) printf "[selftest] compositor: %d of %d frames stale (%.2f%%, target < 1%%)\n", stale, frames, 100 * stale / frames }' \
