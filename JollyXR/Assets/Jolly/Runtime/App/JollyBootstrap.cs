@@ -22,11 +22,8 @@ namespace Jolly.App
         readonly CancellationTokenSource _app = new();
         Edges _edges;
 
-        public JollyConfig Config => config;
-        public SceneRefs Scene => scene;
         /// <summary>Null until the graph is built (a few frames after Start).</summary>
         public AppGraph Graph { get; private set; }
-        public event Action<AppGraph> Ready;
 
         /// <summary>Tests replace the provider edges here, between scene load and Start.</summary>
         public void UseEdges(Edges edges) => _edges = edges;
@@ -47,7 +44,6 @@ namespace Jolly.App
             {
                 Graph = await AppGraph.Build(foundation, config, scene, edges, ct);
                 NubiPlacement.PlaceInFrontOfUser(scene, foundation.Clock, ct).Forget();
-                Ready?.Invoke(Graph);
                 selfTest?.Run(Graph, ct).Forget();
                 await Graph.Run(ct);
             }
