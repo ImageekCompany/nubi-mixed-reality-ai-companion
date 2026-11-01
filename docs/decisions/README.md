@@ -19,5 +19,6 @@
 | [0015](0015-json-and-wire-parsing.md) | Newtonsoft (bundled), reader-based parsing on hot paths | accepted |
 | [0016](0016-review-revision-2026-11-01.md) | Pre-freeze contract revision after the architecture reviews | accepted |
 | [0017](0017-integration-deviations-wp1-wp10.md) | Deviations accepted when merging WP1–WP10 | accepted |
+| [0018](0018-wp9-integration-and-device-self-test.md) | WP9 composition, provider edges, line-clip asset, shared helpers and the device self-test | accepted |
 
 Review findings and their accept/reject decisions: [review-log.md](review-log.md).

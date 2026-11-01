@@ -88,10 +88,19 @@ Each work package appends bullets under its own heading only (`docs/scope.md` §
 - Review fixes: a cancelled `SetLanguage` no longer leaves the language half-switched; Polish falls back to English per entry; running tool badges end when the turn ends; the mask outline sets its texel size explicitly; stored preferences are clamped on load.
 
 ### WP9
+- `JollyBootstrap` + `AppGraph`: the composition root wires every WP1–WP10 implementation in dependency order with one disposable stack, flushes usage and memory on pause/focus loss and places Nubi on the floor in front of the user. Provider outcomes reach `ConnectivityMonitor` through decorators; the probe's 401 marks the key rejected. Two Responses chat models (voice 6 s × 2, background 10 s × 3); every model id through `MetaModelResolver`.
+- `Edges`: files, secrets, network, HTTP/WebSocket, Wit, microphone, push-to-talk, speaker and camera are swappable at the provider edge only.
+- Personas (Companion default, Mentor, Guru, Psychologist) with en/pl prompts in a new `Personas` table; a `Lines` table (en, pl); `JollyConfig.asset`; `LineClipLibrary` with the 31 baked clips (ADR-0018).
+- `Main.unity` fully wired: AR managers ship disabled behind `PermissionGate`, `ARAnchorManager`, a poke-only `NubiPoke` interaction layer on Nubi, `StreamingSpeechOutput` + uLipSync on Nubi's voice object, all views, an `XRUIInputModule` EventSystem.
+- Content validators (`Jolly/Validate Content`), now a `tools/ci/test.sh` gate.
+- E2E PlayMode tests on the real scene with doubles only at the provider edges: scripted voice turn, barge-in ≤ 150 ms, capture_and_identify on the still frame, offline press, `NoGcAllocInSteadyStateIdle`; `ULipSyncDriver` tests.
+- Device self-test (`Runtime/App/SelfTest`, `tools/device/selftest.sh`): real ASR → Spark → Wit → output on the Quest from bundled clips, offline lines, vision with a dark-room fallback, barge-in silence and a 30 s perf sample; results in `docs/perf/selftest-report.md`.
+- Fixes found by the E2E test and the device run: the tool preamble is spoken when a tool starts (no more glued sentences), the health probe URL (`/v1/v1/models`), SAM billing per possibly-billed attempt; captions-only replies are paced by reading time.
+- One `PixelToCameraDir` (Contracts), one HTTP status mapping and one HTTP path for the probe.
 
 ### WP10
 - `ConnectivityMonitor`: five states by priority (Unauthorized > BudgetReached > Online/Degraded/Offline). Fed by provider reports, a 1 s reachability poll and health probes with 5 → 30 s backoff. Only a 401 from a Meta provider (`meta`, `meta.*`) marks the key rejected; the probe is off without a key and stays off for a rejected key until the key changes. One probe runs at a time, and a probe result older than a later provider report is dropped.
-- `MetaHealthProbe`: `GET /v1/models` with a 3 s timeout on `IClock` that cancels the request, plus an `Unauthorized` event on 401. A 429 counts as reachable. HTTP goes through the `IHttpStatusClient` seam (`UnityWebRequestStatusClient`, which discards the body).
+- `MetaHealthProbe`: `GET /v1/models` with a 3 s timeout on `IClock` that cancels the request, plus an `Unauthorized` event on 401. A 429 counts as reachable. HTTP goes through the `IHttpStatusClient` seam.
 - `OfflineResponder`: plays one canned line per call, with the caption at the first played sample. Offline requests alternate Offline lines with WhoAmI/Greeting fillers. Missing categories fall back to the requested category, then to Error.
 - `IdleScheduler`: weighted look-around, stretch, wander (≤ 1.5 m) and glance at the user every 8–20 s, only while the conversation is Idle and Nubi is not moving or following.
 - `InteractionTriggers`: gaze dwell and open palm → Greeting, poke → WhoAmI. At most one request per 20 s across all signals, and signals that arrive while Nubi cannot speak don't count toward the limit.
