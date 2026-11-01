@@ -107,7 +107,7 @@ Hands are the primary input; Touch controllers work too. With the headset's auto
 | **Spark as a body controller** | Locomotion tools (`come_here`, `follow_user`, `walk_to`, `look_at`, `stop`, `play_gesture`) drive a NavMesh agent on the scanned floor. They return as soon as motion starts, so a walk never holds a model round, and a barge-in never cancels a walk. | `Core/Tools/Locomotion`, `Character` |
 | **SAM 3.1** | Three prompt types: a **point** from the hand ray projected into the passthrough camera image, with **negative points** from the tracked hand joints so your hand stays out of the mask; a **text** prompt (`find_object`, `highlight_part`, retries); and the image centre as a fallback. The masks are requested as `one_bit` and decoded by a **C# port of Meta's one-bit range decoder** (bit-exact against live masks; SAM License). | `Providers/MetaApi/Vision`, `Core/Tools/Vision` |
 | **Spark vision driving SAM** | SAM and Spark run **in parallel** on the same frame. Spark streams a first line `LABEL\|NOUN_PHRASE`, then the spoken answer. If the first SAM mask looks implausible (empty, more than half the frame, or containing your hand), SAM is re-run once with Spark's noun phrase. SAM segments; Spark explains. We never claim SAM "recognises" anything. | `SparkObjectIdentifier`, `CaptureAndIdentifyTool` |
-| **Muse Voice Transcribe, realtime** | `wss://api.meta.ai/v1/asr/realtime` over `ClientWebSocket`, verified under IL2CPP on Quest 3. The socket opens at pinch *start*. Audio captured during the ~1 s handshake is sent all at once after the ack, then live. The final transcript arrives 166–208 ms after end-of-stream (device). There is a file-endpoint fallback (`/v1/asr/transcribe`). | `Providers/MetaApi/Asr`, `Net/WebSockets` |
+| **Muse Voice Transcribe, realtime** | `wss://api.meta.ai/v1/asr/realtime` over `ClientWebSocket`, verified under IL2CPP on Quest 3. The socket opens at pinch *start*. Audio captured during the ~1 s handshake is sent all at once after the ack, then live. The final transcript arrives 166–208 ms after end-of-stream (device). | `Providers/MetaApi/Asr`, `Net/WebSockets` |
 | **Wit.ai TTS** (Meta's speech service) | The Meta Model API has no text-to-speech, so speech output uses Wit `/synthesize` over raw HTTP (`audio/raw`, 24 kHz PCM) and streams sentence by sentence. No Voice SDK is involved. | `Providers/Wit` |
 | **Model routing** | Requests that carry user speech, camera frames or memory derived from them go to **standard** `muse-spark-1.3`. Contributor models are used **only for synthetic CI and dev traffic**. Meta Model API ToS §6.2 says you "must not submit sensitive, confidential, or personal information" to Contributor services, so `MetaModelResolver` **throws** if a contributor id is used on the live-user route. It is real code, not an assert that gets stripped from release builds, and it has a test. | `Providers/MetaApi/Common` |
 | **Cost control** | `ApiUsageMeter` reserves an estimate before every call and settles the actual usage (tokens, images, audio seconds) once. A request that would exceed the hard cap is refused, and Nubi switches to its offline lines (`BudgetReached`). | `Core/Usage` |
@@ -189,14 +189,15 @@ Targets come from [`docs/definition-of-done.md`](docs/definition-of-done.md) §4
 
 ## Privacy and security
 
-- **No secrets in the APK, scene, assets or repo.** Keys live in `.env` in the editor and in `persistentDataPath/secrets.json` on the device, pushed over adb (ADR-0010). `RedactingLog` masks key patterns as a second layer of defence. The Meta ToS forbids sharing an API key, so each user brings their own. A server-side proxy is the production path.
+- **No secrets in the APK, scene, assets or repo.** Keys live in `.env` in the editor and in `persistentDataPath/secrets.json` on the device, pushed over adb (ADR-0010); keep `.env` at `chmod 600`, and `push-secrets.sh` warns when it is not. `RedactingLog` masks key patterns, in messages and exception text, as a second layer of defence. The Meta ToS forbids sharing an API key, so each user brings their own. A server-side proxy is the production path.
 - **`store:false`** on every Responses request.
 - **No contributor models for user data.** This is enforced in code (see [model routing](#how-meta-ai-is-used-beyond-a-basic-integration)).
 - **Camera frames are never written to disk.** A frame lives in one reused native buffer, is encoded to JPEG in RAM, and is sent only when a vision tool runs. The only files the app writes are the conversation and scene memory, the usage totals and a random install id, all as JSON in app storage. Release builds contain no frame-capture code.
-- **Transcripts and model text are not logged in release builds.** That logging goes through a `[Conditional("JOLLY_DEBUG_LOG")]` extension, so the compiler removes the call and its arguments.
+- **Transcripts and model text are not logged.** Log lines carry event names, ids and timings. Should text logging ever be needed for debugging, the only allowed path is a `[Conditional("JOLLY_DEBUG_LOG")]` extension, which the compiler removes, with its arguments, from builds without that define.
 - **`safety_identifier`** is a truncated SHA-256 of a random per-install GUID, never a hardware id.
 - **Camera content is treated as data, not instructions.** Labels coming back from vision output are sanitised and placed in a user-role context block that is marked as untrusted.
-- **Clear memory** in Settings deletes every persona's conversation file and the scene file. It waits for a running turn to end, so that turn can't write itself back.
+- **Clear memory** in Settings deletes every persona's conversation file and the scene file, and erases the spatial anchors of taught places and seen objects from the headset. It waits for a running turn to end, so that turn can't write itself back. A replaced or forgotten place erases its anchor too.
+- **The device self-test uses its own scratch memory**, so your summary never reaches a self-test request and its scripted turns never reach your memory.
 
 ## Accessibility
 
@@ -241,7 +242,7 @@ tools/device/install-run.sh artifacts/Nubi.apk   # adb install -r -g, grants cam
 tools/device/push-secrets.sh    # .env → secrets.json on the headset (only the three device keys)
 ```
 
-Push the secrets before the first launch, or relaunch afterwards (`NUBI_SKIP_INSTALL=1 tools/device/install-run.sh`). Without `secrets.json`, the app runs in offline mode and shows "API key missing".
+The app reads the secrets at launch, so `push-secrets.sh` stops it; start it again afterwards (`NUBI_SKIP_INSTALL=1 tools/device/install-run.sh`). Run it again after rotating a key. Without `secrets.json`, the app runs in offline mode and shows "API key missing".
 
 ### Tests
 
@@ -320,7 +321,7 @@ The original idea used Meta's Muse mascot, Jolly. We found no licence for that m
 
 ## Design decisions
 
-Eighteen ADRs record every key choice and its alternatives: [`docs/decisions/`](docs/decisions/README.md). Examples are OpenXR + meta-openxr instead of the Meta XR SDK (0002), Responses API routing (0004), Wit over raw HTTP (0006), a plain composition root (0009), secrets provisioning (0010) the integration deviations (0017) and the device self-test (0018). Review findings are in [`review-log.md`](docs/decisions/review-log.md). API spend is tracked call by call in [`docs/api-spend.md`](docs/api-spend.md), and is under $1 of the $140 budget so far.
+Twenty-two ADRs record every key choice and its alternatives: [`docs/decisions/`](docs/decisions/README.md). Examples are OpenXR + meta-openxr instead of the Meta XR SDK (0002), Responses API routing (0004), Wit over raw HTTP (0006), a plain composition root (0009), secrets provisioning (0010) the integration deviations (0017) and the device self-test (0018). Review findings are in [`review-log.md`](docs/decisions/review-log.md). API spend is tracked call by call in [`docs/api-spend.md`](docs/api-spend.md), and is under $1 of the $140 budget so far.
 
 ## Credits
 

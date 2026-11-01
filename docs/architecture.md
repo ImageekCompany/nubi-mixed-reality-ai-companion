@@ -23,25 +23,25 @@ Root: `JollyXR/Assets/Jolly/`. All runtime asmdefs set `autoReferenced: false`. 
 |---|---|---|---|
 | `Jolly.Contracts` | `Runtime/Contracts` | `UniTask` (core only) | Interfaces, DTOs and enums only. No MonoBehaviours and no logic beyond trivial value helpers. Frozen after WP0; changes need an ADR note. |
 | `Jolly.Core` | `Runtime/Core` | Contracts, `UniTask`, `Newtonsoft.Json` (precompiled, `com.unity.nuget.newtonsoft-json` 3.2.2) | State machine, `ConversationController` + `TurnRouter` + `TurnPipeline` + `BargeInCoordinator`, `CompositeVoiceActivation`, agent loop, tool registry, the tools (against interfaces), memories + persistence DTOs, `AtomicFile`, sentence splitter, speech queue, guards (`CrisisGuard`, `StopGuard`), `TranscriptAliases`, persona and locale resolution, usage meter, connectivity logic, idle scheduler, secrets parsing, JPEG encoder, `CameraMath` (`Core/Spatial`). Holds no scene references. |
-| `Jolly.Net` | `Runtime/Net` | Contracts, `UniTask` | `HttpTransport` (UnityWebRequest), `SseDownloadHandler`, `SseLineParser`, `WebSocketConnection` (`System.Net.WebSockets.ClientWebSocket`), `RetryExecutor` + `RetryPolicy`. |
+| `Jolly.Net` | `Runtime/Net` | Contracts, `UniTask` | `HttpTransport` (UnityWebRequest), `SseDownloadHandler`, `SseLineParser`, `ClientWebSocketConnection` (`System.Net.WebSockets.ClientWebSocket` behind `IWebSocketConnection`), `RetryExecutor` + `RetryPolicy`. |
 | `Jolly.Providers.MetaApi` | `Runtime/Providers/MetaApi` | Contracts, Net, `UniTask`, `Newtonsoft.Json` (**not** Core: vendor adapters do not depend on app logic) | `Common/` (auth header, base URL, HTTP status → `ProviderErrorKind` mapping, `MetaModelResolver`), `ResponsesChatModel`, `SparkObjectIdentifier`, `SamSegmenter` + `SamOutputParser` + `OneBitMaskDecoder` (C# port; SAM License), `MuseRealtimeSpeechToText`, `MetaHealthProbe`. Subfolders `Common/`, `Chat/`, `Vision/`, `Asr/`, `Health/` are owned by separate work packages. |
 | `Jolly.Providers.Wit` | `Runtime/Providers/Wit` | Contracts, Net, `UniTask` | `WitTextToSpeech` (raw `/synthesize`, `audio/raw`). |
 | `Jolly.Audio` | `Runtime/Audio` | Contracts, `UniTask` | `Common/SpscFloatRing`, `UnityMicrophoneCapture`, `Resampler`, `StreamingSpeechOutput` (clip-less AudioSource fed from `OnAudioFilterRead`, see §11 Audio), `AmplitudeLipSyncDriver` (fallback). |
 | `Jolly.Integrations.ULipSync` | `Runtime/Integrations/ULipSync` | Contracts, `uLipSync.Runtime` | `ULipSyncDriver` (wraps the `uLipSync` component's `onLipSyncUpdate` → `MouthShape`). |
-| `Jolly.XR` | `Runtime/XR` | Contracts, `UniTask`, `Unity.XR.ARFoundation`, `Unity.XR.ARSubsystems`, `Unity.XR.CoreUtils`, `Unity.XR.Hands`, `Unity.XR.Interaction.Toolkit`, `Unity.InputSystem`, `Unity.AI.Navigation` | Portable OpenXR layer: `PermissionGate`, `PinchPushToTalk`, `ControllerPushToTalk`, `XrUserPoseProvider`, `ArWorldQuery` (Depth raycast + collider raycast + NavMesh sampling), `ArSpatialAnchors`, `FloorNavMeshBuilder`, `SceneOccluders`, `Interaction/` (gaze-dwell, open-palm with the copied `StaticHandGesture` sample, poke detectors), `EditorStillFrameSource` (Editor/Link `ICameraFrameSource` from fixture images). No Meta-specific types. |
+| `Jolly.XR` | `Runtime/XR` | Contracts, `UniTask`, `Unity.XR.ARFoundation`, `Unity.XR.ARSubsystems`, `Unity.XR.CoreUtils`, `Unity.XR.Hands`, `Unity.XR.Interaction.Toolkit`, `Unity.InputSystem` | Portable OpenXR layer: `PermissionGate`, `PinchPushToTalk`, `ControllerPushToTalk`, `XrUserPoseProvider`, `ArWorldQuery` (Depth raycast + collider raycast + NavMesh sampling), `ArSpatialAnchors`, `FloorNavMeshBuilder` + `NavMeshBaker` (built-in `UnityEngine.AI.NavMeshBuilder`), `Interaction/` (`GazeDwellDetector`, `OpenPalmDetector` as a geometric palm check, `InteractionSignals` with the XRI poke), `EditorStillFrameSource` (Editor/Link `ICameraFrameSource` from fixture images). No Meta-specific types. |
 | `Jolly.XR.MetaQuest` | `Runtime/XR.MetaQuest` | Contracts, Jolly.XR, `UniTask`, `Unity.XR.MetaOpenXR`, `Unity.XR.ARFoundation`, `Unity.XR.ARSubsystems` | `MetaPassthroughFrameSource` (`MetaOpenXRCameraSubsystem` CPU image), `Camera2Extrinsics` (JNI via `AndroidJavaObject`). The only assembly that names `UnityEngine.XR.OpenXR.Features.Meta`. |
-| `Jolly.Character` | `Runtime/Character` | Contracts, `UniTask` | `NubiCharacterController` (NavMeshAgent from the built-in AI module), `LookAtDriver` (procedural bone look-at, ADR-0017), `GestureDriver`, `BlinkDriver`, `MouthShapeDriver`, `MoodDriver`. |
+| `Jolly.Character` | `Runtime/Character` | Contracts, `UniTask` | `NubiCharacterController` (NavMeshAgent from the built-in AI module), `LookAtDriver` (procedural bone look-at, ADR-0017), `GestureDriver`, and the face layers in `Face/`: `BlinkScheduler`, `MouthSmoother`, `MoodFace`, `ClipExpressionSelector`, `FaceMixer` and `FaceRenderer` (the single blendshape writer). |
 | `Jolly.Localization` | `Runtime/Localization` | Contracts, `UniTask`, `UniTask.Addressables`, `Unity.ResourceManager`, `Unity.Localization` | `UnityLocalizer`, `LocaleVoiceMapAsset`. Awaiting `AsyncOperationHandle` needs `UniTask.Addressables` (its `UNITASK_ADDRESSABLE_SUPPORT` define is on because Addressables is installed) and `Unity.ResourceManager` for the type. |
 | `Jolly.Presentation` | `Runtime/Presentation` | Contracts, `UniTask`, `Unity.TextMeshPro`, `UnityEngine.UI`, `Unity.Localization` | `CaptionView`, `MaskOverlayView` (`IMaskPresenter`), `ToolBadgeView`, `LatencyHud`, `StatusIndicator` (`IStatusSink`), `SettingsPanel` (`IUserPreferences`). Views only: no service logic. |
 | `Jolly.App` | `Runtime/App` | everything above, plus the XR packages and `uLipSync.Runtime` for its typed scene references | `JollyBootstrap` + `Composition/` (`AppGraph`, `Edges`, per-concern builders, connectivity-reporting decorators), `JollyConfig`, `PersonaProfileAsset`, `LineClipLibrary` (ADR-0018), `SelfTest/` (device self-test, inert unless flagged). |
 | `Jolly.Editor.Build` | `Editor/Build` (exists) | XR management/OpenXR/MetaOpenXR/Hands/URP/Addressables editor asmdefs | `QuestBuild.BuildApk` (CI entry point; builds Addressables content first, see §10), `QuestProjectSetup` (player and XR settings, `com.nubi.companion`), `NubiManifestRequirements`. |
 | `Jolly.Editor.Character` | `Editor/Character` (Editor platform only) | Character, Contracts | `NubiModelPostprocessor`, `NubiAnimatorBuilder`, `NubiPrefabBuilder`, `NubiAssetPaths` (ADR-0017). |
 | `Jolly.Editor` | `Editor/Tools` (Editor platform only) | App, Core, Contracts, Providers.Wit, `Unity.Localization(.Editor)` | `CannedLineBaker`, `Validators/` (content, persona and scene validators; a `tools/ci/test.sh` gate). |
-| `Jolly.Testing` | `Tests/Shared` (`defineConstraints: ["UNITY_INCLUDE_TESTS"]`) | Contracts, Core, Net, `UniTask` | Hand-written fakes under `Fakes/WPn/`: `FakeClock`, `ScriptedChatModel`, `ScriptedSpeechToText`, `FakeTextToSpeech`, `FakeFrameSource`, `RecordingCharacterController`, `InMemorySecrets`, and others. Never used by runtime code. |
+| `Jolly.Testing` | `Tests/Shared` (`defineConstraints: ["UNITY_INCLUDE_TESTS"]`) | Contracts, Core, Net, `UniTask` | Hand-written fakes: the ones several work packages share in `Fakes/Common/` (namespace `Jolly.Testing`, one type per file, one fake per port), the rest under `Fakes/WPn/`: `FakeClock`, `ScriptedChatModel`, `ScriptedSpeechToText`, `FakeTextToSpeech`, `FakeFrameSource`, `RecordingCharacterController`, `InMemorySecrets`, and others. Never used by runtime code. |
 | `Jolly.Tests.EditMode` | `Tests/EditMode` (Editor only) | Contracts, Core, Net, Providers.*, Audio, Testing, `UnityEngine.TestRunner`, `UnityEditor.TestRunner`, `nunit.framework.dll` | Pure logic and parser tests, `CameraMath`, the asmdef-graph test. |
 | `Jolly.Tests.PlayMode` | `Tests/PlayMode` | the above plus App, Character, Editor.Character, Presentation, Localization, XR, Integrations.ULipSync, `uLipSync.Runtime`, `Unity.InputSystem.TestFramework` (`InputTestFixture`), `Unity.XR.OpenXR` (device layouts) | Scene tests and `E2E/` (Main.unity with doubles only at the provider edges). |
 
-The asmdef names above (`Unity.XR.MetaOpenXR`, `Unity.XR.ARFoundation`, `Unity.XR.ARSubsystems`, `Unity.XR.Hands`, `Unity.XR.Interaction.Toolkit`, `Unity.AI.Navigation`, `Unity.Localization`, `Unity.Animation.Rigging`, `Unity.TextMeshPro`, `UnityEngine.UI`, `UnityEngine.TestRunner`, `UnityEditor.TestRunner`, `uLipSync.Runtime`, `UniTask`, `UniTask.Linq`, `UniTask.Addressables`) were read from the package asmdefs. `Unity.XR.CoreUtils`, `Unity.InputSystem` and `Unity.ResourceManager` were read from `JollyXR/Library/PackageCache`. `Newtonsoft.Json.dll` has `isExplicitlyReferenced: 0`, so asmdefs with `overrideReferences:false` get it automatically. The existing throwaway `Jolly.Spikes*` assemblies (`Assets/Spikes`) are deleted once WP5 lands.
+The asmdef names above (`Unity.XR.MetaOpenXR`, `Unity.XR.ARFoundation`, `Unity.XR.ARSubsystems`, `Unity.XR.Hands`, `Unity.XR.Interaction.Toolkit`, `Unity.Localization`, `Unity.Animation.Rigging`, `Unity.TextMeshPro`, `UnityEngine.UI`, `UnityEngine.TestRunner`, `UnityEditor.TestRunner`, `uLipSync.Runtime`, `UniTask`, `UniTask.Linq`, `UniTask.Addressables`) were read from the package asmdefs. `Unity.XR.CoreUtils`, `Unity.InputSystem` and `Unity.ResourceManager` were read from `JollyXR/Library/PackageCache`. `Newtonsoft.Json.dll` has `isExplicitlyReferenced: 0`, so asmdefs with `overrideReferences:false` get it automatically. The existing throwaway `Jolly.Spikes*` assemblies (`Assets/Spikes`) are deleted once WP5 lands.
 
 Each `Jolly.*` asmdef folder has its own `csc.rsp` (`-warnaserror+`) and, where it holds reflection-reached DTOs, its own `link.xml` (Unity merges every `link.xml` in the project). A `csc.rsp` in a folder without an asmdef is ignored.
 
@@ -271,7 +271,7 @@ stateDiagram-v2
   - glance at the user
 - **Interaction triggers** for spoken canned lines, rate-limited to one per 20 s:
   - gaze dwell on Nubi for at least 1.5 s
-  - an open palm toward Nubi (the XR Hands static gesture; the sample `StaticHandGesture` is copied in, under UCL)
+  - an open palm toward Nubi (`OpenPalmDetector`: a geometric check on the same hand joints as push-to-talk; no XR Hands sample code is copied in)
   - a poke on Nubi's collider (XRI poke)
   - a PTT press while offline
 - Lines never play unprompted (requirement 23). Idle *animations* do.
@@ -282,7 +282,7 @@ stateDiagram-v2
 graph LR
   Tools[walk_to / come_here / follow_user / look_at / play_gesture / stop] --> CC[ICharacterController]
   Conv[ConversationState] --> CC
-  Lip[ILipSyncDriver.Current] --> Mouth[MouthShapeDriver → mouth blendshapes A/I/U/E/O]
+  Lip[ILipSyncDriver.Current] --> Mouth[MouthSmoother → FaceMixer → FaceRenderer: mouth blendshapes A/I/U/E/O]
   CC --> Agent[NavMeshAgent on runtime-baked floor]
   CC --> Anim[Animator params]
   CC --> Look[LookAtDriver: chest/neck/head then eyes, after the Animator]
@@ -294,7 +294,7 @@ graph LR
   - Every `ARBoundingBox` source gets area Not Walkable, so furniture only carves the floor and box tops never bake as walkable islands. `TrySampleWalkable` also drops samples more than 0.1 m above the floor plane.
   - Build once when the first Floor plane appears; rebuilds are throttled to once every 2 s on trackable changes.
   - **Permissions:** `ARPlaneManager`, `ARBoundingBoxManager` and `ARRaycastManager` ship **disabled**. Their subsystems start without `USE_SCENE` and only log errors, and the raycast subsystem's `Start()` latches `XR_ERROR_PERMISSION_INSUFFICIENT` (`MetaOpenXRRaycastSubsystem.cs:72-90`). `PermissionGate` enables them after `USE_SCENE` is granted (`xr-stack.md` §2.3).
-  - **Occlusion (should):** `SceneOccluders` gives the same plane and box meshes a depth-only material, so Nubi is hidden behind real furniture. Full depth occlusion is evaluated only against R3's perf budget.
+  - **Occlusion (should):** not built (Should 3). The plan was a depth-only material on the same plane and box meshes so Nubi hides behind real furniture.
   - In the Editor, AR Foundation XR Simulation (`Unity.XR.Simulation` ships in ARF 6.6.2) supplies planes.
 - **Agent.**
   - `NavMeshAgent` with `updateRotation=false`; the controller slerps yaw toward the velocity, or toward the user when idle.
@@ -317,8 +317,8 @@ graph LR
   The walk is a procedural waddle: hip bob and sway on top of the Speed blend, with TwoBoneIK feet (`character.md` §2.2.9B). Gestures are authored clips with an upper-body avatar mask.
 - **Look-at.** Procedural, applied after the Animator (ADR-0017): chest, neck and head turn first and the eyes add only the last ~10° (±16° yaw, ±8° pitch), toward the user head (default), a world point (a pointed or seen object), or none. The head is clamped to ±40° yaw; the body turns in place beyond 45°. It blends out while Thinking.
 - **Mouth and blink.**
-  - `MouthShapeDriver` maps `MouthShape` {A,I,U,E,O,volume} onto 6 mouth blendshapes (`sil, aa, E, I, O, U` per `character.md` §2.2.7), smoothed with 60 ms attack and 90 ms release.
-  - Blink uses an eyelid or eye-scale blendshape at random intervals of 2–6 s, with double blinks 15% of the time.
+  - `MouthSmoother` smooths the lip-sync vowels {A,I,U,E,O} with 60 ms attack and 90 ms release; `FaceMixer` lets them replace the expression's mouth in proportion to how open it is, and `FaceRenderer` writes the blendshapes.
+  - `BlinkScheduler` blinks at random intervals of 2–6 s, with double blinks 15% of the time; `FaceMixer` lays the blink on top unless the eyes are already closed arcs.
 
 ## 6. Conversation state machine
 
@@ -492,7 +492,7 @@ Psychologist (shown to users as **Listener**; the id stays `psychologist`):
 - `ILog` writes logfmt lines: `evt=llm.first_text model=muse-spark-1.3 ms=1210 req=resp_…`.
 - The sink is `UnityLog`, which wraps `Debug.unityLogger`. `RedactingLog` runs before it and masks `LLM_\d+_\S+`, `Bearer \S+` and any configured secret value as defence in depth.
 - Never logged: headers, request bodies, base64 images, secret values.
-- User transcripts and model text are logged only through a static extension `[Conditional("JOLLY_DEBUG_LOG")] static void LogDebug(this ILog log, string category, string message)`, so release builds drop both the call and its argument evaluation. `[Conditional]` cannot go on the interface member (CS0582) or its implementation (CS0629).
+- User transcripts and model text are not logged. If they ever need to be, the only allowed path is the static extension `[Conditional("JOLLY_DEBUG_LOG")] static void LogDebug(this ILog log, string category, string message)`, so release builds drop both the call and its argument evaluation; it has no callers today. `[Conditional]` cannot go on the interface member (CS0582) or its implementation (CS0629).
 - Each turn emits one `evt=turn.latency` line with all `LatencyMark`s. The DoD latency numbers are parsed from these.
 
 ### Memory and GC

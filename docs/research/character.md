@@ -42,7 +42,7 @@ From the glTF JSON chunk (python dump of the header) and the Blender import (`in
 
 ### 1.3 What it looks like
 
-Renders (Workbench, ortho): `docs/research/samples/jolly_front.png`, `jolly_34.png`, `jolly_side.png`, `jolly_back.png`, plus `jolly_30k_decimated.png` (after remesh and decimation to 30k triangles, see §2).
+The research pass rendered front, three-quarter, side and back views (Blender Workbench, ortho) and one after remesh and decimation to 30k triangles (§2). The renders were derived from the unlicensed source files, so they were removed from the repository (`THIRD_PARTY.md` §7); the description below is all that is kept.
 
 Design:
 - A chubby, pear/bean-shaped **furry body with a hood**. Fur is sculpted as displacement-like geometry over the whole surface, and that accounts for most of the triangle count.
@@ -68,7 +68,7 @@ Design:
 
 1. Unparent and apply transforms. Weld. Scale to **1.0 m tall** (×6.653). Blender's bone-heat solver printed `Bone Heat Weighting: failed to find solution for one or more bones` on the **native 15 cm scale**, and the warning went away at 1 m. That is a known small-scale failure of bone heat; set the real game scale only after weighting.
 2. `object.voxel_remesh` with `remesh_voxel_size = 0.006` gave 169,052 tris in 0.2 s and guarantees clean manifold topology.
-3. `DECIMATE` modifier (collapse), ratio 30000/169052, gave **30,000 tris** in 0.5 s. The silhouette, face plate and eyes hold up and the fur reads as noise (`jolly_30k_decimated.png`).
+3. `DECIMATE` modifier (collapse), ratio 30000/169052, gave **30,000 tris** in 0.5 s. The silhouette, face plate and eyes hold up and the fur reads as noise (judged from a render that is no longer kept).
 4. I hand-placed a 7-bone armature (hips, spine, head, upperarm.L/R, leg.L/R) and ran `parent_set(type='ARMATURE_AUTO')`. Result: **FINISHED, 0 of 15,002 vertices unweighted**. Every bone got weights (head 8,107 verts, arms ~5.4k each, legs ~7k each). Posing moved vertices up to 0.157 m in the evaluated depsgraph, so deformation works. I did not judge quality: the arms are fused at the shoulder, so expect some arm/torso bleed that needs `vertex_group_smooth` or manual cleanup.
 
 ### 2.2 Recommended game-ready pipeline (open-source safe)

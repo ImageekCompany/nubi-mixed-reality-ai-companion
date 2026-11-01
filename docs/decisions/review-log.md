@@ -92,3 +92,35 @@ Deviations reported by the work packages are accepted in ADR-0017; the architect
 | WP6: procedural look-at, `Speed` in m/s, ±40° head yaw, polled motion, editor code in the runtime assembly | Accepted; editor code moved to the new `Jolly.Editor.Character`, `Unity.Animation.Rigging` reference dropped | architecture §2/§5.5, `AssemblyGraphTests`, ADR-0017 |
 | WP10/WP8: provider ids, health-probe 401, settings events | Documented, no contract code change | contracts §9.1 |
 | Shared `PixelToCameraDir` in Contracts, `IHealthProbe.Ping` returning a status | Deferred to WP9 (contract code changes not needed to compile) | ADR-0017 |
+
+# Post-merge audit, 2026-11-01
+
+Three audits (Unity architecture, security/privacy, code quality) over `main` at `a078010`. Fixed on `fix/audit`; decisions in ADR-0022.
+
+| Finding | Decision | Where |
+|---|---|---|
+| Usage save throws out of `OnDestroy`, skipping teardown | Fixed: logged, retried on next flush | `ApiUsageMeter.Flush` |
+| Interaction line's `finally` touches a destroyed character on teardown | Fixed: no hand-back once the app token is cancelled | `InteractionLinePlayer` |
+| Jolly mascot renders committed | Fixed in the tree; the history rewrite before the first push is left to the owner (destructive) | `docs/research/samples/` |
+| macOS `say` clips reachable from history | Not rewritten here (destructive); same pre-push rewrite, objects from `304fff6` | git history |
+| Persisted anchors never erased | Fixed: `ISpatialAnchors.Erase` | `SceneMemory`, `ArSpatialAnchors` |
+| Spike assembly in release APKs | Fixed: `JOLLY_SPIKES` define constraint | `Assets/Spikes/*.asmdef` |
+| Self-test uses the user's memory | Fixed: scratch memory directory | `SelfTestSession`, `AppPaths` |
+| Place names and summary can close `<context>` | Fixed | `SceneMemory`, `PromptBuilder` |
+| Exceptions bypass redaction | Fixed | `RedactingLog` |
+| "Key read per request" comment false | Fixed comment; `push-secrets.sh` force-stops the app | `MetaApiEndpoint`, ADR-0010 |
+| `.env` world-readable | Fixed locally (`chmod 600`); script warns | `push-secrets.sh` |
+| Wit.ai output licence unreviewed | Terms read and recorded; clips ship under the Wit licence, not MIT | `THIRD_PARTY.md`, `licenses.md` |
+| Duplicated fakes; ADR-0018 reason | Partly right: aliases did exist (the audit's grep missed indented `using`s) and several pairs did differ, but others were copies or unused. Merged; distinct names for real variants | `Tests/Shared/Fakes/Common`, ADR-0018 |
+| ASR fake meter allows a double settle | Fixed: `RecordingUsageMeter` | ASR tests |
+| File-ASR fallback never wired | Removed (R4 passed) | ADR-0005 |
+| architecture.md names missing types | Fixed | architecture §2, §5.4, §5.5 |
+| Health probe URL comment | Fixed | `MetaHealthProbe` |
+| `MetaApiEndpoint.Get` unused, probe duplicates auth | `Get` removed; the probe keeps its status-only seam (`IHttpStatusClient`) | `MetaApiEndpoint` |
+| `ClipPcm` third resampler | Fixed: uses `Resampler`, tested | `ClipPcm` |
+| `LogDebug` unused, README claim | Docs reworded; the extension is kept as the only allowed path for text logging | README, architecture §11 |
+| Tests bake a different NavMesh | Fixed: production `NavMeshBaker` | `CharacterTestRig` |
+| `Jolly.XR` references `Unity.AI.Navigation` | Removed (and from the PlayMode tests) | asmdefs, `AssemblyGraphTests` |
+| Two `<summary>` on `IApiUsageMeter` | Merged | contracts §2 |
+| CHANGELOG gaps | Fixed | CHANGELOG |
+| Smoke test asserts only Unity | Fixed: `LogAssert.NoUnexpectedReceived` after destroy | `PlayModeSmokeTests` |
