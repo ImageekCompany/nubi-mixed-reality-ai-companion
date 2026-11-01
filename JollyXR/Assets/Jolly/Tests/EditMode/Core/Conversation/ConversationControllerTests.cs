@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using System.Linq;
 using Cysharp.Threading.Tasks;
@@ -95,6 +96,27 @@ namespace Jolly.Tests.EditMode.Core.Conversation
             Assert.That(_f.StatePath(), Is.EqualTo("Listening>Idle"));
             Assert.That(_f.Log.Contains(LogLevel.Warning, "evt=stt.failed kind=Network"), Is.True);
             Assert.That(_f.Mic.Last.Disposed, Is.True);
+        }
+
+        [Test]
+        public void TurnThatThrowsABug_IsLoggedResetLikeAWatchdog_AndTheNextTurnWorks()
+        {
+            _f.Stt.Failure = new InvalidOperationException("bug");
+
+            _f.Talk();
+
+            Assert.That(_f.Log.Contains(LogLevel.Error, "evt=turn.crashed turn=1"), Is.True);
+            Assert.That(_f.Log.Contains(LogLevel.Warning, "evt=watchdog state=Listening turn=1"), Is.True);
+            Assert.That(_f.StatePath(), Is.EqualTo("Listening>Idle"));
+            Assert.That(_f.Mic.Last.Disposed, Is.True);
+
+            _f.Stt.Failure = null;
+            _f.Agent.Say("Still here.");
+            _f.Talk("hello");
+            _f.Queue.Drain();
+
+            Assert.That(_f.Captions, Is.EqualTo(new[] { "Still here." }));
+            Assert.That(_f.State, Is.EqualTo(ConversationState.Idle));
         }
 
         [Test]

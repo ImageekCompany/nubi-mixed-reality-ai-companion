@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using Jolly.Contracts;
 using Jolly.Testing;
@@ -153,6 +154,35 @@ namespace Jolly.Tests.EditMode.Core.Conversation
             Assert.That(_f.Personas.Current.Id, Is.EqualTo("guru"));
             Assert.That(_f.Personas.PendingSwitchId, Is.Null);
             Assert.That(System.IO.File.Exists(System.IO.Path.Combine(_f.Directory, "conversation.guru.json")), Is.True);
+        }
+
+        [Test]
+        public void RefusedSwitch_KeepsThePersonaAndSaysNothing()
+        {
+            _f.Personas.RefuseSwitch = true;
+
+            _f.Personas.RequestSwitch("guru");
+
+            Assert.That(_f.Personas.Current.Id, Is.EqualTo("companion"));
+            Assert.That(_f.Log.Contains(LogLevel.Warning, "evt=persona.switch_failed id=guru"), Is.True);
+            Assert.That(_f.Queue.Enqueued, Is.Empty);
+            Assert.That(_f.State, Is.EqualTo(ConversationState.Idle));
+        }
+
+        [Test]
+        public void CrashingSwitch_IsLogged_AndDoesNotLockOutPushToTalk()
+        {
+            _f.Personas.SwitchFailure = new InvalidOperationException("bug");
+
+            _f.Personas.RequestSwitch("guru");
+            _f.Agent.Say("Still here.");
+            _f.Talk("hello");
+            _f.Queue.Drain();
+
+            Assert.That(_f.Log.Contains(LogLevel.Error, "evt=persona.switch_crashed"), Is.True);
+            Assert.That(_f.Personas.Current.Id, Is.EqualTo("companion"));
+            Assert.That(_f.Agent.Turns.Single().Text, Is.EqualTo("hello"), "a press during a switch is ignored, so a stuck switch would drop it");
+            Assert.That(_f.Captions, Is.EqualTo(new[] { "Still here." }));
         }
 
         [Test]
