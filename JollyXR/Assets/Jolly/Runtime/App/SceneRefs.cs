@@ -5,6 +5,7 @@ using Jolly.Presentation;
 using Jolly.XR.Hands;
 using Jolly.XR.Interaction;
 using Jolly.XR.Navigation;
+using Jolly.XR.Occlusion;
 using Jolly.XR.Permissions;
 using Jolly.XR.Tracking;
 using Jolly.XR.Voice;
@@ -29,6 +30,7 @@ namespace Jolly.App
         public ControllerPushToTalk controllerPushToTalk;
         public PermissionGate permissions;
         public FloorNavMeshBuilder floor;
+        public RealWorldOcclusion occlusion;
         public InteractionSignals interactionSignals;
         public HandTrackingMonitor handMonitor;
 

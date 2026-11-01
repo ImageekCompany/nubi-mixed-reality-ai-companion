@@ -158,6 +158,7 @@ MonoBehaviour:
     controllerPushToTalk: {fileID: 1084320126}
     permissions: {fileID: 1084320122}
     floor: {fileID: 1084320121}
+    occlusion: {fileID: 1084320128}
     interactionSignals: {fileID: 1084320120}
     handMonitor: {fileID: 1084320127}
     cameraManager: {fileID: 1097538755}
@@ -879,6 +880,8 @@ GameObject:
   - component: {fileID: 1084320120}
   - component: {fileID: 1084320126}
   - component: {fileID: 1084320127}
+  - component: {fileID: 1084320128}
+  - component: {fileID: 1084320129}
   m_Layer: 0
   m_Name: Jolly XR
   m_TagString: Untagged
@@ -991,6 +994,35 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 99b4f1bf6f62f43b4b5b0802a73d5071, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Jolly.XR::Jolly.XR.Hands.HandTrackingMonitor
+--- !u!114 &1084320128
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1084320119}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 196ee68ee839426ab22453e227629ec0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Jolly.XR::Jolly.XR.Occlusion.RealWorldOcclusion
+  occlusionManager: {fileID: 1097538766}
+  shaderOcclusion: {fileID: 1097538767}
+  sceneOccluders: {fileID: 1084320129}
+--- !u!114 &1084320129
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1084320119}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c66bb9708cb451abb474e56bdae8fb8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Jolly.XR::Jolly.XR.Occlusion.SceneOccluders
+  boxes: {fileID: 1097538762}
+  occluderMaterial: {fileID: 2100000, guid: f2f1a39944994eb9be52d9db237d8967, type: 2}
 --- !u!1001 &1097538753
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1114,6 +1146,12 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 657184242118504722, guid: d6878e1999eb4b44a9f5a263af86c185, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1097538755}
+    - targetCorrespondingSourceObject: {fileID: 657184242118504722, guid: d6878e1999eb4b44a9f5a263af86c185, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1097538766}
+    - targetCorrespondingSourceObject: {fileID: 657184242118504722, guid: d6878e1999eb4b44a9f5a263af86c185, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1097538767}
   m_SourcePrefab: {fileID: 100100000, guid: d6878e1999eb4b44a9f5a263af86c185, type: 3}
 --- !u!1 &1097538754 stripped
 GameObject:
@@ -1252,6 +1290,40 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   m_RaycastPrefab: {fileID: 0}
+--- !u!114 &1097538766
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1097538754}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b15f82cc229284894964d2d30806969d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.XR.ARFoundation::UnityEngine.XR.ARFoundation.AROcclusionManager
+  m_HumanSegmentationStencilMode: 0
+  m_HumanSegmentationDepthMode: 0
+  m_EnvironmentDepthMode: 1
+  m_EnvironmentDepthTemporalSmoothing: 1
+  m_OcclusionPreferenceMode: 0
+--- !u!114 &1097538767
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1097538754}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3be8fb9835084b3f83d6d0ae1c6bd876, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.XR.ARFoundation::UnityEngine.XR.ARFoundation.ARShaderOcclusion
+  m_OcclusionManager: {fileID: 1097538766}
+  m_OcclusionShaderMode: 2
+  m_SoftOcclusionPreprocessShader: {fileID: 4800000, guid: 0ad967c9b039c4c5db35830a2211d12b, type: 3}
+  m_AROcclusionSources: 1
+  m_HandsOcclusionMaterial: {fileID: 0}
 --- !u!1001 &1314027016
 PrefabInstance:
   m_ObjectHideFlags: 0

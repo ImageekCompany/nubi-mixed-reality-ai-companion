@@ -1,6 +1,7 @@
 using System;
 using Jolly.Contracts;
 using Jolly.Localization;
+using Jolly.XR.Occlusion;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -59,6 +60,8 @@ namespace Jolly.App
         [Header("Rendering")]
         [Tooltip("Pipelines warmed at boot; recorded by a development-player self-test (docs/perf/README.md §7).")]
         public GraphicsStateCollection graphicsStates;
+        [Tooltip("How Nubi is hidden behind real objects (ADR-0024).")]
+        public OcclusionSettings occlusion = new();
 
         [Header("Behaviour")]
         public bool acknowledgeOnRelease = true;

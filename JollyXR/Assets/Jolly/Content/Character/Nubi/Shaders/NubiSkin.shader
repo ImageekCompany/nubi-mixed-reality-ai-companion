@@ -2,6 +2,8 @@
 // ambient SH, an optional Blinn highlight (eyes), and a weak warm fresnel rim so the coral silhouette does not melt
 // into warm-toned rooms in passthrough (docs/art/nubi/README.md, "Edge readability"). No shadows, no additional
 // lights: the character casts only the blob contact shadow. SRP Batcher compatible; single-pass instanced stereo.
+// Real objects and hands in front of Nubi hide it (ADR-0024): the forward pass writes premultiplied colour and
+// alpha = visibility, and the eye buffer's alpha is what lets the passthrough underlay show through.
 Shader "Jolly/Character/NubiSkin"
 {
     Properties
@@ -44,7 +46,9 @@ Shader "Jolly/Character/NubiSkin"
             #pragma vertex Vert
             #pragma fragment Frag
             #pragma multi_compile_instancing
+            #pragma multi_compile _ XR_HARD_OCCLUSION XR_SOFT_OCCLUSION
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+            #include "Assets/Jolly/Content/Rendering/Shaders/EnvironmentOcclusion.hlsl"
 
             TEXTURE2D(_BaseMap);
             SAMPLER(sampler_BaseMap);
@@ -99,7 +103,8 @@ Shader "Jolly/Character/NubiSkin"
 
                 half rim = pow(1.0h - saturate(dot(n, v)), _RimPower) * _RimStrength;
                 color += _RimColor.rgb * rim;
-                return half4(color, 1.0h);
+                half visible = EnvironmentVisibility(input.positionWS);
+                return half4(color * visible, visible);
             }
             ENDHLSL
         }

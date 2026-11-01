@@ -50,6 +50,9 @@ namespace Jolly.Editor.Build
             ARBoundingBoxFeature.featureId,
             ARRaycastFeature.featureId,
             ARAnchorFeature.featureId,
+            // Environment depth for occlusion (ADR-0024). Hand removal stays off: the hands in the depth map are what
+            // hides Nubi behind the user's hands.
+            AROcclusionFeature.featureId,
             DisplayUtilitiesFeature.featureId,
             HandTracking.featureId2,
             MetaHandTrackingAim.featureId,

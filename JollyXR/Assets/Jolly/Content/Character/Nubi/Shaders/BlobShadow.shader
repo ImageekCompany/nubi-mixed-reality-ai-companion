@@ -1,6 +1,8 @@
 // Contact shadow under Nubi: a radial falloff computed from the quad's UVs (no texture, no realtime shadows).
 // In passthrough the eye buffer's alpha decides how much of the camera image shows through, so alpha is written
 // as plain coverage (Blend One OneMinusSrcAlpha on alpha): the floor in passthrough darkens by exactly _Opacity.
+// Real objects in front of the shadow hide it like they hide Nubi (ADR-0024); ContactShadow drives _Opacity and the
+// quad's scale from how high Nubi's feet are.
 Shader "Jolly/Character/BlobShadow"
 {
     Properties
@@ -27,7 +29,9 @@ Shader "Jolly/Character/BlobShadow"
             #pragma vertex Vert
             #pragma fragment Frag
             #pragma multi_compile_instancing
+            #pragma multi_compile _ XR_HARD_OCCLUSION XR_SOFT_OCCLUSION
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "Assets/Jolly/Content/Rendering/Shaders/EnvironmentOcclusion.hlsl"
 
             CBUFFER_START(UnityPerMaterial)
                 half4 _Color;
@@ -46,6 +50,7 @@ Shader "Jolly/Character/BlobShadow"
             {
                 float4 positionCS : SV_POSITION;
                 float2 centered : TEXCOORD0;
+                float3 positionWS : TEXCOORD1;
                 UNITY_VERTEX_OUTPUT_STEREO
             };
 
@@ -54,7 +59,8 @@ Shader "Jolly/Character/BlobShadow"
                 Varyings output;
                 UNITY_SETUP_INSTANCE_ID(input);
                 UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(output);
-                output.positionCS = TransformObjectToHClip(input.positionOS.xyz);
+                output.positionWS = TransformObjectToWorld(input.positionOS.xyz);
+                output.positionCS = TransformWorldToHClip(output.positionWS);
                 output.centered = input.uv * 2.0 - 1.0;
                 return output;
             }
@@ -64,7 +70,8 @@ Shader "Jolly/Character/BlobShadow"
                 UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
                 half r = length(input.centered);
                 half falloff = 1.0h - smoothstep(1.0h - _Softness, 1.0h, r);
-                return half4(_Color.rgb, _Opacity * falloff * falloff);
+                half alpha = _Opacity * falloff * falloff * EnvironmentVisibility(input.positionWS);
+                return half4(_Color.rgb, alpha);
             }
             ENDHLSL
         }

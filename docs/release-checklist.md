@@ -86,3 +86,12 @@ Legend: ✅ met, with evidence · ⚠️ partial · ❌ not met · 🧑 needs a 
 7. **10 consecutive clean demo rehearsals**, logged in `demo-script.md`.
 8. **Record and upload the demo video** (≤ 2:45), link it in the README, and submit on the portal.
 9. **Cut `0.1.0`** in `CHANGELOG.md` at submission.
+10. **Mixed-reality occlusion and grounding** (wearer, lit room with Space Setup; ADR-0024). Nothing below has been seen on a headset; `tools/ci` only covers the fallback and the wiring.
+    - **Depth starts:** after granting `USE_SCENE`, logcat shows `evt=occlusion.mode mode=depth` within ~1 s and no `Occlusion subsystem failed to start` / "To use occlusion, your app must first be granted XR_FB_scene permission" errors.
+    - **Furniture:** Nubi walking behind a couch or table is cut along the real edge, with no vertical mirroring, no sideways offset and no lag while turning the head (if mirrored, the depth `uv.y` needs a flip in `EnvironmentOcclusion.hlsl`). Compare soft and hard (`JollyConfig.occlusion.softEdges`).
+    - **Hands:** a hand or forearm between the eyes and Nubi at 0.3–1 m hides the covered part of Nubi; note edge halo and latency.
+    - **Feet and shadow on the floor:** Nubi's feet and the blob shadow are not eaten by the floor's own depth (4 cm bias); the shadow is visibly darker on the real floor, sits under the feet, lightens and shrinks during the catch-up hop (`follow_user` from > 2.5 m) and `HappyBounce`, and is hidden when Nubi stands behind furniture.
+    - **Denied `USE_SCENE`:** deny it on a fresh install → `mode=scene_meshes` with **zero** occluders (the bounding-box manager is gated on the same permission), so Nubi is not occluded; no per-frame occlusion errors.
+    - **Fallback boxes:** with depth available, set `preference: SceneMeshes` in a development build → the boxes line up with the furniture (box pose = centre is assumed, as for the NavMesh colliders), and captions, the settings panel, status indicator and tool badges stay visible with a box between them and the eyes.
+    - **Cost:** OVR Metrics app GPU time and stale frames, 2 min each with `preference` Off, EnvironmentDepth hard and EnvironmentDepth soft, Nubi in view; record the deltas in `perf/selftest-report.md` (budget: ≤ 1 ms GPU for occlusion, 72 fps held). Profiler: no per-frame GC from the occlusion frame callback.
+    - **Pipeline warm-up:** re-record `QuestVulkan.graphicsstate` with depth active (`docs/perf/README.md` §7), so the occlusion shader variants do not compile on the first depth frame.

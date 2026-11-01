@@ -14,9 +14,9 @@ using Jolly.XR.Capture;
 namespace Jolly.App.Composition
 {
     /// <summary>
-    /// The XR layer (architecture §2, §5.5): hands, user pose, permissions, world queries, anchors and the camera. The
-    /// camera source is the passthrough CPU image on device and a still image in the Editor and over Link, where
-    /// meta-openxr gives no CPU image (xr-stack.md §2.2).
+    /// The XR layer (architecture §2, §5.5): hands, user pose, permissions, real-world occlusion (ADR-0024), world
+    /// queries, anchors and the camera. The camera source is the passthrough CPU image on device and a still image in
+    /// the Editor and over Link, where meta-openxr gives no CPU image (xr-stack.md §2.2).
     /// </summary>
     public sealed class XrServices
     {
@@ -34,8 +34,9 @@ namespace Jolly.App.Composition
             scene.handMonitor.Construct(f.Log, f.Clock, scene.origin.transform);
             scene.userPose.Construct(scene.head, hands, scene.controllerAim, config.headPoseLeadSeconds);
             var permissions = new AndroidRuntimePermissions();
+            scene.occlusion.Construct(f.Clock, f.Log, config.occlusion);
             scene.permissions.Construct(permissions, scene.cameraManager,
-                new Behaviour[] { scene.planeManager, scene.boxManager, scene.raycastManager });
+                new Behaviour[] { scene.planeManager, scene.boxManager, scene.raycastManager, scene.occlusion.DepthManager });
             scene.floor.Construct(f.Clock);
             return new XrServices
             {

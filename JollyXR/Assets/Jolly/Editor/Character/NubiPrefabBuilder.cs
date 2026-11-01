@@ -62,8 +62,8 @@ namespace Jolly.Editor.Character
 
                 var agent = AddAgent(root);
                 AddCollider(root);
-                AddBlobShadow(root, blobShadow);
-                Bind(root.AddComponent<NubiCharacterController>(), animator, agent, face, instance.transform);
+                var shadow = AddBlobShadow(root, blobShadow);
+                Bind(root.AddComponent<NubiCharacterController>(), animator, agent, face, instance.transform, shadow);
                 PrefabUtility.SaveAsPrefabAsset(root, NubiAssetPaths.Prefab);
             }
             finally
@@ -96,7 +96,7 @@ namespace Jolly.Editor.Character
             capsule.height = 0.9f;
         }
 
-        static void AddBlobShadow(GameObject root, Material material)
+        static MeshRenderer AddBlobShadow(GameObject root, Material material)
         {
             var quad = GameObject.CreatePrimitive(PrimitiveType.Quad);
             Object.DestroyImmediate(quad.GetComponent<Collider>());
@@ -109,10 +109,11 @@ namespace Jolly.Editor.Character
             renderer.sharedMaterial = material;
             renderer.shadowCastingMode = ShadowCastingMode.Off;
             renderer.receiveShadows = false;
+            return renderer;
         }
 
         static void Bind(NubiCharacterController controller, Animator animator, NavMeshAgent agent,
-                         SkinnedMeshRenderer face, Transform model)
+                         SkinnedMeshRenderer face, Transform model, MeshRenderer shadow)
         {
             var so = new SerializedObject(controller);
             so.FindProperty("_animator").objectReferenceValue = animator;
@@ -124,6 +125,13 @@ namespace Jolly.Editor.Character
             so.FindProperty("_bones.head").objectReferenceValue = Find(model, "Head");
             so.FindProperty("_bones.eyeLeft").objectReferenceValue = Find(model, "Eye_L");
             so.FindProperty("_bones.eyeRight").objectReferenceValue = Find(model, "Eye_R");
+            var footLeft = Find(model, "Foot_L");
+            var footRight = Find(model, "Foot_R");
+            so.FindProperty("_shadowRig.shadow").objectReferenceValue = shadow;
+            so.FindProperty("_shadowRig.footLeft").objectReferenceValue = footLeft;
+            so.FindProperty("_shadowRig.footRight").objectReferenceValue = footRight;
+            // The root sits at the origin here, so the bind-pose bone heights are the rest heights.
+            so.FindProperty("_shadowRig.footRestHeight").floatValue = Mathf.Min(footLeft.position.y, footRight.position.y);
             so.ApplyModifiedPropertiesWithoutUndo();
         }
 
