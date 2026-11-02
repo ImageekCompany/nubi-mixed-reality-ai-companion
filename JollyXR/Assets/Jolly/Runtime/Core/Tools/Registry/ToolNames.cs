@@ -44,7 +44,7 @@ namespace Jolly.Core.Tools
         }
 
         public static bool IsWithheldWhenSeated(string name) =>
-            name == WalkTo || name == FollowUser || name == GoToSurface || name == Actions.MoveRelative;
+            name == WalkTo || name == FollowUser || name == GoToSurface;
 
         /// <summary>A persona's null AllowedTools allows every tool.</summary>
         public static bool IsAllowed(IReadOnlyList<string> allowed, string name)

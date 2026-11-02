@@ -93,14 +93,13 @@ namespace Jolly.Tests.EditMode.Core.Tools
         }
 
         [Test]
-        public void NamespacesOf_SeatedRequest_DescribesNoMoveTheRequestWithholds()
+        public void NamespacesOf_PersonaWithholdingTheMove_DescribesNoMove()
         {
             // Arrange
             var registry = new ToolRegistry();
             Catalog().RegisterInto(registry);
-            var preferences = new FakeUserPreferences();
-            preferences.Current.Seated = true;
-            var tools = registry.DefinitionsFor(null, preferences);
+            var persona = new PersonaProfile { AllowedTools = new[] { ToolNames.Actions.Dance } };
+            var tools = registry.DefinitionsFor(persona, null);
 
             // Act
             var ns = registry.NamespacesOf(tools).Single();
@@ -247,7 +246,7 @@ namespace Jolly.Tests.EditMode.Core.Tools
         }
 
         [Test]
-        public void DefinitionsFor_Seated_WithholdsMoveRelativeOnly()
+        public void DefinitionsFor_Seated_StillOffersMoveRelative()
         {
             // Arrange
             var registry = new ToolRegistry();
@@ -258,8 +257,8 @@ namespace Jolly.Tests.EditMode.Core.Tools
             // Act
             var names = registry.DefinitionsFor(null, preferences).Select(d => d.Name).ToArray();
 
-            // Assert
-            Assert.That(names, Has.No.Member(ToolNames.Actions.MoveRelative));
+            // Assert: it moves the character around the user, who stays put (ADR-0047).
+            Assert.That(names, Has.Member(ToolNames.Actions.MoveRelative));
             Assert.That(names, Has.Member(ToolNames.Actions.Dance));
         }
 

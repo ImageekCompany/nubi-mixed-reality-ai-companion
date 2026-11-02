@@ -73,4 +73,6 @@ Rows before 2026-11-01 02:00 (research phase, `docs/research/*.md`) were not ite
 
 | 2026-11-02 | review fixes of ADR-0047: tool-selection eval of the `actions.jump` tag three times with the ability-question rule, then `greeting,small_talk` once (app meter 0.0087 + 0.0045 + 0.0043 + 0.0062) | muse-spark-1.3 | 12 Spark calls, no web search | in 48,543 (43,483 cached) / out 2,542 | 0.024 |
 
-Running total (est.): **≤ $2.30** (sum of the rows: 2.291)
+| 2026-11-02 | device self-tests of ADR-0047/0048: 2 runs of the `--character jolly` release builds `7bf2439` and `7b5bf77` (app meter 0.0429 + 0.0504) | muse-spark-1.3, sam-3.1, muse-voice-transcribe-1.0 (+ Wit, free) | ~22 Spark calls, 4 SAM, 1 web search, ~20 ASR sessions | 4 images; ~40 s audio | 0.093 |
+
+Running total (est.): **≤ $2.39** (sum of the rows: 2.384)

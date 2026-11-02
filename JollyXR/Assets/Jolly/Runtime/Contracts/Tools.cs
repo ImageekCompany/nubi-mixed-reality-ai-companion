@@ -118,7 +118,7 @@ namespace Jolly.Contracts
         /// <summary>The namespaces at least one of <paramref name="tools"/> belongs to, in registration order.</summary>
         IReadOnlyList<ToolNamespace> NamespacesOf(IReadOnlyList<ToolDefinition> tools);
         bool TryGet(string name, out ITool tool);
-        /// <summary>Filtered by persona.AllowedTools; in seated mode walk_to, go_to_surface, follow_user and actions.move_relative are removed (come_here stays).</summary>
+        /// <summary>Filtered by persona.AllowedTools; in seated mode walk_to, go_to_surface and follow_user are removed (come_here and actions.move_relative stay).</summary>
         IReadOnlyList<ToolDefinition> DefinitionsFor(PersonaProfile persona, IUserPreferences preferences);
         /// <summary>Validates against the tool's schema subset. On failure, error is a model-facing message.</summary>
         bool TryValidate(string name, string argumentsJson, out IToolArguments args, out string error);

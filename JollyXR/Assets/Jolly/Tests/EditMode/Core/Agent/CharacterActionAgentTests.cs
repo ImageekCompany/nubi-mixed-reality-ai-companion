@@ -29,11 +29,12 @@ namespace Jolly.Tests.EditMode.Core.Agent
         [Test]
         public void RunTurn_ActionsWithheld_InstructionsLeaveTheRuleOut()
         {
-            // Arrange: the only action is withheld in seated mode, so the namespace is not sent either
+            // Arrange: the persona allows no action, so the namespace is not sent either
             var f = new AgentFixture();
             f.Registry.RegisterNamespace(new ToolNamespace(ToolNames.Actions.Namespace, "Body actions."));
             f.Tool(ToolNames.Actions.MoveRelative);
-            f.Preferences.Current.Seated = true;
+            f.Tool(ToolNames.Stop);
+            f.Personas.Current.AllowedTools = new[] { ToolNames.Stop };
             f.Model.Enqueue().Text("I'm right here.");
 
             // Act
