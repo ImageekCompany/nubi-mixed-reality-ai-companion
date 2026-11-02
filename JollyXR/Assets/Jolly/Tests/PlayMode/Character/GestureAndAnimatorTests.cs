@@ -211,6 +211,38 @@ namespace Jolly.Tests.PlayMode.Character
         });
 
         [UnityTest]
+        public IEnumerator PlayLooped_DanceForFourSeconds_EndsAtTheEndOfTheFirstLoop() => UniTask.ToCoroutine(async () =>
+        {
+            // Arrange: the clip loops every 4 s; the hold used to run into a second loop (7.8 s).
+            var started = Time.time;
+
+            // Act
+            await _rig.Nubi.PlayLooped(GestureId.Dance, 4f, CancellationToken.None);
+
+            // Assert
+            Assert.That(Time.time - started, Is.InRange(3.4f, 4.6f));
+        });
+
+        [UnityTest]
+        public IEnumerator PlayGesture_NodDuringADance_LeavesTheDanceRunningToItsEnd() => UniTask.ToCoroutine(async () =>
+        {
+            // Arrange
+            var action = _rig.Animator.GetLayerIndex(P.ActionLayer);
+            var started = Time.time;
+            var dance = _rig.Nubi.PlayLooped(GestureId.Dance, 5f, CancellationToken.None);
+            await CharacterTestRig.Until(() => _rig.Animator.GetCurrentAnimatorStateInfo(action).IsName("Dance"), 1f);
+
+            // Act
+            await _rig.Nubi.PlayGesture(GestureId.Nod, CancellationToken.None);
+            var dancingAfterNod = _rig.Animator.GetCurrentAnimatorStateInfo(action).IsName("Dance");
+            await dance;
+
+            // Assert
+            Assert.That(dancingAfterNod, Is.True);
+            Assert.That(Time.time - started, Is.InRange(7.3f, 8.6f), "both loops of the held dance");
+        });
+
+        [UnityTest]
         public IEnumerator PlayLooped_Cancelled_FadesTheDanceOut() => UniTask.ToCoroutine(async () =>
         {
             // Arrange

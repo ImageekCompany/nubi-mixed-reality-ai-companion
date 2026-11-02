@@ -21,7 +21,11 @@ MonoBehaviour:
   - look_at
   - come_here
   - stop
-  - play_gesture
+  - actions.wave
+  - actions.nod
+  - actions.shake_head
+  - actions.shrug
+  - actions.think
   - set_persona
   - request_room_scan
   persistMemory: 0

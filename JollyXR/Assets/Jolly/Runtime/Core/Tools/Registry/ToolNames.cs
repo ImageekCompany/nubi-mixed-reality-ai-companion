@@ -14,7 +14,6 @@ namespace Jolly.Core.Tools
         public const string HighlightPart = "highlight_part";
         public const string RememberPlace = "remember_place";
         public const string Stop = "stop";
-        public const string PlayGesture = "play_gesture";
         public const string SetPersona = "set_persona";
         public const string GoToSurface = "go_to_surface";
         public const string RequestRoomScan = "request_room_scan";
@@ -23,7 +22,8 @@ namespace Jolly.Core.Tools
         /// it like a tool name to allow it.</summary>
         public const string WebSearch = "web_search";
 
-        /// <summary>The character's body actions (ADR-0047), offered in the "actions" namespace when it can do them.</summary>
+        /// <summary>Everything the character's body can do on request (ADR-0047), offered in the "actions" namespace when
+        /// it has the clips.</summary>
         public static class Actions
         {
             public const string Namespace = "actions";
@@ -33,6 +33,14 @@ namespace Jolly.Core.Tools
             public const string Spin = "actions.spin";
             public const string Celebrate = "actions.celebrate";
             public const string MoveRelative = "actions.move_relative";
+            public const string Wave = "actions.wave";
+            public const string Nod = "actions.nod";
+            public const string ShakeHead = "actions.shake_head";
+            public const string Shrug = "actions.shrug";
+            public const string Think = "actions.think";
+            public const string Bounce = "actions.bounce";
+            public const string Stretch = "actions.stretch";
+            public const string LookAround = "actions.look_around";
         }
 
         public static bool IsWithheldWhenSeated(string name) =>

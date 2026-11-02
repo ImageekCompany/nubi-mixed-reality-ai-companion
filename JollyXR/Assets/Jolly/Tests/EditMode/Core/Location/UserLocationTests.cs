@@ -22,16 +22,69 @@ namespace Jolly.Tests.EditMode.Core.Location
         }
 
         [Test]
-        public void SearchOptions_NoHomeCity_UsesTheDeviceCountryAndTimeZone()
+        public void SearchOptions_NoHomeCity_SendsTheTimeZonesCityWithoutTheLocaleCountry()
         {
+            // Arrange: an en-US headset in Warsaw; "Warsaw, US" could be Warsaw, Indiana.
+            _device.CountryCode = "US";
+            _device.TimeZoneId = "Europe/Warsaw";
+
             // Act
             var options = _location.SearchOptions();
 
             // Assert
-            Assert.That(options.Country, Is.EqualTo("GB"));
-            Assert.That(options.City, Is.Null);
+            Assert.That(options.City, Is.EqualTo("Warsaw"));
+            Assert.That(options.Country, Is.Null);
             Assert.That(options.Region, Is.Null);
-            Assert.That(options.Timezone, Is.EqualTo("Europe/London"));
+            Assert.That(options.Timezone, Is.EqualTo("Europe/Warsaw"));
+        }
+
+        [TestCase("Etc/GMT+2")]
+        [TestCase("Etc/UTC")]
+        [TestCase("UTC")]
+        [TestCase("US/Eastern")]
+        [TestCase(null)]
+        public void SearchOptions_TimeZoneNamingNoCity_KeepsTheDeviceCountry(string timeZone)
+        {
+            // Arrange
+            _device.TimeZoneId = timeZone;
+
+            // Act
+            var options = _location.SearchOptions();
+
+            // Assert
+            Assert.That(options.City, Is.Null);
+            Assert.That(options.Country, Is.EqualTo("GB"));
+        }
+
+        [TestCase("Europe/London", "London")]
+        [TestCase("America/New_York", "New York")]
+        [TestCase("America/Argentina/Buenos_Aires", "Buenos Aires")]
+        [TestCase("Asia/Ho_Chi_Minh", "Ho Chi Minh")]
+        [TestCase("Etc/GMT-14", null)]
+        [TestCase("Europe", null)]
+        [TestCase("GMT Standard Time", null)]
+        public void TimeZoneCity_TakesTheLastSegmentOfAGeographicId(string id, string expected)
+        {
+            // Act
+            var city = UserLocation.TimeZoneCity(id);
+
+            // Assert
+            Assert.That(city, Is.EqualTo(expected));
+        }
+
+        [Test]
+        public void SearchOptions_HomeCity_WinsOverTheTimeZonesCity()
+        {
+            // Arrange
+            _device.TimeZoneId = "Europe/London";
+            _preferences.SetHomeLocation("Leeds", "GB");
+
+            // Act
+            var options = _location.SearchOptions();
+
+            // Assert
+            Assert.That(options.City, Is.EqualTo("Leeds"));
+            Assert.That(options.Country, Is.EqualTo("GB"));
         }
 
         [Test]
@@ -110,10 +163,23 @@ namespace Jolly.Tests.EditMode.Core.Location
         }
 
         [Test]
-        public void PromptLine_WithoutAHome_HasOnlyTheTime()
+        public void PromptLine_WithoutAHome_HasOnlyTheTimeNotTheTimeZonesCity()
         {
             // Act
             var line = _location.PromptLine();
+
+            // Assert
+            Assert.That(line, Is.EqualTo("Local time: Monday, 2 November 2026, 09:05."));
+        }
+
+        [Test]
+        public void PromptLine_HomeLeftOut_HasOnlyTheTime()
+        {
+            // Arrange
+            _preferences.SetHomeLocation("Kraków", "PL");
+
+            // Act
+            var line = _location.PromptLine(withHome: false);
 
             // Assert
             Assert.That(line, Is.EqualTo("Local time: Monday, 2 November 2026, 09:05."));

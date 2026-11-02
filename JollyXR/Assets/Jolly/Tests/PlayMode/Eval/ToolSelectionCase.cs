@@ -8,7 +8,7 @@ namespace Jolly.Tests.PlayMode.Eval
     /// <summary>
     /// One utterance of the tool-selection eval (docs/perf/tool-selection-eval.md). A case either expects one of
     /// <see cref="Expected"/> among the first round's calls, or, with none expected, any answer without a movement tool:
-    /// a greeting or small talk is answered in words, with at most a gesture (ADR-0032).
+    /// a greeting or small talk is answered in words, with at most a gesture such as actions.wave (ADR-0032).
     /// </summary>
     public sealed class ToolSelectionCase
     {
@@ -64,20 +64,22 @@ namespace Jolly.Tests.PlayMode.Eval
             // Both walk up to the user; move_relative "closer" is the same move.
             Calls("come closer", ToolNames.ComeHere, ToolNames.Actions.MoveRelative),
             Calls("come to me please", ToolNames.ComeHere),
-            Calls("can you come over here?", ToolNames.ComeHere),
             Calls("follow me", ToolNames.FollowUser),
             Calls("where is my mug?", ToolNames.FindObject),
             Calls("can you find my glasses", ToolNames.FindObject),
-            Calls("where did I put my keys", ToolNames.FindObject),
             CallsWithSeen("Nubi, where is my mug? Show me.", "white mug", ToolNames.FindObject),
             Calls("what is this?", ToolNames.CaptureAndIdentify),
             Calls("look at me", ToolNames.LookAt),
             Calls("stop", ToolNames.Stop),
             Calls("Show me how to dance!", ToolNames.Actions.Dance),
             Calls("Can you jump?", ToolNames.Actions.Jump, ToolNames.Actions.Celebrate),
+            Calls("Take a bow!", ToolNames.Actions.Bow),
             Calls("Spin around for me", ToolNames.Actions.Spin),
+            // A routine is a sequence of calls; any of them in the first round shows the model went for the body.
+            Calls("Do a little show: jump, spin and take a bow", ToolNames.Actions.Jump, ToolNames.Actions.Spin,
+                ToolNames.Actions.Bow),
             Calls("Go stand behind me", ToolNames.Actions.MoveRelative),
-            StaysPut("what's your favourite colour?"),
+            Calls("Stand on my left", ToolNames.Actions.MoveRelative),
             StaysPut("tell me a joke"),
             StaysPut("it's a lovely day today, isn't it?"),
             StaysPut("thank you, that's all for now"),

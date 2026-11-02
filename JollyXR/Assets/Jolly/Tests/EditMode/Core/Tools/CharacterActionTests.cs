@@ -42,7 +42,9 @@ namespace Jolly.Tests.EditMode.Core.Tools
             Assert.That(names, Is.EqualTo(new[]
             {
                 ToolNames.Actions.Jump, ToolNames.Actions.Dance, ToolNames.Actions.Bow, ToolNames.Actions.Spin,
-                ToolNames.Actions.Celebrate, ToolNames.Actions.MoveRelative,
+                ToolNames.Actions.Celebrate, ToolNames.Actions.MoveRelative, ToolNames.Actions.Wave, ToolNames.Actions.Nod,
+                ToolNames.Actions.ShakeHead, ToolNames.Actions.Shrug, ToolNames.Actions.Think, ToolNames.Actions.Bounce,
+                ToolNames.Actions.Stretch, ToolNames.Actions.LookAround,
             }));
         }
 
@@ -75,21 +77,106 @@ namespace Jolly.Tests.EditMode.Core.Tools
         }
 
         [Test]
-        public void Namespace_Description_ListsExactlyTheOfferedActions()
+        public void Namespace_Description_NamesNoActionSoItHoldsForEveryRequest()
         {
-            // Arrange
-            _character.Missing.Add(GestureId.Bow);
-            _character.Missing.Add(GestureId.Dance);
-
             // Act
             var ns = Catalog().Namespace;
 
             // Assert
             Assert.That(ns.Name, Is.EqualTo("actions"));
-            Assert.That(ns.Description, Does.StartWith(
-                "Things your body can do: jump, spin around, celebrate and move relative to the user"));
-            Assert.That(ns.Description, Does.Not.Contain("bow").And.Not.Contain("dance"));
+            Assert.That(ns.Description, Is.EqualTo(CharacterActionCatalog.Description));
+            foreach (var tool in Catalog().Tools)
+                Assert.That(ns.Description, Does.Not.Contain(tool.Definition.Name.Substring("actions.".Length).Replace('_', ' ')),
+                            tool.Definition.Name);
             Assert.That(ns.Description, Does.Contain("never say you did it without calling it"));
+            Assert.That(ns.Description, Does.Contain("surprise them"));
+        }
+
+        [Test]
+        public void NamespacesOf_SeatedRequest_DescribesNoMoveTheRequestWithholds()
+        {
+            // Arrange
+            var registry = new ToolRegistry();
+            Catalog().RegisterInto(registry);
+            var preferences = new FakeUserPreferences();
+            preferences.Current.Seated = true;
+            var tools = registry.DefinitionsFor(null, preferences);
+
+            // Act
+            var ns = registry.NamespacesOf(tools).Single();
+
+            // Assert
+            Assert.That(tools.Select(t => t.Name), Has.No.Member(ToolNames.Actions.MoveRelative));
+            Assert.That(ns.Description, Does.Not.Contain("move").And.Not.Contain("behind").And.Not.Contain("relative"));
+        }
+
+        [Test]
+        public void For_PersonaListingOnlyGestures_OffersOnlyThose()
+        {
+            // Arrange
+            var registry = new ToolRegistry();
+            Catalog().RegisterInto(registry);
+            var persona = new PersonaProfile { AllowedTools = new[] { ToolNames.Actions.Wave, ToolNames.Actions.Nod } };
+
+            // Act
+            var names = registry.DefinitionsFor(persona, new FakeUserPreferences()).Select(d => d.Name);
+
+            // Assert
+            Assert.That(names, Is.EqualTo(new[] { ToolNames.Actions.Wave, ToolNames.Actions.Nod }));
+        }
+
+        [TestCase(ToolNames.Actions.Wave, GestureId.Wave)]
+        [TestCase(ToolNames.Actions.Nod, GestureId.Nod)]
+        [TestCase(ToolNames.Actions.ShakeHead, GestureId.ShakeHead)]
+        [TestCase(ToolNames.Actions.Shrug, GestureId.Shrug)]
+        [TestCase(ToolNames.Actions.Think, GestureId.Think)]
+        [TestCase(ToolNames.Actions.Bounce, GestureId.HappyBounce)]
+        [TestCase(ToolNames.Actions.Stretch, GestureId.Stretch)]
+        [TestCase(ToolNames.Actions.LookAround, GestureId.LookAround)]
+        public void Gesture_PlaysItsGestureAlongsideAWalk(string name, GestureId gesture)
+        {
+            // Arrange
+            var tool = Catalog().Tools.Single(t => t.Definition.Name == name);
+            _character.TryStartMoveTo(Vector3.one, 0.1f, out _);
+
+            // Act
+            var result = Run(tool, "{}");
+
+            // Assert
+            Assert.That(result.OutputJson, Is.EqualTo("{\"status\":\"done\"}"));
+            Assert.That(_character.Gestures, Is.EqualTo(new[] { gesture }));
+            Assert.That(tool.Definition.Concurrency, Is.EqualTo(ToolConcurrency.Parallel), "a wave while talking or walking");
+            Assert.That(_character.StopCount, Is.Zero, "an upper-body gesture never stops a walk");
+        }
+
+        [TestCase(ToolNames.Actions.Jump)]
+        [TestCase(ToolNames.Actions.Bow)]
+        [TestCase(ToolNames.Actions.Celebrate)]
+        [TestCase(ToolNames.Actions.Dance)]
+        [TestCase(ToolNames.Actions.Spin)]
+        public void WholeBodyAction_DuringAWalk_StopsTheWalkFirst(string name)
+        {
+            // Arrange
+            var tool = Catalog().Tools.Single(t => t.Definition.Name == name);
+            _character.TryStartMoveTo(Vector3.one, 0.1f, out _);
+
+            // Act
+            Run(tool, "{}");
+
+            // Assert
+            Assert.That(_character.StopCount, Is.EqualTo(1));
+            Assert.That(_character.Mode, Is.EqualTo(LocomotionMode.None));
+            Assert.That(tool.Definition.Concurrency, Is.EqualTo(ToolConcurrency.Exclusive));
+        }
+
+        [Test]
+        public void WholeBodyAction_StandingStill_StopsNothing()
+        {
+            // Act
+            Run(Catalog().Tools.Single(t => t.Definition.Name == ToolNames.Actions.Jump), "{}");
+
+            // Assert
+            Assert.That(_character.StopCount, Is.Zero);
         }
 
         [Test]
@@ -139,6 +226,48 @@ namespace Jolly.Tests.EditMode.Core.Tools
             Assert.That((string)ToolHarness.Output(result)["status"], Is.EqualTo("walking"));
             Assert.That(Vector3.Distance(_character.MoveTarget.Value, new Vector3(x, 0f, z)), Is.LessThan(1e-4f));
             Assert.That(_character.LastLook?.Kind, Is.EqualTo(LookTargetKind.User), "ends facing the user");
+        }
+
+        [Test]
+        public void MoveRelative_BehindFromInFrontOfTheUser_WalksRoundThemOnTheWalksRightThenBehind()
+        {
+            // Arrange: the character stands 1.5 m in front of the user (origin, facing +z).
+
+            // Act
+            var result = Run(MoveRelative(), "{\"direction\":\"behind\"}");
+
+            // Assert: walking -z, the walk's right is -x; the turn is DetourRadius from the user.
+            Assert.That((string)ToolHarness.Output(result)["status"], Is.EqualTo("walking"));
+            Assert.That(_character.MoveTargets, Has.Count.EqualTo(2));
+            Assert.That(Vector3.Distance(_character.MoveTargets[0], new Vector3(-_settings.DetourRadius, 0f, 0f)), Is.LessThan(1e-4f));
+            Assert.That(Vector3.Distance(_character.MoveTargets[1], new Vector3(0f, 0f, -1f)), Is.LessThan(1e-4f));
+            Assert.That(RelativeTarget.PassDistance(new Vector3(0f, 0f, 1.5f), _character.MoveTargets[0], Vector3.zero),
+                        Is.GreaterThanOrEqualTo(_settings.UserMinDistance));
+            Assert.That(RelativeTarget.PassDistance(_character.MoveTargets[0], _character.MoveTargets[1], Vector3.zero),
+                        Is.GreaterThanOrEqualTo(_settings.UserMinDistance));
+        }
+
+        [Test]
+        public void MoveRelative_CharacterOffToOneSide_TurnsOnThatSide()
+        {
+            // Arrange: in front of the user and a little to their right (+x).
+            _character.Position = new Vector3(0.3f, 0f, 1.5f);
+
+            // Act
+            Run(MoveRelative(), "{\"direction\":\"behind\"}");
+
+            // Assert
+            Assert.That(_character.MoveTargets[0].x, Is.GreaterThan(0.5f));
+        }
+
+        [Test]
+        public void MoveRelative_LineClearOfTheUser_WalksStraightThere()
+        {
+            // Act
+            Run(MoveRelative(), "{\"direction\":\"left\"}");
+
+            // Assert
+            Assert.That(_character.MoveTargets, Has.Count.EqualTo(1));
         }
 
         [Test]

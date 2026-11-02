@@ -32,6 +32,34 @@ namespace Jolly.Core.Tools
             };
         }
 
+        /// <summary>Horizontal distance from <paramref name="user"/> to the nearest point of the segment from → to, m.</summary>
+        public static float PassDistance(Vector3 from, Vector3 to, Vector3 user)
+        {
+            var a = new Vector2(from.x, from.z);
+            var ab = new Vector2(to.x, to.z) - a;
+            var au = new Vector2(user.x, user.z) - a;
+            var t = ab.sqrMagnitude < 1e-6f ? 0f : Mathf.Clamp01(Vector2.Dot(au, ab) / ab.sqrMagnitude);
+            return (au - ab * t).magnitude;
+        }
+
+        /// <summary>
+        /// Where a walk from → to turns to go round the user: <paramref name="radius"/> from them, square to the walk, on
+        /// the side of the user the character starts on (the walk's right when it starts dead ahead of them), or on the
+        /// other side. At the character's height.
+        /// </summary>
+        public static Vector3 Detour(Vector3 from, Vector3 to, Vector3 user, float radius, bool otherSide)
+        {
+            var travel = Flat(to - from, Vector3.forward);
+            var side = Vector3.Cross(Vector3.up, travel);
+            var offset = from - user;
+            offset.y = 0f;
+            if (Vector3.Dot(offset, side) < -1e-3f)
+                side = -side;
+            if (otherSide)
+                side = -side;
+            return new Vector3(user.x, from.y, user.z) + side * radius;
+        }
+
         /// <summary>Horizontal distance between two points, m.</summary>
         public static float FlatDistance(Vector3 a, Vector3 b) => new Vector2(a.x - b.x, a.z - b.z).magnitude;
 

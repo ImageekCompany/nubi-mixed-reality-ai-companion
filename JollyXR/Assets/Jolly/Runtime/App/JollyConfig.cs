@@ -50,6 +50,8 @@ namespace Jolly.App
         public float backgroundFirstEventSeconds = 10f;
         public int backgroundAttempts = 3;
         public float llmIdleSeconds = 10f;
+        [Tooltip("The idle window of a round that offers web search: the server may go quiet while it searches (ADR-0048).")]
+        public float llmSearchIdleSeconds = 15f;
         public float samSeconds = 5f;
         public int samAttempts = 2;
         public float visionSeconds = 8f;

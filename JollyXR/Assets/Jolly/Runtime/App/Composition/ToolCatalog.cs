@@ -34,7 +34,6 @@ namespace Jolly.App.Composition
             registry.Register(new HighlightPartTool(kit, character, scene));
             registry.Register(new RememberPlaceTool(scene, xr.Anchors, xr.User, character, f.Clock, f.Log));
             registry.Register(new StopTool(character));
-            registry.Register(new PlayGestureTool(character));
             registry.Register(new SetPersonaTool(personas));
             registry.Register(new GoToSurfaceTool(character, xr.World, room, locomotion));
             registry.Register(new RequestRoomScanTool(room, localizer));

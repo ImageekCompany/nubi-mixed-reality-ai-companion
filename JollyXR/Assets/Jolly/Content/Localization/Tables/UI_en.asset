@@ -174,10 +174,6 @@ MonoBehaviour:
     m_Localized: Stop
     m_Metadata:
       m_Items: []
-  - m_Id: 380624931
-    m_Localized: Gesture
-    m_Metadata:
-      m_Items: []
   - m_Id: 380624932
     m_Localized: Switch personality
     m_Metadata:
@@ -256,6 +252,38 @@ MonoBehaviour:
       m_Items: []
   - m_Id: 380624951
     m_Localized: Moving
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624952
+    m_Localized: Wave
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624953
+    m_Localized: Nod
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624954
+    m_Localized: Shake head
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624955
+    m_Localized: Shrug
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624956
+    m_Localized: Think
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624957
+    m_Localized: Bounce
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624958
+    m_Localized: Stretch
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624959
+    m_Localized: Look around
     m_Metadata:
       m_Items: []
   references:

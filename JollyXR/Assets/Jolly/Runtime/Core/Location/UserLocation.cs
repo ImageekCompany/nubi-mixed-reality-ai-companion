@@ -9,7 +9,8 @@ namespace Jolly.Core.Location
     /// <summary>
     /// Where and when the user is, as far as the model may know: never finer than a city (ADR-0048). The city and country
     /// the user said (set_home_location) win over the device's locale region, which a headset set up abroad gets wrong;
-    /// the time zone and the clock always come from the device.
+    /// without them the time zone's city ("Europe/Warsaw") stands in. The time zone and the clock always come from the
+    /// device.
     /// </summary>
     public sealed class UserLocation
     {
@@ -27,10 +28,15 @@ namespace Jolly.Core.Location
         }
 
         /// <summary>Null until the user has said where they live.</summary>
-        public string City => CleanCity(_preferences?.Current?.HomeCity);
+        public string HomeCity => CleanCity(_preferences?.Current?.HomeCity);
 
-        /// <summary>With a city, only the country said with it: "London" with the locale's "US" would point elsewhere.</summary>
-        public string Country => CleanCountry(City != null ? _preferences.Current.HomeCountry : _device.CountryCode);
+        /// <summary>The home city, else the time zone's; null when neither is known.</summary>
+        public string City => HomeCity ?? TimeZoneCity(TimeZone);
+
+        /// <summary>With a city, only the country said with it: "London" with the locale's "US" would point elsewhere, and
+        /// a time-zone city comes with none.</summary>
+        public string Country => CleanCountry(HomeCity != null ? _preferences.Current.HomeCountry
+                                              : City != null ? null : _device.CountryCode);
 
         /// <summary>IANA only: a Windows id ("GMT Standard Time") means nothing to the search.</summary>
         public string TimeZone => IsIana(_device.TimeZoneId) ? _device.TimeZoneId : null;
@@ -51,11 +57,12 @@ namespace Jolly.Core.Location
         public WebSearchOptions SearchOptions() => new() { Country = Country, City = City, Timezone = TimeZone };
 
         /// <summary>"Local time: Monday, 2 November 2026, 10:15. Home: London, GB." for the context block.</summary>
-        public string PromptLine()
+        /// <param name="withHome">False leaves the home city out (a persona that may not search, ADR-0048).</param>
+        public string PromptLine(bool withHome = true)
         {
             var sb = new StringBuilder("Local time: ")
                 .Append(LocalNow.ToString("dddd, d MMMM yyyy, HH:mm", CultureInfo.InvariantCulture)).Append('.');
-            var city = City;
+            var city = withHome ? HomeCity : null;
             if (city != null)
             {
                 sb.Append(" Home: ").Append(city);
@@ -73,6 +80,25 @@ namespace Jolly.Core.Location
             var clean = PromptText.Sanitize(city, MaxCityChars);
             return clean.Length == 0 ? null : clean;
         }
+
+        /// <summary>
+        /// "London" for "Europe/London", "New York" for "America/New_York", "Buenos Aires" for
+        /// "America/Argentina/Buenos_Aires". Null for an id outside the geographic areas: "Etc/GMT+2", "UTC", "US/Eastern"
+        /// name no city.
+        /// </summary>
+        public static string TimeZoneCity(string ianaId)
+        {
+            if (ianaId == null)
+                return null;
+            var slash = ianaId.IndexOf('/');
+            if (slash <= 0 || Array.IndexOf(CityAreas, ianaId.Substring(0, slash)) < 0)
+                return null;
+            return CleanCity(ianaId.Substring(ianaId.LastIndexOf('/') + 1).Replace('_', ' '));
+        }
+
+        /// <summary>The tz database's geographic areas, whose ids end in a city.</summary>
+        static readonly string[] CityAreas =
+            { "Africa", "America", "Antarctica", "Arctic", "Asia", "Atlantic", "Australia", "Europe", "Indian", "Pacific" };
 
         /// <summary>Two ASCII letters, upper-cased; anything else is dropped.</summary>
         public static string CleanCountry(string code)

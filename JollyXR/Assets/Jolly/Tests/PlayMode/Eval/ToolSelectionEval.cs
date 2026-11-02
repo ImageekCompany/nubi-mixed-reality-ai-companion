@@ -13,6 +13,7 @@ using Jolly.App.Platform;
 using Jolly.Contracts;
 using Jolly.Core.Agent;
 using Jolly.Core.Config;
+using Jolly.Core.Location;
 using Jolly.Core.Memory;
 using Jolly.Core.Personas;
 using Jolly.Core.Secrets;
@@ -24,6 +25,7 @@ using Jolly.Net.Retry;
 using Jolly.Providers.MetaApi.Chat;
 using Jolly.Providers.MetaApi.Common;
 using Jolly.Testing;
+using Jolly.Testing.Conversation;
 using Jolly.Testing.Offline;
 using NUnit.Framework;
 using UnityEditor;
@@ -34,8 +36,9 @@ namespace Jolly.Tests.PlayMode.Eval
 {
     /// <summary>
     /// Live tool-selection eval (docs/perf/tool-selection-eval.md): each <see cref="ToolSelectionCase"/> as one text turn
-    /// to the Responses API with the app's instructions and tool definitions for the default persona, recording the
-    /// tools of the first round. Never part of tools/ci/test.sh; run with tools/eval/tool-selection.sh, which reads
+    /// to the Responses API with the request a live turn of the default persona sends (<see cref="AgentLoop.LiveRequest"/>:
+    /// instructions, tools, namespaces, web search with this machine's location, the context block), recording the tools
+    /// of the first round, a web search among them. Never part of tools/ci/test.sh; run with tools/eval/tool-selection.sh, which reads
     /// META_API_KEY from the repository .env. About $0.01 per run, metered with the app's price table.
     /// JOLLY_EVAL_EFFORT (minimal | low), JOLLY_EVAL_TAGS (comma-separated <see cref="ToolSelectionCase.Tag"/>s, empty for
     /// all), JOLLY_EVAL_COMMIT and JOLLY_EVAL_OUT (the markdown file) come from the script.
@@ -67,10 +70,11 @@ namespace Jolly.Tests.PlayMode.Eval
                 config.defaultPersonaId, text, character.voice);
             var preferences = new FakeUserPreferences();
             var registry = Catalog(personas);
-            var tools = registry.DefinitionsFor(personas.Current, preferences);
-            var namespaces = registry.NamespacesOf(tools);
-
             var clock = new UnityClock();
+            var location = new UserLocation(preferences, new DeviceRegion(log), clock);
+            var webSearch = new WebSearchPolicy(location, new FakeConnectivityMonitor(), config.webSearch);
+            var settings = new AgentSettings();
+
             var usage = new ApiUsageMeter(Prices(config),
                 Path.Combine(Path.GetTempPath(), "jolly-eval-usage-" + Guid.NewGuid().ToString("N") + ".json"), 1m, clock, log);
             var liveModel = MetaModelResolver.Resolve(ModelRoute.LiveUser, config.chatModel);
@@ -90,21 +94,15 @@ namespace Jolly.Tests.PlayMode.Eval
                     if (c.SeenLabel != null)
                         scene.AddObject(c.SeenLabel, new Vector3(0.6f, 0.8f, 1.2f), $"a {c.SeenLabel} on the table");
                     var memory = new ConversationMemory(Path.GetTempPath(), personas, new MemoryLimits(), log);
-                    var prompt = new PromptBuilder(text, preferences, memory, scene, null, new AgentSettings());
+                    var prompt = new PromptBuilder(text, preferences, memory, scene, null, settings, location);
+                    var request = AgentLoop.LiveRequest(prompt, registry, personas.Current, preferences, webSearch, settings,
+                        out var context);
                     var input = new List<ConversationItem>(2);
-                    if (prompt.ContextItem() is { } context)
+                    if (context != null)
                         input.Add(context);
                     input.Add(ConversationItem.User(c.Utterance));
-                    var request = new ModelRequest
-                    {
-                        Route = ModelRoute.LiveUser,
-                        Instructions = prompt.Instructions(personas.Current,
-                            bodyActions: namespaces.Any(n => n.Name == ToolNames.Actions.Namespace)),
-                        Input = input,
-                        Tools = tools,
-                        Namespaces = namespaces,
-                        Effort = effort,
-                    };
+                    request.Input = input;
+                    request.Effort = effort;
 
                     var called = new List<string>();
                     var watch = Stopwatch.StartNew();
@@ -112,6 +110,8 @@ namespace Jolly.Tests.PlayMode.Eval
                     {
                         if (e.Kind == ModelEventKind.ToolCall)
                             called.Add(e.ToolCall.Name);
+                        else if (e.Kind == ModelEventKind.WebSearchCompleted)
+                            called.Add(ToolNames.WebSearch);
                         else if (e.Kind == ModelEventKind.Completed)
                         {
                             inputTokens += e.Result.Usage.InputTokens;
@@ -153,7 +153,6 @@ namespace Jolly.Tests.PlayMode.Eval
             registry.Register(new HighlightPartTool(null, null, null));
             registry.Register(new RememberPlaceTool(null, null, null, null, null, null));
             registry.Register(new StopTool(null));
-            registry.Register(new PlayGestureTool(null));
             registry.Register(new SetPersonaTool(personas));
             registry.Register(new GoToSurfaceTool(null, null, null, locomotion));
             registry.Register(new RequestRoomScanTool(null, null));

@@ -244,6 +244,35 @@ namespace Jolly.Tests.EditMode.Chat
         }
 
         [Test]
+        public void WebSearch_Completed_IsOk()
+        {
+            // Act
+            var completed = Reduce("responses_web_search").Single(e => e.Kind == ModelEventKind.WebSearchCompleted);
+
+            // Assert
+            Assert.That(completed.Ok, Is.True);
+        }
+
+        [TestCase("failed")]
+        [TestCase("incomplete")]
+        [TestCase(null)]
+        public void WebSearch_NotCompleted_IsNotOkButStillCountsAsABilledSearch(string status)
+        {
+            // Arrange
+            var item = "{\"id\":\"ws_1\",\"type\":\"web_search_call\"" +
+                       (status == null ? "" : ",\"status\":\"" + status + "\"") + "}";
+
+            // Act
+            var events = ReduceItems(item);
+
+            // Assert
+            var completed = events.Single(e => e.Kind == ModelEventKind.WebSearchCompleted);
+            Assert.That(completed.Text, Is.EqualTo("ws_1"));
+            Assert.That(completed.Ok, Is.False);
+            Assert.That(events.Last().Result.Usage.WebSearches, Is.EqualTo(1));
+        }
+
+        [Test]
         public void NamespacedFunctionCall_KeepsTheDottedName()
         {
             // Arrange: the item as streamed live (2026-11-02) for a tool sent inside {"type":"namespace","name":"actions"}.

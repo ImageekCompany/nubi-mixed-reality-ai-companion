@@ -11,12 +11,14 @@ namespace Jolly.Providers.MetaApi.Chat
     public sealed class ResponsesChatOptions
     {
         public ResponsesChatOptions(string liveUserModel, string syntheticModel, TimeSpan firstEventTimeout,
-                                    TimeSpan idleTimeout, int maxAttempts, decimal reservationUsd, TimeSpan hedgeAfter = default)
+                                    TimeSpan idleTimeout, int maxAttempts, decimal reservationUsd, TimeSpan hedgeAfter = default,
+                                    TimeSpan searchIdleTimeout = default)
         {
             LiveUserModel = liveUserModel;
             SyntheticModel = syntheticModel;
             FirstEventTimeout = firstEventTimeout;
             IdleTimeout = idleTimeout;
+            SearchIdleTimeout = searchIdleTimeout > idleTimeout ? searchIdleTimeout : idleTimeout;
             RetryPolicy = new RetryPolicy(maxAttempts);
             ReservationUsd = reservationUsd;
             HedgeAfter = hedgeAfter;
@@ -35,6 +37,13 @@ namespace Jolly.Providers.MetaApi.Chat
         public string SyntheticModel { get; }
         public TimeSpan FirstEventTimeout { get; }
         public TimeSpan IdleTimeout { get; }
+        /// <summary>
+        /// The idle window of a request that offers web search (ADR-0048): the stream can sit silent while the server
+        /// searches and reads the results, longer than a plain round ever does. Never shorter than <see cref="IdleTimeout"/>.
+        /// </summary>
+        public TimeSpan SearchIdleTimeout { get; }
+
+        public TimeSpan IdleTimeoutFor(ModelRequest request) => request.WebSearch != null ? SearchIdleTimeout : IdleTimeout;
         /// <summary>Applies to each leg of a hedge.</summary>
         public RetryPolicy RetryPolicy { get; }
         /// <summary>

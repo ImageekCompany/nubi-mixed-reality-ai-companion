@@ -90,7 +90,8 @@ namespace Jolly.Core.Agent
         /// Null when there is no memory summary, scene knowledge, room line or location. The local time lives here, not in
         /// the instructions, because it changes every turn and the instructions are the cached prefix.
         /// </summary>
-        public ConversationItem ContextItem()
+        /// <param name="home">Adds the home city the user gave; only for a persona that may search for it (ADR-0048).</param>
+        public ConversationItem ContextItem(bool home = false)
         {
             var summary = _memory.Summary ?? string.Empty;
             if (summary.Length > _settings.SummaryContextChars)
@@ -99,7 +100,7 @@ namespace Jolly.Core.Agent
             summary = summary.Replace('<', ' ').Replace('>', ' ');
             var scene = _scene.BuildPromptContext(_settings.SceneContextChars);
             var room = _room?.Build(_settings.RoomContextChars) ?? string.Empty;
-            var now = _location?.PromptLine() ?? string.Empty;
+            var now = _location?.PromptLine(home) ?? string.Empty;
             if (summary.Length == 0 && scene.Length == 0 && room.Length == 0 && now.Length == 0)
                 return null;
 

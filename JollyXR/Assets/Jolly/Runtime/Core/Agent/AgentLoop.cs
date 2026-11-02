@@ -70,6 +70,31 @@ namespace Jolly.Core.Agent
                 await drive;
             });
 
+        /// <summary>
+        /// A live turn's first request without its input, and the context block that goes before the history: the tools
+        /// and namespaces the persona and seated mode allow, web search when <paramref name="webSearch"/> offers it, and
+        /// the instructions to match. ToolSelectionEval sends exactly this.
+        /// </summary>
+        public static ModelRequest LiveRequest(PromptBuilder prompt, IToolRegistry registry, PersonaProfile persona,
+                                               IUserPreferences preferences, WebSearchPolicy webSearch, AgentSettings settings,
+                                               out ConversationItem context)
+        {
+            var tools = registry.DefinitionsFor(persona, preferences);
+            var namespaces = registry.NamespacesOf(tools);
+            var search = webSearch?.For(persona);
+            context = prompt.ContextItem(webSearch?.Allows(persona) ?? false);
+            return new ModelRequest
+            {
+                Route = ModelRoute.LiveUser,
+                Instructions = prompt.Instructions(persona, search != null, Offers(namespaces, ToolNames.Actions.Namespace)),
+                Tools = tools,
+                Namespaces = namespaces,
+                WebSearch = search,
+                Effort = ReasoningEffort.Minimal,
+                SafetyIdentifier = settings.SafetyIdentifier,
+            };
+        }
+
         async UniTask Drive(UserTurn turn, Func<string> spokenSoFar, TurnEvents events, CancellationToken ct)
         {
             var transcript = new TurnTranscript(turn.Text);
@@ -86,20 +111,7 @@ namespace Jolly.Core.Agent
                     Turn = turn, Persona = persona, PersonaInstructions = _prompt.PersonaInstructions(persona),
                     Speech = events, Preferences = _preferences,
                 };
-                var tools = _registry.DefinitionsFor(persona, _preferences);
-                var namespaces = _registry.NamespacesOf(tools);
-                var search = _webSearch?.For(persona);
-                var request = new ModelRequest
-                {
-                    Route = ModelRoute.LiveUser,
-                    Instructions = _prompt.Instructions(persona, search != null, Offers(namespaces, ToolNames.Actions.Namespace)),
-                    Tools = tools,
-                    Namespaces = namespaces,
-                    WebSearch = search,
-                    Effort = ReasoningEffort.Minimal,
-                    SafetyIdentifier = _settings.SafetyIdentifier,
-                };
-                var contextItem = _prompt.ContextItem();
+                var request = LiveRequest(_prompt, _registry, persona, _preferences, _webSearch, _settings, out var contextItem);
 
                 for (var round = 0; ; round++)
                 {
@@ -191,12 +203,14 @@ namespace Jolly.Core.Agent
                         case ModelEventKind.ToolCall:
                             tools.Start(e.ToolCall);
                             break;
-                        // The server runs the search: no ToolRoundExecutor call, only the badge the user sees meanwhile.
+                        // The server runs the search: no ToolRoundExecutor call, but the turn shows it like a tool (the
+                        // state goes to Acting, the badge and the Think gesture run) until it ends.
                         case ModelEventKind.WebSearchStarted:
-                            _events.RaiseToolStarted(e.Text, ToolNames.WebSearch);
+                            events.Write(new AgentEvent(AgentEventKind.ToolStarted, toolName: ToolNames.WebSearch, callId: e.Text));
                             break;
                         case ModelEventKind.WebSearchCompleted:
-                            _events.RaiseToolCompleted(e.Text, ToolNames.WebSearch, true);
+                            events.Write(new AgentEvent(AgentEventKind.ToolCompleted, toolName: ToolNames.WebSearch, callId: e.Text,
+                                toolResult: new ToolResult(e.Ok, null)));
                             break;
                         case ModelEventKind.Completed:
                             result = e.Result;

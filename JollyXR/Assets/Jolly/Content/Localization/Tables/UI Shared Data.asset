@@ -171,10 +171,6 @@ MonoBehaviour:
     m_Key: tool.stop
     m_Metadata:
       m_Items: []
-  - m_Id: 380624931
-    m_Key: tool.play_gesture
-    m_Metadata:
-      m_Items: []
   - m_Id: 380624932
     m_Key: tool.set_persona
     m_Metadata:
@@ -253,6 +249,38 @@ MonoBehaviour:
       m_Items: []
   - m_Id: 380624951
     m_Key: tool.actions.move_relative
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624952
+    m_Key: tool.actions.wave
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624953
+    m_Key: tool.actions.nod
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624954
+    m_Key: tool.actions.shake_head
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624955
+    m_Key: tool.actions.shrug
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624956
+    m_Key: tool.actions.think
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624957
+    m_Key: tool.actions.bounce
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624958
+    m_Key: tool.actions.stretch
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624959
+    m_Key: tool.actions.look_around
     m_Metadata:
       m_Items: []
   m_Metadata:

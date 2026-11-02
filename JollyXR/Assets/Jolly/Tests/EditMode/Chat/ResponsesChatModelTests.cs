@@ -312,6 +312,27 @@ namespace Jolly.Tests.EditMode.Chat
             Assert.That(_transport.Ended, Is.EqualTo(1));
         }
 
+        [TestCase(true, 15)]
+        [TestCase(false, 10)]
+        public void Stream_SilentMidStream_TimesOutAfterTheIdleWindowOfItsRequest(bool webSearch, int idleSeconds)
+        {
+            // Arrange: a search request may sit silent while the server searches (ADR-0048).
+            _transport.RespondThenHang(SseFixtures.Parse("responses_text").Take(3));
+            var request = Request();
+            request.WebSearch = webSearch ? new WebSearchOptions() : null;
+            var run = Collect(Model(searchIdleSeconds: 15).Stream(request, CancellationToken.None), new List<ModelEvent>(),
+                CancellationToken.None);
+
+            // Act
+            _clock.Advance(TimeSpan.FromSeconds(idleSeconds - 0.5));
+            var pendingBefore = run.Status == UniTaskStatus.Pending;
+            _clock.Advance(TimeSpan.FromSeconds(0.6));
+
+            // Assert
+            Assert.That(pendingBefore, Is.True);
+            Assert.That(Failure(run).Kind, Is.EqualTo(ProviderErrorKind.Timeout));
+        }
+
         [Test]
         public void Stream_EndsWithoutCompletion_ThrowsProtocol()
         {
@@ -322,11 +343,12 @@ namespace Jolly.Tests.EditMode.Chat
             Assert.That(Failure(run).Kind, Is.EqualTo(ProviderErrorKind.Protocol));
         }
 
-        ResponsesChatModel Model(string liveModel = LiveModel)
+        ResponsesChatModel Model(string liveModel = LiveModel, int searchIdleSeconds = 0)
         {
             var retry = new RetryExecutor(_clock, new FakeRandom().EnqueueFloat(0f, 0f, 0f), _log);
             return new ResponsesChatModel(new MetaApiEndpoint(_secrets), new MetaSseClient(_transport, retry, _clock), _clock, _meter,
-                new ResponsesChatOptions(liveModel, SyntheticModel, TimeSpan.FromSeconds(4), TimeSpan.FromSeconds(10), 2, 0.01m), _log);
+                new ResponsesChatOptions(liveModel, SyntheticModel, TimeSpan.FromSeconds(4), TimeSpan.FromSeconds(10), 2, 0.01m,
+                    searchIdleTimeout: TimeSpan.FromSeconds(searchIdleSeconds)), _log);
         }
 
         static ModelRequest Request(ModelRoute route = ModelRoute.LiveUser) => new()

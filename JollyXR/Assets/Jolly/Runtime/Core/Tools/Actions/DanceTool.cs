@@ -7,8 +7,9 @@ using Jolly.Contracts;
 namespace Jolly.Core.Tools
 {
     /// <summary>
-    /// actions.dance (ADR-0047): loops the Dance clip for at least <c>duration_s</c>, ending where a loop ends, then
-    /// returns; the character keeps attending the user throughout (ADR-0041). Logs <c>evt=action.dance</c>.
+    /// actions.dance (ADR-0047): stops any walk, loops the Dance clip until the first loop end at or after
+    /// <c>duration_s</c>, then returns; the character keeps attending the user throughout (ADR-0041). Logs
+    /// <c>evt=action.dance</c>.
     /// </summary>
     public sealed class DanceTool : ITool
     {
@@ -26,7 +27,7 @@ namespace Jolly.Core.Tools
             _log = log;
         }
 
-        /// <summary>The longest dance plus one more 4 s loop to finish on, and a margin.</summary>
+        /// <summary>The longest dance, three 4 s loops, and a margin.</summary>
         public ToolDefinition Definition { get; } = new(ToolNames.Actions.Dance,
             "Dance for the user, e.g. 'show me how to dance', 'dance for me', 'let's dance'.",
             Schema, TimeSpan.FromSeconds(18), ToolConcurrency.Exclusive);
@@ -34,6 +35,7 @@ namespace Jolly.Core.Tools
         public async UniTask<ToolResult> Execute(IToolArguments args, ToolContext context, CancellationToken ct)
         {
             var seconds = args.TryGetNumber("duration_s", out var d) ? d : DefaultSeconds;
+            BodyAction.StandStill(_character);
             await _character.PlayLooped(GestureId.Dance, (float)seconds, ct);
             _log.Write(LogLevel.Info, "tools",
                 $"evt=action.dance duration_s={seconds.ToString("0.#", CultureInfo.InvariantCulture)} status=done");

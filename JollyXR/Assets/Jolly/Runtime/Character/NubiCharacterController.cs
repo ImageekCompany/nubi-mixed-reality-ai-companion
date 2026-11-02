@@ -286,7 +286,7 @@ namespace Jolly.Character
             var dt = Time.deltaTime;
             var point = default(Vector3);
             var thinking = _conversation == ConversationState.Thinking
-                           || (_gestures.IsPlaying && _gestures.Current == GestureId.Think);
+                           || _gestures.IsPlaying(GestureId.Think);
             Attending = _spin != null ? AttentionTarget.None : ResolveAttention(out point);
             var bodyYaw = _look.Apply(Attending != AttentionTarget.None, point, thinking, dt,
                                       face: Attending == AttentionTarget.User);

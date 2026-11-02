@@ -7,7 +7,7 @@ using UnityEngine;
 namespace Jolly.Core.Tools
 {
     /// <summary>
-    /// actions.spin (ADR-0047): turns on the spot with a happy bounce, then faces the user again. Procedural, so every
+    /// actions.spin (ADR-0047): stops any walk and turns on the spot with a happy bounce, then faces the user again. Procedural, so every
     /// character can do it. Logs <c>evt=action.spin</c>.
     /// </summary>
     public sealed class SpinTool : ITool
@@ -37,6 +37,7 @@ namespace Jolly.Core.Tools
             var left = args.TryGetString("direction", out var direction) && direction == "left";
             // Positive is clockwise seen from above: a turn to the right.
             var degrees = turns * 360f * (left ? -1f : 1f);
+            BodyAction.StandStill(_character);
             await UniTask.WhenAll(_character.Spin(degrees, ct), _character.PlayGesture(GestureId.HappyBounce, ct));
             _log.Write(LogLevel.Info, "tools", $"evt=action.spin turns={turns} dir={(left ? "left" : "right")} status=done");
             return ToolResult.Success("{\"status\":\"done\"}");

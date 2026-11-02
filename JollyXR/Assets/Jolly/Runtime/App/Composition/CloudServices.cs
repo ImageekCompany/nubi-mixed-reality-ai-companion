@@ -47,7 +47,7 @@ namespace Jolly.App.Composition
             IChatModel Chat(float firstEventSeconds, int attempts, float hedgeSeconds) => new ReportingChatModel(
                 new ResponsesChatModel(endpoint, sse, f.Clock, f.Usage, new ResponsesChatOptions(liveModel, syntheticModel,
                     TimeSpan.FromSeconds(firstEventSeconds), TimeSpan.FromSeconds(c.llmIdleSeconds), attempts,
-                    (decimal)c.chatReservationUsd, TimeSpan.FromSeconds(hedgeSeconds)), f.Log),
+                    (decimal)c.chatReservationUsd, TimeSpan.FromSeconds(hedgeSeconds), TimeSpan.FromSeconds(c.llmSearchIdleSeconds)), f.Log),
                 MetaErrors.Provider, monitor);
 
             var asr = new MuseRealtimeSpeechToText(() => edges.WebSockets(MuseAsrErrors.Provider), f.Secrets, f.Usage,

@@ -60,6 +60,7 @@ namespace Jolly.App.Composition
             var keeper = new MemoryKeeper(conversation, scene, cloud.BackgroundChat, personas, f.Log);
             var switcher = new PersonaSwitcher(personas, personas, conversation, character, f.Log);
             disposables.Add(new ConversationStateRelay(f.Machine, f.Events, character));
+            disposables.Add(new SearchThinkGesture(f.Events, character));
             var controller = disposables.Add(new ConversationController(voice,
                 new TurnRouter(cloud.Connectivity, f.Usage), pipeline,
                 new BargeInCoordinator(speech.Output, speech.Queue, turnSpeech, f.Latency), f.Machine, switcher, keeper,

@@ -142,8 +142,9 @@ namespace Jolly.Contracts
         /// following, or when near (ADR-0041). A new Listening state drops a held point.</summary>
         void LookAt(LookTarget target);
         UniTask PlayGesture(GestureId gesture, CancellationToken ct);
-        /// <summary>Plays a looping gesture (Dance) for at least <paramref name="seconds"/>, ending where a loop ends; a
-        /// one-shot gesture plays once. Completes when the gesture has ended; cancelling fades it out.</summary>
+        /// <summary>Plays a looping gesture (Dance) until the first loop end at or after <paramref name="seconds"/>; a
+        /// one-shot gesture plays once. Completes when the gesture has ended; cancelling fades it out. An upper-body gesture
+        /// played meanwhile leaves it running.</summary>
         UniTask PlayLooped(GestureId gesture, float seconds, CancellationToken ct);
         /// <summary>Whether this character has the gesture's clip (ADR-0047). PlayGesture of one it lacks throws.</summary>
         bool CanPlay(GestureId gesture);

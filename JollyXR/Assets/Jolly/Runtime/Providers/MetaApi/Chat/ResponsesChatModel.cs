@@ -55,6 +55,7 @@ namespace Jolly.Providers.MetaApi.Chat
             if (!_meter.TryReserve(_options.ReservationUsd, out var original))
                 throw new ProviderException(MetaErrors.Provider, ProviderErrorKind.BudgetExceeded, "Usage cap reached.");
 
+            var idleTimeout = _options.IdleTimeoutFor(request);
             var hedge = 0L;
             var originalAttempts = new OpenAttempts();
             var hedgeAttempts = new OpenAttempts();
@@ -67,7 +68,7 @@ namespace Jolly.Providers.MetaApi.Chat
             try
             {
                 var (leg, stream) = await _hedge.Open(
-                    (l, firstEventTimeout, t) => _client.Open(http, firstEventTimeout, _options.IdleTimeout, _options.RetryPolicy,
+                    (l, firstEventTimeout, t) => _client.Open(http, firstEventTimeout, idleTimeout, _options.RetryPolicy,
                         l == HedgeLeg.Original ? originalAttempts : hedgeAttempts, t),
                     () => _meter.TryReserve(_options.ReservationUsd, out hedge),
                     l => _meter.RecordEstimate(l == HedgeLeg.Original ? original : hedge, model,
@@ -95,7 +96,7 @@ namespace Jolly.Providers.MetaApi.Chat
                                     searchStartedAt = _clock.Now;
                                     break;
                                 case ModelEventKind.WebSearchCompleted:
-                                    LogWebSearch(model, e.Text, searchStartedAt);
+                                    LogWebSearch(model, e.Text, e.Ok, searchStartedAt);
                                     searchStartedAt = double.NaN;
                                     break;
                             }
@@ -155,11 +156,12 @@ namespace Jolly.Providers.MetaApi.Chat
         }
 
         /// <summary>ms is NaN when the search's in_progress event was not seen.</summary>
-        void LogWebSearch(string model, string itemId, double startedAt)
+        void LogWebSearch(string model, string itemId, bool ok, double startedAt)
         {
-            if (_log.IsEnabled(LogLevel.Info))
-                _log.Write(LogLevel.Info, Category, $"evt=llm.web_search model={model} id={itemId} " +
-                                                    $"ms={(_clock.Now - startedAt) * 1000:0}");
+            var level = ok ? LogLevel.Info : LogLevel.Warning;
+            if (_log.IsEnabled(level))
+                _log.Write(level, Category, $"evt=llm.web_search model={model} id={itemId} ok={(ok ? "true" : "false")} " +
+                                            $"ms={(_clock.Now - startedAt) * 1000:0}");
         }
 
         void LogFailure(string model, ProviderException e)

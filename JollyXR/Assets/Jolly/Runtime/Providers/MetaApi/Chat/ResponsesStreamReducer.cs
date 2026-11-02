@@ -184,9 +184,12 @@ namespace Jolly.Providers.MetaApi.Chat
                     }
                     return;
                 case "web_search_call":
+                    // Billed per search query (pricing-rate-limits docs); whether a failed one is billed is not documented,
+                    // so every call counts against the budget, and only a completed one counts as a search that worked.
                     _webSearches++;
                     _items.Add(ConversationItem.Opaque(item.ToString(Formatting.None)));
-                    output.Add(new ModelEvent(ModelEventKind.WebSearchCompleted, text: (string)item["id"]));
+                    output.Add(new ModelEvent(ModelEventKind.WebSearchCompleted, text: (string)item["id"],
+                        ok: (string)item["status"] == "completed"));
                     return;
                 default:
                     // reasoning (with encrypted_content), tool_search_call/_output and anything newer: replayed verbatim

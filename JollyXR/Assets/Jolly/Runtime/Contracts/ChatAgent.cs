@@ -81,17 +81,20 @@ namespace Jolly.Contracts
     }
 
     /// <summary>WebSearchStarted / WebSearchCompleted: the provider's built-in web search (ADR-0048) began or ended;
-    /// both carry the search's item id in <see cref="ModelEvent.Text"/>. Neither is a ToolCall: the server runs it.</summary>
+    /// both carry the search's item id in <see cref="ModelEvent.Text"/>, and WebSearchCompleted whether it succeeded in
+    /// <see cref="ModelEvent.Ok"/>. Neither is a ToolCall: the server runs it.</summary>
     public enum ModelEventKind { Started, TextDelta, ToolCall, Completed, TextDone, WebSearchStarted, WebSearchCompleted }
 
     public readonly struct ModelEvent
     {
-        public ModelEvent(ModelEventKind kind, string text = null, ToolCallRequest toolCall = null, ModelTurnResult result = null)
-        { Kind = kind; Text = text; ToolCall = toolCall; Result = result; }
+        public ModelEvent(ModelEventKind kind, string text = null, ToolCallRequest toolCall = null, ModelTurnResult result = null,
+                          bool ok = true)
+        { Kind = kind; Text = text; ToolCall = toolCall; Result = result; Ok = ok; }
         public ModelEventKind Kind { get; }
         public string Text { get; }                 // TextDelta; TextDone: none, the text item ended (a call may follow); WebSearch*: item id
         public ToolCallRequest ToolCall { get; }    // ToolCall: emitted once its arguments are complete
         public ModelTurnResult Result { get; }      // Completed: always the last event
+        public bool Ok { get; }                     // WebSearchCompleted: the search's status was "completed"
     }
 
     public interface IChatModel

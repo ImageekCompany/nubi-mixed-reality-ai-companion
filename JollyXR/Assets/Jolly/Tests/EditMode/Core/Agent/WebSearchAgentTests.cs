@@ -11,7 +11,7 @@ namespace Jolly.Tests.EditMode.Core.Agent
     public sealed class WebSearchAgentTests
     {
         [Test]
-        public void RunTurn_PersonaAllowingEverythingWhileOnline_OffersWebSearchWithTheDeviceRegion()
+        public void RunTurn_PersonaAllowingEverythingWhileOnline_OffersWebSearchWithTheTimeZonesCity()
         {
             // Arrange
             var f = new AgentFixture(webSearch: true);
@@ -23,9 +23,9 @@ namespace Jolly.Tests.EditMode.Core.Agent
             // Assert
             var request = f.Model.Requests.Single();
             Assert.That(request.WebSearch, Is.Not.Null);
-            Assert.That(request.WebSearch.Country, Is.EqualTo("GB"));
+            Assert.That(request.WebSearch.City, Is.EqualTo("London"), "the time zone's city");
+            Assert.That(request.WebSearch.Country, Is.Null, "a time-zone city comes with no locale country");
             Assert.That(request.WebSearch.Timezone, Is.EqualTo("Europe/London"));
-            Assert.That(request.WebSearch.City, Is.Null);
             Assert.That(request.Instructions, Does.Contain("search the web"));
         }
 
@@ -148,13 +148,12 @@ namespace Jolly.Tests.EditMode.Core.Agent
         }
 
         [Test]
-        public void RunTurn_WebSearchInTheStream_ShowsABadgeButRunsNoTool()
+        public void RunTurn_WebSearchInTheStream_RunsLikeAToolForThePipelineButExecutesNone()
         {
-            // Arrange
+            // Arrange: the pipeline turns these events into the Acting state, the badge and the Think gesture.
             var f = new AgentFixture(webSearch: true);
-            var badges = new List<string>();
-            f.Events.ToolStarted += (id, name) => badges.Add("start:" + name + ":" + id);
-            f.Events.ToolCompleted += (id, name, ok) => badges.Add("done:" + name + ":" + id + ":" + ok);
+            var raisedByTheLoop = new List<string>();
+            f.Events.ToolStarted += (id, name) => raisedByTheLoop.Add(name);
             f.Model.Enqueue().Text("Let me check.").TextDone().WebSearch("ws_9").Text(" Sunny, 12 degrees.");
 
             // Act
@@ -162,10 +161,62 @@ namespace Jolly.Tests.EditMode.Core.Agent
 
             // Assert
             AgentFixture.Completed(run);
-            Assert.That(badges, Is.EqualTo(new[] { "start:web_search:ws_9", "done:web_search:ws_9:True" }));
-            Assert.That(AgentFixture.Describe(run.Items), Does.Not.Contain("start:"));
+            Assert.That(AgentFixture.Describe(run.Items),
+                        Does.StartWith("say:Let me check. SpeechBreak start:web_search done:web_search say: Sunny, 12 degrees."));
+            Assert.That(run.Items.Where(e => e.ToolName == ToolNames.WebSearch).Select(e => e.CallId), Is.EqualTo(new[] { "ws_9", "ws_9" }));
+            Assert.That(raisedByTheLoop, Is.Empty, "the pipeline relays the badge, once");
             Assert.That(f.Model.Requests.Count, Is.EqualTo(1), "a server-side search needs no second round");
             Assert.That(f.MemoryKinds(), Is.EqualTo("UserText,AssistantText"), "the search item is turn-local");
+        }
+
+        [Test]
+        public void RunTurn_SearchThatDidNotComplete_EndsAsAFailedTool()
+        {
+            // Arrange
+            var f = new AgentFixture(webSearch: true);
+            f.Model.Enqueue().WebSearch("ws_1", ok: false).Text("I couldn't check that.");
+
+            // Act
+            var run = f.Run("What's the weather?");
+
+            // Assert
+            AgentFixture.Completed(run);
+            Assert.That(AgentFixture.Describe(run.Items), Does.Contain("start:web_search done:web_search!"));
+        }
+
+        [Test]
+        public void RunTurn_PersonaWithoutWebSearch_GetsTheTimeButNotTheHomeCity()
+        {
+            // Arrange
+            var f = new AgentFixture(webSearch: true);
+            f.Personas.Current.AllowedTools = new[] { ToolNames.Stop };
+            f.Preferences.SetHomeLocation("Kraków", "PL");
+            f.Model.Enqueue().Text("Hi.");
+
+            // Act
+            AgentFixture.Completed(f.Run("what day is it?"));
+
+            // Assert
+            var context = f.Model.Inputs[0].Single(i => i.Text.StartsWith("Context data", System.StringComparison.Ordinal)).Text;
+            Assert.That(context, Does.Contain("Local time: Sunday, 1 November 2026, 00:00."));
+            Assert.That(context, Does.Not.Contain("Kraków").And.Not.Contain("Home"));
+        }
+
+        [Test]
+        public void RunTurn_OfflinePersonaAllowedToSearch_StillGetsTheHomeCity()
+        {
+            // Arrange: Degraded offers no search this turn, but the persona may know where the user lives.
+            var f = new AgentFixture(webSearch: true);
+            f.Connectivity.State = Connectivity.Degraded;
+            f.Preferences.SetHomeLocation("Kraków", "PL");
+            f.Model.Enqueue().Text("Hi.");
+
+            // Act
+            AgentFixture.Completed(f.Run("what day is it?"));
+
+            // Assert
+            Assert.That(f.Model.Inputs[0].Single(i => i.Text.StartsWith("Context data", System.StringComparison.Ordinal)).Text,
+                        Does.Contain("Home: Kraków, PL."));
         }
     }
 }

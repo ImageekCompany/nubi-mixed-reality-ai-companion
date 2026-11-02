@@ -36,21 +36,43 @@ namespace Jolly.Tests.PlayMode.Character
             return await tool.Execute(args, new ToolContext(), CancellationToken.None);
         }
 
+        static readonly Vector3 Behind = new(0f, 0f, 3f);
+
         [UnityTest]
         public IEnumerator MoveRelative_Behind_ArrivesBehindTheUserAndFacesThem() => UniTask.ToCoroutine(async () =>
         {
-            // Act
+            // Act: the walk goes round the user in two legs.
             var result = await Run("{\"direction\":\"behind\"}");
-            var outcome = await _rig.Nubi.WhenArrived(CancellationToken.None);
+            var arrived = await CharacterTestRig.Until(() => !_rig.Nubi.IsMoving && FlatDistance(_rig.Nubi.Position, Behind) < 0.3f, 20f);
             await CharacterTestRig.Until(() => _rig.Nubi.TryMeasureUser(out var body, out _) && body < 10f, 3f);
 
             // Assert
             Assert.That(result.OutputJson, Does.StartWith("{\"direction\":\"behind\",\"status\":\"walking\""));
-            Assert.That(outcome, Is.EqualTo(MoveOutcome.Arrived));
+            Assert.That(arrived, Is.True);
             var position = _rig.Nubi.Position;
             Assert.That(Vector3.Distance(new Vector3(position.x, 0f, position.z), new Vector3(0f, 0f, 3f)), Is.LessThan(0.3f));
             Assert.That(_rig.Nubi.TryMeasureUser(out var bodyOff, out _), Is.True);
             Assert.That(bodyOff, Is.LessThan(25f), "turned round to face the user");
+        });
+
+        [UnityTest]
+        public IEnumerator MoveRelative_BehindFromInFrontOfTheUser_NeverWalksThroughThem() => UniTask.ToCoroutine(async () =>
+        {
+            // Arrange: Nubi starts 2 m in front of the user, on the straight line to "behind me".
+            var user = _rig.User.Head.position;
+            var nearest = float.PositiveInfinity;
+
+            // Act
+            await Run("{\"direction\":\"behind\"}");
+            var arrived = await CharacterTestRig.Until(() =>
+            {
+                nearest = Mathf.Min(nearest, FlatDistance(_rig.Nubi.Position, user));
+                return !_rig.Nubi.IsMoving && FlatDistance(_rig.Nubi.Position, Behind) < 0.3f;
+            }, 20f);
+
+            // Assert
+            Assert.That(arrived, Is.True);
+            Assert.That(nearest, Is.GreaterThanOrEqualTo(0.5f), "kept clear of the user all the way round");
         });
 
         [UnityTest]
@@ -79,6 +101,8 @@ namespace Jolly.Tests.PlayMode.Character
             Assert.That(result.OutputJson, Is.EqualTo("{\"direction\":\"behind\",\"status\":\"unreachable\"}"));
             Assert.That(_rig.Nubi.IsMoving, Is.False);
         });
+
+        static float FlatDistance(Vector3 a, Vector3 b) => RelativeTarget.FlatDistance(a, b);
     }
 }
 #endif

@@ -22,6 +22,12 @@ namespace Jolly.Core.Config
         public float UserMinDistance { get; set; } = 0.5f;
         /// <summary>A relative target snaps to walkable floor only this far, so "behind me" stays behind the user.</summary>
         public float RelativeSampleRadius { get; set; } = 0.5f;
+        /// <summary>A relative move whose straight line passes nearer the user than this walks round them instead, m.</summary>
+        public float UserPassClearance { get; set; } = 0.6f;
+        /// <summary>How far from the user the walk round them turns, m. Both legs keep over 0.6 m from the user when the
+        /// character starts 1 m or more away; the first leg stops <see cref="ComeHereStopDistance"/> short of the turn,
+        /// since stopping further short pulls the second leg in towards the user.</summary>
+        public float DetourRadius { get; set; } = 1.0f;
     }
 
     /// <summary>Capture, SAM and vision numbers of architecture §5.3 (one set, shared with JollyConfig).</summary>

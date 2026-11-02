@@ -11,7 +11,7 @@ namespace Jolly.Tests.PlayMode.Eval
         {
             var c = ToolSelectionCase.Calls("Hi Nubi, come here", ToolNames.ComeHere);
 
-            Assert.That(c.Passes(new[] { ToolNames.PlayGesture, ToolNames.ComeHere }), Is.True);
+            Assert.That(c.Passes(new[] { ToolNames.Actions.Wave, ToolNames.ComeHere }), Is.True);
         }
 
         [Test]
@@ -37,7 +37,7 @@ namespace Jolly.Tests.PlayMode.Eval
             var c = ToolSelectionCase.StaysPut("Hi Nubi");
 
             Assert.That(c.Passes(new string[0]), Is.True);
-            Assert.That(c.Passes(new[] { ToolNames.PlayGesture }), Is.True);
+            Assert.That(c.Passes(new[] { ToolNames.Actions.Wave }), Is.True);
         }
 
         [TestCase(ToolNames.ComeHere)]
@@ -48,7 +48,7 @@ namespace Jolly.Tests.PlayMode.Eval
         {
             var c = ToolSelectionCase.StaysPut("Hello, who are you?");
 
-            Assert.That(c.Passes(new[] { ToolNames.PlayGesture, movement }), Is.False);
+            Assert.That(c.Passes(new[] { ToolNames.Actions.Wave, movement }), Is.False);
         }
 
         [Test]

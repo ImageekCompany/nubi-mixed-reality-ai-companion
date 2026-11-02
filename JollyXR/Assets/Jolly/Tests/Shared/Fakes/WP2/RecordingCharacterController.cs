@@ -17,12 +17,16 @@ namespace Jolly.Testing.Conversation
         public bool Reachable { get; set; } = true;
         public float Eta { get; set; } = 3.2f;
         public Vector3? MoveTarget { get; private set; }
+        /// <summary>Every started move's target, in order.</summary>
+        public List<Vector3> MoveTargets { get; } = new();
         public float MoveStopDistance { get; private set; }
         public (float min, float max)? FollowRange { get; private set; }
         public int StopCount { get; private set; }
         public List<Vector3> Relocations { get; } = new();
         public LookTarget? LastLook { get; private set; }
         public List<GestureId> Gestures { get; } = new();
+        /// <summary>The token each <see cref="PlayGesture"/> was given, in order.</summary>
+        public List<CancellationToken> GestureTokens { get; } = new();
         /// <summary>Gestures <see cref="CanPlay"/> denies; every gesture is playable by default.</summary>
         public HashSet<GestureId> Missing { get; } = new();
         public List<(GestureId gesture, float seconds)> Looped { get; } = new();
@@ -36,6 +40,7 @@ namespace Jolly.Testing.Conversation
             if (!Reachable)
                 return false;
             MoveTarget = worldTarget;
+            MoveTargets.Add(worldTarget);
             MoveStopDistance = stopDistance;
             Mode = LocomotionMode.MovingTo;
             return true;
@@ -67,6 +72,7 @@ namespace Jolly.Testing.Conversation
         public UniTask PlayGesture(GestureId gesture, CancellationToken ct)
         {
             Gestures.Add(gesture);
+            GestureTokens.Add(ct);
             return UniTask.CompletedTask;
         }
 

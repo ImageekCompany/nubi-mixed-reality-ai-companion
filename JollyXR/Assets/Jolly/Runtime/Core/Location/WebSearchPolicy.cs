@@ -23,12 +23,12 @@ namespace Jolly.Core.Location
 
         public UserLocation Location { get; }
 
+        /// <summary>Search is on and the persona may use it, whatever the link: the persona may also be told the home city.</summary>
+        public bool Allows(PersonaProfile persona) =>
+            _enabled && ToolNames.IsAllowed(persona?.AllowedTools, ToolNames.WebSearch);
+
         /// <summary>Null: no web search this turn.</summary>
-        public WebSearchOptions For(PersonaProfile persona)
-        {
-            if (!_enabled || !ToolNames.IsAllowed(persona?.AllowedTools, ToolNames.WebSearch))
-                return null;
-            return _connectivity.State == Contracts.Connectivity.Online ? Location.SearchOptions() : null;
-        }
+        public WebSearchOptions For(PersonaProfile persona) =>
+            Allows(persona) && _connectivity.State == Contracts.Connectivity.Online ? Location.SearchOptions() : null;
     }
 }

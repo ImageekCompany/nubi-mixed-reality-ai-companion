@@ -174,10 +174,6 @@ MonoBehaviour:
     m_Localized: Stop
     m_Metadata:
       m_Items: []
-  - m_Id: 380624931
-    m_Localized: Gest
-    m_Metadata:
-      m_Items: []
   - m_Id: 380624932
     m_Localized: "Zmiana osobowo\u015Bci"
     m_Metadata:
@@ -256,6 +252,38 @@ MonoBehaviour:
       m_Items: []
   - m_Id: 380624951
     m_Localized: Przechodzę
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624952
+    m_Localized: Macham
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624953
+    m_Localized: Kiwam głową
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624954
+    m_Localized: Kręcę głową
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624955
+    m_Localized: Wzruszam ramionami
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624956
+    m_Localized: Myślę
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624957
+    m_Localized: Podskakuję
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624958
+    m_Localized: Przeciągam się
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624959
+    m_Localized: Rozglądam się
     m_Metadata:
       m_Items: []
   references:

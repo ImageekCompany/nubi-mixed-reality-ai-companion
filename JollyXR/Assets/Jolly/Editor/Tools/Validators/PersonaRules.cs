@@ -16,8 +16,12 @@ namespace Jolly.Editor.Tools.Validators
         static readonly string[] KnownTools =
         {
             ToolNames.WalkTo, ToolNames.FollowUser, ToolNames.ComeHere, ToolNames.LookAt, ToolNames.CaptureAndIdentify,
-            ToolNames.FindObject, ToolNames.HighlightPart, ToolNames.RememberPlace, ToolNames.Stop, ToolNames.PlayGesture,
-            ToolNames.SetPersona, ToolNames.GoToSurface, ToolNames.RequestRoomScan,
+            ToolNames.FindObject, ToolNames.HighlightPart, ToolNames.RememberPlace, ToolNames.Stop,
+            ToolNames.SetPersona, ToolNames.GoToSurface, ToolNames.RequestRoomScan, ToolNames.SetHomeLocation, ToolNames.WebSearch,
+            ToolNames.Actions.Jump, ToolNames.Actions.Dance, ToolNames.Actions.Bow, ToolNames.Actions.Spin,
+            ToolNames.Actions.Celebrate, ToolNames.Actions.MoveRelative, ToolNames.Actions.Wave, ToolNames.Actions.Nod,
+            ToolNames.Actions.ShakeHead, ToolNames.Actions.Shrug, ToolNames.Actions.Think, ToolNames.Actions.Bounce,
+            ToolNames.Actions.Stretch, ToolNames.Actions.LookAround,
         };
         static readonly string[] CameraTools = { ToolNames.CaptureAndIdentify, ToolNames.FindObject, ToolNames.HighlightPart };
 

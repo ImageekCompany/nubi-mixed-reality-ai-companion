@@ -95,18 +95,6 @@ namespace Jolly.Tests.EditMode.Core.Tools
             Assert.That(result.OutputJson, Is.EqualTo("{\"status\":\"stopped\"}"));
         }
 
-        [TestCase("wave", GestureId.Wave)]
-        [TestCase("shake_head", GestureId.ShakeHead)]
-        [TestCase("happy_bounce", GestureId.HappyBounce)]
-        [TestCase("think", GestureId.Think)]
-        public void PlayGesture_MapsSchemaNames(string name, GestureId expected)
-        {
-            var result = ToolHarness.Run(new PlayGestureTool(_character), "{\"name\":\"" + name + "\"}");
-
-            Assert.That(_character.Gestures.Single(), Is.EqualTo(expected));
-            Assert.That(result.OutputJson, Is.EqualTo("{\"status\":\"played\"}"));
-        }
-
         [Test]
         public void RememberPlace_SavesTheUsersFloorPositionWithAnAnchor()
         {
@@ -198,7 +186,6 @@ namespace Jolly.Tests.EditMode.Core.Tools
         public void Timeouts_MatchTheCatalogue()
         {
             Assert.That(LookAt().Definition.Timeout, Is.EqualTo(TimeSpan.FromSeconds(1)));
-            Assert.That(new PlayGestureTool(_character).Definition.Timeout, Is.EqualTo(TimeSpan.FromSeconds(4)));
             Assert.That(new RememberPlaceTool(_scene, _anchors, _user, _character, _clock, _log).Definition.Timeout,
                 Is.EqualTo(TimeSpan.FromSeconds(5)));
         }

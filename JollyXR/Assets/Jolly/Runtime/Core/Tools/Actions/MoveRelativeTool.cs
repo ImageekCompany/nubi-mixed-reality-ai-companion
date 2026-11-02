@@ -12,8 +12,8 @@ namespace Jolly.Core.Tools
     /// actions.move_relative (ADR-0047): walks to a spot named relative to the user (<see cref="RelativeTarget"/>), watching
     /// them, so it ends facing them (ADR-0041). The target snaps to walkable floor within
     /// <see cref="LocomotionSettings.RelativeSampleRadius"/> and must stay <see cref="LocomotionSettings.UserMinDistance"/>
-    /// from the user; otherwise it answers unreachable for the model to say so. Returns once the walk has started, like
-    /// come_here. Logs <c>evt=action.move_relative</c>.
+    /// from the user; otherwise it answers unreachable for the model to say so. The walk never passes through the user.
+    /// Returns once the walk has started, like come_here. Logs <c>evt=action.move_relative</c>.
     /// </summary>
     public sealed class MoveRelativeTool : ITool
     {
@@ -72,7 +72,7 @@ namespace Jolly.Core.Tools
                 var target = RelativeTarget.Resolve(direction, distance, head, from, _settings);
                 status = _world.TrySampleWalkable(target, _settings.RelativeSampleRadius, out var walkable)
                          && RelativeTarget.FlatDistance(walkable, head.position) >= _settings.UserMinDistance
-                         && _character.TryStartMoveTo(walkable, _settings.ComeHereStopDistance, out eta)
+                         && TryStartWalk(from, walkable, head.position, out eta)
                     ? "walking"
                     : "unreachable";
             }
@@ -83,6 +83,39 @@ namespace Jolly.Core.Tools
             _log.Write(status == "unreachable" ? LogLevel.Warning : LogLevel.Info, "tools",
                 $"evt=action.move_relative dir={name} dist_m={distance.ToString("0.00", CultureInfo.InvariantCulture)} status={status}");
             return UniTask.FromResult(ToolResult.Success(output.ToString()));
+        }
+
+        /// <summary>
+        /// Straight to <paramref name="target"/>, unless that line passes within <see cref="LocomotionSettings.UserPassClearance"/>
+        /// of the user ("behind me" from in front of them would walk through them): then to a point beside the user
+        /// (<see cref="RelativeTarget.Detour"/>, the character's side first) and on to the target once there. A stop, or
+        /// any newer walk, ends the first leg as Cancelled, and the second never starts.
+        /// </summary>
+        bool TryStartWalk(Vector3 from, Vector3 target, Vector3 user, out float eta)
+        {
+            if (RelativeTarget.PassDistance(from, target, user) >= _settings.UserPassClearance)
+                return _character.TryStartMoveTo(target, _settings.ComeHereStopDistance, out eta);
+            foreach (var otherSide in new[] { false, true })
+            {
+                var turn = RelativeTarget.Detour(from, target, user, _settings.DetourRadius, otherSide);
+                if (!_world.TrySampleWalkable(turn, _settings.RelativeSampleRadius, out var walkable)
+                    || RelativeTarget.FlatDistance(walkable, user) < _settings.UserMinDistance
+                    || !_character.TryStartMoveTo(walkable, _settings.ComeHereStopDistance, out var first))
+                    continue;
+                var leg = Mathf.Max(RelativeTarget.FlatDistance(from, walkable), 0.1f);
+                eta = first * (leg + RelativeTarget.FlatDistance(walkable, target)) / leg;
+                ThenWalkTo(target).Forget();
+                return true;
+            }
+            eta = 0f;
+            return false;
+        }
+
+        /// <summary>No token: like every walk, a barge-in never stops it; only a stop or a newer walk does.</summary>
+        async UniTaskVoid ThenWalkTo(Vector3 target)
+        {
+            if (await _character.WhenArrived(CancellationToken.None) == MoveOutcome.Arrived)
+                _character.TryStartMoveTo(target, _settings.ComeHereStopDistance, out _);
         }
 
         /// <summary>The schema enum guarantees one of these names.</summary>

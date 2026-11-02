@@ -55,6 +55,7 @@ MonoBehaviour:
   backgroundFirstEventSeconds: 10
   backgroundAttempts: 3
   llmIdleSeconds: 10
+  llmSearchIdleSeconds: 15
   samSeconds: 5
   samAttempts: 2
   visionSeconds: 8
