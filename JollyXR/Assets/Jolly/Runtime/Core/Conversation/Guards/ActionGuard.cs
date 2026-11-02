@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using Jolly.Contracts;
 using Jolly.Core.Tools;
 
@@ -55,12 +56,17 @@ namespace Jolly.Core.Conversation
             };
         }
 
+        /// <summary>One to three words said twice in a row, with no punctuation between: "Jump. Jump." stays two clauses.</summary>
+        static readonly Regex Stutter = new(@"\b(\w+(?:\s+\w+){0,2})\s+\1\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+
         /// <summary>The action <paramref name="transcript"/> commands, if it is exactly one short command.</summary>
         public bool TryMatch(string transcript, out string tool, out string argumentsJson)
         {
             tool = argumentsJson = null;
             if (string.IsNullOrEmpty(transcript) || transcript.IndexOf('?') >= 0 || HasNegation(transcript))
                 return false;
+            // The headset's ASR sometimes stutters ("Show me how to how to dance."), which sent the turn to the model.
+            transcript = Stutter.Replace(transcript, "$1");
             foreach (var command in _commands)
             {
                 if (!command.Phrases.Matches(transcript))

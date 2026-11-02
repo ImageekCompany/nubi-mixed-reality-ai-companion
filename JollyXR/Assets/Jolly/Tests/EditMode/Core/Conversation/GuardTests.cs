@@ -147,6 +147,22 @@ namespace Jolly.Tests.EditMode.Core.Conversation
             Assert.That(json, Is.EqualTo(args));
         }
 
+        [TestCase("Show me how to how to dance.", "actions.dance")]
+        [TestCase("Go stand behind behind me.", "actions.move_relative")]
+        [TestCase("jump jump", "actions.jump")]
+        public void ActionGuard_AsrStutter_StillTheCommand(string transcript, string tool)
+        {
+            // Arrange
+            var guard = new ActionGuard(new FakeLocalizer());
+
+            // Act
+            var matched = guard.TryMatch(transcript, out var name, out _);
+
+            // Assert
+            Assert.That(matched, Is.True);
+            Assert.That(name, Is.EqualTo(tool));
+        }
+
         [TestCase("don't dance")]
         [TestCase("Do not jump.")]
         [TestCase("Never. Jump.")]
@@ -166,6 +182,7 @@ namespace Jolly.Tests.EditMode.Core.Conversation
         [TestCase("hello there")]
         [TestCase("please")]
         [TestCase("")]
+        [TestCase("Jump. Jump. Spin.")]
         public void ActionGuard_NotAShortCommand_LeftToTheModel(string transcript)
         {
             // Arrange

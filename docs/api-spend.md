@@ -85,4 +85,6 @@ Rows before 2026-11-01 02:00 (research phase, `docs/research/*.md`) were not ite
 
 | 2026-11-02 | ADR-0047 `action_through_model` phrase: tool-selection eval, tag `actions.dance`, then the new phrase alone (metered 0.0085 + 0.0023 + 0.0047) | muse-spark-1.3 | 5 | in 20,316 (cached 15,812) / out 1,767 | 0.016 |
 
-Running total (est.): **≤ $2.59** (sum of the rows: 2.582)
+| 2026-11-02 | device self-tests after the short-command and flow fixes: 2 runs of `--character jolly` release builds (app meter about 0.043 each) | muse-spark-1.3, sam-3.1, muse-voice-transcribe-1.0 (+ Wit, free) | ~22 Spark calls, 4 SAM, 2 web searches, ~24 ASR sessions | 4 images; ~45 s audio | 0.086 |
+
+Running total (est.): **≤ $2.67** (sum of the rows: 2.668)
