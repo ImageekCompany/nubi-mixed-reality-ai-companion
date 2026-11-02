@@ -14,7 +14,8 @@ namespace Jolly.App.SelfTest.Scenarios
     /// NavMesh) and walk. Being walkable is not enough: on a keyed run the headset lay on a desk (user_h=0.71) and the
     /// chosen ray met something above the floor, a depth or furniture hit, so no ring showed and the press talked
     /// (no evt=move.request, and turn 4 opened in the same 115 ms). The character plays no part: the scripted pointer never
-    /// checks its collider and the scene raycast does not see it. With no such ray at all the scenario degrades. It must arrive
+    /// checks its collider and the scene raycast does not see it. With no such ray at all it degrades only when the head
+    /// height shows the headset is not worn (<see cref="ReportBlockedRays"/>); on a worn one that is a resolver regression. It must arrive
     /// (<c>walk=Arrived</c>) near the point with no conversation state change (so no ASR session, no model request,
     /// no "Listening…") and no spend. The microphone pre-roll must have started at the pinch and been dropped unheard.
     /// </summary>
@@ -26,6 +27,7 @@ namespace Jolly.App.SelfTest.Scenarios
         const float SampleRadius = 0.2f;
         const float MaxArrivalError = 0.35f;
         const double RoomSettleSeconds = 15;
+        const float MinWornHeadHeight = 1f;
         static readonly TimeSpan TapHold = TimeSpan.FromSeconds(0.1);
         static readonly TimeSpan ArrivalWait = TimeSpan.FromSeconds(10);
 
@@ -45,11 +47,12 @@ namespace Jolly.App.SelfTest.Scenarios
                 return r;
             }
             var picked = TryPickPoint(world, graph.Point.Resolver, head, nubi.Position, out var point, out var blocked);
-            r.Metric("rays_blocked", blocked);
+            var headAboveFloor = head.y - nubi.Position.y;
+            r.Metric("rays_blocked", blocked).Metric("head_above_floor_m", headAboveFloor);
             if (!picked)
             {
                 if (blocked > 0)
-                    r.Degrade("every ray from the head to walkable floor meets something above the floor");
+                    ReportBlockedRays(r, headAboveFloor);
                 else
                     r.Check(false, "no walkable floor point near the user");
                 return r;
@@ -98,6 +101,19 @@ namespace Jolly.App.SelfTest.Scenarios
             if (c.Session.Microphone.StartCount == micStarts)
                 r.Degrade("the microphone pre-roll did not start at the pinch");
             return r;
+        }
+
+        /// <summary>
+        /// Every ray blocked: a headset lying on a desk has its head under <see cref="MinWornHeadHeight"/> and degrades,
+        /// a wearer's (seated too) fails, or a resolver that rejects every ray would pass unseen.
+        /// </summary>
+        public static void ReportBlockedRays(ScenarioResult r, float headAboveFloor)
+        {
+            const string blocked = "every ray from the head to walkable floor meets something above the floor";
+            if (headAboveFloor < MinWornHeadHeight)
+                r.Degrade(blocked);
+            else
+                r.Check(false, blocked);
         }
 
         /// <summary>

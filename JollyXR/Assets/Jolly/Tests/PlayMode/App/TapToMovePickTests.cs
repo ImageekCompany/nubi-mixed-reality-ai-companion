@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Jolly.App.SelfTest;
 using Jolly.App.SelfTest.Scenarios;
 using Jolly.Contracts;
 using Jolly.Core.Config;
@@ -78,6 +79,23 @@ namespace Jolly.Tests.PlayMode.App
             // Assert
             Assert.That(picked, Is.False);
             Assert.That(blocked, Is.EqualTo(12));
+        }
+
+        [TestCase(0.71f, ScenarioStatus.Degraded, TestName = "ReportBlockedRays_HeadsetOnADesk_Degrades")]
+        [TestCase(0.99f, ScenarioStatus.Degraded, TestName = "ReportBlockedRays_JustUnderWornHeight_Degrades")]
+        [TestCase(1.0f, ScenarioStatus.Fail, TestName = "ReportBlockedRays_AtWornHeight_Fails")]
+        [TestCase(1.15f, ScenarioStatus.Fail, TestName = "ReportBlockedRays_Seated_Fails")]
+        [TestCase(1.65f, ScenarioStatus.Fail, TestName = "ReportBlockedRays_Standing_Fails")]
+        public void ReportBlockedRays_OnlyAHeadsetNotWornExcusesIt(float headAboveFloor, ScenarioStatus expected)
+        {
+            // Arrange
+            var r = new ScenarioResult("t");
+
+            // Act
+            TapToMoveScenario.ReportBlockedRays(r, headAboveFloor);
+
+            // Assert
+            Assert.That(r.Status, Is.EqualTo(expected));
         }
 
         [Test]
