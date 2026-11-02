@@ -4,8 +4,9 @@ using UnityEngine;
 namespace Jolly.App.SelfTest
 {
     /// <summary>
-    /// Bundled inputs of the device self-test: spoken questions (macOS <c>say</c>, 24 kHz mono, Decompress On Load) with
-    /// the words each should transcribe to, and a CC-licensed still for a room too dark for the camera.
+    /// Bundled inputs of the device self-test: spoken questions (Wit <c>/synthesize</c>, 24 kHz mono, Decompress On Load;
+    /// Content/SelfTest/ATTRIBUTION.md) with the words each should transcribe to, and a CC-licensed still for a room too
+    /// dark for the camera.
     /// </summary>
     [CreateAssetMenu(menuName = "Jolly/Self-Test Assets", fileName = "SelfTestAssets")]
     public sealed class SelfTestAssets : ScriptableObject
@@ -37,6 +38,8 @@ namespace Jolly.App.SelfTest
         public Utterance whichPart = new();
         [Tooltip("Asks for the object in the fallback still, for find_object.")]
         public Utterance findObject = new();
+        [Tooltip("A question about today that needs a web search (ADR-0048).")]
+        public Utterance webSearch = new();
         [Tooltip("JPEG bytes (.bytes) of a CC-licensed still, see Content/SelfTest/ATTRIBUTION.md.")]
         public TextAsset fallbackStill;
 

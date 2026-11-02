@@ -29,6 +29,7 @@ namespace Jolly.App.SelfTest
             // Asks about a part of what the identify turn just saw, so it must follow it.
             (VisionPartScenario.Name, VisionPartScenario.Run),
             (FindObjectScenario.Name, FindObjectScenario.Run),
+            (WebSearchScenario.Name, WebSearchScenario.Run),
             (BargeInScenario.Name, BargeInScenario.Run),
             (PerfScenario.Name, PerfScenario.Run),
         };

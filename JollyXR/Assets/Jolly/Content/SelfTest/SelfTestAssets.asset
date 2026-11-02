@@ -35,4 +35,7 @@ MonoBehaviour:
   findObject:
     clip: {fileID: 8300000, guid: 35872edf457f49c5ba5c7e2dce99a26f, type: 3}
     expectedText: Nubi, where is my mug? Show me.
+  webSearch:
+    clip: {fileID: 8300000, guid: d1543a1d15cb4f518918fb961bb4e4c4, type: 3}
+    expectedText: What's the weather like today?
   fallbackStill: {fileID: 4900000, guid: 8d67d578542784ffc9f64d6a7139c4be, type: 3}
