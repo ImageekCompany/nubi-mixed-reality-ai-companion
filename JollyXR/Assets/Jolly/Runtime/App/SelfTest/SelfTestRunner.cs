@@ -31,10 +31,11 @@ namespace Jolly.App.SelfTest
             (FindObjectScenario.Name, FindObjectScenario.Run),
             (WebSearchScenario.Name, WebSearchScenario.Run),
             (ActionDanceScenario.Name, ActionDanceScenario.Run),
-            // Leaves the character behind the user, so it runs after every scenario that wants it in front.
-            (ActionMoveBehindScenario.Name, ActionMoveBehindScenario.Run),
             (BargeInScenario.Name, BargeInScenario.Run),
             (PerfScenario.Name, PerfScenario.Run),
+            // Leaves the character behind the user, so it runs last: before perf, perf measured an empty view (2k triangles,
+            // not the furry character's 436k).
+            (ActionMoveBehindScenario.Name, ActionMoveBehindScenario.Run),
         };
 
         readonly SelfTestSession _session;

@@ -75,4 +75,6 @@ Rows before 2026-11-01 02:00 (research phase, `docs/research/*.md`) were not ite
 
 | 2026-11-02 | device self-tests of ADR-0047/0048: 2 runs of the `--character jolly` release builds `7bf2439` and `7b5bf77` (app meter 0.0429 + 0.0504) | muse-spark-1.3, sam-3.1, muse-voice-transcribe-1.0 (+ Wit, free) | ~22 Spark calls, 4 SAM, 1 web search, ~20 ASR sessions | 4 images; ~40 s audio | 0.093 |
 
-Running total (est.): **≤ $2.39** (sum of the rows: 2.384)
+| 2026-11-02 | device self-test of ADR-0047/0048 after the seated fix: 1 run of the `--character jolly` release build `e222021` (app meter 0.0449) | muse-spark-1.3, sam-3.1, muse-voice-transcribe-1.0 (+ Wit, free) | ~11 Spark calls, 2 SAM, 1 web search, ~10 ASR sessions | 2 images; ~20 s audio | 0.045 |
+
+Running total (est.): **≤ $2.43** (sum of the rows: 2.429)
