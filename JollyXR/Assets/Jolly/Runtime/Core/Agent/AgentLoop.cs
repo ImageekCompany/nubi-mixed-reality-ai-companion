@@ -181,6 +181,7 @@ namespace Jolly.Core.Agent
             var sentAt = _clock.Now;
             ModelTurnResult result = null;
             using var firstEvent = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            HashSet<string> searches = null;
             if (_settings.HoldLineAfter > TimeSpan.Zero)
                 SignalWhileSilent(turnId, round, events, firstEvent.Token).Forget();
             try
@@ -204,11 +205,16 @@ namespace Jolly.Core.Agent
                             tools.Start(e.ToolCall);
                             break;
                         // The server runs the search: no ToolRoundExecutor call, but the turn shows it like a tool (the
-                        // state goes to Acting, the badge and the Think gesture run) until it ends.
+                        // state goes to Acting, the badge and the Think gesture run) until it ends. The pipeline counts
+                        // running tools, so every search is started once and completed once, even when the stream
+                        // repeats an in_progress event or skips it.
                         case ModelEventKind.WebSearchStarted:
-                            events.Write(new AgentEvent(AgentEventKind.ToolStarted, toolName: ToolNames.WebSearch, callId: e.Text));
+                            if ((searches ??= new HashSet<string>()).Add(e.Text ?? ""))
+                                events.Write(new AgentEvent(AgentEventKind.ToolStarted, toolName: ToolNames.WebSearch, callId: e.Text));
                             break;
                         case ModelEventKind.WebSearchCompleted:
+                            if (!(searches ??= new HashSet<string>()).Remove(e.Text ?? ""))
+                                events.Write(new AgentEvent(AgentEventKind.ToolStarted, toolName: ToolNames.WebSearch, callId: e.Text));
                             events.Write(new AgentEvent(AgentEventKind.ToolCompleted, toolName: ToolNames.WebSearch, callId: e.Text,
                                 toolResult: new ToolResult(e.Ok, null)));
                             break;

@@ -170,6 +170,39 @@ namespace Jolly.Tests.EditMode.Core.Agent
         }
 
         [Test]
+        public void RunTurn_SearchCompletedWithoutStarting_StartsItFirstSoNoCountGoesNegative()
+        {
+            // Arrange: the stream skipped the in_progress event.
+            var f = new AgentFixture(webSearch: true);
+            f.Model.Enqueue().SearchEvent(ModelEventKind.WebSearchCompleted, "ws_2").Text("Sunny.");
+
+            // Act
+            var run = f.Run("What's the weather?");
+
+            // Assert
+            AgentFixture.Completed(run);
+            Assert.That(AgentFixture.Describe(run.Items), Does.StartWith("start:web_search done:web_search say:Sunny."));
+        }
+
+        [Test]
+        public void RunTurn_SearchStartedTwice_StartsItOnce()
+        {
+            // Arrange
+            var f = new AgentFixture(webSearch: true);
+            f.Model.Enqueue().SearchEvent(ModelEventKind.WebSearchStarted, "ws_3")
+             .SearchEvent(ModelEventKind.WebSearchStarted, "ws_3")
+             .SearchEvent(ModelEventKind.WebSearchCompleted, "ws_3").Text("Sunny.");
+
+            // Act
+            var run = f.Run("What's the weather?");
+
+            // Assert
+            AgentFixture.Completed(run);
+            Assert.That(run.Items.Count(e => e.Kind == AgentEventKind.ToolStarted), Is.EqualTo(1));
+            Assert.That(run.Items.Count(e => e.Kind == AgentEventKind.ToolCompleted), Is.EqualTo(1));
+        }
+
+        [Test]
         public void RunTurn_SearchThatDidNotComplete_EndsAsAFailedTool()
         {
             // Arrange

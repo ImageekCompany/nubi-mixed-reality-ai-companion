@@ -86,6 +86,13 @@ namespace Jolly.Testing.Conversation
                 return this;
             }
 
+            /// <summary>A search event on its own, as a stream that skips or repeats one would send it.</summary>
+            public Round SearchEvent(ModelEventKind kind, string id = "ws_1", bool ok = true)
+            {
+                _steps.Add((w, ct) => w.YieldAsync(new ModelEvent(kind, id, ok: ok)));
+                return this;
+            }
+
             public Round Gate()
             {
                 _steps.Add((w, ct) => _gate.Task.AttachExternalCancellation(ct));
