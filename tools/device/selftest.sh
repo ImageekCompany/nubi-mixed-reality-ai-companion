@@ -2,6 +2,8 @@
 # Device self-test: runs the app's built-in SelfTestRunner on a connected Quest with nobody wearing it, then prints
 # a PASS/FAIL table from selftest_results.json. Exits 1 when any scenario FAILs (DEGRADED is reported, exit 0).
 # Usage: tools/device/selftest.sh [--build] [--apk path] [--timeout seconds] [--skip-install] [--profile] [--turns N]
+#   --apk: the APK to install. Without it, the newer of JollyXR/Builds/Android/Nubi.apk (tools/device/build.sh) and
+#   artifacts/Nubi.apk (tools/ci/build.sh); --build builds and installs artifacts/Nubi.apk.
 #   --profile: development players record each turn scenario to a Profiler log with allocation call stacks, pulled to
 #   artifacts/selftest/selftest_turns_<scenario>.raw for Jolly.Editor.Tools.GcAllocReport (docs/perf/README.md §7).
 #   --turns N: instead of the scenario list, N consecutive online voice turns (greeting, come here, vision, repeated)
@@ -15,7 +17,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 PKG="${NUBI_PACKAGE:-com.nubi.companion}"
-APK="$ROOT/artifacts/Nubi.apk"
+APK=
 TIMEOUT=
 BUILD=0
 SKIP_INSTALL=0
@@ -35,6 +37,14 @@ while [[ $# -gt 0 ]]; do
 done
 
 [[ "$TURNS" =~ ^[0-9]+$ ]] || { echo "[selftest] --turns takes a count" >&2; exit 2; }
+if [[ -z "$APK" && $BUILD -eq 1 ]]; then
+  APK="$ROOT/artifacts/Nubi.apk"
+elif [[ -z "$APK" ]]; then
+  # Each build script writes its own path; the older one is a stale build (a different character or commit).
+  APK="$ROOT/JollyXR/Builds/Android/Nubi.apk"
+  if [[ "$ROOT/artifacts/Nubi.apk" -nt "$APK" ]]; then APK="$ROOT/artifacts/Nubi.apk"; fi
+  [[ $SKIP_INSTALL -eq 1 ]] || echo "[selftest] no --apk: using the newest build, $APK"
+fi
 # 20 turns took 207 s on 2026-11-01; the margin covers slow model rounds and the come-here walk.
 TIMEOUT="${TIMEOUT:-$(( TURNS > 0 ? 120 + 25 * TURNS : 360 ))}"
 
