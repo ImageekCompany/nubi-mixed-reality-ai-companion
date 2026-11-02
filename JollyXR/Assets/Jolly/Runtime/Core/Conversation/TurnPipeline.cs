@@ -8,7 +8,8 @@ namespace Jolly.Core.Conversation
 {
     /// <summary>
     /// One turn, start to finish: listen → guards → agent → speech (online), a canned line (offline, or after the come
-    /// guard started the walk), nothing (a settings command), or an unprompted announcement. It drives the state machine; the controller owns tokens
+    /// guard started the walk), the move itself (a short body command), nothing (a settings command), or an unprompted
+    /// announcement. It drives the state machine; the controller owns tokens
     /// and watchdogs.
     /// </summary>
     public sealed class TurnPipeline
@@ -81,12 +82,9 @@ namespace Jolly.Core.Conversation
                 EndSpeakingTurn(turnId);
                 return;
             }
-            var text = await ApplyGuards(heard.Text, turnCt);
+            var text = await ApplyGuards(turnId, heard.Text, turnCt);
             if (text == null)
-            {
-                await ComeOver(turnId, heard.Text, turnCt);
                 return;
-            }
             await RunAgent(new UserTurn
             {
                 TurnId = turnId, Text = text, LanguageTag = _localizer.LanguageTag, PreCaptured = heard.PreCaptured,
@@ -127,17 +125,22 @@ namespace Jolly.Core.Conversation
         }
 
         /// <summary>
-        /// The text for the agent, or null when the come guard's walk answers the turn without it. Only a question the
-        /// guards left alone is acknowledged (ADR-0040): "Good question." before "On my way!" on the demo's opening line
-        /// read as two fillers, and a command gets its answer, not a filler.
+        /// The text for the agent, or null when a guard answered the turn without it (the come guard's walk, a short body
+        /// command). Only a question the guards left alone is acknowledged (ADR-0040): "Good question." before "On my
+        /// way!" on the demo's opening line read as two fillers, and a command gets its answer, not a filler.
         /// </summary>
-        async UniTask<string> ApplyGuards(string text, CancellationToken ct)
+        async UniTask<string> ApplyGuards(int turnId, string text, CancellationToken ct)
         {
             var stopped = _guards.ApplyStop(text);
             var walking = await _guards.ApplyComeHere(text, ct);
             if (!_guards.NeedsCrisisHandoff(text))
             {
                 if (walking)
+                {
+                    await ComeOver(turnId, text, ct);
+                    return null;
+                }
+                if (await RunGuardedAction(turnId, text, ct))
                     return null;
                 if (!stopped && _timings.AcknowledgeQuestions && _guards.IsQuestion(text))
                     Acknowledge(ct).Forget();
@@ -168,6 +171,45 @@ namespace Jolly.Core.Conversation
                     : new[] { ConversationItem.User(userText), ConversationItem.Assistant(line.Text) });
             }
             EndSpeakingTurn(turnId);
+        }
+
+        /// <summary>
+        /// A short body command runs now, with no model round and no words (ADR-0047): on the headset the model took 2.0-3.7 s
+        /// to first audio and the closing round 1.5-2 s more. The turn stays Acting until the move ends, so a pinch barges
+        /// in on it, and memory gets the call the agent would have committed, so the next turn knows it happened. False
+        /// leaves the turn to the model.
+        /// </summary>
+        async UniTask<bool> RunGuardedAction(int turnId, string text, CancellationToken ct)
+        {
+            if (!_guards.TryMatchAction(text, out var action))
+                return false;
+            var call = ConversationItem.Call(action.CallId, action.Name, action.ArgumentsJson);
+            _machine.Fire(ConversationTrigger.ToolStarted);
+            string output;
+            try
+            {
+                output = await _guards.RunAction(action, ct);
+            }
+            catch (OperationCanceledException)
+            {
+                _memory.CommitTurn(new[]
+                {
+                    ConversationItem.User(text), call, ConversationItem.Result(action.CallId, ToolResult.InterruptedOutput),
+                    ConversationItem.Assistant("[interrupted]"),
+                });
+                throw;
+            }
+            if (output == null)
+            {
+                _machine.Fire(ConversationTrigger.ToolsDone);
+                return false;
+            }
+            _memory.CommitTurn(new[] { ConversationItem.User(text), call, ConversationItem.Result(action.CallId, output) });
+            // In this order Acting goes straight to Idle, with no Thinking pose between the move and rest.
+            _machine.Fire(ConversationTrigger.TurnCompleted);
+            _machine.Fire(ConversationTrigger.ToolsDone);
+            _latency.Mark(turnId, LatencyMark.TurnCompleted);
+            return true;
         }
 
         async UniTask RunAgent(UserTurn turn, CancellationToken ct)

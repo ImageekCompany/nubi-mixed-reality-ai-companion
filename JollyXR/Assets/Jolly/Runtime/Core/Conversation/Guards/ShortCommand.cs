@@ -5,7 +5,7 @@ namespace Jolly.Core.Conversation
 {
     /// <summary>
     /// A short final made only of trigger phrases and fillers, with at least one trigger: the shape the local guards act
-    /// on before the model (<see cref="StopGuard"/>, <see cref="ComeGuard"/>, <see cref="SettingsGuard"/>). Any other
+    /// on before the model (<see cref="StopGuard"/>, <see cref="ComeGuard"/>, <see cref="ActionGuard"/>, <see cref="SettingsGuard"/>). Any other
     /// word means the person said more than the command, so the model decides, with one exception: the name as heard.
     /// A clause (between , . ! ? ; :) with no trigger and exactly one word the tables do not know is taken as the
     /// person calling the character, whatever ASR made of the name: the self-test's "Hi Nubi, come here." with Jolly

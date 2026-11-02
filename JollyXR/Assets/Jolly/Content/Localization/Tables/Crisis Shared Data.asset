@@ -47,6 +47,66 @@ MonoBehaviour:
     m_Key: settings.fillers
     m_Metadata:
       m_Items: []
+  - m_Id: 594534400
+    m_Key: action.fillers
+    m_Metadata:
+      m_Items: []
+  - m_Id: 598728704
+    m_Key: action.negations
+    m_Metadata:
+      m_Items: []
+  - m_Id: 602923008
+    m_Key: action.jump
+    m_Metadata:
+      m_Items: []
+  - m_Id: 607117312
+    m_Key: action.dance
+    m_Metadata:
+      m_Items: []
+  - m_Id: 611311616
+    m_Key: action.spin
+    m_Metadata:
+      m_Items: []
+  - m_Id: 615505920
+    m_Key: action.bow
+    m_Metadata:
+      m_Items: []
+  - m_Id: 619700224
+    m_Key: action.wave
+    m_Metadata:
+      m_Items: []
+  - m_Id: 623894528
+    m_Key: action.nod
+    m_Metadata:
+      m_Items: []
+  - m_Id: 628088832
+    m_Key: action.celebrate
+    m_Metadata:
+      m_Items: []
+  - m_Id: 632283136
+    m_Key: action.behind
+    m_Metadata:
+      m_Items: []
+  - m_Id: 636477440
+    m_Key: action.front
+    m_Metadata:
+      m_Items: []
+  - m_Id: 640671744
+    m_Key: action.left
+    m_Metadata:
+      m_Items: []
+  - m_Id: 644866048
+    m_Key: action.right
+    m_Metadata:
+      m_Items: []
+  - m_Id: 649060352
+    m_Key: action.closer
+    m_Metadata:
+      m_Items: []
+  - m_Id: 653254656
+    m_Key: action.away
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:

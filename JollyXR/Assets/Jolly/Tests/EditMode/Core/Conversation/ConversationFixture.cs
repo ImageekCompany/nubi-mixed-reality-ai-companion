@@ -45,6 +45,7 @@ namespace Jolly.Tests.EditMode.Core.Conversation
         public readonly SceneMemory Scene;
         public readonly ConversationController Controller;
         public readonly TurnGuards Guards;
+        public readonly CharacterActionCatalog Actions;
         public readonly List<ConversationState> States = new();
         public readonly List<string> Captions = new();
         public readonly List<string> Partials = new();
@@ -81,7 +82,9 @@ namespace Jolly.Tests.EditMode.Core.Conversation
             var frames = new FrameGrabber(Camera, new FakeImageEncoder(), Clock, new VisionSettings());
             var listener = new TurnListener(Mic, Stt, frames, TranscriptAliases.ForName("Nubi", new[] { "newbie" }), Localizer, Events, latency, Log, Timings);
             Tools.Register(new ComeHereTool(Character, new FakeUserPoseProvider(), World, new LocomotionSettings()));
-            Guards = new TurnGuards(new StopGuard(Localizer), new ComeGuard(Localizer), new SettingsGuard(Localizer),
+            Actions = CharacterActionCatalog.For(Character, new FakeUserPoseProvider(), World, new LocomotionSettings(), Log);
+            Actions.RegisterInto(Tools);
+            Guards = new TurnGuards(new StopGuard(Localizer), new ComeGuard(Localizer), new ActionGuard(Localizer), new SettingsGuard(Localizer),
                 new CrisisGuard(Localizer), new QuestionCue(Localizer), Character, Tools, Personas, new FakeUserPreferences(),
                 Events, Log);
             var speech = new TurnSpeech(Queue, new FakeSentenceSplitter(), Output, Machine, Events, latency, Clock);

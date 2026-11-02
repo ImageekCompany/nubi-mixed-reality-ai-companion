@@ -27,6 +27,8 @@ namespace Jolly.Testing.Conversation
         public float MinUserDistance { get; private set; }
         /// <summary>Runs while a gesture, loop or spin plays, e.g. to start a walk in the middle of one.</summary>
         public Action WhilePlaying { get; set; }
+        /// <summary>When set, a gesture, loop or spin takes as long as the task this returns, for a move still running.</summary>
+        public Func<CancellationToken, UniTask> Playing { get; set; }
         public (float min, float max)? FollowRange { get; private set; }
         public int StopCount { get; private set; }
         public List<Vector3> Relocations { get; } = new();
@@ -98,14 +100,14 @@ namespace Jolly.Testing.Conversation
             Gestures.Add(gesture);
             GestureTokens.Add(ct);
             WhilePlaying?.Invoke();
-            return UniTask.CompletedTask;
+            return Playing?.Invoke(ct) ?? UniTask.CompletedTask;
         }
 
         public UniTask PlayLooped(GestureId gesture, float seconds, CancellationToken ct)
         {
             Looped.Add((gesture, seconds));
             WhilePlaying?.Invoke();
-            return UniTask.CompletedTask;
+            return Playing?.Invoke(ct) ?? UniTask.CompletedTask;
         }
 
         public bool CanPlay(GestureId gesture) => !Missing.Contains(gesture);
@@ -114,7 +116,7 @@ namespace Jolly.Testing.Conversation
         {
             Spins.Add(degrees);
             WhilePlaying?.Invoke();
-            return UniTask.CompletedTask;
+            return Playing?.Invoke(ct) ?? UniTask.CompletedTask;
         }
 
         public void SetMood(Mood mood) => LastMood = mood;

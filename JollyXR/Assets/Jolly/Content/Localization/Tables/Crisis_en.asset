@@ -50,6 +50,66 @@ MonoBehaviour:
     m_Localized: '{name}|please|hey|now|ok|okay|can|could|you'
     m_Metadata:
       m_Items: []
+  - m_Id: 594534400
+    m_Localized: '{name}|please|hi|hey|hello|ok|okay|now|again|for me'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 598728704
+    m_Localized: no|not|never|don|dont|without|stop
+    m_Metadata:
+      m_Items: []
+  - m_Id: 602923008
+    m_Localized: jump|jump up|do a jump
+    m_Metadata:
+      m_Items: []
+  - m_Id: 607117312
+    m_Localized: "dance|show me how to dance|show me a dance|show me your dance|do a dance|let's dance|lets dance"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 611311616
+    m_Localized: spin|spin around|do a spin|turn around|twirl|do a twirl
+    m_Metadata:
+      m_Items: []
+  - m_Id: 615505920
+    m_Localized: bow|take a bow|do a bow
+    m_Metadata:
+      m_Items: []
+  - m_Id: 619700224
+    m_Localized: wave|wave at me|wave to me|wave hello|give me a wave
+    m_Metadata:
+      m_Items: []
+  - m_Id: 623894528
+    m_Localized: nod|nod your head|give me a nod
+    m_Metadata:
+      m_Items: []
+  - m_Id: 628088832
+    m_Localized: "celebrate|let's celebrate|lets celebrate"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 632283136
+    m_Localized: go behind me|stand behind me|get behind me|move behind me|go stand behind me
+    m_Metadata:
+      m_Items: []
+  - m_Id: 636477440
+    m_Localized: go in front of me|stand in front of me|get in front of me|move in front of me|go stand in front of me
+    m_Metadata:
+      m_Items: []
+  - m_Id: 640671744
+    m_Localized: stand on my left|stand to my left|go to my left|go on my left|move to my left|go stand on my left
+    m_Metadata:
+      m_Items: []
+  - m_Id: 644866048
+    m_Localized: stand on my right|stand to my right|go to my right|go on my right|move to my right|go stand on my right
+    m_Metadata:
+      m_Items: []
+  - m_Id: 649060352
+    m_Localized: come closer|move closer|get closer|step closer|closer
+    m_Metadata:
+      m_Items: []
+  - m_Id: 653254656
+    m_Localized: back off|back up|step back|move back|move away|step away
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

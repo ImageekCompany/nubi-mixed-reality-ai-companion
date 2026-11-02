@@ -6,6 +6,27 @@ using Jolly.Core.Tools;
 
 namespace Jolly.Core.Conversation
 {
+    /// <summary>A short command's tool call, ready to run (<see cref="TurnGuards.TryMatchAction"/>).</summary>
+    public sealed class GuardedAction
+    {
+        internal GuardedAction(string name, string argumentsJson, ITool tool, IToolArguments arguments, PersonaProfile persona)
+        {
+            Name = name;
+            ArgumentsJson = argumentsJson;
+            Tool = tool;
+            Arguments = arguments;
+            Persona = persona;
+            CallId = TurnGuards.ActionCallPrefix + Guid.NewGuid().ToString("N");
+        }
+
+        public string Name { get; }
+        public string ArgumentsJson { get; }
+        public string CallId { get; }
+        internal ITool Tool { get; }
+        internal IToolArguments Arguments { get; }
+        internal PersonaProfile Persona { get; }
+    }
+
     /// <summary>The local, model-free reactions to a final transcript (architecture §5.1, §9).</summary>
     public sealed class TurnGuards
     {
@@ -18,8 +39,12 @@ namespace Jolly.Core.Conversation
         /// calls carry the provider's ids.</summary>
         public const string ComeHereCallId = "guard_come_here";
 
+        /// <summary>Starts the call id of a guard's body action. Unique per call, since memory replays them to the model.</summary>
+        public const string ActionCallPrefix = "guard_action_";
+
         readonly StopGuard _stop;
         readonly ComeGuard _come;
+        readonly ActionGuard _actions;
         readonly SettingsGuard _settings;
         readonly CrisisGuard _crisis;
         readonly QuestionCue _question;
@@ -30,12 +55,13 @@ namespace Jolly.Core.Conversation
         readonly ConversationEvents _events;
         readonly ILog _log;
 
-        public TurnGuards(StopGuard stop, ComeGuard come, SettingsGuard settings, CrisisGuard crisis, QuestionCue question, ICharacterController character,
+        public TurnGuards(StopGuard stop, ComeGuard come, ActionGuard actions, SettingsGuard settings, CrisisGuard crisis, QuestionCue question, ICharacterController character,
                           IToolRegistry tools, IPersonaProvider personas, IUserPreferences preferences,
                           ConversationEvents events, ILog log)
         {
             _stop = stop;
             _come = come;
+            _actions = actions;
             _settings = settings;
             _crisis = crisis;
             _question = question;
@@ -77,6 +103,39 @@ namespace Jolly.Core.Conversation
             var walking = result.Ok && _character.Mode == LocomotionMode.MovingTo;
             _log.Write(LogLevel.Info, "conversation", $"evt=guard.come status={(walking ? "walking" : "unreachable")}");
             return walking;
+        }
+
+        /// <summary>
+        /// The action a short body command asks for, when the persona is offered it: its allow-list and the character's
+        /// clips decide, as for the model's calls. The pipeline asks only when no crisis keyword matched, which the
+        /// name-as-heard rule would otherwise swallow ("Suicidal. Dance.").
+        /// </summary>
+        public bool TryMatchAction(string transcript, out GuardedAction action)
+        {
+            action = null;
+            if (!_actions.TryMatch(transcript, out var name, out var json) || !IsOffered(name, out var persona)
+                || !_tools.TryGet(name, out var tool) || !_tools.TryValidate(name, json, out var args, out _))
+                return false;
+            action = new GuardedAction(name, json, tool, args, persona);
+            return true;
+        }
+
+        /// <summary>
+        /// Runs a matched action to its end (a walk: until it starts) and returns its output, or null when it did not do
+        /// what was asked and the model should explain: a failed call, or a walk that never started (unreachable, already
+        /// close), as for <see cref="ApplyComeHere"/>. Cancelling fades the move out and throws.
+        /// </summary>
+        public async UniTask<string> RunAction(GuardedAction action, CancellationToken ct)
+        {
+            _events.RaiseToolStarted(action.CallId, action.Name);
+            var result = await action.Tool.Execute(action.Arguments,
+                new ToolContext { Persona = action.Persona, Preferences = _preferences }, ct);
+            _events.RaiseToolCompleted(action.CallId, action.Name, result.Ok);
+            var done = result.Ok && (action.Tool.Definition.Concurrency != ToolConcurrency.Locomotion
+                                     || _character.Mode == LocomotionMode.MovingTo);
+            _log.Write(done ? LogLevel.Info : LogLevel.Warning, "conversation",
+                       $"evt=guard.action tool={action.Name} status={(done ? "done" : "left_to_model")}");
+            return done ? result.OutputJson : null;
         }
 
         /// <summary>True on a short settings command, after raising <see cref="SettingsRequested"/>; the turn then ends

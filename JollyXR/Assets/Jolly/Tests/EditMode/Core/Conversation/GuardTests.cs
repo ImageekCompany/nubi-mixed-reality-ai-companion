@@ -111,6 +111,120 @@ namespace Jolly.Tests.EditMode.Core.Conversation
             Assert.That(guard.Matches(transcript), Is.EqualTo(expected));
         }
 
+        [TestCase("jump", ToolNames.Actions.Jump, "{}")]
+        [TestCase("Jump!", ToolNames.Actions.Jump, "{}")]
+        [TestCase("Nubi, jump now please.", ToolNames.Actions.Jump, "{}")]
+        [TestCase("Dance.", ToolNames.Actions.Dance, "{}")]
+        [TestCase("show me how to dance", ToolNames.Actions.Dance, "{}")]
+        [TestCase("Show me how to dance!", ToolNames.Actions.Dance, "{}")]
+        [TestCase("Jelly, dance for me!", ToolNames.Actions.Dance, "{}")]
+        [TestCase("let's dance", ToolNames.Actions.Dance, "{}")]
+        [TestCase("Spin around.", ToolNames.Actions.Spin, "{}")]
+        [TestCase("Take a bow.", ToolNames.Actions.Bow, "{}")]
+        [TestCase("Wave.", ToolNames.Actions.Wave, "{}")]
+        [TestCase("nod", ToolNames.Actions.Nod, "{}")]
+        [TestCase("Celebrate!", ToolNames.Actions.Celebrate, "{}")]
+        [TestCase("Go behind me.", ToolNames.Actions.MoveRelative, "{\"direction\":\"behind\"}")]
+        [TestCase("go stand behind me", ToolNames.Actions.MoveRelative, "{\"direction\":\"behind\"}")]
+        [TestCase("Stand in front of me.", ToolNames.Actions.MoveRelative, "{\"direction\":\"front\"}")]
+        [TestCase("Stand on my left.", ToolNames.Actions.MoveRelative, "{\"direction\":\"left\"}")]
+        [TestCase("Go to my right.", ToolNames.Actions.MoveRelative, "{\"direction\":\"right\"}")]
+        [TestCase("Come closer.", ToolNames.Actions.MoveRelative, "{\"direction\":\"closer\"}")]
+        [TestCase("Back off.", ToolNames.Actions.MoveRelative, "{\"direction\":\"away\"}")]
+        public void ActionGuard_ShortCommand_NamesTheAction(string transcript, string tool, string args)
+        {
+            // Arrange
+            var guard = new ActionGuard(new FakeLocalizer());
+
+            // Act
+            var matched = guard.TryMatch(transcript, out var name, out var json);
+
+            // Assert
+            Assert.That(matched, Is.True);
+            Assert.That(name, Is.EqualTo(tool));
+            Assert.That(json, Is.EqualTo(args));
+        }
+
+        [TestCase("don't dance")]
+        [TestCase("Do not jump.")]
+        [TestCase("Never. Jump.")]
+        [TestCase("No, dance.")]
+        [TestCase("what is a dance?")]
+        [TestCase("what is a dance")]
+        [TestCase("Dance?")]
+        [TestCase("Can you dance?")]
+        [TestCase("can you jump")]
+        [TestCase("can you tell me about jumping")]
+        [TestCase("I saw a great dance yesterday")]
+        [TestCase("how do you wave")]
+        [TestCase("Jump and spin.")]
+        [TestCase("Jump. Spin.")]
+        [TestCase("go behind the sofa")]
+        [TestCase("stand on the left of the table")]
+        [TestCase("hello there")]
+        [TestCase("please")]
+        [TestCase("")]
+        public void ActionGuard_NotAShortCommand_LeftToTheModel(string transcript)
+        {
+            // Arrange
+            var guard = new ActionGuard(new FakeLocalizer());
+
+            // Act
+            var matched = guard.TryMatch(transcript, out var name, out _);
+
+            // Assert
+            Assert.That(matched, Is.False, name);
+        }
+
+        [TestCase("Skocz!", ToolNames.Actions.Jump)]
+        [TestCase("Zatańcz.", ToolNames.Actions.Dance)]
+        [TestCase("Nubi, ukłoń się proszę.", ToolNames.Actions.Bow)]
+        [TestCase("Pomachaj mi.", ToolNames.Actions.Wave)]
+        [TestCase("Stań za mną.", ToolNames.Actions.MoveRelative)]
+        public void ActionGuard_Polish_NamesTheAction(string transcript, string tool)
+        {
+            // Arrange
+            var guard = new ActionGuard(new FakeLocalizer("pl"));
+
+            // Act
+            var matched = guard.TryMatch(transcript, out var name, out _);
+
+            // Assert
+            Assert.That(matched, Is.True);
+            Assert.That(name, Is.EqualTo(tool));
+        }
+
+        [TestCase("nie skacz")]
+        [TestCase("Czy umiesz tańczyć?")]
+        [TestCase("Co to jest taniec")]
+        public void ActionGuard_Polish_NotAShortCommand_LeftToTheModel(string transcript)
+        {
+            // Arrange
+            var guard = new ActionGuard(new FakeLocalizer("pl"));
+
+            // Act
+            var matched = guard.TryMatch(transcript, out _, out _);
+
+            // Assert
+            Assert.That(matched, Is.False);
+        }
+
+        [Test]
+        public void ActionGuard_UsesTheLocalizedTable()
+        {
+            // Arrange
+            var localizer = new FakeLocalizer().With(GuardTables.Table, GuardTables.ActionJump, "hop it");
+            var guard = new ActionGuard(localizer);
+
+            // Act
+            var matched = guard.TryMatch("Hop it.", out var name, out _);
+
+            // Assert
+            Assert.That(matched, Is.True);
+            Assert.That(name, Is.EqualTo(ToolNames.Actions.Jump));
+            Assert.That(guard.TryMatch("jump", out _, out _), Is.False);
+        }
+
         [TestCase("Hi, newbie. newbie. Come here.", true)]
         [TestCase("Hi Nubi, come here.", true)]
         [TestCase("Jelly, come here!", true)]
@@ -287,18 +401,36 @@ namespace Jolly.Tests.EditMode.Core.Conversation
             public readonly List<string> Tools = new();
             public readonly TurnGuards Guards;
 
-            public GuardContext()
+            public GuardContext(params GestureId[] missingClips)
             {
                 var localizer = new FakeLocalizer();
                 var registry = new ToolRegistry();
                 registry.Register(new StopTool(Character));
                 registry.Register(new ComeHereTool(Character, new FakeUserPoseProvider(), World, new LocomotionSettings()));
+                Character.Missing.UnionWith(missingClips);
+                CharacterActionCatalog.For(Character, new FakeUserPoseProvider(), World, new LocomotionSettings(), Log).RegisterInto(registry);
                 var events = new ConversationEvents();
                 events.ToolStarted += (id, name) => Tools.Add("start:" + id);
                 events.ToolCompleted += (id, name, ok) => Tools.Add("done:" + id);
-                Guards = new TurnGuards(new StopGuard(localizer), new ComeGuard(localizer), new SettingsGuard(localizer),
+                Guards = new TurnGuards(new StopGuard(localizer), new ComeGuard(localizer), new ActionGuard(localizer), new SettingsGuard(localizer),
                     new CrisisGuard(localizer), new QuestionCue(localizer), Character, registry, Personas, new FakeUserPreferences(), events, Log);
             }
+        }
+
+        [Test]
+        public void TryMatchAction_CharacterLacksTheClip_LeavesItToTheModel()
+        {
+            // Arrange
+            var context = new GuardContext(GestureId.Dance);
+
+            // Act
+            var dance = context.Guards.TryMatchAction("Dance.", out _);
+            var jump = context.Guards.TryMatchAction("Jump!", out var action);
+
+            // Assert
+            Assert.That(dance, Is.False);
+            Assert.That(jump, Is.True);
+            Assert.That(action.Name, Is.EqualTo(ToolNames.Actions.Jump));
         }
 
         [TestCase("I want to kill myself", true)]

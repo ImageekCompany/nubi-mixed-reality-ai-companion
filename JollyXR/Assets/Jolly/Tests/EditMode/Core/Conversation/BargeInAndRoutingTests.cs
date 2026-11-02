@@ -1,6 +1,9 @@
 using System.Linq;
+using System.Threading;
+using Cysharp.Threading.Tasks;
 using Jolly.Contracts;
 using Jolly.Core.Conversation;
+using Jolly.Core.Tools;
 using Jolly.Testing.Conversation;
 using NUnit.Framework;
 
@@ -262,6 +265,146 @@ namespace Jolly.Tests.EditMode.Core.Conversation
 
             Assert.That(_f.Offline.Categories, Is.EqualTo(new[] { LineCategory.CrisisHandoff }));
             Assert.That(_f.Agent.Turns.Single().Text, Is.EqualTo("Nubi suicidal come here" + TurnGuards.CrisisNote));
+        }
+
+        [Test]
+        public void GuardedAction_RunsWithNoModelRoundAndNoWords()
+        {
+            // Act
+            _f.Talk("Dance.");
+
+            // Assert
+            Assert.That(_f.Character.Looped.Single().gesture, Is.EqualTo(GestureId.Dance));
+            Assert.That(_f.Agent.Turns, Is.Empty, "no model round");
+            Assert.That(_f.Offline.Categories, Is.Empty, "the move is the answer");
+            Assert.That(_f.StatePath(), Is.EqualTo("Listening>Thinking>Acting>Idle"), "no Thinking pose between the move and rest");
+            Assert.That(_f.Log.Contains(LogLevel.Info, "evt=guard.action tool=actions.dance status=done"), Is.True);
+            Assert.That(_f.Log.Contains(LogLevel.Info, "LlmRequestSent="), Is.False);
+        }
+
+        [Test]
+        public void GuardedAction_TheNextTurnReplaysTheCall()
+        {
+            // Act
+            _f.Talk("Go behind me.");
+
+            // Assert
+            var recent = _f.Memory.Recent;
+            Assert.That(recent.Select(i => i.Kind), Is.EqualTo(new[] { ItemKind.UserText, ItemKind.ToolCall, ItemKind.ToolResult }));
+            Assert.That(recent[0].Text, Is.EqualTo("Go behind me."));
+            Assert.That(recent[1].ToolName, Is.EqualTo(ToolNames.Actions.MoveRelative));
+            Assert.That(recent[1].Json, Is.EqualTo("{\"direction\":\"behind\"}"));
+            Assert.That(recent[2].CallId, Is.EqualTo(recent[1].CallId));
+            Assert.That(recent[2].Json, Does.Contain("walking"));
+        }
+
+        [Test]
+        public void GuardedAction_CallIdsAreUnique()
+        {
+            // Act
+            _f.Talk("jump");
+            _f.Talk("jump");
+
+            // Assert
+            var ids = _f.Memory.Recent.Where(i => i.Kind == ItemKind.ToolCall).Select(i => i.CallId).ToList();
+            Assert.That(ids, Has.Count.EqualTo(2));
+            Assert.That(ids, Is.Unique);
+            Assert.That(ids, Is.All.StartsWith(TurnGuards.ActionCallPrefix));
+        }
+
+        [Test]
+        public void GuardedAction_NoAcknowledgementEvenWhenItStartsLikeAQuestion()
+        {
+            // Arrange
+            _f.Timings.AcknowledgeQuestions = true;
+
+            // Act
+            _f.Talk("Do a spin.");
+
+            // Assert
+            Assert.That(_f.Offline.Categories, Is.Empty);
+            Assert.That(_f.Character.Spins, Has.Count.EqualTo(1));
+        }
+
+        [Test]
+        public void GuardedAction_PersonaNotAllowedIt_LeftToTheModel()
+        {
+            // Arrange
+            _f.Personas.Current.AllowedTools = new[] { ToolNames.Actions.Wave };
+
+            // Act
+            _f.Talk("Jump!");
+
+            // Assert
+            Assert.That(_f.Character.Gestures, Is.Empty);
+            Assert.That(_f.Agent.Turns.Single().Text, Is.EqualTo("Jump!"));
+        }
+
+        [Test]
+        public void GuardedAction_PersonaAllowedIt_Runs()
+        {
+            // Arrange
+            _f.Personas.Current.AllowedTools = new[] { ToolNames.Actions.Wave };
+
+            // Act
+            _f.Talk("Wave.");
+
+            // Assert
+            Assert.That(_f.Character.Gestures, Is.EqualTo(new[] { GestureId.Wave }));
+            Assert.That(_f.Agent.Turns, Is.Empty);
+        }
+
+        [TestCase("Go behind me.")]
+        [TestCase("Back off.")]
+        public void GuardedAction_NoWalkStarted_TheModelExplains(string command)
+        {
+            // Arrange
+            _f.World.Walkable = false;
+
+            // Act
+            _f.Talk(command);
+
+            // Assert
+            Assert.That(_f.Agent.Turns.Single().Text, Is.EqualTo(command));
+            Assert.That(_f.Log.Contains(LogLevel.Warning, "status=left_to_model"), Is.True);
+        }
+
+        [Test]
+        public void GuardedAction_CrisisWordsWin()
+        {
+            // Act
+            _f.Talk("Suicidal. Dance.");
+
+            // Assert
+            Assert.That(_f.Character.Looped, Is.Empty);
+            Assert.That(_f.Offline.Categories, Is.EqualTo(new[] { LineCategory.CrisisHandoff }));
+        }
+
+        [Test]
+        public void GuardedAction_BargeIn_CancelsTheMoveAndCommitsTheInterruptedCall()
+        {
+            // Arrange
+            var move = new UniTaskCompletionSource();
+            CancellationToken token = default;
+            _f.Character.Playing = (ct) =>
+            {
+                token = ct;
+                return move.Task;
+            };
+            _f.Talk("Take a bow.");
+            Assert.That(_f.State, Is.EqualTo(ConversationState.Acting));
+
+            // Act
+            _f.Voice.Press();
+
+            // Assert
+            Assert.That(token.IsCancellationRequested, Is.True);
+            Assert.That(_f.State, Is.EqualTo(ConversationState.Listening));
+            move.TrySetCanceled(token);
+            var recent = _f.Memory.Recent;
+            Assert.That(recent.Select(i => i.Kind),
+                Is.EqualTo(new[] { ItemKind.UserText, ItemKind.ToolCall, ItemKind.ToolResult, ItemKind.AssistantText }));
+            Assert.That(recent[2].Json, Is.EqualTo(ToolResult.InterruptedOutput));
         }
 
         [Test]

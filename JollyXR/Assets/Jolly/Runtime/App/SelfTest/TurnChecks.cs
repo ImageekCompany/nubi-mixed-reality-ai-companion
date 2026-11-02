@@ -106,6 +106,17 @@ namespace Jolly.App.SelfTest
             return guard ? model ? "guard+model" : "guard" : model ? "model" : "none";
         }
 
+        /// <summary>A local guard's body action ran this turn (ADR-0047).</summary>
+        public static bool GuardRan(IReadOnlyList<string> callIds)
+        {
+            foreach (var id in callIds)
+            {
+                if (id.StartsWith(TurnGuards.ActionCallPrefix, System.StringComparison.Ordinal))
+                    return true;
+            }
+            return false;
+        }
+
         /// <summary>The body may face this far off the user's head while speaking (ADR-0041), degrees.</summary>
         public const float MaxBodyYawOff = 25f;
         /// <summary>The head may face this far off the user's head while speaking, degrees.</summary>

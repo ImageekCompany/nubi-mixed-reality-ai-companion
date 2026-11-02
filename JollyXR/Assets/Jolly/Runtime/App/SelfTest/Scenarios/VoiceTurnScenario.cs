@@ -8,6 +8,8 @@ namespace Jolly.App.SelfTest.Scenarios
     /// One full spoken turn through the real Muse ASR → Spark → Wit TTS → output + lip-sync, from a bundled clip.
     /// Checks the transcript, the reply, the first-audio budget and the tools (<see cref="TurnChecks"/>); with
     /// <c>otherToolDegrades</c> another tool than <c>expectedTool</c> degrades instead of failing (<see cref="TurnChecks.PreferredTool"/>).
+    /// A short command the local guard ran has no model round and no words (ADR-0047), so reply, first-audio and facing
+    /// are only checked when the model answered; <c>action_source</c> says which.
     /// With <c>checkFacing</c> the character must face the user at first audio (<see cref="TurnChecks.Facing"/>); the
     /// sample is recorded either way.
     /// </summary>
@@ -41,11 +43,16 @@ namespace Jolly.App.SelfTest.Scenarios
              .Metric("llm_reply", string.Join(" | ", c.Observer.Replies))
              .Metric("states", c.Observer.StatePath());
 
+            var guarded = TurnChecks.GuardRan(c.Observer.ToolCallIds);
+            r.Metric("action_source", guarded ? "guard" : "model");
             r.Check(idle, "did not return to Idle within 40 s");
             r.Check(similarity >= MinSimilarity, "transcript too far from the spoken text");
-            r.Check(c.Observer.Captions.Count > 0, "no reply caption");
-            TurnChecks.FirstAudio(r, firstAudio);
-            TurnChecks.Facing(r, look.Last.Turn != looksBefore, look.Last, checkFacing);
+            if (!guarded)
+            {
+                r.Check(c.Observer.Captions.Count > 0, "no reply caption");
+                TurnChecks.FirstAudio(r, firstAudio);
+                TurnChecks.Facing(r, look.Last.Turn != looksBefore, look.Last, checkFacing);
+            }
             if (otherToolDegrades)
                 TurnChecks.PreferredTool(r, c.Observer.ToolsStarted, c.Observer.ToolsCompleted, expectedTool);
             else
