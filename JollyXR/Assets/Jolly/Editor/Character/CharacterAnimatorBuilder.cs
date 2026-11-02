@@ -128,7 +128,7 @@ namespace Jolly.Editor.Character
 
         static void BuildConversation(AnimatorStateMachine machine, IReadOnlyDictionary<string, AnimationClip> clips)
         {
-            machine.defaultState = AddState(machine, P.EmptyState, null);
+            machine.defaultState = AddEmptyState(machine);
             Pose(machine, CharacterClips.Talk, P.TalkingName, clips);
             Pose(machine, CharacterClips.Think, P.ThinkingName, clips);
             Pose(machine, CharacterClips.Listen, P.ListeningName, clips);
@@ -148,7 +148,7 @@ namespace Jolly.Editor.Character
 
         static void BuildGestures(AnimatorStateMachine machine, IReadOnlyDictionary<string, AnimationClip> clips, bool fullBody)
         {
-            var empty = AddState(machine, P.EmptyState, null);
+            var empty = AddEmptyState(machine);
             machine.defaultState = empty;
             var trigger = fullBody ? P.ActionName : P.GestureName;
             var id = fullBody ? P.ActionIdName : P.GestureIdName;
@@ -189,6 +189,17 @@ namespace Jolly.Editor.Character
             var state = machine.AddState(name);
             state.motion = motion;
             state.writeDefaultValues = false;
+            return state;
+        }
+
+        /// <summary>
+        /// Writes defaults, unlike every other state: an empty state that does not holds the layer's last pose over the
+        /// layers below, so a gesture not ending on its idle pose froze the arms until the next clip (headset, 2026-11-02).
+        /// </summary>
+        static AnimatorState AddEmptyState(AnimatorStateMachine machine)
+        {
+            var state = AddState(machine, P.EmptyState, null);
+            state.writeDefaultValues = true;
             return state;
         }
 
