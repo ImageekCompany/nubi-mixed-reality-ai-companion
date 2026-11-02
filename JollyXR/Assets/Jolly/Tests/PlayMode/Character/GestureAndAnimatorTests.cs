@@ -166,6 +166,95 @@ namespace Jolly.Tests.PlayMode.Character
                         Is.True, "body turns toward the walk");
         });
 
+        [Test]
+        public void CanPlay_Nubi_HasEveryGestureIncludingTheActions()
+        {
+            foreach (GestureId gesture in Enum.GetValues(typeof(GestureId)))
+                Assert.That(_rig.Nubi.CanPlay(gesture), Is.True, gesture.ToString());
+        }
+
+        [UnityTest]
+        public IEnumerator PlayGesture_Dance_PlaysOneLoopOnTheActionLayerThenReturnsToEmpty() => UniTask.ToCoroutine(async () =>
+        {
+            // Arrange
+            var layer = _rig.Animator.GetLayerIndex(P.ActionLayer);
+            var started = Time.time;
+            var danced = false;
+
+            // Act
+            var dance = _rig.Nubi.PlayGesture(GestureId.Dance, CancellationToken.None);
+            while (dance.Status == UniTaskStatus.Pending)
+            {
+                danced |= _rig.Animator.GetCurrentAnimatorStateInfo(layer).IsName("Dance");
+                await UniTask.Yield();
+            }
+
+            // Assert
+            Assert.That(danced, Is.True);
+            Assert.That(Time.time - started, Is.InRange(3.3f, 4.6f), "one 4 s loop");
+            Assert.That(await CharacterTestRig.Until(
+                () => _rig.Animator.GetCurrentAnimatorStateInfo(layer).IsName(P.EmptyState), 0.5f), Is.True);
+        });
+
+        [UnityTest]
+        public IEnumerator PlayLooped_DanceHeldFiveSeconds_EndsAtTheEndOfTheSecondLoop() => UniTask.ToCoroutine(async () =>
+        {
+            // Arrange
+            var started = Time.time;
+
+            // Act
+            await _rig.Nubi.PlayLooped(GestureId.Dance, 5f, CancellationToken.None);
+
+            // Assert
+            Assert.That(Time.time - started, Is.InRange(7.3f, 8.6f), "two 4 s loops, never a cut mid-loop");
+            Assert.That(_rig.Animator.GetBool(P.GestureHold), Is.False);
+        });
+
+        [UnityTest]
+        public IEnumerator PlayLooped_Cancelled_FadesTheDanceOut() => UniTask.ToCoroutine(async () =>
+        {
+            // Arrange
+            var layer = _rig.Animator.GetLayerIndex(P.ActionLayer);
+            using var cts = new CancellationTokenSource();
+            var dance = _rig.Nubi.PlayLooped(GestureId.Dance, 10f, cts.Token);
+            await CharacterTestRig.Until(() => _rig.Animator.GetCurrentAnimatorStateInfo(layer).IsName("Dance"), 1f);
+
+            // Act
+            cts.Cancel();
+
+            // Assert
+            var threw = false;
+            try { await dance; }
+            catch (OperationCanceledException) { threw = true; }
+            Assert.That(threw, Is.True);
+            Assert.That(_rig.Animator.GetBool(P.GestureHold), Is.False);
+            Assert.That(await CharacterTestRig.Until(
+                () => _rig.Animator.GetCurrentAnimatorStateInfo(layer).IsName(P.EmptyState), 1f), Is.True);
+        });
+
+        [UnityTest]
+        public IEnumerator PlayGesture_Jump_LiftsBothFeetOffTheFloor() => UniTask.ToCoroutine(async () =>
+        {
+            // Arrange: on the upper-body Gesture layer the legs would stay planted. Batch mode renders nothing, so the
+            // default CullUpdateTransforms would never write the bones.
+            _rig.Animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+            await UniTask.DelayFrame(2);
+            var feet = _rig.Nubi.ShadowRig;
+            var rest = Mathf.Min(feet.footLeft.position.y, feet.footRight.position.y);
+            var highest = 0f;
+
+            // Act
+            var jump = _rig.Nubi.PlayGesture(GestureId.Jump, CancellationToken.None);
+            while (jump.Status == UniTaskStatus.Pending)
+            {
+                highest = Mathf.Max(highest, Mathf.Min(feet.footLeft.position.y, feet.footRight.position.y) - rest);
+                await UniTask.Yield();
+            }
+
+            // Assert
+            Assert.That(highest, Is.GreaterThan(0.1f), "the clip clears 0.2 m at the character's own scale");
+        });
+
         static Transform FindBone(Transform root, string name) =>
             root.GetComponentsInChildren<Transform>().Single(t => t.name == name);
 
@@ -178,21 +267,24 @@ namespace Jolly.Tests.PlayMode.Character
             Assert.That(names, Is.EquivalentTo(new[]
             {
                 P.SpeedName, P.LocomotionRateName, P.ListeningName, P.ThinkingName, P.TalkingName,
-                P.MoodName, P.GestureIdName, P.GestureName,
+                P.MoodName, P.GestureIdName, P.GestureName, P.GestureHoldName,
             }));
-            Assert.That(controller.layers.Select(l => l.name), Is.EqualTo(new[] { "Base Layer", P.ConversationLayer, P.GestureLayer }));
+            Assert.That(controller.layers.Select(l => l.name),
+                        Is.EqualTo(new[] { "Base Layer", P.ConversationLayer, P.GestureLayer, P.ActionLayer }));
+            Assert.That(controller.layers.Single(l => l.name == P.ActionLayer).avatarMask, Is.Null, "full body");
         }
 
         [Test]
         public void Controller_HasAGestureStateForEveryClipBackedGesture()
         {
             var controller = (AnimatorController)_rig.Animator.runtimeAnimatorController;
-            var machine = controller.layers.Single(l => l.name == P.GestureLayer).stateMachine;
 
             foreach (GestureId gesture in Enum.GetValues(typeof(GestureId)))
             {
                 if (!GestureClips.TryGetClip(gesture, out var clip))
                     continue;
+                var layer = GestureClips.IsFullBody(gesture) ? P.ActionLayer : P.GestureLayer;
+                var machine = controller.layers.Single(l => l.name == layer).stateMachine;
                 var state = machine.states.Select(s => s.state).SingleOrDefault(s => s.name == clip);
                 Assert.That(state, Is.Not.Null, clip);
                 Assert.That(state.tag, Is.EqualTo(P.GestureTag), clip);

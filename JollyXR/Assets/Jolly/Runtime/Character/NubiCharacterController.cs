@@ -11,7 +11,7 @@ namespace Jolly.Character
 {
     /// <summary>
     /// The companion's <see cref="ICharacterController"/>: a thin MonoBehaviour shell that orders the plain-C# parts per
-    /// frame. Update: relocation pop → locomotion → body yaw → Animator parameters. The Animator then evaluates, and
+    /// frame. Update: relocation pop → locomotion → body yaw (a spin's, else the walk's) → Animator parameters. The Animator then evaluates, and
     /// LateUpdate layers the look-at on the animated bones (attending the user unless a tool's point holds, ADR-0041),
     /// writes the face (clip preset/mood → lip-sync → blink), shapes the contact shadow from the animated feet and picks
     /// the fur's shell count for the user's distance (ADR-0045).
@@ -60,6 +60,7 @@ namespace Jolly.Character
         bool _hasLookOverride;
         Vector3 _lookOverride;
         int _lookAroundGeneration;
+        SpinMotion _spin;
         float _speed;
         Vector3 _scale;
         Vector3 _popTarget;
@@ -201,7 +202,31 @@ namespace Jolly.Character
         }
 
         public UniTask PlayGesture(GestureId gesture, CancellationToken ct) =>
-            gesture == GestureId.LookAround ? LookAround(ct) : PlayClip(gesture, ct);
+            gesture == GestureId.LookAround ? LookAround(ct) : PlayClip(gesture, 0f, ct);
+
+        public UniTask PlayLooped(GestureId gesture, float seconds, CancellationToken ct) =>
+            gesture == GestureId.LookAround ? LookAround(ct) : PlayClip(gesture, seconds, ct);
+
+        /// <summary>LookAround is a look-at sweep every character can do.</summary>
+        public bool CanPlay(GestureId gesture) => gesture == GestureId.LookAround || Constructed()._gestures.CanPlay(gesture);
+
+        /// <summary>The head turns with the body while spinning; afterwards attention faces the user again.</summary>
+        public async UniTask Spin(float degrees, CancellationToken ct)
+        {
+            Constructed();
+            using var linked = CancellationTokenSource.CreateLinkedTokenSource(ct, destroyCancellationToken);
+            var spin = _spin = new SpinMotion(degrees);
+            try
+            {
+                while (_spin == spin && !spin.Done)
+                    await UniTask.Yield(PlayerLoopTiming.Update, linked.Token);
+            }
+            finally
+            {
+                if (_spin == spin)
+                    _spin = null;
+            }
+        }
 
         public void SetMood(Mood mood)
         {
@@ -247,7 +272,9 @@ namespace Jolly.Character
 
             var velocity = Vector3.ProjectOnPlane(_locomotion.Velocity, Vector3.up);
             _speed = velocity.magnitude;
-            if (_speed > 0.05f)
+            if (_spin != null)
+                transform.rotation = Quaternion.AngleAxis(_spin.Step(Time.deltaTime), Vector3.up) * transform.rotation;
+            else if (_speed > 0.05f)
                 TurnToward(Quaternion.LookRotation(velocity, Vector3.up), Time.deltaTime);
             _parameters.SetLocomotion(_speed, Time.deltaTime);
         }
@@ -257,9 +284,10 @@ namespace Jolly.Character
             if (!IsConstructed)
                 return;
             var dt = Time.deltaTime;
+            var point = default(Vector3);
             var thinking = _conversation == ConversationState.Thinking
                            || (_gestures.IsPlaying && _gestures.Current == GestureId.Think);
-            Attending = ResolveAttention(out var point);
+            Attending = _spin != null ? AttentionTarget.None : ResolveAttention(out point);
             var bodyYaw = _look.Apply(Attending != AttentionTarget.None, point, thinking, dt,
                                       face: Attending == AttentionTarget.User);
             if (bodyYaw != 0f && !_locomotion.IsMoving)
@@ -284,11 +312,11 @@ namespace Jolly.Character
                 fur.Dispose();
         }
 
-        async UniTask PlayClip(GestureId gesture, CancellationToken ct)
+        async UniTask PlayClip(GestureId gesture, float holdSeconds, CancellationToken ct)
         {
             Constructed();
             using var linked = CancellationTokenSource.CreateLinkedTokenSource(ct, destroyCancellationToken);
-            await _gestures.Play(gesture, linked.Token);
+            await _gestures.Play(gesture, linked.Token, holdSeconds);
         }
 
         /// <summary>A newer sweep supersedes a running one, whose awaiter then completes normally, like a clip gesture.</summary>

@@ -1,3 +1,4 @@
+using Jolly.Contracts;
 using UnityEngine;
 
 namespace Jolly.Character
@@ -13,9 +14,13 @@ namespace Jolly.Character
         public const string MoodName = "Mood";
         public const string GestureIdName = "GestureId";
         public const string GestureName = "Gesture";
+        /// <summary>While set, a looping gesture state does not leave at its exit time (<see cref="ICharacterController.PlayLooped"/>).</summary>
+        public const string GestureHoldName = "GestureHold";
 
         public const string ConversationLayer = "Conversation";
         public const string GestureLayer = "Gesture";
+        /// <summary>Full-body gestures (Dance, Jump, Bow), unmasked and on top of every other layer.</summary>
+        public const string ActionLayer = "Action";
         public const string LocomotionState = "Locomotion";
         public const string EmptyState = "Empty";
         public const string GestureTag = "Gesture";
@@ -28,6 +33,7 @@ namespace Jolly.Character
         public static readonly int Mood = Animator.StringToHash(MoodName);
         public static readonly int GestureId = Animator.StringToHash(GestureIdName);
         public static readonly int Gesture = Animator.StringToHash(GestureName);
+        public static readonly int GestureHold = Animator.StringToHash(GestureHoldName);
         public static readonly int GestureTagHash = Animator.StringToHash(GestureTag);
         public static readonly int LocomotionStateHash = Animator.StringToHash(LocomotionState);
     }

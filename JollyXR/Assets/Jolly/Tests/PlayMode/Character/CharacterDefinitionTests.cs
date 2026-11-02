@@ -69,13 +69,32 @@ namespace Jolly.Tests.PlayMode.Character
         }
 
         [Test]
-        public void RequiredClips_CoverEveryGestureClip()
+        public void Clips_EveryUpperBodyGestureRequired_EveryFullBodyOneOptional()
         {
             foreach (GestureId gesture in Enum.GetValues(typeof(GestureId)))
             {
-                if (GestureClips.TryGetClip(gesture, out var clip))
-                    Assert.That(CharacterClips.Required, Does.Contain(clip), gesture.ToString());
+                if (!GestureClips.TryGetClip(gesture, out var clip))
+                    continue;
+                var fullBody = GestureClips.IsFullBody(gesture);
+                Assert.That(CharacterClips.Required.Contains(clip), Is.EqualTo(!fullBody), gesture.ToString());
+                Assert.That(CharacterClips.Optional.Contains(clip), Is.EqualTo(fullBody), gesture.ToString());
             }
+        }
+
+        [Test]
+        public void Missing_ClipsWithoutTheFullBodyActions_ReportsNothing()
+        {
+            // Arrange
+            var nubi = CharacterClipSet.Resolve(AssetDatabase.LoadAssetAtPath<CharacterDefinition>(NubiAssetPaths.Definition));
+            var withoutActions = nubi.Where(c => CharacterClips.Required.Contains(c.Key))
+                                     .ToDictionary(c => c.Key, c => c.Value);
+
+            // Act
+            var missing = CharacterClipSet.Missing(withoutActions);
+
+            // Assert
+            Assert.That(missing, Is.Empty);
+            Assert.That(nubi.Keys, Is.SupersetOf(new[] { "Dance", "Jump", "Bow" }), "Nubi ships every action clip");
         }
 
         [Test]

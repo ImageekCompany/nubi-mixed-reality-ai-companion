@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using Jolly.Character;
+using Jolly.Contracts;
 using UnityEditor;
 using UnityEditor.Animations;
 using UnityEngine;
@@ -20,7 +21,8 @@ namespace Jolly.Editor.Character
     }
 
     /// <summary>
-    /// The rig contract every character must meet (docs/characters.md): required clips, every canonical face channel
+    /// The rig contract every character must meet (docs/characters.md): required clips (a missing optional action clip
+    /// is a warning: the character just does not offer that action, ADR-0047), every canonical face channel
     /// bound to a blendshape the face mesh has (or the jaw), the look-at and upper-body bones, a face that points the
     /// root's +z, at most four bone influences, usable body and tuning values, and a triangle budget (a warning). Run
     /// by the content validator (tools/ci/test.sh) on every definition in the project, and from Jolly/Character/Validate
@@ -38,7 +40,7 @@ namespace Jolly.Editor.Character
         static readonly string[] Parameters =
         {
             P.SpeedName, P.LocomotionRateName, P.ListeningName, P.ThinkingName, P.TalkingName, P.MoodName,
-            P.GestureIdName, P.GestureName,
+            P.GestureIdName, P.GestureName, P.GestureHoldName,
         };
 
         [MenuItem("Jolly/Character/Validate Characters")]
@@ -124,6 +126,11 @@ namespace Jolly.Editor.Character
             var clips = CharacterClipSet.Resolve(d);
             foreach (var name in CharacterClipSet.Missing(clips))
                 Error(issues, $"required clip '{name}' is neither bound nor a take of the model");
+            foreach (GestureId gesture in Enum.GetValues(typeof(GestureId)))
+            {
+                if (GestureClips.IsFullBody(gesture) && GestureClips.TryGetClip(gesture, out var optional) && !clips.ContainsKey(optional))
+                    Warn(issues, $"optional clip '{optional}' is missing: the character will not offer the actions it backs");
+            }
             foreach (var binding in d.clips ?? Array.Empty<ClipBinding>())
             {
                 if (binding == null || binding.clip == null || !IsCanonicalClip(binding.name))
@@ -140,7 +147,7 @@ namespace Jolly.Editor.Character
                 if (Array.FindIndex(controller.parameters, p => p.name == parameter) < 0)
                     Error(issues, $"animator controller has no '{parameter}' parameter");
             }
-            foreach (var layer in new[] { P.ConversationLayer, P.GestureLayer })
+            foreach (var layer in new[] { P.ConversationLayer, P.GestureLayer, P.ActionLayer })
             {
                 if (Array.FindIndex(controller.layers, l => l.name == layer) < 0)
                     Error(issues, $"animator controller has no '{layer}' layer");
@@ -150,6 +157,12 @@ namespace Jolly.Editor.Character
             {
                 if (clips.TryGetValue(name, out var clip) && Array.IndexOf(used, clip) < 0)
                     Error(issues, $"animator controller does not play the '{name}' clip; rebuild it");
+            }
+            foreach (GestureId gesture in Enum.GetValues(typeof(GestureId)))
+            {
+                if (GestureClips.IsFullBody(gesture) && GestureClips.TryGetClip(gesture, out var name)
+                    && clips.TryGetValue(name, out var clip) && Array.IndexOf(used, clip) < 0)
+                    Error(issues, $"the model has the '{name}' clip but the animator controller does not play it; rebuild it");
             }
         }
 

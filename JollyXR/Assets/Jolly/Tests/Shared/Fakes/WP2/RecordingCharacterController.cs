@@ -23,6 +23,10 @@ namespace Jolly.Testing.Conversation
         public List<Vector3> Relocations { get; } = new();
         public LookTarget? LastLook { get; private set; }
         public List<GestureId> Gestures { get; } = new();
+        /// <summary>Gestures <see cref="CanPlay"/> denies; every gesture is playable by default.</summary>
+        public HashSet<GestureId> Missing { get; } = new();
+        public List<(GestureId gesture, float seconds)> Looped { get; } = new();
+        public List<float> Spins { get; } = new();
         public Mood? LastMood { get; private set; }
         public List<ConversationState> States { get; } = new();
 
@@ -63,6 +67,20 @@ namespace Jolly.Testing.Conversation
         public UniTask PlayGesture(GestureId gesture, CancellationToken ct)
         {
             Gestures.Add(gesture);
+            return UniTask.CompletedTask;
+        }
+
+        public UniTask PlayLooped(GestureId gesture, float seconds, CancellationToken ct)
+        {
+            Looped.Add((gesture, seconds));
+            return UniTask.CompletedTask;
+        }
+
+        public bool CanPlay(GestureId gesture) => !Missing.Contains(gesture);
+
+        public UniTask Spin(float degrees, CancellationToken ct)
+        {
+            Spins.Add(degrees);
             return UniTask.CompletedTask;
         }
 

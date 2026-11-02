@@ -226,6 +226,46 @@ namespace Jolly.Tests.PlayMode.Character
         });
 
         [UnityTest]
+        public IEnumerator Spin_FullTurn_TurnsAwayThenEndsFacingTheUser() => UniTask.ToCoroutine(async () =>
+        {
+            // Arrange
+            Create();
+            PlaceUser(0f);
+            _rig.Nubi.SetConversationState(ConversationState.Speaking);
+            await CharacterTestRig.Until(Facing, SettleSeconds);
+            var widest = 0f;
+
+            // Act
+            var spin = _rig.Nubi.Spin(360f, CancellationToken.None);
+            while (spin.Status == UniTaskStatus.Pending)
+            {
+                widest = Mathf.Max(widest, Offsets().Body);
+                await UniTask.Yield();
+            }
+
+            // Assert
+            Assert.That(widest, Is.GreaterThan(150f), "the body went round, past facing away");
+            await AssertFacesTheUser();
+        });
+
+        [UnityTest]
+        public IEnumerator Spin_Right_TurnsClockwiseSeenFromAbove() => UniTask.ToCoroutine(async () =>
+        {
+            // Arrange
+            Create();
+            PlaceUser(0f);
+            var start = _rig.Nubi.Forward;
+
+            // Act
+            var spin = _rig.Nubi.Spin(360f, CancellationToken.None);
+            await CharacterTestRig.Until(() => Vector3.Angle(start, _rig.Nubi.Forward) > 30f, 2f);
+
+            // Assert: a clockwise turn from +z swings the forward toward +x first
+            Assert.That(Vector3.SignedAngle(start, _rig.Nubi.Forward, Vector3.up), Is.GreaterThan(0f));
+            await spin;
+        });
+
+        [UnityTest]
         public IEnumerator Speaking_LocalJollyCharacter_FacesTheUser() => UniTask.ToCoroutine(async () =>
         {
             // Arrange

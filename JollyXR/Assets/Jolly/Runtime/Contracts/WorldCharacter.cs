@@ -96,7 +96,9 @@ namespace Jolly.Contracts
 
     public enum ConversationState { Idle, Listening, Thinking, Speaking, Acting }
     public enum Mood { Neutral, Happy, Curious, Concerned, Sleepy }
-    public enum GestureId { Wave, Nod, ShakeHead, Shrug, Point, HappyBounce, Think, Stretch, LookAround }
+    /// <summary>Values are Animator conditions in built controllers: append only. Dance, Jump and Bow are full-body clips a
+    /// character may lack (<see cref="ICharacterController.CanPlay"/>).</summary>
+    public enum GestureId { Wave, Nod, ShakeHead, Shrug, Point, HappyBounce, Think, Stretch, LookAround, Dance, Jump, Bow }
     public enum MoveOutcome { Arrived, Unreachable, Cancelled, TimedOut }
     public enum LookTargetKind { None, User, WorldPoint }
 
@@ -140,6 +142,14 @@ namespace Jolly.Contracts
         /// following, or when near (ADR-0041). A new Listening state drops a held point.</summary>
         void LookAt(LookTarget target);
         UniTask PlayGesture(GestureId gesture, CancellationToken ct);
+        /// <summary>Plays a looping gesture (Dance) for at least <paramref name="seconds"/>, ending where a loop ends; a
+        /// one-shot gesture plays once. Completes when the gesture has ended; cancelling fades it out.</summary>
+        UniTask PlayLooped(GestureId gesture, float seconds, CancellationToken ct);
+        /// <summary>Whether this character has the gesture's clip (ADR-0047). PlayGesture of one it lacks throws.</summary>
+        bool CanPlay(GestureId gesture);
+        /// <summary>Turns on the spot by <paramref name="degrees"/> (positive: clockwise seen from above), easing in and
+        /// out, then attends the user again (ADR-0041). A newer spin supersedes a running one, whose awaiter completes.</summary>
+        UniTask Spin(float degrees, CancellationToken ct);
         void SetMood(Mood mood);
         void SetConversationState(ConversationState state);
     }

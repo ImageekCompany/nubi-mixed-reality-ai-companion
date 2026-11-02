@@ -46,6 +46,10 @@ namespace Jolly.Testing.Offline
             return UniTask.CompletedTask;
         }
 
+        public UniTask PlayLooped(GestureId gesture, float seconds, CancellationToken ct) => PlayGesture(gesture, ct);
+        public bool CanPlay(GestureId gesture) => true;
+        public UniTask Spin(float degrees, CancellationToken ct) => UniTask.CompletedTask;
+
         public void SetMood(Mood mood) { }
         public void SetConversationState(ConversationState state) { }
     }

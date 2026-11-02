@@ -18,18 +18,21 @@ namespace Jolly.Character
         public const string Listen = "Listen";
         public const string Think = "Think";
 
-        /// <summary>Every clip the animator builder wires: locomotion, the Concerned idle, the talk poses and each gesture.</summary>
-        public static readonly IReadOnlyList<string> Required = BuildRequired();
+        /// <summary>Every clip the animator builder must wire: locomotion, the Concerned idle, the talk poses and each
+        /// upper-body gesture.</summary>
+        public static readonly IReadOnlyList<string> Required = Build(required: true);
 
-        /// <summary>In the Blender contract but not played by anything yet.</summary>
-        public static readonly IReadOnlyList<string> Optional = new[] { "Surprised" };
+        /// <summary>The full-body action clips, wired when present (ADR-0047), and Surprised, in the Blender contract
+        /// but not played by anything yet.</summary>
+        public static readonly IReadOnlyList<string> Optional = Build(required: false);
 
-        static string[] BuildRequired()
+        static string[] Build(bool required)
         {
-            var names = new List<string> { Idle, Walk, Hop, Sad, Talk, Listen, Think };
+            var names = required ? new List<string> { Idle, Walk, Hop, Sad, Talk, Listen, Think } : new List<string> { "Surprised" };
             foreach (GestureId gesture in Enum.GetValues(typeof(GestureId)))
             {
-                if (GestureClips.TryGetClip(gesture, out var clip) && !names.Contains(clip))
+                if (GestureClips.TryGetClip(gesture, out var clip) && GestureClips.IsFullBody(gesture) != required
+                    && !names.Contains(clip))
                     names.Add(clip);
             }
             return names.ToArray();

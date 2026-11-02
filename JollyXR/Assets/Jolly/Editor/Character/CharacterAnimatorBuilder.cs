@@ -14,11 +14,28 @@ namespace Jolly.Editor.Character
     /// Generates a character's Animator controller (architecture §5.5) from its definition, with states named after the
     /// canonical clips (<see cref="CharacterClips"/>). Base: Locomotion blend tree (Idle/Walk/Hop by Speed, playback
     /// rate from LocomotionRate) and a Sad idle for the Concerned mood. Conversation and Gesture are upper-body
-    /// override layers whose Empty state writes nothing (write defaults off), so the layer below shows through.
+    /// override layers whose Empty state writes nothing (write defaults off), so the layer below shows through. Action
+    /// is the same over the whole body, on top, for the optional full-body clips the definition has (ADR-0047); a
+    /// looping one keeps looping while GestureHold is set.
     /// </summary>
     public static class CharacterAnimatorBuilder
     {
         const float GestureFadeSeconds = 0.2f;
+
+        /// <summary>
+        /// Rebuilds the controller of every local (git-ignored) character, e.g. after its model gained takes:
+        /// <c>Unity -batchmode -quit -projectPath JollyXR -executeMethod Jolly.Editor.Character.CharacterAnimatorBuilder.BuildLocal</c>.
+        /// </summary>
+        [MenuItem("Jolly/Character/Rebuild Local Character Animators")]
+        public static void BuildLocal()
+        {
+            foreach (var definition in LocalCharacters.FindAll())
+            {
+                Build(definition);
+                Debug.Log($"[CharacterAnimatorBuilder] rebuilt {AssetDatabase.GetAssetPath(definition.animatorController)}");
+            }
+            AssetDatabase.SaveAssets();
+        }
 
         [MenuItem("Jolly/Character/Build Animator For Selected Definition")]
         static void BuildSelected()
@@ -55,7 +72,8 @@ namespace Jolly.Editor.Character
             AddParameters(controller);
             BuildBase(controller, clips, definition.tuning.locomotion);
             BuildConversation(AddLayer(controller, P.ConversationLayer, mask), clips);
-            BuildGestures(AddLayer(controller, P.GestureLayer, mask), clips);
+            BuildGestures(AddLayer(controller, P.GestureLayer, mask), clips, fullBody: false);
+            BuildGestures(AddLayer(controller, P.ActionLayer, null), clips, fullBody: true);
             EditorUtility.SetDirty(controller);
             definition.animatorController = controller;
             EditorUtility.SetDirty(definition);
@@ -72,6 +90,7 @@ namespace Jolly.Editor.Character
             c.AddParameter(P.MoodName, AnimatorControllerParameterType.Int);
             c.AddParameter(P.GestureIdName, AnimatorControllerParameterType.Int);
             c.AddParameter(P.GestureName, AnimatorControllerParameterType.Trigger);
+            c.AddParameter(P.GestureHoldName, AnimatorControllerParameterType.Bool);
             var parameters = c.parameters;
             foreach (var p in parameters)
             {
@@ -125,15 +144,15 @@ namespace Jolly.Editor.Character
             enter.AddCondition(AnimatorConditionMode.If, 0f, flag);
         }
 
-        static void BuildGestures(AnimatorStateMachine machine, IReadOnlyDictionary<string, AnimationClip> clips)
+        static void BuildGestures(AnimatorStateMachine machine, IReadOnlyDictionary<string, AnimationClip> clips, bool fullBody)
         {
             var empty = AddState(machine, P.EmptyState, null);
             machine.defaultState = empty;
             foreach (GestureId gesture in Enum.GetValues(typeof(GestureId)))
             {
-                if (!GestureClips.TryGetClip(gesture, out var name))
+                if (GestureClips.IsFullBody(gesture) != fullBody || !GestureClips.TryGetClip(gesture, out var name)
+                    || !clips.TryGetValue(name, out var clip))
                     continue;
-                var clip = clips[name];
                 var state = AddState(machine, name, clip);
                 state.tag = P.GestureTag;
                 var enter = Transition(machine.AddAnyStateTransition(state), 0.12f);
@@ -142,9 +161,13 @@ namespace Jolly.Editor.Character
                 var exit = Transition(state.AddTransition(empty), GestureFadeSeconds);
                 exit.hasExitTime = true;
                 exit.exitTime = Mathf.Max(0.5f, 1f - GestureFadeSeconds / clip.length);
+                // Below 1 the exit time is checked on every loop, so a held loop leaves at the end of the loop it is on.
+                if (clip.isLooping)
+                    exit.AddCondition(AnimatorConditionMode.IfNot, 0f, P.GestureHoldName);
             }
         }
 
+        /// <summary>A null mask leaves the layer full-body.</summary>
         static AnimatorStateMachine AddLayer(AnimatorController c, string name, AvatarMask mask)
         {
             c.AddLayer(name);
