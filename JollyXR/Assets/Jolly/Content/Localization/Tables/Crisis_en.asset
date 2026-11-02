@@ -111,7 +111,7 @@ MonoBehaviour:
     m_Metadata:
       m_Items: []
   - m_Id: 657448960
-    m_Localized: and|then
+    m_Localized: and|then|after|also|plus|while|before
     m_Metadata:
       m_Items: []
   references:

@@ -48,3 +48,7 @@
 - **Full-body clips on the Gesture layer with a per-state mask.** Unity masks are per layer; a second layer is the only way. Accepted as the Action layer.
 - **Looping the dance by re-triggering one-shot plays.** Each restart fades through Empty, a visible hitch every 4 s. Rejected for `GestureHold`.
 - **move_relative in user-relative space from the full head rotation.** Looking down would put "in front of me" at the user's feet. Yaw only.
+
+## Later changes
+- **Crisis and safety lines survive a tap.** A pinch silences a busy turn at the press (ADR-0044), but `TurnPipeline.IsSafetyTurn` keeps a crisis hand-off, its reply and the safety notice playing through a tap; a hold can still cut them, and the user's words are committed when it does.
+- **Short request.** Clauses of only fillers ("Jolly, do a dance") do not count, a connector at the start is ignored, and the connector lists are longer. An unpunctuated compound ("Dance tell me a joke") still loses its second half.

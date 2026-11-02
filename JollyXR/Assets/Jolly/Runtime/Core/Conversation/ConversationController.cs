@@ -86,11 +86,20 @@ namespace Jolly.Core.Conversation
         /// <summary>
         /// A pinch that may yet be a tap (ADR-0044) silences a busy turn at the press: a resting hand ray made waiting for
         /// the tap time cost barge-in about 0.4 s. The turn ends here, as a tap will open no other; a hold opens one from Idle.
+        /// A line playing at Idle stops too, or a hold would lose its first word to it. A safety turn waits for the hold.
         /// </summary>
         public void InterruptBusyTurn()
         {
             var state = _machine.State;
-            if (_switching || state == ConversationState.Idle || state == ConversationState.Listening)
+            if (_switching || state == ConversationState.Listening)
+                return;
+            if (state == ConversationState.Idle)
+            {
+                if (_bargeIn.IsPlaying)
+                    _bargeIn.Interrupt(_turnCts);
+                return;
+            }
+            if (_pipeline.IsSafetyTurn(_turnId))
                 return;
             _bargeIn.BargeIn(_turnCts, _turnId);
             _machine.Fire(ConversationTrigger.Watchdog);

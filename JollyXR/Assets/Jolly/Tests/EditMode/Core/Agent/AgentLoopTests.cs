@@ -233,6 +233,10 @@ namespace Jolly.Tests.EditMode.Core.Agent
         [TestCase("Can you jump?")]
         [TestCase("I want to see you dance")]
         [TestCase("Do a little dance for me now")]
+        [TestCase("Nubi, do a little dance")]
+        [TestCase("Hey, can you jump?")]
+        [TestCase("Do a little dance, Nubi.")]
+        [TestCase("Then dance")]
         public void EndsSpokenTurn_TheTurnIsOneShortClause_SkipsTheClosingRound(string said)
         {
             // Arrange
@@ -249,6 +253,9 @@ namespace Jolly.Tests.EditMode.Core.Agent
         [TestCase("Dance and then tell me a joke")]
         [TestCase("Dance and tell me a joke")]
         [TestCase("Dance then tell me a joke")]
+        [TestCase("Dance after that tell me a joke")]
+        [TestCase("Dance while you tell a joke")]
+        [TestCase("Jump also tell me a joke")]
         [TestCase("Can you jump? And what's the capital of France?")]
         [TestCase("Jump. What's the capital of France?")]
         [TestCase("Could you do a little dance for my friends?")]
@@ -294,6 +301,9 @@ namespace Jolly.Tests.EditMode.Core.Agent
         [TestCase("Zatańcz potem opowiedz dowcip", 2)]
         [TestCase("Skocz, a potem się obróć", 2)]
         [TestCase("Skocz a potem się obróć", 2)]
+        [TestCase("Zatańcz a później opowiedz dowcip", 2)]
+        [TestCase("Skocz a następnie się obróć", 2)]
+        [TestCase("Zatańcz oraz opowiedz dowcip", 2)]
         [TestCase("Skocz. Jaka jest stolica Francji?", 2)]
         public void EndsSpokenTurn_Polish_OnlyOneShortClauseSkipsTheClosingRound(string said, int rounds)
         {

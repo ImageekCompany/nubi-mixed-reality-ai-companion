@@ -29,6 +29,8 @@ namespace Jolly.Core.Conversation
         readonly ConversationTimings _timings;
         readonly Func<string> _spokenThisTurn;
 
+        int _safetyTurn = -1;
+
         public TurnPipeline(TurnListener listener, TurnGuards guards, TurnSpeech speech, IAgentLoop agent,
                             IOfflineResponder offline, IConversationMemory memory, IPersonaProvider personas,
                             ConversationStateMachine machine, ConversationEvents events, ILatencyTracker latency,
@@ -92,6 +94,12 @@ namespace Jolly.Core.Conversation
         }
 
         /// <summary>The OfflinePttPressed path: one canned line, then Idle.</summary>
+        /// <summary>
+        /// The turn is speaking a crisis hand-off or safety notice. A tap, which a resting hand or a tracking flicker makes
+        /// by accident, must not cut it; a deliberate hold still can.
+        /// </summary>
+        public bool IsSafetyTurn(int turnId) => _safetyTurn == turnId;
+
         public async UniTask RunOffline(int turnId, LineCategory category, CancellationToken turnCt)
         {
             _latency.BeginTurn(turnId);
@@ -107,6 +115,8 @@ namespace Jolly.Core.Conversation
         /// </summary>
         public async UniTask Announce(int turnId, string greeting, string notice, bool online, CancellationToken turnCt)
         {
+            if (!string.IsNullOrEmpty(notice))
+                _safetyTurn = turnId;
             _latency.BeginTurn(turnId);
             _machine.Fire(ConversationTrigger.Announce);
             if (!online)
@@ -146,7 +156,17 @@ namespace Jolly.Core.Conversation
                     Acknowledge(ct).Forget();
                 return text;
             }
-            await _offline.Respond(LineCategory.CrisisHandoff, _speech.NextUtteranceId(), ct);
+            _safetyTurn = turnId;
+            try
+            {
+                await _offline.Respond(LineCategory.CrisisHandoff, _speech.NextUtteranceId(), ct);
+            }
+            catch (OperationCanceledException)
+            {
+                // The agent never runs for this turn, and the next one must know what was said.
+                _memory.CommitTurn(new[] { ConversationItem.User(text) });
+                throw;
+            }
             return text + TurnGuards.CrisisNote;
         }
 

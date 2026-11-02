@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using Jolly.Contracts;
 using Jolly.Core.Conversation;
 using Jolly.Testing;
@@ -86,6 +87,73 @@ namespace Jolly.Tests.EditMode.Core.Conversation
 
             // Assert
             Assert.That(_f.Agent.InterruptedSpoken, Is.Not.Null);
+            Assert.That(_f.State, Is.EqualTo(ConversationState.Idle));
+        }
+
+        [Test]
+        public void TappedDuringTheCrisisLine_DoesNotCutIt()
+        {
+            // Arrange
+            _f.Offline.Hold = true;
+            _f.Talk("I want to die");
+            Assert.That(_f.Offline.Waiting, Is.EqualTo(1));
+
+            // Act
+            _pinch.Press();
+            _f.Advance(0.1);
+            _pinch.Release();
+
+            // Assert
+            Assert.That(_f.Output.Flushes, Is.Zero);
+            Assert.That(_f.State, Is.Not.EqualTo(ConversationState.Idle));
+        }
+
+        [Test]
+        public void TappedDuringTheCrisisReply_DoesNotCutIt()
+        {
+            // Arrange
+            _f.Agent.Say("Please call someone. ").Hold().Say("Never cut.");
+            _f.Talk("I want to die");
+            _f.Queue.PlayNext();
+
+            // Act
+            _pinch.Press();
+            _f.Advance(0.1);
+            _pinch.Release();
+
+            // Assert
+            Assert.That(_f.Output.Flushes, Is.Zero);
+            Assert.That(_f.State, Is.Not.EqualTo(ConversationState.Idle));
+        }
+
+        [Test]
+        public void HeldDuringTheCrisisLine_CutsItAtTheTapTimeAndKeepsTheUsersWords()
+        {
+            // Arrange
+            _f.Offline.Hold = true;
+            _f.Talk("I want to die");
+
+            // Act
+            _pinch.Press();
+            _f.Advance(TapMax.TotalSeconds + 0.1);
+
+            // Assert
+            Assert.That(_f.Output.Flushes, Is.EqualTo(1));
+            Assert.That(_f.State, Is.EqualTo(ConversationState.Listening));
+            Assert.That(_f.Memory.Recent.Any(i => i.Kind == ItemKind.UserText && i.Text == "I want to die"), Is.True);
+        }
+
+        [Test]
+        public void PressedWhileAnInteractionLinePlaysAtIdle_SilencesItAtThePress()
+        {
+            // Arrange
+            _f.Output.IsPlaying = true;
+
+            // Act
+            _pinch.Press();
+
+            // Assert
+            Assert.That(_f.Output.Flushes, Is.EqualTo(1));
             Assert.That(_f.State, Is.EqualTo(ConversationState.Idle));
         }
 

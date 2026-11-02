@@ -143,15 +143,23 @@ namespace Jolly.App.SelfTest
         public static void ModelAction(ScenarioResult r, IReadOnlyList<string> started, IReadOnlyList<string> completed,
                                        IReadOnlyList<string> callIds)
         {
-            string action = null;
-            for (var i = 0; i < started.Count && action == null; i++)
+            var action = ModelActionCalled(started, callIds);
+            if (r.Check(action != null, "the model called no action"))
+                Tools(r, started, completed, action);
+        }
+
+        public static bool ModelCalledAction(IReadOnlyList<string> started, IReadOnlyList<string> callIds) =>
+            ModelActionCalled(started, callIds) != null;
+
+        static string ModelActionCalled(IReadOnlyList<string> started, IReadOnlyList<string> callIds)
+        {
+            for (var i = 0; i < started.Count; i++)
             {
                 if (started[i].StartsWith(ToolNames.Actions.Namespace + ".", System.StringComparison.Ordinal)
                     && !callIds[i].StartsWith(TurnGuards.ActionCallPrefix, System.StringComparison.Ordinal))
-                    action = started[i];
+                    return started[i];
             }
-            if (r.Check(action != null, "the model called no action"))
-                Tools(r, started, completed, action);
+            return null;
         }
 
         /// <summary>The body may face this far off the user's head while speaking (ADR-0041), degrees.</summary>
