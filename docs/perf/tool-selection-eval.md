@@ -101,6 +101,18 @@ The eval now sends `AgentLoop.LiveRequest`, exactly what a live turn sends: web 
 
 6 / 7. "Can you jump?" was answered in words again; with "or asks whether you can, call it in this turn to show them" added to the instructions' action rule, a re-run of the `actions.jump` tag still answered it in words (the show passed again), so that wording was not kept. Over all runs it has passed 1 of 4 samples.
 
+## Ability questions as requests to demonstrate: `ef949c1+dirty`, effort `minimal`
+
+The instructions' action rule gained "asking whether you can do one ('can you jump?') asks to see it, so do it" (a question about an offered action is read as a request to show it, rather than another "or asks whether you can" alongside "asks you to"). The `actions.jump` tag ran three times, then `greeting,small_talk` once to check the rule did not pull actions into chat.
+
+| Run | Can you jump? | Do a little show: jump, spin and take a bow |
+|---|---|---|
+| 1 | (none), **FAIL** | `actions.jump`, `actions.spin`, `actions.bow`, PASS |
+| 2 | `actions.jump`, PASS | the same three, PASS |
+| 3 | `actions.jump`, PASS | the same three, PASS |
+
+"Can you jump?" passed 2 of 3 (before: 1 of 4, and 0 of 1 with the earlier instruction wording); the show passed 3 of 3. Greeting and small talk: 6 / 6, with `actions.wave` for "Hello, who are you?" (a gesture, not movement). Kept. Three samples are too few to call the rate; the model still sometimes answers in words.
+
 ## Runs
 
 | Date (UTC) | Commit | Effort | Cases | Passed | Metered USD |
@@ -111,5 +123,9 @@ The eval now sends `AgentLoop.LiveRequest`, exactly what a live turn sends: web 
 | 2026-11-02 | `290385a+dirty` | minimal | 1 (actions.jump) | 1 | 0.0052 |
 | 2026-11-02 | `cfad01b+dirty` | minimal | 7 (5 action tags) | 6 | 0.0159 |
 | 2026-11-02 | `cfad01b+dirty` | minimal | 2 (actions.jump, with an instruction tweak not kept) | 1 | 0.0082 |
+| 2026-11-02 | `ef949c1+dirty` | minimal | 2 (actions.jump), run 1 of 3 | 1 | 0.0087 |
+| 2026-11-02 | `ef949c1+dirty` | minimal | 2 (actions.jump), run 2 of 3 | 2 | 0.0045 |
+| 2026-11-02 | `ef949c1+dirty` | minimal | 2 (actions.jump), run 3 of 3 | 2 | 0.0043 |
+| 2026-11-02 | `ef949c1+dirty` | minimal | 6 (greeting, small_talk) | 6 | 0.0062 |
 
 Total **$0.0528**, $0.003 over the batch's $0.05 eval cap: the second run was sized from the first run's cost per call, and its output (~300 tokens per call, mostly reasoning even at `minimal`) is what a run costs (output is 71 % of its metered cost). The baseline ran the harness of `7e6ccc9` before it was committed, on the `88047fe` runtime.

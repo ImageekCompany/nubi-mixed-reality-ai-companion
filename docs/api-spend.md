@@ -71,4 +71,6 @@ Rows before 2026-11-01 02:00 (research phase, `docs/research/*.md`) were not ite
 
 | 2026-11-02 | review of ADR-0047/0048: tool-selection eval with the live turn's request (web search on), 7 action cases + a 2-case re-run of the `actions.jump` tag | muse-spark-1.3 | 9 Spark calls, no web search | in 36,225 (27,671 cached) / out 2,185 | 0.024 |
 
-Running total (est.): **≤ $2.27** (sum of the rows: 2.267)
+| 2026-11-02 | review fixes of ADR-0047: tool-selection eval of the `actions.jump` tag three times with the ability-question rule, then `greeting,small_talk` once (app meter 0.0087 + 0.0045 + 0.0043 + 0.0062) | muse-spark-1.3 | 12 Spark calls, no web search | in 48,543 (43,483 cached) / out 2,542 | 0.024 |
+
+Running total (est.): **≤ $2.30** (sum of the rows: 2.291)

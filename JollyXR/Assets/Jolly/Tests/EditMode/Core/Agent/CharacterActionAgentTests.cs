@@ -23,6 +23,7 @@ namespace Jolly.Tests.EditMode.Core.Agent
 
             // Assert
             Assert.That(f.Model.Requests[0].Instructions, Does.Contain(ActionRule));
+            Assert.That(f.Model.Requests[0].Instructions, Does.Contain("asks to see it, so do it"));
         }
 
         [Test]

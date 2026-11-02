@@ -37,6 +37,7 @@ namespace Jolly.Core.Agent
         // Without it the model answered "Go stand behind me" with "I'm behind you now" and no call (probe 2026-11-02, ADR-0047).
         const string ActionRules =
             "You have a body: when the user asks you to move or do something one of your actions tools does, call it in this turn; " +
+            "asking whether you can do one ('can you jump?') asks to see it, so do it; " +
             "never say or imply you did an action you did not call.";
         const string SeatedRule = "The user is seated: never ask them to walk; when they want you near, come to them.";
         // Without the first sentence the model asked "what city?" instead of searching (live probe 2026-11-02, ADR-0048).
