@@ -80,14 +80,16 @@ namespace Jolly.Contracts
         public UsageRecord Usage { get; set; }
     }
 
-    public enum ModelEventKind { Started, TextDelta, ToolCall, Completed, TextDone }
+    /// <summary>WebSearchStarted / WebSearchCompleted: the provider's built-in web search (ADR-0048) began or ended;
+    /// both carry the search's item id in <see cref="ModelEvent.Text"/>. Neither is a ToolCall: the server runs it.</summary>
+    public enum ModelEventKind { Started, TextDelta, ToolCall, Completed, TextDone, WebSearchStarted, WebSearchCompleted }
 
     public readonly struct ModelEvent
     {
         public ModelEvent(ModelEventKind kind, string text = null, ToolCallRequest toolCall = null, ModelTurnResult result = null)
         { Kind = kind; Text = text; ToolCall = toolCall; Result = result; }
         public ModelEventKind Kind { get; }
-        public string Text { get; }                 // TextDelta; TextDone: none, the text item ended (a call may follow)
+        public string Text { get; }                 // TextDelta; TextDone: none, the text item ended (a call may follow); WebSearch*: item id
         public ToolCallRequest ToolCall { get; }    // ToolCall: emitted once its arguments are complete
         public ModelTurnResult Result { get; }      // Completed: always the last event
     }

@@ -24,6 +24,7 @@ namespace Jolly.Providers.MetaApi.Chat
         readonly IApiUsageMeter _meter;
         readonly ResponsesChatOptions _options;
         readonly ILog _log;
+        readonly IClock _clock;
         readonly FirstEventHedge _hedge;
         readonly ResponsesRequestWriter _writer = new();
 
@@ -35,6 +36,7 @@ namespace Jolly.Providers.MetaApi.Chat
             _meter = meter;
             _options = options;
             _log = log;
+            _clock = clock;
             _hedge = new FirstEventHedge(clock, log);
         }
 
@@ -77,15 +79,25 @@ namespace Jolly.Providers.MetaApi.Chat
                 try
                 {
                     var events = new List<ModelEvent>(4);
+                    var searchStartedAt = double.NaN;
                     do
                     {
                         reducer.Apply(stream.Current, events);
                         foreach (var e in events)
                         {
-                            if (e.Kind == ModelEventKind.Completed)
+                            switch (e.Kind)
                             {
-                                settled = true;
-                                Settle(reservation, e.Result);
+                                case ModelEventKind.Completed:
+                                    settled = true;
+                                    Settle(reservation, e.Result);
+                                    break;
+                                case ModelEventKind.WebSearchStarted:
+                                    searchStartedAt = _clock.Now;
+                                    break;
+                                case ModelEventKind.WebSearchCompleted:
+                                    LogWebSearch(model, e.Text, searchStartedAt);
+                                    searchStartedAt = double.NaN;
+                                    break;
                             }
                             await writer.YieldAsync(e);
                         }
@@ -139,7 +151,15 @@ namespace Jolly.Providers.MetaApi.Chat
             if (_log.IsEnabled(LogLevel.Info))
                 _log.Write(LogLevel.Info, Category, $"evt=llm.completed model={usage.Model} req={result.ResponseId} " +
                                                     $"finish={result.FinishReason} in={usage.InputTokens} cached={usage.CachedInputTokens} " +
-                                                    $"out={usage.OutputTokens} usd={usd}");
+                                                    $"out={usage.OutputTokens} searches={usage.WebSearches} usd={usd}");
+        }
+
+        /// <summary>ms is NaN when the search's in_progress event was not seen.</summary>
+        void LogWebSearch(string model, string itemId, double startedAt)
+        {
+            if (_log.IsEnabled(LogLevel.Info))
+                _log.Write(LogLevel.Info, Category, $"evt=llm.web_search model={model} id={itemId} " +
+                                                    $"ms={(_clock.Now - startedAt) * 1000:0}");
         }
 
         void LogFailure(string model, ProviderException e)

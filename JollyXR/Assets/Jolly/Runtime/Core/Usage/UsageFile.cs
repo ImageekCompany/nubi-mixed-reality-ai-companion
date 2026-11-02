@@ -93,6 +93,7 @@ namespace Jolly.Core.Usage
             OutputTokens = (long?)t["outputTokens"] ?? 0,
             Images = (long?)t["images"] ?? 0,
             AudioSeconds = (double?)t["audioSeconds"] ?? 0,
+            WebSearches = (long?)t["webSearches"] ?? 0,
             Requests = (long?)t["requests"] ?? 0,
             EstimatedRequests = (long?)t["estimatedRequests"] ?? 0,
             Usd = (decimal?)t["usd"] ?? 0m,
@@ -111,6 +112,8 @@ namespace Jolly.Core.Usage
             w.WriteValue(t.Images);
             w.WritePropertyName("audioSeconds");
             w.WriteValue(t.AudioSeconds);
+            w.WritePropertyName("webSearches");
+            w.WriteValue(t.WebSearches);
             w.WritePropertyName("requests");
             w.WriteValue(t.Requests);
             w.WritePropertyName("estimatedRequests");

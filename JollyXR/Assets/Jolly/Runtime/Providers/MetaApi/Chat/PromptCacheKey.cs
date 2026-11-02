@@ -4,7 +4,7 @@ namespace Jolly.Providers.MetaApi.Chat
 {
     /// <summary>
     /// <c>prompt_cache_key</c> for a request: a hash of what stays the same across turns (model, instructions, tool
-    /// names), so requests sharing that prefix are routed to the same cache. Without a key, identical 2.7k-token prefixes
+    /// names, whether web search is offered), so requests sharing that prefix are routed to the same cache. Without a key, identical 2.7k-token prefixes
     /// were never cached (live 2026-11-01: cached 0 on repeats); with one, the repeat read 2,673 cached tokens and its
     /// first text came 0.25 s sooner (docs/research/meta-model-api.md §1.4).
     /// </summary>
@@ -22,6 +22,8 @@ namespace Jolly.Providers.MetaApi.Chat
                 foreach (var tool in request.Tools)
                     hash = Add(hash, tool.Name);
             }
+            if (request.WebSearch != null)
+                hash = Add(hash, "web_search");
             return "jolly-" + hash.ToString("x16");
         }
 

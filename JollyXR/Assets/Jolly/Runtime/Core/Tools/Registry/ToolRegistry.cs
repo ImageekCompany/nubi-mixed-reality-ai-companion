@@ -12,6 +12,7 @@ namespace Jolly.Core.Tools
     public sealed class ToolRegistry : IToolRegistry
     {
         static readonly Regex NamePattern = new("^[a-zA-Z0-9_.-]+$");
+        const string ReservedNamespace = "browser";
 
         sealed class Entry
         {
@@ -28,6 +29,9 @@ namespace Jolly.Core.Tools
         {
             if (toolNamespace?.Name == null || toolNamespace.Name.Contains('.') || !NamePattern.IsMatch(toolNamespace.Name))
                 throw new ArgumentException($"invalid tool namespace '{toolNamespace?.Name}'");
+            // web_search injects browser.search, .open and .find; a request with one of those names fails with 400.
+            if (toolNamespace.Name == ReservedNamespace)
+                throw new ArgumentException($"tool namespace '{ReservedNamespace}' is reserved by web search");
             if (FindNamespace(toolNamespace.Name) != null)
                 throw new InvalidOperationException($"tool namespace '{toolNamespace.Name}' is already registered");
             _namespaces.Add(toolNamespace);
@@ -79,7 +83,7 @@ namespace Jolly.Core.Tools
             foreach (var entry in _ordered)
             {
                 var name = entry.Tool.Definition.Name;
-                if (IsAllowed(persona?.AllowedTools, name) && !(seated && ToolNames.IsWithheldWhenSeated(name)))
+                if (ToolNames.IsAllowed(persona?.AllowedTools, name) && !(seated && ToolNames.IsWithheldWhenSeated(name)))
                     definitions.Add(entry.Tool.Definition);
             }
             return definitions;
@@ -113,18 +117,6 @@ namespace Jolly.Core.Tools
                     return ns;
             }
             return null;
-        }
-
-        static bool IsAllowed(IReadOnlyList<string> allowed, string name)
-        {
-            if (allowed == null)
-                return true;
-            foreach (var a in allowed)
-            {
-                if (a == name)
-                    return true;
-            }
-            return false;
         }
     }
 }

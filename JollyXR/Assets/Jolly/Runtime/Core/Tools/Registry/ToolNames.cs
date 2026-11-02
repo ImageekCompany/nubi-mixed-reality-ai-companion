@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace Jolly.Core.Tools
 {
     /// <summary>The tool catalogue of contracts §4.2.</summary>
@@ -16,7 +18,24 @@ namespace Jolly.Core.Tools
         public const string SetPersona = "set_persona";
         public const string GoToSurface = "go_to_surface";
         public const string RequestRoomScan = "request_room_scan";
+        public const string SetHomeLocation = "set_home_location";
+        /// <summary>Not a registered tool: the provider's built-in web search (ADR-0048). A persona's AllowedTools lists
+        /// it like a tool name to allow it.</summary>
+        public const string WebSearch = "web_search";
 
         public static bool IsWithheldWhenSeated(string name) => name == WalkTo || name == FollowUser || name == GoToSurface;
+
+        /// <summary>A persona's null AllowedTools allows every tool.</summary>
+        public static bool IsAllowed(IReadOnlyList<string> allowed, string name)
+        {
+            if (allowed == null)
+                return true;
+            foreach (var a in allowed)
+            {
+                if (a == name)
+                    return true;
+            }
+            return false;
+        }
     }
 }

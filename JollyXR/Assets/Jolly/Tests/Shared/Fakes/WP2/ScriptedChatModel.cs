@@ -76,6 +76,15 @@ namespace Jolly.Testing.Conversation
                 return this;
             }
 
+            /// <summary>The server's web search: started, then completed with its item kept for replay (ADR-0048).</summary>
+            public Round WebSearch(string id = "ws_1")
+            {
+                _steps.Add((w, ct) => w.YieldAsync(new ModelEvent(ModelEventKind.WebSearchStarted, id)));
+                _steps.Add((w, ct) => w.YieldAsync(new ModelEvent(ModelEventKind.WebSearchCompleted, id)));
+                _output.Add(ConversationItem.Opaque("{\"type\":\"web_search_call\",\"id\":\"" + id + "\",\"status\":\"completed\"}"));
+                return this;
+            }
+
             public Round Gate()
             {
                 _steps.Add((w, ct) => _gate.Task.AttachExternalCancellation(ct));

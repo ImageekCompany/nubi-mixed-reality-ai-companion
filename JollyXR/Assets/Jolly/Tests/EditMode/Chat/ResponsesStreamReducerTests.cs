@@ -204,6 +204,101 @@ namespace Jolly.Tests.EditMode.Chat
             Assert.That(reducer.IsCompleted, Is.True);
         }
 
+        [Test]
+        public void WebSearch_ReportsTheSearchAroundItsItemAndNeverAsAToolCall()
+        {
+            // Arrange: live 2026-11-02, "What's the weather like today?" with web_search and a London location.
+            const string searchId = "ws_call_01a19b84889874d7a17f272794205720";
+
+            // Act
+            var events = Reduce("responses_web_search");
+
+            // Assert
+            var kinds = events.Select(e => e.Kind).ToList();
+            Assert.That(kinds, Has.No.Member(ModelEventKind.ToolCall));
+            var started = kinds.IndexOf(ModelEventKind.WebSearchStarted);
+            var completed = kinds.IndexOf(ModelEventKind.WebSearchCompleted);
+            Assert.That(started, Is.GreaterThan(kinds.IndexOf(ModelEventKind.TextDone)), "the preamble is spoken first");
+            Assert.That(completed, Is.GreaterThan(started));
+            Assert.That(completed, Is.LessThan(kinds.LastIndexOf(ModelEventKind.TextDelta)), "the answer follows the search");
+            Assert.That(events[started].Text, Is.EqualTo(searchId));
+            Assert.That(events[completed].Text, Is.EqualTo(searchId));
+        }
+
+        [Test]
+        public void WebSearch_KeepsTheCallAsAnOpaqueItemAndCountsItInTheUsage()
+        {
+            // Act
+            var result = Reduce("responses_web_search").Last().Result;
+
+            // Assert
+            Assert.That(result.FinishReason, Is.EqualTo(FinishReason.Stop));
+            Assert.That(result.OutputItems.Select(i => i.Kind), Is.EqualTo(new[]
+            {
+                ItemKind.Opaque, ItemKind.AssistantText, ItemKind.Opaque, ItemKind.Opaque, ItemKind.AssistantText,
+            }));
+            Assert.That(result.OutputItems[2].Json, Does.Contain("\"type\":\"web_search_call\"").And.Contain("\"completed\""));
+            Assert.That(result.OutputItems[4].Text, Does.StartWith("It's cloudy"));
+            Assert.That(result.Usage.WebSearches, Is.EqualTo(1));
+            Assert.That(result.Usage.InputTokens, Is.EqualTo(4374));
+        }
+
+        [Test]
+        public void NamespacedFunctionCall_KeepsTheDottedName()
+        {
+            // Arrange: the item as streamed live (2026-11-02) for a tool sent inside {"type":"namespace","name":"actions"}.
+            var item = "{\"arguments\":\"{}\",\"call_id\":\"call_1\",\"id\":\"fc_1\",\"name\":\"actions.dance\"," +
+                       "\"status\":\"completed\",\"type\":\"function_call\"}";
+
+            // Act
+            var call = ReduceItems(item).Single(e => e.Kind == ModelEventKind.ToolCall).ToolCall;
+
+            // Assert
+            Assert.That(call.Name, Is.EqualTo("actions.dance"));
+        }
+
+        [Test]
+        public void FunctionCallWithANamespaceField_IsNamedNamespaceDotFunction()
+        {
+            // Arrange: the shape of the tool-search docs, with the namespace in its own field.
+            var item = "{\"arguments\":\"{}\",\"call_id\":\"call_1\",\"name\":\"dance\",\"namespace\":\"actions\"," +
+                       "\"type\":\"function_call\"}";
+
+            // Act
+            var events = ReduceItems(item);
+
+            // Assert
+            Assert.That(events.Single(e => e.Kind == ModelEventKind.ToolCall).ToolCall.Name, Is.EqualTo("actions.dance"));
+            Assert.That(events.Last().Result.OutputItems.Single().ToolName, Is.EqualTo("actions.dance"));
+        }
+
+        [Test]
+        public void ToolSearchItems_AreKeptAsOpaqueItems()
+        {
+            // Arrange: items of a deferred namespace load (live probe 2026-11-02).
+            var call = "{\"arguments\":{\"paths\":[\"actions\"]},\"id\":\"ts_1\",\"type\":\"tool_search_call\"}";
+            var output = "{\"id\":\"tso_1\",\"tools\":[],\"type\":\"tool_search_output\"}";
+
+            // Act
+            var events = ReduceItems(call, output);
+
+            // Assert
+            Assert.That(events.Select(e => e.Kind), Has.No.Member(ModelEventKind.ToolCall));
+            Assert.That(events.Last().Result.OutputItems.Select(i => i.Kind), Is.EqualTo(new[] { ItemKind.Opaque, ItemKind.Opaque }));
+        }
+
+        /// <summary>response.created, one response.output_item.done per item, response.completed.</summary>
+        static List<ModelEvent> ReduceItems(params string[] items)
+        {
+            var reducer = new ResponsesStreamReducer(Model);
+            var output = new List<ModelEvent>();
+            reducer.Apply(new SseEvent("response.created", "{\"type\":\"response.created\",\"response\":{\"id\":\"resp_1\"}}"), output);
+            foreach (var item in items)
+                reducer.Apply(new SseEvent("response.output_item.done", "{\"type\":\"response.output_item.done\",\"item\":" + item + "}"), output);
+            reducer.Apply(new SseEvent("response.completed", "{\"type\":\"response.completed\",\"response\":{\"id\":\"resp_1\"}}"), output);
+            return output;
+        }
+
         static List<ModelEvent> Reduce(string fixture)
         {
             var reducer = new ResponsesStreamReducer(Model);

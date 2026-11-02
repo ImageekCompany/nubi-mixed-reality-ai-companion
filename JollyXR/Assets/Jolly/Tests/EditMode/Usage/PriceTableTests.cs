@@ -10,7 +10,8 @@ namespace Jolly.Tests.EditMode.Usage
     {
         public static PriceTable MetaPrices() => new(new Dictionary<string, ModelPrice>
         {
-            ["muse-spark-1.3"] = new(inputPerMillion: 1.25m, cachedInputPerMillion: 0.15m, outputPerMillion: 4.25m),
+            ["muse-spark-1.3"] = new(inputPerMillion: 1.25m, cachedInputPerMillion: 0.15m, outputPerMillion: 4.25m,
+                perWebSearch: 0.0025m),
             ["muse-spark-1.3-contributor"] = new(inputPerMillion: 0.10m, cachedInputPerMillion: 0.002m, outputPerMillion: 0.20m),
             ["sam-3.1"] = new(0m, 0m, 0m, perImage: 0.0025m),
             ["muse-voice-transcribe-1.0"] = new(0m, 0m, 0m, perAudioHour: 0.18m),
@@ -30,6 +31,16 @@ namespace Jolly.Tests.EditMode.Usage
             var cost = MetaPrices().Cost(new UsageRecord("sam-3.1", 0, 0, 0, images: 2));
 
             Assert.That(cost, Is.EqualTo(0.005m));
+        }
+
+        [Test]
+        public void Cost_WebSearches_ArePricedPerSearchOnTopOfTheTokens()
+        {
+            // Act
+            var cost = MetaPrices().Cost(new UsageRecord("muse-spark-1.3", 1000, 0, 0, webSearches: 2));
+
+            // Assert
+            Assert.That(cost, Is.EqualTo(1000 * 1.25m / 1_000_000m + 2 * 0.0025m));
         }
 
         [Test]

@@ -107,6 +107,7 @@ namespace Jolly.Core.Usage
             totals.OutputTokens += usage.OutputTokens;
             totals.Images += usage.Images;
             totals.AudioSeconds += usage.AudioSeconds;
+            totals.WebSearches += usage.WebSearches;
             totals.Requests++;
             if (estimated)
                 totals.EstimatedRequests++;

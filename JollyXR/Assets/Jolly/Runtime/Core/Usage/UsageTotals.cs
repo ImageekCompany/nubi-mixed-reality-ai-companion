@@ -8,6 +8,7 @@ namespace Jolly.Core.Usage
         public long OutputTokens;
         public long Images;
         public double AudioSeconds;
+        public long WebSearches;
         public long Requests;
         /// <summary>Requests settled with an estimate because they ended before response.completed.</summary>
         public long EstimatedRequests;

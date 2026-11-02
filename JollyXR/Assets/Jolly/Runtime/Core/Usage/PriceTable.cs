@@ -8,13 +8,14 @@ namespace Jolly.Core.Usage
     public sealed class ModelPrice
     {
         public ModelPrice(decimal inputPerMillion, decimal cachedInputPerMillion, decimal outputPerMillion,
-                          decimal perImage = 0m, decimal perAudioHour = 0m)
+                          decimal perImage = 0m, decimal perAudioHour = 0m, decimal perWebSearch = 0m)
         {
             InputPerMillion = inputPerMillion;
             CachedInputPerMillion = cachedInputPerMillion;
             OutputPerMillion = outputPerMillion;
             PerImage = perImage;
             PerAudioHour = perAudioHour;
+            PerWebSearch = perWebSearch;
         }
 
         public decimal InputPerMillion { get; }
@@ -22,6 +23,8 @@ namespace Jolly.Core.Usage
         public decimal OutputPerMillion { get; }
         public decimal PerImage { get; }
         public decimal PerAudioHour { get; }
+        /// <summary>The built-in web_search tool, per call ($2.50 per 1,000 for Muse Spark, ADR-0048).</summary>
+        public decimal PerWebSearch { get; }
     }
 
     /// <summary>Per-model prices from JollyConfig. An unknown model is priced at the highest known rate of each kind.</summary>
@@ -38,7 +41,7 @@ namespace Jolly.Core.Usage
             if (prices == null || prices.Count == 0)
                 throw new ArgumentException("At least one model price is required.", nameof(prices));
             _prices = new Dictionary<string, ModelPrice>(prices.Count, StringComparer.Ordinal);
-            decimal input = 0, cached = 0, output = 0, image = 0, audio = 0;
+            decimal input = 0, cached = 0, output = 0, image = 0, audio = 0, search = 0;
             foreach (var pair in prices)
             {
                 _prices.Add(pair.Key, pair.Value);
@@ -47,8 +50,9 @@ namespace Jolly.Core.Usage
                 output = Math.Max(output, pair.Value.OutputPerMillion);
                 image = Math.Max(image, pair.Value.PerImage);
                 audio = Math.Max(audio, pair.Value.PerAudioHour);
+                search = Math.Max(search, pair.Value.PerWebSearch);
             }
-            _mostExpensive = new ModelPrice(input, cached, output, image, audio);
+            _mostExpensive = new ModelPrice(input, cached, output, image, audio, search);
         }
 
         public ModelPrice For(string model) =>
@@ -61,6 +65,7 @@ namespace Jolly.Core.Usage
             return (uncached * p.InputPerMillion + usage.CachedInputTokens * p.CachedInputPerMillion
                     + usage.OutputTokens * p.OutputPerMillion) / Million
                    + usage.Images * p.PerImage
+                   + usage.WebSearches * p.PerWebSearch
                    + (decimal)usage.AudioSeconds / SecondsPerHour * p.PerAudioHour;
         }
     }

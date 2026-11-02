@@ -145,6 +145,22 @@ namespace Jolly.Tests.EditMode.Usage
         }
 
         [Test]
+        public void Flush_ReloadedMeterKeepsTheWebSearchCount()
+        {
+            // Arrange
+            var meter = Meter();
+            meter.TryReserve(0.01m, out var reservation);
+            meter.Record(reservation, new UsageRecord(Spark, 4000, 2000, 200, webSearches: 1));
+
+            // Act
+            meter.Flush();
+            var reloaded = Meter();
+
+            // Assert
+            Assert.That(reloaded.TotalsFor(Spark).WebSearches, Is.EqualTo(1));
+        }
+
+        [Test]
         public void Flush_OverwritesAnExistingFile()
         {
             var meter = Meter();

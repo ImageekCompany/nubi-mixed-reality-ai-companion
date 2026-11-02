@@ -28,6 +28,7 @@ namespace Jolly.Tests.EditMode.Chat
             Assert.That((string)body["instructions"], Is.EqualTo("Be Nubi."));
             Assert.That((string)body["safety_identifier"], Is.EqualTo("abc"));
             Assert.That(body["tools"], Is.Null);
+            Assert.That(body["max_tool_calls"], Is.Null);
         }
 
         [Test]
@@ -158,6 +159,127 @@ namespace Jolly.Tests.EditMode.Chat
             Assert.That(first, Does.Contain("one").And.Not.Contain("two"));
             Assert.That(second, Does.Contain("two").And.Not.Contain("one"));
         }
+
+        [Test]
+        public void Write_DottedTools_GoInsideTheirNamespaceUnderTheFunctionName()
+        {
+            // Arrange
+            var request = new ModelRequest
+            {
+                Input = new[] { ConversationItem.User("dance") },
+                Tools = new[] { Tool("actions.dance"), Tool("stop"), Tool("actions.jump") },
+                Namespaces = new[] { new ToolNamespace("actions", "Things your body can do.") },
+            };
+
+            // Act
+            var tools = (JArray)Write(request)["tools"];
+
+            // Assert
+            Assert.That(tools.Count, Is.EqualTo(2));
+            Assert.That((string)tools[0]["name"], Is.EqualTo("stop"));
+            var ns = tools[1];
+            Assert.That((string)ns["type"], Is.EqualTo("namespace"));
+            Assert.That((string)ns["name"], Is.EqualTo("actions"));
+            Assert.That((string)ns["description"], Is.EqualTo("Things your body can do."));
+            Assert.That(ns["tools"].Select(t => (string)t["name"]), Is.EqualTo(new[] { "dance", "jump" }));
+            Assert.That(ns["tools"].Select(t => (string)t["type"]), Has.All.EqualTo("function"));
+            Assert.That(ns["tools"].Select(t => t["defer_loading"]), Has.All.Null, "eager: no tool_search round");
+            Assert.That(JToken.DeepEquals(ns["tools"][0]["parameters"], JToken.Parse(WalkSchema)), Is.True);
+        }
+
+        [Test]
+        public void Write_NamespaceWithoutAnOfferedTool_IsLeftOut()
+        {
+            // Arrange
+            var request = new ModelRequest
+            {
+                Input = new[] { ConversationItem.User("hi") },
+                Tools = new[] { Tool("stop") },
+                Namespaces = new[] { new ToolNamespace("actions", "Things your body can do.") },
+            };
+
+            // Act
+            var tools = (JArray)Write(request)["tools"];
+
+            // Assert
+            Assert.That(tools.Select(t => (string)t["name"]), Is.EqualTo(new[] { "stop" }));
+        }
+
+        [Test]
+        public void Write_DottedToolWithoutItsNamespace_IsSentFlatUnderItsFullName()
+        {
+            // Arrange
+            var request = new ModelRequest { Input = new[] { ConversationItem.User("dance") }, Tools = new[] { Tool("actions.dance") } };
+
+            // Act
+            var tool = Write(request)["tools"].Single();
+
+            // Assert
+            Assert.That((string)tool["type"], Is.EqualTo("function"));
+            Assert.That((string)tool["name"], Is.EqualTo("actions.dance"));
+        }
+
+        [Test]
+        public void Write_WebSearch_IsTheLastToolWithOnlyTheLocationFieldsThatAreSet()
+        {
+            // Arrange
+            var request = new ModelRequest
+            {
+                Input = new[] { ConversationItem.User("weather?") },
+                Tools = new[] { Tool("stop") },
+                WebSearch = new WebSearchOptions { Country = "GB", Timezone = "Europe/London" },
+            };
+
+            // Act
+            var body = Write(request);
+
+            // Assert
+            var search = (JObject)body["tools"].Last();
+            Assert.That((string)search["type"], Is.EqualTo("web_search"));
+            Assert.That((string)search["search_context_size"], Is.EqualTo("low"));
+            Assert.That(JToken.DeepEquals(search["user_location"],
+                JObject.Parse("{\"type\":\"approximate\",\"country\":\"GB\",\"timezone\":\"Europe/London\"}")), Is.True);
+            Assert.That((int)body["max_tool_calls"], Is.EqualTo(ResponsesRequestWriter.MaxBuiltInToolCalls));
+        }
+
+        [Test]
+        public void Write_WebSearchWithoutFunctionTools_SendsOnlyWebSearch()
+        {
+            // Arrange
+            var request = new ModelRequest
+            {
+                Input = new[] { ConversationItem.User("news?") },
+                WebSearch = new WebSearchOptions { City = "Kraków" },
+            };
+
+            // Act
+            var tools = (JArray)Write(request)["tools"];
+
+            // Assert
+            Assert.That(tools.Count, Is.EqualTo(1));
+            Assert.That((string)tools[0]["type"], Is.EqualTo("web_search"));
+            Assert.That((string)tools[0].SelectToken("user_location.city"), Is.EqualTo("Kraków"));
+        }
+
+        [Test]
+        public void Write_PromptCacheKey_ChangesWhenWebSearchIsOffered()
+        {
+            // Arrange
+            ModelRequest Request(WebSearchOptions search) =>
+                new() { Instructions = "Be Nubi.", Input = new[] { ConversationItem.User("hi") }, Tools = new[] { Tool("stop") }, WebSearch = search };
+
+            // Act
+            var without = (string)Write(Request(null))["prompt_cache_key"];
+            var with = (string)Write(Request(new WebSearchOptions { City = "London" }))["prompt_cache_key"];
+            var otherCity = (string)Write(Request(new WebSearchOptions { City = "Paris" }))["prompt_cache_key"];
+
+            // Assert
+            Assert.That(with, Is.Not.EqualTo(without));
+            Assert.That(otherCity, Is.EqualTo(with));
+        }
+
+        static ToolDefinition Tool(string name) =>
+            new(name, "Does " + name + ".", WalkSchema, TimeSpan.FromSeconds(1), ToolConcurrency.Parallel);
 
         static JObject Write(ModelRequest request) => JObject.Parse(new ResponsesRequestWriter().Write(request, Model).Json);
     }

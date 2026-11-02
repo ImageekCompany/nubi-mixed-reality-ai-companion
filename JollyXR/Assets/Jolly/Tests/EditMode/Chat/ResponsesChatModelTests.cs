@@ -38,6 +38,24 @@ namespace Jolly.Tests.EditMode.Chat
         }
 
         [Test]
+        public void Stream_RecordedWebSearch_LogsTheSearchAndSettlesItWithTheUsage()
+        {
+            // Arrange
+            _transport.Respond(SseFixtures.Parse("responses_web_search"));
+            var events = new List<ModelEvent>();
+
+            // Act
+            var run = Collect(Model().Stream(Request(), CancellationToken.None), events, CancellationToken.None);
+
+            // Assert
+            Assert.That(run.Status, Is.EqualTo(UniTaskStatus.Succeeded));
+            Assert.That(events.Select(e => e.Kind), Does.Contain(ModelEventKind.WebSearchCompleted));
+            Assert.That(_meter.Records.Single().WebSearches, Is.EqualTo(1));
+            Assert.That(_log.Contains(LogLevel.Info, "evt=llm.web_search model=" + LiveModel + " id=ws_call_"), Is.True);
+            Assert.That(_log.Contains(LogLevel.Info, "searches=1"), Is.True);
+        }
+
+        [Test]
         public void Stream_RecordedTextResponse_YieldsEventsAndSettlesActualUsage()
         {
             _transport.Respond(SseFixtures.Parse("responses_text"));

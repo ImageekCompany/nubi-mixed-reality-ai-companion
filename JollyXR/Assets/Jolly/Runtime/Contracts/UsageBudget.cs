@@ -5,9 +5,9 @@ namespace Jolly.Contracts
     public readonly struct UsageRecord
     {
         public UsageRecord(string model, long inputTokens, long cachedInputTokens, long outputTokens,
-                           int images = 0, double audioSeconds = 0)
+                           int images = 0, double audioSeconds = 0, int webSearches = 0)
         { Model = model; InputTokens = inputTokens; CachedInputTokens = cachedInputTokens;
-          OutputTokens = outputTokens; Images = images; AudioSeconds = audioSeconds; }
+          OutputTokens = outputTokens; Images = images; AudioSeconds = audioSeconds; WebSearches = webSearches; }
 
         public string Model { get; }
         public long InputTokens { get; }       // includes cached
@@ -15,6 +15,7 @@ namespace Jolly.Contracts
         public long OutputTokens { get; }      // includes reasoning tokens
         public int Images { get; }             // SAM images
         public double AudioSeconds { get; }    // ASR
+        public int WebSearches { get; }        // built-in web_search calls of a Responses request (ADR-0048)
     }
 
     /// <summary>

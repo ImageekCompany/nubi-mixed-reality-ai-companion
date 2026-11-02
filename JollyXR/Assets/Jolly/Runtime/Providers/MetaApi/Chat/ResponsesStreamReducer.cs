@@ -14,6 +14,8 @@ namespace Jolly.Providers.MetaApi.Chat
     /// Folds one Responses API event stream (architecture §7) into ModelEvents. Event names are used exactly as
     /// observed live; unknown events are ignored. response.failed and "error" throw ProviderException.
     /// response.incomplete is a normal completion with FinishReason Length/Incomplete: its text may already be spoken.
+    /// The server's own tool items (web_search_call, tool_search_call, tool_search_output) are kept as Opaque items for
+    /// replay within the turn and are never function calls; a web search is reported as it starts and ends (ADR-0048).
     /// </summary>
     public sealed class ResponsesStreamReducer
     {
@@ -22,6 +24,7 @@ namespace Jolly.Providers.MetaApi.Chat
         string _responseId;
         bool _started;
         bool _hasCalls;
+        int _webSearches;
 
         public ResponsesStreamReducer(string model) => _model = model;
 
@@ -82,6 +85,9 @@ namespace Jolly.Providers.MetaApi.Chat
                 case "response.output_item.done":
                     OnItemDone(json["item"] as JObject, output);
                     break;
+                case "response.web_search_call.in_progress":
+                    output.Add(new ModelEvent(ModelEventKind.WebSearchStarted, text: (string)json["item_id"]));
+                    break;
                 case "response.completed":
                     Complete(json["response"] as JObject, _hasCalls ? FinishReason.ToolCalls : FinishReason.Stop, output);
                     break;
@@ -100,8 +106,8 @@ namespace Jolly.Providers.MetaApi.Chat
         static bool IsHandled(string eventName) => eventName switch
         {
             "response.created" or "response.output_text.delta" or "response.function_call_arguments.delta"
-                or "response.output_item.done" or "response.completed" or "response.incomplete" or "response.failed"
-                or "error" => true,
+                or "response.output_item.done" or "response.web_search_call.in_progress" or "response.completed"
+                or "response.incomplete" or "response.failed" or "error" => true,
             _ => false,
         };
 
@@ -163,7 +169,7 @@ namespace Jolly.Providers.MetaApi.Chat
                 case null:
                     return;
                 case "function_call":
-                    var call = new ToolCallRequest((string)item["call_id"], (string)item["name"], (string)item["arguments"] ?? "{}");
+                    var call = new ToolCallRequest((string)item["call_id"], CallName(item), (string)item["arguments"] ?? "{}");
                     _hasCalls = true;
                     _items.Add(ConversationItem.Call(call.CallId, call.Name, call.ArgumentsJson));
                     output.Add(new ModelEvent(ModelEventKind.ToolCall, toolCall: call));
@@ -177,8 +183,14 @@ namespace Jolly.Providers.MetaApi.Chat
                         output.Add(new ModelEvent(ModelEventKind.TextDone));
                     }
                     return;
+                case "web_search_call":
+                    _webSearches++;
+                    _items.Add(ConversationItem.Opaque(item.ToString(Formatting.None)));
+                    output.Add(new ModelEvent(ModelEventKind.WebSearchCompleted, text: (string)item["id"]));
+                    return;
                 default:
-                    // reasoning (with encrypted_content) and anything newer: replayed verbatim within the turn.
+                    // reasoning (with encrypted_content), tool_search_call/_output and anything newer: replayed verbatim
+                    // within the turn.
                     _items.Add(ConversationItem.Opaque(item.ToString(Formatting.None)));
                     return;
             }
@@ -196,8 +208,20 @@ namespace Jolly.Providers.MetaApi.Chat
                 Usage = new UsageRecord(_model,
                     (long?)usage?["input_tokens"] ?? 0,
                     (long?)usage?.SelectToken("input_tokens_details.cached_tokens") ?? 0,
-                    (long?)usage?["output_tokens"] ?? 0),
+                    (long?)usage?["output_tokens"] ?? 0,
+                    webSearches: _webSearches),
             }));
+        }
+
+        /// <summary>
+        /// "actions.dance" as the registry knows it. Live calls name it so already (2026-11-02); the tool-search docs show
+        /// the namespace in a separate field, which is folded in here.
+        /// </summary>
+        static string CallName(JObject item)
+        {
+            var name = (string)item["name"];
+            var ns = (string)item["namespace"];
+            return string.IsNullOrEmpty(ns) || name == null || name.IndexOf('.') >= 0 ? name : ns + "." + name;
         }
 
         static string MessageText(JObject item)

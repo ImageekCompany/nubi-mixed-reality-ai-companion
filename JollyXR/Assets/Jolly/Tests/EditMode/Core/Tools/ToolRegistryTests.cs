@@ -26,6 +26,7 @@ namespace Jolly.Tests.EditMode.Core.Tools
 
         [TestCase("with.dot")]
         [TestCase("has space")]
+        [TestCase("browser")]
         public void RegisterNamespace_InvalidName_Throws(string name)
         {
             Assert.Throws<ArgumentException>(() => new ToolRegistry().RegisterNamespace(new ToolNamespace(name, "d")));

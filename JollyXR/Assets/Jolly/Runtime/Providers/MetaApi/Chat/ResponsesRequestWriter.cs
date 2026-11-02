@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Text;
@@ -25,6 +26,7 @@ namespace Jolly.Providers.MetaApi.Chat
     {
         /// <summary>A 640 px JPEG costs about 300 input tokens (meta-model-api.md §3), i.e. 1,200 chars at 4 chars/token.</summary>
         public const int ImageInputChars = 1200;
+        public const int MaxBuiltInToolCalls = 2;
 
         readonly StringBuilder _sb = new(8 * 1024);
         int _inputChars;
@@ -56,6 +58,13 @@ namespace Jolly.Providers.MetaApi.Chat
                 WriteInput(w, request);
                 w.WritePropertyName("parallel_tool_calls");
                 w.WriteValue(true);
+                if (request.WebSearch != null)
+                {
+                    // Counts built-in tools only (web_search, tool_search), never our functions; 2 lets a follow-up
+                    // search refine the first without a long chain of them.
+                    w.WritePropertyName("max_tool_calls");
+                    w.WriteValue(MaxBuiltInToolCalls);
+                }
                 w.WritePropertyName("reasoning");
                 w.WriteStartObject();
                 w.WritePropertyName("effort");
@@ -126,23 +135,106 @@ namespace Jolly.Providers.MetaApi.Chat
             }
         }
 
+        /// <summary>
+        /// Top-level functions, then one namespace object per <see cref="ModelRequest.Namespaces"/> entry holding its
+        /// "ns.fn" tools as "fn" (eager: no defer_loading, so no tool_search round, ADR-0047), then web_search. Each group
+        /// keeps the order of <see cref="ModelRequest.Tools"/>, so the body prefix is as stable as the tool list. A dotted
+        /// name whose namespace is not in the request goes out flat, which the API also accepts (one dot at most).
+        /// </summary>
         void WriteTools(JsonWriter w, ModelRequest request)
         {
-            if (request.Tools == null || request.Tools.Count == 0)
+            var tools = request.Tools ?? Array.Empty<ToolDefinition>();
+            if (tools.Count == 0 && request.WebSearch == null)
                 return;
             w.WritePropertyName("tools");
             w.WriteStartArray();
-            foreach (var tool in request.Tools)
+            foreach (var tool in tools)
             {
-                w.WriteStartObject();
-                WriteString(w, "type", "function");
-                WriteString(w, "name", tool.Name);
-                WriteString(w, "description", Count(tool.Description));
-                w.WritePropertyName("parameters");
-                w.WriteRawValue(Count(tool.ParametersJsonSchema));
-                w.WriteEndObject();
+                if (NamespaceOf(tool.Name, request.Namespaces) == null)
+                    WriteFunction(w, tool, tool.Name);
             }
+            if (request.Namespaces != null)
+            {
+                foreach (var ns in request.Namespaces)
+                    WriteNamespace(w, ns, tools);
+            }
+            if (request.WebSearch != null)
+                WriteWebSearch(w, request.WebSearch);
             w.WriteEndArray();
+        }
+
+        void WriteNamespace(JsonWriter w, ToolNamespace ns, IReadOnlyList<ToolDefinition> tools)
+        {
+            var prefix = ns.Name + ".";
+            var opened = false;
+            foreach (var tool in tools)
+            {
+                if (!tool.Name.StartsWith(prefix, StringComparison.Ordinal))
+                    continue;
+                if (!opened)
+                {
+                    opened = true;
+                    w.WriteStartObject();
+                    WriteString(w, "type", "namespace");
+                    WriteString(w, "name", ns.Name);
+                    WriteString(w, "description", Count(ns.Description));
+                    w.WritePropertyName("tools");
+                    w.WriteStartArray();
+                }
+                WriteFunction(w, tool, tool.Name.Substring(prefix.Length));
+            }
+            if (!opened)
+                return;
+            w.WriteEndArray();
+            w.WriteEndObject();
+        }
+
+        static ToolNamespace NamespaceOf(string toolName, IReadOnlyList<ToolNamespace> namespaces)
+        {
+            var dot = toolName.IndexOf('.');
+            if (dot < 0 || namespaces == null)
+                return null;
+            foreach (var ns in namespaces)
+            {
+                if (ns.Name.Length == dot && string.CompareOrdinal(toolName, 0, ns.Name, 0, dot) == 0)
+                    return ns;
+            }
+            return null;
+        }
+
+        void WriteFunction(JsonWriter w, ToolDefinition tool, string name)
+        {
+            w.WriteStartObject();
+            WriteString(w, "type", "function");
+            WriteString(w, "name", name);
+            WriteString(w, "description", Count(tool.Description));
+            w.WritePropertyName("parameters");
+            w.WriteRawValue(Count(tool.ParametersJsonSchema));
+            w.WriteEndObject();
+        }
+
+        /// <summary>"low" context: the answer is one or two spoken sentences, and more context only adds input tokens
+        /// (about 3,000 per search at low, live 2026-11-02). Only the location fields that are set are sent.</summary>
+        static void WriteWebSearch(JsonWriter w, WebSearchOptions search)
+        {
+            w.WriteStartObject();
+            WriteString(w, "type", "web_search");
+            WriteString(w, "search_context_size", "low");
+            w.WritePropertyName("user_location");
+            w.WriteStartObject();
+            WriteString(w, "type", "approximate");
+            WriteOptional(w, "country", search.Country);
+            WriteOptional(w, "region", search.Region);
+            WriteOptional(w, "city", search.City);
+            WriteOptional(w, "timezone", search.Timezone);
+            w.WriteEndObject();
+            w.WriteEndObject();
+        }
+
+        static void WriteOptional(JsonWriter w, string name, string value)
+        {
+            if (!string.IsNullOrEmpty(value))
+                WriteString(w, name, value);
         }
 
         static void WriteMessage(JsonWriter w, string role, string partType, string valueName, string value)
