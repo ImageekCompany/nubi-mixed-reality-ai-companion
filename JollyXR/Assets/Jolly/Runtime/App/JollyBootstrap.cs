@@ -21,6 +21,8 @@ namespace Jolly.App
         [SerializeField] SceneRefs scene = new();
         [SerializeField] SelfTestAssets selfTestAssets;
         [SerializeField] CharacterChoice characters = new();
+        /// <summary>Filled in the processed scene copy of a keyed build only (ADR-0049); empty in the saved scene.</summary>
+        [SerializeField, HideInInspector] string embeddedSecretsJson;
 
         readonly CancellationTokenSource _app = new();
         Edges _edges;
@@ -40,7 +42,7 @@ namespace Jolly.App
                 Debug.LogError("JollyBootstrap has no JollyConfig; the app cannot start.", this);
                 return;
             }
-            var edges = _edges ?? Edges.ForPlayer();
+            var edges = _edges ?? Edges.ForPlayer(embeddedSecretsJson);
             var foundation = Foundation.Build(config, edges);
             CharacterSelection.Apply(scene.nubi, config, characters, edges.Paths, foundation.Log);
             GraphicsWarmup.Start(config.graphicsStates, foundation.Log);

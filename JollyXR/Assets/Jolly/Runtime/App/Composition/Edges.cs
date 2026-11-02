@@ -42,14 +42,14 @@ namespace Jolly.App.Composition
         /// set it: model text is logged only for scripted runs (ADR-0036).</summary>
         public Action<string> ModelReplies { get; set; }
 
-        public static Edges ForPlayer()
+        public static Edges ForPlayer(string embeddedSecretsJson = null)
         {
             var paths = AppPaths.ForPlayer();
             var http = new HttpTransport();
             return new Edges
             {
                 Paths = paths,
-                Secrets = SecretsFactory.Create(paths),
+                Secrets = SecretsFactory.Create(paths, embeddedSecretsJson),
                 IsNetworkReachable = () => Application.internetReachability != NetworkReachability.NotReachable,
                 Http = http,
                 WebSockets = provider => new ClientWebSocketConnection(provider),

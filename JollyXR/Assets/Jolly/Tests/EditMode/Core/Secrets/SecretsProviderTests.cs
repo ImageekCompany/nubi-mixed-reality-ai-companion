@@ -23,6 +23,43 @@ namespace Jolly.Tests.EditMode.Core.Secrets
         }
 
         [Test]
+        public void ForDevice_NoPushedFile_UsesTheEmbeddedJson()
+        {
+            // Act
+            var secrets = JsonFileSecretsProvider.ForDevice(Path.Combine(_dir, "none.json"), "{\"K\":\"embedded\"}");
+
+            // Assert
+            Assert.That(secrets.TryGet("K", out var value), Is.True);
+            Assert.That(value, Is.EqualTo("embedded"));
+        }
+
+        [Test]
+        public void ForDevice_PushedFile_WinsOverTheEmbeddedJson()
+        {
+            // Arrange
+            var path = Write("secrets.json", "{\"K\":\"pushed\"}");
+
+            // Act
+            var secrets = JsonFileSecretsProvider.ForDevice(path, "{\"K\":\"embedded\"}");
+
+            // Assert
+            Assert.That(secrets.TryGet("K", out var value), Is.True);
+            Assert.That(value, Is.EqualTo("pushed"));
+        }
+
+        [TestCase(null)]
+        [TestCase("")]
+        public void ForDevice_NoFileAndNothingEmbedded_HasNoKeys(string embedded)
+        {
+            // Act
+            var secrets = JsonFileSecretsProvider.ForDevice(Path.Combine(_dir, "none.json"), embedded);
+
+            // Assert
+            Assert.That(secrets.TryGet("K", out _), Is.False);
+            Assert.That(secrets.LoadError, Is.Null);
+        }
+
+        [Test]
         public void DotEnv_ParsesCommentsQuotesExportAndCrlf()
         {
             var path = Write(".env",

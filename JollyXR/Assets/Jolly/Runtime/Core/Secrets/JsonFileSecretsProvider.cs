@@ -12,20 +12,36 @@ namespace Jolly.Core.Secrets
     {
         public JsonFileSecretsProvider(string path)
         {
-            if (!File.Exists(path))
-                return;
+            if (File.Exists(path))
+                ParseText(File.ReadAllText(path));
+        }
+
+        JsonFileSecretsProvider() { }
+
+        /// <summary>The pushed file, else the JSON a keyed build embedded (ADR-0049): a pushed file can replace a revoked key.</summary>
+        public static JsonFileSecretsProvider ForDevice(string path, string embeddedJson)
+        {
+            if (File.Exists(path) || string.IsNullOrEmpty(embeddedJson))
+                return new JsonFileSecretsProvider(path);
+            var embedded = new JsonFileSecretsProvider();
+            embedded.ParseText(embeddedJson);
+            return embedded;
+        }
+
+        /// <summary>Null when the file was absent or parsed cleanly. Never contains secret values.</summary>
+        public string LoadError { get; private set; }
+
+        void ParseText(string json)
+        {
             try
             {
-                Parse(File.ReadAllText(path));
+                Parse(json);
             }
             catch (JsonException e)
             {
                 LoadError = $"secrets file is not a flat JSON object of strings ({e.GetType().Name})";
             }
         }
-
-        /// <summary>Null when the file was absent or parsed cleanly. Never contains secret values.</summary>
-        public string LoadError { get; }
 
         void Parse(string json)
         {

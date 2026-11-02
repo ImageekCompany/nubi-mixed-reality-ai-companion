@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using Jolly.App;
 using Jolly.Character;
 using Jolly.Editor.Character;
@@ -22,6 +23,9 @@ namespace Jolly.Editor.Tools
     public sealed class CharacterSceneProcessor : IProcessSceneWithReport
     {
         public const string CharacterArg = "-nubiCharacter";
+        /// <summary>Path of the JSON to embed, set only by build.sh --embed-secrets (ADR-0049). An environment variable,
+        /// so the path stays out of the logged command line; the values are never logged.</summary>
+        public const string EmbedSecretsVariable = "NUBI_EMBED_SECRETS_FILE";
 
         public int callbackOrder => 0;
 
@@ -49,7 +53,18 @@ namespace Jolly.Editor.Tools
             for (var i = 0; i < local.Count; i++)
                 array.GetArrayElementAtIndex(i).objectReferenceValue = local[i];
             so.FindProperty("characters.bakedId").stringValue = baked ?? "";
+            var secretsFile = report != null ? Environment.GetEnvironmentVariable(EmbedSecretsVariable) : null;
+            so.FindProperty("embeddedSecretsJson").stringValue = string.IsNullOrEmpty(secretsFile) ? "" : ReadSecrets(secretsFile);
+            if (report != null)
+                Debug.Log($"[CharacterSceneProcessor] scene={scene.name} embedded_secrets={(string.IsNullOrEmpty(secretsFile) ? 0 : 1)}");
             so.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        static string ReadSecrets(string path)
+        {
+            if (!File.Exists(path))
+                throw new BuildFailedException($"{EmbedSecretsVariable} names a file that does not exist.");
+            return File.ReadAllText(path);
         }
 
         static JollyBootstrap FindBootstrap(Scene scene)
