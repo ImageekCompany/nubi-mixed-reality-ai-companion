@@ -16,11 +16,15 @@ namespace Jolly.Character
     {
         const float ArrivalSlack = 0.05f;
         const float FollowStopDistance = 0.1f;
+        /// <summary>A waypoint counts as reached this far short of it: stopping further short pulls the next leg in
+        /// towards whatever the waypoint went round (ADR-0047).</summary>
+        const float WaypointReach = 0.15f;
 
         readonly NavMeshAgent _agent;
         readonly IClock _clock;
         readonly LocomotionSettings _s;
         readonly NavMeshPath _path = new();
+        readonly NavMeshPath _legPath = new();
         readonly Vector3[] _corners = new Vector3[64];
         UniTaskCompletionSource<MoveOutcome> _command = Completed(MoveOutcome.Arrived);
         double _deadline;
@@ -29,6 +33,10 @@ namespace Jolly.Character
         double _nextRepath;
         Vector3 _followGoal;
         bool _hasFollowGoal;
+        bool _viaWaypoint;
+        Vector3 _finalTarget;
+        float _finalStopDistance;
+        float _minUserDistance;
 
         public AgentLocomotion(NavMeshAgent agent, IClock clock, LocomotionSettings settings)
         {
@@ -57,12 +65,33 @@ namespace Jolly.Character
                 return false;
             }
 
-            _agent.speed = _s.walkSpeed;
-            _agent.stoppingDistance = stopDistance;
-            _agent.SetPath(_path);
-            etaSeconds = length / _s.walkSpeed;
-            _deadline = _clock.Now + 2f * etaSeconds + _s.timeoutSlack;
-            Supersede(LocomotionMode.MovingTo, new UniTaskCompletionSource<MoveOutcome>());
+            _viaWaypoint = false;
+            Walk(stopDistance, length, out etaSeconds);
+            return true;
+        }
+
+        /// <summary>
+        /// One motion in two legs: to <paramref name="waypoint"/>, then on to <paramref name="target"/>. Both legs are
+        /// planned up front; <see cref="WhenArrived"/> resolves only at the target, and a stop or newer command ends both.
+        /// At the waypoint the second leg starts only if its straight line still keeps <paramref name="minUserDistance"/>
+        /// from where the user is then; otherwise the motion ends Unreachable there.
+        /// </summary>
+        public bool TryStartMoveVia(Vector3 waypoint, Vector3 target, float stopDistance, float minUserDistance,
+                                    out float etaSeconds)
+        {
+            Halt();
+            etaSeconds = 0f;
+            if (!TryPlanLeg(waypoint, target, out var second, out var turn) || !TryPlan(turn, out var first))
+            {
+                Supersede(LocomotionMode.None, Completed(MoveOutcome.Unreachable));
+                return false;
+            }
+
+            _viaWaypoint = true;
+            _finalTarget = second;
+            _finalStopDistance = stopDistance;
+            _minUserDistance = minUserDistance;
+            Walk(WaypointReach, first + LegLength(), out etaSeconds);
             return true;
         }
 
@@ -101,12 +130,12 @@ namespace Jolly.Character
         public void Tick(Vector3 userPosition)
         {
             if (Mode == LocomotionMode.MovingTo)
-                TickMove();
+                TickMove(userPosition);
             else if (Mode == LocomotionMode.Following)
                 TickFollow(userPosition);
         }
 
-        void TickMove()
+        void TickMove(Vector3 user)
         {
             if (!OnNavMesh)
                 Finish(MoveOutcome.Unreachable);
@@ -115,9 +144,28 @@ namespace Jolly.Character
             else if (_agent.pathStatus == NavMeshPathStatus.PathInvalid)
                 Finish(MoveOutcome.Unreachable);
             else if (_agent.remainingDistance <= _agent.stoppingDistance + ArrivalSlack)
-                Finish(MoveOutcome.Arrived);
+            {
+                if (_viaWaypoint)
+                    StartSecondLeg(user);
+                else
+                    Finish(MoveOutcome.Arrived);
+            }
             else if (_clock.Now > _deadline)
                 Finish(MoveOutcome.TimedOut);
+        }
+
+        /// <summary>The user may have stepped into the second leg's line since it was planned.</summary>
+        void StartSecondLeg(Vector3 user)
+        {
+            _viaWaypoint = false;
+            var self = _agent.transform.position;
+            if (PassDistance(self, _finalTarget, user) < _minUserDistance || !TryPlan(_finalTarget, out _))
+            {
+                Finish(MoveOutcome.Unreachable);
+                return;
+            }
+            _agent.stoppingDistance = _finalStopDistance;
+            _agent.SetPath(_path);
         }
 
         void TickFollow(Vector3 user)
@@ -165,6 +213,16 @@ namespace Jolly.Character
             previous.TrySetResult(MoveOutcome.Cancelled);
         }
 
+        void Walk(float stopDistance, float length, out float etaSeconds)
+        {
+            _agent.speed = _s.walkSpeed;
+            _agent.stoppingDistance = stopDistance;
+            _agent.SetPath(_path);
+            etaSeconds = length / _s.walkSpeed;
+            _deadline = _clock.Now + 2f * etaSeconds + _s.timeoutSlack;
+            Supersede(LocomotionMode.MovingTo, new UniTaskCompletionSource<MoveOutcome>());
+        }
+
         void Halt()
         {
             if (!OnNavMesh)
@@ -184,10 +242,43 @@ namespace Jolly.Character
                 || _path.status != NavMeshPathStatus.PathComplete)
                 return false;
 
-            var count = _path.GetCornersNonAlloc(_corners);
+            length = PathLength(_path);
+            return true;
+        }
+
+        /// <summary>Plans waypoint → target into <see cref="_legPath"/>, before the agent's own path, which reuses <see cref="_path"/>.</summary>
+        bool TryPlanLeg(Vector3 waypoint, Vector3 target, out Vector3 end, out Vector3 start)
+        {
+            end = start = default;
+            if (!EnsureOnNavMesh()
+                || !NavMesh.SamplePosition(waypoint, out var from, _s.sampleRadius, _agent.areaMask)
+                || !NavMesh.SamplePosition(target, out var to, _s.sampleRadius, _agent.areaMask)
+                || !NavMesh.CalculatePath(from.position, to.position, _agent.areaMask, _legPath)
+                || _legPath.status != NavMeshPathStatus.PathComplete)
+                return false;
+            start = from.position;
+            end = to.position;
+            return true;
+        }
+
+        float LegLength() => PathLength(_legPath);
+
+        float PathLength(NavMeshPath path)
+        {
+            var length = 0f;
+            var count = path.GetCornersNonAlloc(_corners);
             for (var i = 1; i < count; i++)
                 length += Vector3.Distance(_corners[i - 1], _corners[i]);
-            return true;
+            return length;
+        }
+
+        /// <summary>Horizontal distance from <paramref name="point"/> to the nearest point of the segment a → b.</summary>
+        static float PassDistance(Vector3 a, Vector3 b, Vector3 point)
+        {
+            var ab = new Vector2(b.x - a.x, b.z - a.z);
+            var ap = new Vector2(point.x - a.x, point.z - a.z);
+            var t = ab.sqrMagnitude < 1e-6f ? 0f : Mathf.Clamp01(Vector2.Dot(ap, ab) / ab.sqrMagnitude);
+            return (ap - ab * t).magnitude;
         }
 
         /// <summary>The prefab ships the agent disabled: enabling it off a NavMesh logs an error every time, and the

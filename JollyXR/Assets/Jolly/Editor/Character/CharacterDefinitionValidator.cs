@@ -40,7 +40,7 @@ namespace Jolly.Editor.Character
         static readonly string[] Parameters =
         {
             P.SpeedName, P.LocomotionRateName, P.ListeningName, P.ThinkingName, P.TalkingName, P.MoodName,
-            P.GestureIdName, P.GestureName, P.GestureHoldName,
+            P.GestureIdName, P.GestureName, P.GestureHoldName, P.ActionIdName, P.ActionName,
         };
 
         [MenuItem("Jolly/Character/Validate Characters")]

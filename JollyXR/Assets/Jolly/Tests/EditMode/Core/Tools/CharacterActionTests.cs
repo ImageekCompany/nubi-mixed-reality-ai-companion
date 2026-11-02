@@ -154,19 +154,69 @@ namespace Jolly.Tests.EditMode.Core.Tools
         [TestCase(ToolNames.Actions.Celebrate)]
         [TestCase(ToolNames.Actions.Dance)]
         [TestCase(ToolNames.Actions.Spin)]
-        public void WholeBodyAction_DuringAWalk_StopsTheWalkFirst(string name)
+        public void WholeBodyAction_DuringAWalk_LetsItArriveThenPlays(string name)
         {
-            // Arrange
+            // Arrange: the round's earlier come_here or move_relative is still walking.
             var tool = Catalog().Tools.Single(t => t.Definition.Name == name);
             _character.TryStartMoveTo(Vector3.one, 0.1f, out _);
 
             // Act
-            Run(tool, "{}");
+            var result = Run(tool, "{}");
 
             // Assert
-            Assert.That(_character.StopCount, Is.EqualTo(1));
+            Assert.That(result.OutputJson, Is.EqualTo("{\"status\":\"done\"}"));
+            Assert.That(_character.StopCount, Is.Zero, "the walk the model was told about is not cut short");
             Assert.That(_character.Mode, Is.EqualTo(LocomotionMode.None));
             Assert.That(tool.Definition.Concurrency, Is.EqualTo(ToolConcurrency.Exclusive));
+        }
+
+        [TestCase(ToolNames.Actions.Jump)]
+        [TestCase(ToolNames.Actions.Dance)]
+        [TestCase(ToolNames.Actions.Spin)]
+        public void WholeBodyAction_WhileFollowing_EndsFollowing(string name)
+        {
+            // Arrange
+            _character.Follow(1f, 1.5f);
+
+            // Act
+            var result = Run(Catalog().Tools.Single(t => t.Definition.Name == name), "{}");
+
+            // Assert
+            Assert.That(result.OutputJson, Is.EqualTo("{\"status\":\"done\"}"));
+            Assert.That(_character.StopCount, Is.EqualTo(1));
+            Assert.That(_character.Mode, Is.EqualTo(LocomotionMode.None));
+        }
+
+        [TestCase(ToolNames.Actions.Jump)]
+        [TestCase(ToolNames.Actions.Celebrate)]
+        [TestCase(ToolNames.Actions.Dance)]
+        [TestCase(ToolNames.Actions.Spin)]
+        public void WholeBodyAction_WalkStartsDuringIt_ReportsInterruptedByWalk(string name)
+        {
+            // Arrange: a later come_here, a tap or follow starts walking mid-move, which ends the move.
+            var tool = Catalog().Tools.Single(t => t.Definition.Name == name);
+            _character.WhilePlaying = () => _character.TryStartMoveTo(Vector3.one, 0.1f, out _);
+
+            // Act
+            var result = Run(tool, "{}");
+
+            // Assert
+            Assert.That(result.OutputJson, Is.EqualTo("{\"status\":\"interrupted_by_walk\"}"));
+            Assert.That(_character.Gestures.Count + _character.Looped.Count, Is.LessThanOrEqualTo(name == ToolNames.Actions.Spin ? 2 : 1),
+                        "no further gesture after the walk started");
+            Assert.That(_log.Entries.Select(e => e.Message), Has.Some.Contains("status=interrupted_by_walk"));
+        }
+
+        [TestCase(ToolNames.Actions.Jump)]
+        [TestCase(ToolNames.Actions.Dance)]
+        [TestCase(ToolNames.Actions.Spin)]
+        public void WholeBodyAction_Timeout_CoversAWalkToFinishFirst(string name)
+        {
+            // Act
+            var timeout = Catalog().Tools.Single(t => t.Definition.Name == name).Definition.Timeout;
+
+            // Assert
+            Assert.That(timeout.TotalSeconds, Is.GreaterThanOrEqualTo(14));
         }
 
         [Test]
@@ -229,7 +279,7 @@ namespace Jolly.Tests.EditMode.Core.Tools
         }
 
         [Test]
-        public void MoveRelative_BehindFromInFrontOfTheUser_WalksRoundThemOnTheWalksRightThenBehind()
+        public void MoveRelative_BehindFromInFrontOfTheUser_WalksRoundThemInOneMotionOnTheWalksRight()
         {
             // Arrange: the character stands 1.5 m in front of the user (origin, facing +z).
 
@@ -238,13 +288,56 @@ namespace Jolly.Tests.EditMode.Core.Tools
 
             // Assert: walking -z, the walk's right is -x; the turn is DetourRadius from the user.
             Assert.That((string)ToolHarness.Output(result)["status"], Is.EqualTo("walking"));
-            Assert.That(_character.MoveTargets, Has.Count.EqualTo(2));
-            Assert.That(Vector3.Distance(_character.MoveTargets[0], new Vector3(-_settings.DetourRadius, 0f, 0f)), Is.LessThan(1e-4f));
-            Assert.That(Vector3.Distance(_character.MoveTargets[1], new Vector3(0f, 0f, -1f)), Is.LessThan(1e-4f));
-            Assert.That(RelativeTarget.PassDistance(new Vector3(0f, 0f, 1.5f), _character.MoveTargets[0], Vector3.zero),
-                        Is.GreaterThanOrEqualTo(_settings.UserMinDistance));
-            Assert.That(RelativeTarget.PassDistance(_character.MoveTargets[0], _character.MoveTargets[1], Vector3.zero),
-                        Is.GreaterThanOrEqualTo(_settings.UserMinDistance));
+            Assert.That(_character.MoveTargets, Has.Count.EqualTo(1), "one motion, so WhenArrived means the target");
+            Assert.That(Vector3.Distance(_character.Waypoint.Value, new Vector3(-_settings.DetourRadius, 0f, 0f)), Is.LessThan(1e-4f));
+            Assert.That(Vector3.Distance(_character.MoveTarget.Value, new Vector3(0f, 0f, -1f)), Is.LessThan(1e-4f));
+            Assert.That(_character.MinUserDistance, Is.EqualTo(_settings.UserMinDistance), "the second leg is checked again");
+            Assert.That(RelativeTarget.PassDistance(new Vector3(0f, 0f, 1.5f), _character.Waypoint.Value, Vector3.zero),
+                        Is.GreaterThanOrEqualTo(_settings.UserPassClearance));
+            Assert.That(RelativeTarget.PassDistance(_character.Waypoint.Value, _character.MoveTarget.Value, Vector3.zero),
+                        Is.GreaterThanOrEqualTo(_settings.UserPassClearance));
+        }
+
+        [Test]
+        public void MoveRelative_TurnSnapsInsideTheClearance_GoesRoundTheOtherSide()
+        {
+            // Arrange: the walkable floor on the user's -x side ends 0.55 m from them, so that turn snaps in.
+            _world.Snap = p => p.x < 0f ? new Vector3(-0.55f, p.y, p.z) : p;
+
+            // Act
+            var result = Run(MoveRelative(), "{\"direction\":\"behind\"}");
+
+            // Assert
+            Assert.That((string)ToolHarness.Output(result)["status"], Is.EqualTo("walking"));
+            Assert.That(_character.Waypoint.Value.x, Is.EqualTo(_settings.DetourRadius).Within(1e-4f));
+        }
+
+        [Test]
+        public void MoveRelative_EveryTurnInsideTheClearance_ReportsUnreachable()
+        {
+            // Arrange: both turns snap to 0.55 m from the user, past the 0.5 m minimum but inside the 0.6 m clearance.
+            _world.Snap = p => Mathf.Abs(p.x) > 0.7f ? new Vector3(Mathf.Sign(p.x) * 0.55f, p.y, p.z) : p;
+
+            // Act
+            var result = Run(MoveRelative(), "{\"direction\":\"behind\"}");
+
+            // Assert
+            Assert.That((string)ToolHarness.Output(result)["status"], Is.EqualTo("unreachable"));
+            Assert.That(_character.MoveTarget, Is.Null);
+        }
+
+        [Test]
+        public void MoveRelative_StartingNearerThanTheClearance_StillGoesRound()
+        {
+            // Arrange: 0.55 m in front of the user, already inside the 0.6 m clearance.
+            _character.Position = new Vector3(0f, 0f, 0.55f);
+
+            // Act
+            var result = Run(MoveRelative(), "{\"direction\":\"behind\"}");
+
+            // Assert
+            Assert.That((string)ToolHarness.Output(result)["status"], Is.EqualTo("walking"));
+            Assert.That(_character.Waypoint, Is.Not.Null);
         }
 
         [Test]
@@ -257,7 +350,7 @@ namespace Jolly.Tests.EditMode.Core.Tools
             Run(MoveRelative(), "{\"direction\":\"behind\"}");
 
             // Assert
-            Assert.That(_character.MoveTargets[0].x, Is.GreaterThan(0.5f));
+            Assert.That(_character.Waypoint.Value.x, Is.GreaterThan(0.5f));
         }
 
         [Test]
@@ -268,6 +361,7 @@ namespace Jolly.Tests.EditMode.Core.Tools
 
             // Assert
             Assert.That(_character.MoveTargets, Has.Count.EqualTo(1));
+            Assert.That(_character.Waypoint, Is.Null);
         }
 
         [Test]

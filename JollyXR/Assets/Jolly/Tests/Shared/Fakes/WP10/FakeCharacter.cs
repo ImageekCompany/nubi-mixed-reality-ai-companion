@@ -34,6 +34,10 @@ namespace Jolly.Testing.Offline
             return AcceptMoves;
         }
 
+        public bool TryStartMoveVia(Vector3 waypoint, Vector3 worldTarget, float stopDistance, float minUserDistance,
+                                    out float etaSeconds) =>
+            TryStartMoveTo(worldTarget, stopDistance, out etaSeconds);
+
         public UniTask<MoveOutcome> WhenArrived(CancellationToken ct) => UniTask.FromResult(MoveOutcome.Arrived);
         public void Follow(float distanceMin, float distanceMax) => Mode = LocomotionMode.Following;
         public void Stop() => Mode = LocomotionMode.None;

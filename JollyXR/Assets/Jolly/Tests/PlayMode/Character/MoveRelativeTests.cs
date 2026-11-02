@@ -39,40 +39,53 @@ namespace Jolly.Tests.PlayMode.Character
         static readonly Vector3 Behind = new(0f, 0f, 3f);
 
         [UnityTest]
-        public IEnumerator MoveRelative_Behind_ArrivesBehindTheUserAndFacesThem() => UniTask.ToCoroutine(async () =>
-        {
-            // Act: the walk goes round the user in two legs.
-            var result = await Run("{\"direction\":\"behind\"}");
-            var arrived = await CharacterTestRig.Until(() => !_rig.Nubi.IsMoving && FlatDistance(_rig.Nubi.Position, Behind) < 0.3f, 20f);
-            await CharacterTestRig.Until(() => _rig.Nubi.TryMeasureUser(out var body, out _) && body < 10f, 3f);
-
-            // Assert
-            Assert.That(result.OutputJson, Does.StartWith("{\"direction\":\"behind\",\"status\":\"walking\""));
-            Assert.That(arrived, Is.True);
-            var position = _rig.Nubi.Position;
-            Assert.That(Vector3.Distance(new Vector3(position.x, 0f, position.z), new Vector3(0f, 0f, 3f)), Is.LessThan(0.3f));
-            Assert.That(_rig.Nubi.TryMeasureUser(out var bodyOff, out _), Is.True);
-            Assert.That(bodyOff, Is.LessThan(25f), "turned round to face the user");
-        });
-
-        [UnityTest]
-        public IEnumerator MoveRelative_BehindFromInFrontOfTheUser_NeverWalksThroughThem() => UniTask.ToCoroutine(async () =>
+        public IEnumerator MoveRelative_BehindFromInFrontOfTheUser_ArrivesBehindThemWithoutPassingThrough() =>
+            UniTask.ToCoroutine(async () =>
         {
             // Arrange: Nubi starts 2 m in front of the user, on the straight line to "behind me".
             var user = _rig.User.Head.position;
             var nearest = float.PositiveInfinity;
 
-            // Act
-            await Run("{\"direction\":\"behind\"}");
-            var arrived = await CharacterTestRig.Until(() =>
+            // Act: one motion round the user; its arrival is the target's, not the turn's.
+            var result = await Run("{\"direction\":\"behind\"}");
+            var arrival = _rig.Nubi.WhenArrived(CancellationToken.None);
+            var settled = await CharacterTestRig.Until(() =>
             {
                 nearest = Mathf.Min(nearest, FlatDistance(_rig.Nubi.Position, user));
-                return !_rig.Nubi.IsMoving && FlatDistance(_rig.Nubi.Position, Behind) < 0.3f;
+                return arrival.Status != UniTaskStatus.Pending;
             }, 20f);
+            var arrivedAt = _rig.Nubi.Position;
+            await CharacterTestRig.Until(() => _rig.Nubi.TryMeasureUser(out var body, out _) && body < 10f, 3f);
 
             // Assert
-            Assert.That(arrived, Is.True);
-            Assert.That(nearest, Is.GreaterThanOrEqualTo(0.5f), "kept clear of the user all the way round");
+            Assert.That(result.OutputJson, Does.StartWith("{\"direction\":\"behind\",\"status\":\"walking\""));
+            Assert.That(settled, Is.True);
+            Assert.That(await arrival, Is.EqualTo(MoveOutcome.Arrived));
+            Assert.That(FlatDistance(arrivedAt, Behind), Is.LessThan(0.3f), "arrived behind the user, not at the turn");
+            Assert.That(nearest, Is.GreaterThanOrEqualTo(new LocomotionSettings().UserMinDistance),
+                        $"kept clear of the user all the way round (nearest {nearest:0.00} m)");
+            Assert.That(_rig.Nubi.TryMeasureUser(out var bodyOff, out _), Is.True);
+            Assert.That(bodyOff, Is.LessThan(25f), "turned round to face the user");
+        });
+
+        [UnityTest]
+        public IEnumerator MoveVia_UserStepsIntoTheSecondLeg_StopsAtTheTurn() => UniTask.ToCoroutine(async () =>
+        {
+            // Arrange: round the user's -x side to behind them.
+            var turn = new Vector3(-1f, 0f, 2f);
+            Assert.That(_rig.Nubi.TryStartMoveVia(turn, Behind, 0.15f, 0.5f, out _), Is.True);
+            var arrival = _rig.Nubi.WhenArrived(CancellationToken.None);
+            await CharacterTestRig.Until(() => FlatDistance(_rig.Nubi.Position, Vector3.zero) > 0.3f, 5f);
+
+            // Act: the user steps onto the line from the turn to behind them.
+            _rig.User.Head = new Pose(new Vector3(-0.5f, 1.6f, 2.5f), Quaternion.Euler(0f, 180f, 0f));
+            var settled = await CharacterTestRig.Until(() => arrival.Status != UniTaskStatus.Pending, 20f);
+
+            // Assert
+            Assert.That(settled, Is.True);
+            Assert.That(await arrival, Is.EqualTo(MoveOutcome.Unreachable));
+            Assert.That(FlatDistance(_rig.Nubi.Position, turn), Is.LessThan(0.4f));
+            Assert.That(_rig.Nubi.IsMoving, Is.False);
         });
 
         [UnityTest]

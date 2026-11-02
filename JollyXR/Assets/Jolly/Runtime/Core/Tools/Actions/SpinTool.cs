@@ -7,7 +7,7 @@ using UnityEngine;
 namespace Jolly.Core.Tools
 {
     /// <summary>
-    /// actions.spin (ADR-0047): stops any walk and turns on the spot with a happy bounce, then faces the user again. Procedural, so every
+    /// actions.spin (ADR-0047): stands still first (<see cref="BodyAction"/>) and turns on the spot with a happy bounce, then faces the user again. Procedural, so every
     /// character can do it. Logs <c>evt=action.spin</c>.
     /// </summary>
     public sealed class SpinTool : ITool
@@ -29,7 +29,7 @@ namespace Jolly.Core.Tools
 
         public ToolDefinition Definition { get; } = new(ToolNames.Actions.Spin,
             "Spin around on the spot, e.g. 'spin around', 'do a twirl', 'turn around'.",
-            Schema, TimeSpan.FromSeconds(6), ToolConcurrency.Exclusive);
+            Schema, TimeSpan.FromSeconds(6) + BodyAction.WalkWait, ToolConcurrency.Exclusive);
 
         public async UniTask<ToolResult> Execute(IToolArguments args, ToolContext context, CancellationToken ct)
         {
@@ -37,10 +37,12 @@ namespace Jolly.Core.Tools
             var left = args.TryGetString("direction", out var direction) && direction == "left";
             // Positive is clockwise seen from above: a turn to the right.
             var degrees = turns * 360f * (left ? -1f : 1f);
-            BodyAction.StandStill(_character);
+            await BodyAction.Settle(_character, ct);
             await UniTask.WhenAll(_character.Spin(degrees, ct), _character.PlayGesture(GestureId.HappyBounce, ct));
-            _log.Write(LogLevel.Info, "tools", $"evt=action.spin turns={turns} dir={(left ? "left" : "right")} status=done");
-            return ToolResult.Success("{\"status\":\"done\"}");
+            var detail = $"turns={turns} dir={(left ? "left" : "right")} ";
+            return BodyAction.CutShort(_character)
+                ? BodyAction.Interrupted(_log, Definition.Name, detail)
+                : BodyAction.Done(_log, Definition.Name, detail);
         }
     }
 }

@@ -87,35 +87,29 @@ namespace Jolly.Core.Tools
 
         /// <summary>
         /// Straight to <paramref name="target"/>, unless that line passes within <see cref="LocomotionSettings.UserPassClearance"/>
-        /// of the user ("behind me" from in front of them would walk through them): then to a point beside the user
-        /// (<see cref="RelativeTarget.Detour"/>, the character's side first) and on to the target once there. A stop, or
-        /// any newer walk, ends the first leg as Cancelled, and the second never starts.
+        /// of the user ("behind me" from in front of them would walk through them): then one motion by way of a point
+        /// beside the user (<see cref="RelativeTarget.Detour"/>, the character's side first). A turn is used only if both
+        /// legs keep the clearance; a character already standing nearer than that is let walk out to the turn. The
+        /// locomotion checks the second leg again against where the user is when it starts.
         /// </summary>
         bool TryStartWalk(Vector3 from, Vector3 target, Vector3 user, out float eta)
         {
-            if (RelativeTarget.PassDistance(from, target, user) >= _settings.UserPassClearance)
+            var clearance = _settings.UserPassClearance;
+            if (RelativeTarget.PassDistance(from, target, user) >= clearance)
                 return _character.TryStartMoveTo(target, _settings.ComeHereStopDistance, out eta);
+            var firstLegClearance = RelativeTarget.FlatDistance(from, user) >= clearance ? clearance : 0f;
             foreach (var otherSide in new[] { false, true })
             {
                 var turn = RelativeTarget.Detour(from, target, user, _settings.DetourRadius, otherSide);
-                if (!_world.TrySampleWalkable(turn, _settings.RelativeSampleRadius, out var walkable)
-                    || RelativeTarget.FlatDistance(walkable, user) < _settings.UserMinDistance
-                    || !_character.TryStartMoveTo(walkable, _settings.ComeHereStopDistance, out var first))
-                    continue;
-                var leg = Mathf.Max(RelativeTarget.FlatDistance(from, walkable), 0.1f);
-                eta = first * (leg + RelativeTarget.FlatDistance(walkable, target)) / leg;
-                ThenWalkTo(target).Forget();
-                return true;
+                if (_world.TrySampleWalkable(turn, _settings.RelativeSampleRadius, out var walkable)
+                    && RelativeTarget.PassDistance(from, walkable, user) >= firstLegClearance
+                    && RelativeTarget.PassDistance(walkable, target, user) >= clearance
+                    && _character.TryStartMoveVia(walkable, target, _settings.ComeHereStopDistance,
+                                                  _settings.UserMinDistance, out eta))
+                    return true;
             }
             eta = 0f;
             return false;
-        }
-
-        /// <summary>No token: like every walk, a barge-in never stops it; only a stop or a newer walk does.</summary>
-        async UniTaskVoid ThenWalkTo(Vector3 target)
-        {
-            if (await _character.WhenArrived(CancellationToken.None) == MoveOutcome.Arrived)
-                _character.TryStartMoveTo(target, _settings.ComeHereStopDistance, out _);
         }
 
         /// <summary>The schema enum guarantees one of these names.</summary>

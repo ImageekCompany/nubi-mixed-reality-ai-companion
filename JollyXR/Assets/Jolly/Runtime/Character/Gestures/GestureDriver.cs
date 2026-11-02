@@ -8,10 +8,10 @@ namespace Jolly.Character
 {
     /// <summary>
     /// Plays a gesture clip on its layer (upper-body Gesture, or the full-body Action layer, <see cref="GestureClips.IsFullBody"/>)
-    /// and completes when that layer has left the gesture state. The layers are independent: a newer gesture supersedes
-    /// the running one on its own layer only (its awaiter completes normally), so a nod during a dance leaves the dance
-    /// alone. Cancelling the token fades the layer out. Which gestures the character has is read once from its
-    /// controller's states.
+    /// and completes when that layer has left the gesture state. The layers are independent, each with its own id and
+    /// trigger parameters: a newer gesture supersedes the running one on its own layer only (its awaiter completes
+    /// normally), so a nod during a dance leaves the dance alone. Cancelling the token fades the layer out. Which
+    /// gestures the character has is read once from its controller's states.
     /// </summary>
     public sealed class GestureDriver
     {
@@ -22,6 +22,9 @@ namespace Jolly.Character
 
         sealed class Slot
         {
+            public Slot(int id, int trigger) { Id = id; Trigger = trigger; }
+            public readonly int Id;
+            public readonly int Trigger;
             public int Generation;
             public bool IsPlaying;
             public GestureId Current;
@@ -31,8 +34,8 @@ namespace Jolly.Character
         /// <summary>By GestureId: the layer holding its state, or -1 when the controller has none.</summary>
         readonly int[] _layerOf;
         readonly int _actionLayer;
-        readonly Slot _gestureSlot = new();
-        readonly Slot _actionSlot = new();
+        readonly Slot _gestureSlot = new(NubiAnimatorParameters.GestureId, NubiAnimatorParameters.Gesture);
+        readonly Slot _actionSlot = new(NubiAnimatorParameters.ActionId, NubiAnimatorParameters.Action);
 
         public GestureDriver(Animator animator)
         {
@@ -82,16 +85,15 @@ namespace Jolly.Character
             var holds = layer == _actionLayer;
             if (holds)
                 _animator.SetBool(NubiAnimatorParameters.GestureHold, holdSeconds > 0f);
-            _animator.SetInteger(NubiAnimatorParameters.GestureId, (int)gesture);
-            _animator.SetTrigger(NubiAnimatorParameters.Gesture);
+            _animator.SetInteger(slot.Id, (int)gesture);
+            _animator.SetTrigger(slot.Trigger);
             try
             {
                 await WhileGesturePlays(slot, generation, layer, holds ? holdSeconds : 0f, ct);
             }
             catch (OperationCanceledException) when (generation == slot.Generation && _animator != null)
             {
-                _animator.ResetTrigger(NubiAnimatorParameters.Gesture);
-                _animator.CrossFadeInFixedTime(NubiAnimatorParameters.EmptyState, AbortFadeSeconds, layer);
+                FadeOut(slot, layer);
                 throw;
             }
             finally
@@ -103,6 +105,26 @@ namespace Jolly.Character
                         _animator.SetBool(NubiAnimatorParameters.GestureHold, false);
                 }
             }
+        }
+
+        /// <summary>
+        /// Fades out the full-body gesture playing on the Action layer, if any; its awaiter completes normally. For a
+        /// walk starting under it (ADR-0047): a clip played while the agent moves slides the character across the floor.
+        /// </summary>
+        public void EndAction()
+        {
+            if (_actionLayer < 0 || !_actionSlot.IsPlaying)
+                return;
+            _actionSlot.Generation++;
+            _actionSlot.IsPlaying = false;
+            _animator.SetBool(NubiAnimatorParameters.GestureHold, false);
+            FadeOut(_actionSlot, _actionLayer);
+        }
+
+        void FadeOut(Slot slot, int layer)
+        {
+            _animator.ResetTrigger(slot.Trigger);
+            _animator.CrossFadeInFixedTime(NubiAnimatorParameters.EmptyState, AbortFadeSeconds, layer);
         }
 
         Slot SlotOf(int layer) => layer == _actionLayer ? _actionSlot : _gestureSlot;

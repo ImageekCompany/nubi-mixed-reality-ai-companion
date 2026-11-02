@@ -15,8 +15,8 @@ namespace Jolly.Editor.Character
     /// canonical clips (<see cref="CharacterClips"/>). Base: Locomotion blend tree (Idle/Walk/Hop by Speed, playback
     /// rate from LocomotionRate) and a Sad idle for the Concerned mood. Conversation and Gesture are upper-body
     /// override layers whose Empty state writes nothing (write defaults off), so the layer below shows through. Action
-    /// is the same over the whole body, on top, for the optional full-body clips the definition has (ADR-0047); a
-    /// looping one keeps looping while GestureHold is set.
+    /// is the same over the whole body, on top, for the optional full-body clips the definition has (ADR-0047), entered
+    /// by its own ActionId and Action trigger; a looping one keeps looping while GestureHold is set.
     /// </summary>
     public static class CharacterAnimatorBuilder
     {
@@ -91,6 +91,8 @@ namespace Jolly.Editor.Character
             c.AddParameter(P.GestureIdName, AnimatorControllerParameterType.Int);
             c.AddParameter(P.GestureName, AnimatorControllerParameterType.Trigger);
             c.AddParameter(P.GestureHoldName, AnimatorControllerParameterType.Bool);
+            c.AddParameter(P.ActionIdName, AnimatorControllerParameterType.Int);
+            c.AddParameter(P.ActionName, AnimatorControllerParameterType.Trigger);
             var parameters = c.parameters;
             foreach (var p in parameters)
             {
@@ -148,6 +150,8 @@ namespace Jolly.Editor.Character
         {
             var empty = AddState(machine, P.EmptyState, null);
             machine.defaultState = empty;
+            var trigger = fullBody ? P.ActionName : P.GestureName;
+            var id = fullBody ? P.ActionIdName : P.GestureIdName;
             foreach (GestureId gesture in Enum.GetValues(typeof(GestureId)))
             {
                 if (GestureClips.IsFullBody(gesture) != fullBody || !GestureClips.TryGetClip(gesture, out var name)
@@ -156,8 +160,8 @@ namespace Jolly.Editor.Character
                 var state = AddState(machine, name, clip);
                 state.tag = P.GestureTag;
                 var enter = Transition(machine.AddAnyStateTransition(state), 0.12f);
-                enter.AddCondition(AnimatorConditionMode.If, 0f, P.GestureName);
-                enter.AddCondition(AnimatorConditionMode.Equals, (int)gesture, P.GestureIdName);
+                enter.AddCondition(AnimatorConditionMode.If, 0f, trigger);
+                enter.AddCondition(AnimatorConditionMode.Equals, (int)gesture, id);
                 var exit = Transition(state.AddTransition(empty), GestureFadeSeconds);
                 exit.hasExitTime = true;
                 exit.exitTime = Mathf.Max(0.5f, 1f - GestureFadeSeconds / clip.length);

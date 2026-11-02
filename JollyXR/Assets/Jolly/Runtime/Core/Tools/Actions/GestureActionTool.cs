@@ -7,9 +7,9 @@ namespace Jolly.Core.Tools
 {
     /// <summary>
     /// A body action that plays gestures one after another (actions.jump, actions.wave, actions.celebrate, …; ADR-0047)
-    /// and returns once the last has ended, so the model's next words come after the move. A whole-body move stops any
-    /// walk first and runs Exclusive; an upper-body gesture plays alongside a walk or another call, as a wave while
-    /// coming over. Logs <c>evt=action.&lt;verb&gt;</c>.
+    /// and returns once the last has ended, so the model's next words come after the move. A whole-body move runs
+    /// Exclusive and never while walking (<see cref="BodyAction"/>); an upper-body gesture plays alongside a walk or
+    /// another call, as a wave while coming over. Logs <c>evt=action.&lt;verb&gt;</c>.
     /// </summary>
     public sealed class GestureActionTool : ITool
     {
@@ -28,9 +28,10 @@ namespace Jolly.Core.Tools
             _log = log;
             _sequence = sequence;
             _wholeBody = wholeBody;
-            Definition = new ToolDefinition(name, description, ToolSchemas.Empty,
-                TimeSpan.FromSeconds(SecondsPerGesture * sequence.Length),
-                wholeBody ? ToolConcurrency.Exclusive : ToolConcurrency.Parallel);
+            var seconds = TimeSpan.FromSeconds(SecondsPerGesture * sequence.Length);
+            Definition = wholeBody
+                ? new ToolDefinition(name, description, ToolSchemas.Empty, seconds + BodyAction.WalkWait, ToolConcurrency.Exclusive)
+                : new ToolDefinition(name, description, ToolSchemas.Empty, seconds, ToolConcurrency.Parallel);
         }
 
         public ToolDefinition Definition { get; }
@@ -49,27 +50,58 @@ namespace Jolly.Core.Tools
         public async UniTask<ToolResult> Execute(IToolArguments args, ToolContext context, CancellationToken ct)
         {
             if (_wholeBody)
-                BodyAction.StandStill(_character);
+                await BodyAction.Settle(_character, ct);
             foreach (var gesture in _sequence)
+            {
                 await _character.PlayGesture(gesture, ct);
-            _log.Write(LogLevel.Info, "tools", $"evt=action.{BodyAction.Verb(Definition.Name)} status=done");
-            return ToolResult.Success("{\"status\":\"done\"}");
+                if (_wholeBody && BodyAction.CutShort(_character))
+                    return BodyAction.Interrupted(_log, Definition.Name, "");
+            }
+            return BodyAction.Done(_log, Definition.Name, "");
         }
     }
 
+    /// <summary>
+    /// A whole-body action (jump, bow, celebrate, dance, spin) and walking never overlap (ADR-0047): played while the
+    /// agent moves, the clip slides the character across the floor. The action lets a walk to a spot finish first, so
+    /// "come here and dance" and "go behind me, then jump" do both, and ends following, which never arrives. A walk
+    /// that starts during the action ends it (<see cref="ICharacterController.TryStartMoveTo"/>), and the action then
+    /// reports interrupted_by_walk instead of done.
+    /// </summary>
     static class BodyAction
     {
+        /// <summary>The longest wait for a walk to arrive, added to a whole-body action's timeout.</summary>
+        public static readonly TimeSpan WalkWait = TimeSpan.FromSeconds(10);
+
         /// <summary>"jump" for "actions.jump".</summary>
         public static string Verb(string toolName) => toolName.Substring(toolName.IndexOf('.') + 1);
 
-        /// <summary>
-        /// "Dance!" means now: a walk in progress, or following, ends where the character is instead of carrying it across
-        /// the room mid-jump (ADR-0047). Waiting for the arrival instead would leave the user watching a walk first.
-        /// </summary>
-        public static void StandStill(ICharacterController character)
+        /// <summary>Returns once the character stands still. A walk superseded meanwhile is waited for in turn.</summary>
+        public static async UniTask Settle(ICharacterController character, CancellationToken ct)
         {
-            if (character.Mode != LocomotionMode.None)
-                character.Stop();
+            while (character.Mode != LocomotionMode.None)
+            {
+                if (character.Mode == LocomotionMode.Following)
+                    character.Stop();
+                else
+                    await character.WhenArrived(ct);
+            }
+        }
+
+        /// <summary>After the move: a walk running now started during it and ended it.</summary>
+        public static bool CutShort(ICharacterController character) => character.Mode != LocomotionMode.None;
+
+        /// <param name="detail">Log fields before the status, each with a trailing space.</param>
+        public static ToolResult Done(ILog log, string toolName, string detail) => Result(log, toolName, detail, "done");
+
+        /// <inheritdoc cref="Done"/>
+        public static ToolResult Interrupted(ILog log, string toolName, string detail) =>
+            Result(log, toolName, detail, "interrupted_by_walk");
+
+        static ToolResult Result(ILog log, string toolName, string detail, string status)
+        {
+            log.Write(LogLevel.Info, "tools", $"evt=action.{Verb(toolName)} {detail}status={status}");
+            return ToolResult.Success("{\"status\":\"" + status + "\"}");
         }
     }
 }

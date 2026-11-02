@@ -14,6 +14,10 @@ namespace Jolly.Character
         public const string MoodName = "Mood";
         public const string GestureIdName = "GestureId";
         public const string GestureName = "Gesture";
+        /// <summary>The Action layer's own id and trigger: sharing the Gesture layer's, a nod and a jump started in one
+        /// frame overwrote each other's id, and a cancelled one reset the other's trigger.</summary>
+        public const string ActionIdName = "ActionId";
+        public const string ActionName = "Action";
         /// <summary>While set, a looping gesture state does not leave at its exit time (<see cref="ICharacterController.PlayLooped"/>).</summary>
         public const string GestureHoldName = "GestureHold";
 
@@ -33,6 +37,8 @@ namespace Jolly.Character
         public static readonly int Mood = Animator.StringToHash(MoodName);
         public static readonly int GestureId = Animator.StringToHash(GestureIdName);
         public static readonly int Gesture = Animator.StringToHash(GestureName);
+        public static readonly int ActionId = Animator.StringToHash(ActionIdName);
+        public static readonly int Action = Animator.StringToHash(ActionName);
         public static readonly int GestureHold = Animator.StringToHash(GestureHoldName);
         public static readonly int GestureTagHash = Animator.StringToHash(GestureTag);
         public static readonly int LocomotionStateHash = Animator.StringToHash(LocomotionState);

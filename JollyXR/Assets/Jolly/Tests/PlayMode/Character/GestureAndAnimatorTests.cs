@@ -224,6 +224,55 @@ namespace Jolly.Tests.PlayMode.Character
         });
 
         [UnityTest]
+        public IEnumerator PlayGesture_JumpAndNodInTheSameFrame_BothEnterTheirStates() => UniTask.ToCoroutine(async () =>
+        {
+            // Arrange
+            var action = _rig.Animator.GetLayerIndex(P.ActionLayer);
+            var gesture = _rig.Animator.GetLayerIndex(P.GestureLayer);
+            bool jumped = false, nodded = false;
+
+            // Act
+            var jump = _rig.Nubi.PlayGesture(GestureId.Jump, CancellationToken.None);
+            var nod = _rig.Nubi.PlayGesture(GestureId.Nod, CancellationToken.None);
+            await CharacterTestRig.Until(() =>
+            {
+                jumped |= _rig.Animator.GetCurrentAnimatorStateInfo(action).IsName("Jump")
+                          || _rig.Animator.GetNextAnimatorStateInfo(action).IsName("Jump");
+                nodded |= _rig.Animator.GetCurrentAnimatorStateInfo(gesture).IsName("Nod")
+                          || _rig.Animator.GetNextAnimatorStateInfo(gesture).IsName("Nod");
+                return jumped && nodded;
+            }, 1f);
+            await UniTask.WhenAll(jump, nod);
+
+            // Assert
+            Assert.That(jumped, Is.True, "the Action layer kept its own id and trigger");
+            Assert.That(nodded, Is.True, "the Gesture layer kept its own id and trigger");
+        });
+
+        [UnityTest]
+        public IEnumerator PlayGesture_JumpCancelledInTheFrameANodStarts_LeavesTheNodsTrigger() =>
+            UniTask.ToCoroutine(async () =>
+        {
+            // Arrange
+            var gesture = _rig.Animator.GetLayerIndex(P.GestureLayer);
+            using var cancel = new CancellationTokenSource();
+            var jump = _rig.Nubi.PlayGesture(GestureId.Jump, cancel.Token).SuppressCancellationThrow();
+            await UniTask.Yield();
+            var nodded = false;
+
+            // Act: the jump's cancel fade resets its trigger in the frame the nod set its own.
+            var nod = _rig.Nubi.PlayGesture(GestureId.Nod, CancellationToken.None);
+            cancel.Cancel();
+            await jump;
+            await CharacterTestRig.Until(() => nodded |= _rig.Animator.GetCurrentAnimatorStateInfo(gesture).IsName("Nod")
+                                                        || _rig.Animator.GetNextAnimatorStateInfo(gesture).IsName("Nod"), 1f);
+            await nod;
+
+            // Assert
+            Assert.That(nodded, Is.True);
+        });
+
+        [UnityTest]
         public IEnumerator PlayGesture_NodDuringADance_LeavesTheDanceRunningToItsEnd() => UniTask.ToCoroutine(async () =>
         {
             // Arrange
@@ -299,7 +348,7 @@ namespace Jolly.Tests.PlayMode.Character
             Assert.That(names, Is.EquivalentTo(new[]
             {
                 P.SpeedName, P.LocomotionRateName, P.ListeningName, P.ThinkingName, P.TalkingName,
-                P.MoodName, P.GestureIdName, P.GestureName, P.GestureHoldName,
+                P.MoodName, P.GestureIdName, P.GestureName, P.GestureHoldName, P.ActionIdName, P.ActionName,
             }));
             Assert.That(controller.layers.Select(l => l.name),
                         Is.EqualTo(new[] { "Base Layer", P.ConversationLayer, P.GestureLayer, P.ActionLayer }));

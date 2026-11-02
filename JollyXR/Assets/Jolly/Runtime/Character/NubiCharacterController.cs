@@ -176,11 +176,20 @@ namespace Jolly.Character
         public LocomotionMode Mode => IsConstructed ? _locomotion.Mode : LocomotionMode.None;
 
         public bool TryStartMoveTo(Vector3 worldTarget, float stopDistance, out float etaSeconds) =>
-            Constructed()._locomotion.TryStartMoveTo(worldTarget, stopDistance, out etaSeconds);
+            Walking(Constructed()._locomotion.TryStartMoveTo(worldTarget, stopDistance, out etaSeconds));
+
+        public bool TryStartMoveVia(Vector3 waypoint, Vector3 worldTarget, float stopDistance, float minUserDistance,
+                                    out float etaSeconds) =>
+            Walking(Constructed()._locomotion.TryStartMoveVia(waypoint, worldTarget, stopDistance, minUserDistance,
+                                                               out etaSeconds));
 
         public UniTask<MoveOutcome> WhenArrived(CancellationToken ct) => Constructed()._locomotion.WhenArrived(ct);
 
-        public void Follow(float distanceMin, float distanceMax) => Constructed()._locomotion.Follow(distanceMin, distanceMax);
+        public void Follow(float distanceMin, float distanceMax)
+        {
+            Constructed()._locomotion.Follow(distanceMin, distanceMax);
+            Walking(true);
+        }
 
         public void Stop() => Constructed()._locomotion.Stop();
 
@@ -394,6 +403,18 @@ namespace Jolly.Character
                 return;
             transform.rotation = Quaternion.RotateTowards(transform.rotation, Quaternion.LookRotation(flat, Vector3.up),
                                                           _settings.locomotion.turnSpeed * deltaTime);
+        }
+
+        /// <summary>A walk that starts ends a whole-body gesture or spin in progress (ADR-0047): played while the agent
+        /// moves, it slides the character across the floor mid-jump.</summary>
+        bool Walking(bool started)
+        {
+            if (started)
+            {
+                _gestures.EndAction();
+                _spin = null;
+            }
+            return started;
         }
 
         NubiCharacterController Constructed() =>

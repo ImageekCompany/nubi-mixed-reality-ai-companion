@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Jolly.Contracts;
 using UnityEngine;
@@ -16,6 +17,8 @@ namespace Jolly.Testing
         public WalkableArea Area { get; set; } = WalkableArea.Scanned;
         public List<SceneSurface> Surfaces { get; } = new();
         public Vector3? LastSampleNear { get; private set; }
+        /// <summary>Where a sample near a point lands, e.g. pulled towards an obstacle; the point itself by default.</summary>
+        public Func<Vector3, Vector3> Snap { get; set; }
 
         public WalkableArea WalkableArea => Walkable ? Area : WalkableArea.None;
 
@@ -43,7 +46,8 @@ namespace Jolly.Testing
         public bool TrySampleWalkable(Vector3 near, float radius, out Vector3 point)
         {
             LastSampleNear = near;
-            point = new Vector3(near.x, 0, near.z);
+            var snapped = Snap?.Invoke(near) ?? near;
+            point = new Vector3(snapped.x, 0, snapped.z);
             return Walkable;
         }
 

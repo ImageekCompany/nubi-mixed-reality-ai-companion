@@ -7,7 +7,7 @@ using Jolly.Contracts;
 namespace Jolly.Core.Tools
 {
     /// <summary>
-    /// actions.dance (ADR-0047): stops any walk, loops the Dance clip until the first loop end at or after
+    /// actions.dance (ADR-0047): stands still first (<see cref="BodyAction"/>), loops the Dance clip until the first loop end at or after
     /// <c>duration_s</c>, then returns; the character keeps attending the user throughout (ADR-0041). Logs
     /// <c>evt=action.dance</c>.
     /// </summary>
@@ -27,19 +27,20 @@ namespace Jolly.Core.Tools
             _log = log;
         }
 
-        /// <summary>The longest dance, three 4 s loops, and a margin.</summary>
+        /// <summary>The longest dance, three 4 s loops, a margin and a walk to finish first.</summary>
         public ToolDefinition Definition { get; } = new(ToolNames.Actions.Dance,
             "Dance for the user, e.g. 'show me how to dance', 'dance for me', 'let's dance'.",
-            Schema, TimeSpan.FromSeconds(18), ToolConcurrency.Exclusive);
+            Schema, TimeSpan.FromSeconds(18) + BodyAction.WalkWait, ToolConcurrency.Exclusive);
 
         public async UniTask<ToolResult> Execute(IToolArguments args, ToolContext context, CancellationToken ct)
         {
             var seconds = args.TryGetNumber("duration_s", out var d) ? d : DefaultSeconds;
-            BodyAction.StandStill(_character);
+            await BodyAction.Settle(_character, ct);
             await _character.PlayLooped(GestureId.Dance, (float)seconds, ct);
-            _log.Write(LogLevel.Info, "tools",
-                $"evt=action.dance duration_s={seconds.ToString("0.#", CultureInfo.InvariantCulture)} status=done");
-            return ToolResult.Success("{\"status\":\"done\"}");
+            var detail = $"duration_s={seconds.ToString("0.#", CultureInfo.InvariantCulture)} ";
+            return BodyAction.CutShort(_character)
+                ? BodyAction.Interrupted(_log, Definition.Name, detail)
+                : BodyAction.Done(_log, Definition.Name, detail);
         }
     }
 }

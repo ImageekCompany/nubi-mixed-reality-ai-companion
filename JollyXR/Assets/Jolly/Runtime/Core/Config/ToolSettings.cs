@@ -25,8 +25,8 @@ namespace Jolly.Core.Config
         /// <summary>A relative move whose straight line passes nearer the user than this walks round them instead, m.</summary>
         public float UserPassClearance { get; set; } = 0.6f;
         /// <summary>How far from the user the walk round them turns, m. Both legs keep over 0.6 m from the user when the
-        /// character starts 1 m or more away; the first leg stops <see cref="ComeHereStopDistance"/> short of the turn,
-        /// since stopping further short pulls the second leg in towards the user.</summary>
+        /// character starts 1 m or more away; the locomotion counts the turn reached 0.15 m short of it, since turning
+        /// further short pulls the second leg in towards the user.</summary>
         public float DetourRadius { get; set; } = 1.0f;
     }
 

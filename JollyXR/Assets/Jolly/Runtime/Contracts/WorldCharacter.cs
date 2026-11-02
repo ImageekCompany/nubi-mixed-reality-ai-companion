@@ -123,9 +123,18 @@ namespace Jolly.Contracts
         /// <summary>
         /// Supersedes any running locomotion. Returns false (Unreachable) if no path exists, otherwise starts the motion
         /// on the controller's own commandCts and returns true with the ETA. The motion ends only on arrival, Stop(), or a newer
-        /// MoveTo/Follow; no caller token can stop it, so a barge-in never halts a walk.
+        /// MoveTo/Follow; no caller token can stop it, so a barge-in never halts a walk. A started motion (this, MoveVia or
+        /// Follow) ends a whole-body gesture or spin in progress, whose awaiter completes (ADR-0047).
         /// </summary>
         bool TryStartMoveTo(Vector3 worldTarget, float stopDistance, out float etaSeconds);
+        /// <summary>
+        /// Like <see cref="TryStartMoveTo"/>, by way of <paramref name="waypoint"/>: one motion, so WhenArrived resolves
+        /// at the target only and a stop or newer command ends both legs. At the waypoint the second leg starts only if
+        /// its straight line keeps <paramref name="minUserDistance"/> from where the user is then; otherwise the motion
+        /// ends Unreachable there (actions.move_relative going round the user, ADR-0047).
+        /// </summary>
+        bool TryStartMoveVia(Vector3 waypoint, Vector3 worldTarget, float stopDistance, float minUserDistance,
+                             out float etaSeconds);
         /// <summary>Awaits the current motion's outcome. ct only detaches this awaiter; it never stops the motion.
         /// Returns Cancelled if superseded or stopped.</summary>
         UniTask<MoveOutcome> WhenArrived(CancellationToken ct);

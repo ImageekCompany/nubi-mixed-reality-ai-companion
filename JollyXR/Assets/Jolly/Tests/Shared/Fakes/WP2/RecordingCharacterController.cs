@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
@@ -6,7 +7,8 @@ using UnityEngine;
 
 namespace Jolly.Testing.Conversation
 {
-    /// <summary>ICharacterController that records every command. Moves succeed unless <see cref="Reachable"/> is false.</summary>
+    /// <summary>ICharacterController that records every command. Moves succeed unless <see cref="Reachable"/> is false, and
+    /// a started move arrives when it is awaited.</summary>
     public sealed class RecordingCharacterController : ICharacterController
     {
         public Vector3 Position { get; set; }
@@ -20,6 +22,11 @@ namespace Jolly.Testing.Conversation
         /// <summary>Every started move's target, in order.</summary>
         public List<Vector3> MoveTargets { get; } = new();
         public float MoveStopDistance { get; private set; }
+        /// <summary>The last move's waypoint (<see cref="TryStartMoveVia"/>); null after a straight move.</summary>
+        public Vector3? Waypoint { get; private set; }
+        public float MinUserDistance { get; private set; }
+        /// <summary>Runs while a gesture, loop or spin plays, e.g. to start a walk in the middle of one.</summary>
+        public Action WhilePlaying { get; set; }
         public (float min, float max)? FollowRange { get; private set; }
         public int StopCount { get; private set; }
         public List<Vector3> Relocations { get; } = new();
@@ -42,11 +49,28 @@ namespace Jolly.Testing.Conversation
             MoveTarget = worldTarget;
             MoveTargets.Add(worldTarget);
             MoveStopDistance = stopDistance;
+            Waypoint = null;
             Mode = LocomotionMode.MovingTo;
             return true;
         }
 
-        public UniTask<MoveOutcome> WhenArrived(CancellationToken ct) => UniTask.FromResult(MoveOutcome.Arrived);
+        public bool TryStartMoveVia(Vector3 waypoint, Vector3 worldTarget, float stopDistance, float minUserDistance,
+                                    out float etaSeconds)
+        {
+            if (!TryStartMoveTo(worldTarget, stopDistance, out etaSeconds))
+                return false;
+            Waypoint = waypoint;
+            MinUserDistance = minUserDistance;
+            return true;
+        }
+
+        /// <summary>A move in progress arrives at once.</summary>
+        public UniTask<MoveOutcome> WhenArrived(CancellationToken ct)
+        {
+            if (Mode == LocomotionMode.MovingTo)
+                Mode = LocomotionMode.None;
+            return UniTask.FromResult(MoveOutcome.Arrived);
+        }
 
         public void Follow(float distanceMin, float distanceMax)
         {
@@ -73,12 +97,14 @@ namespace Jolly.Testing.Conversation
         {
             Gestures.Add(gesture);
             GestureTokens.Add(ct);
+            WhilePlaying?.Invoke();
             return UniTask.CompletedTask;
         }
 
         public UniTask PlayLooped(GestureId gesture, float seconds, CancellationToken ct)
         {
             Looped.Add((gesture, seconds));
+            WhilePlaying?.Invoke();
             return UniTask.CompletedTask;
         }
 
@@ -87,6 +113,7 @@ namespace Jolly.Testing.Conversation
         public UniTask Spin(float degrees, CancellationToken ct)
         {
             Spins.Add(degrees);
+            WhilePlaying?.Invoke();
             return UniTask.CompletedTask;
         }
 
