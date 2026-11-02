@@ -22,6 +22,7 @@ Doc sources were fetched with `curl https://dev.meta.ai/docs/<page>` (server-ren
 | TTS | **None.** Meta Model API has no speech synthesis | [docs:overview] "It is speech-to-text only; it does not synthesize speech" |
 | Offline LLM on Quest 3 | **Not feasible** with Muse Glimmer. The model is 30B dense and its smallest published quant is 16.8 GB. Exports exist only for CUDA and Metal | [docs:muse-glimmer/quantization], HF tree |
 | Key on device | Docs say to keep keys out of mobile clients and to use a proxy. No ephemeral or short-lived token mechanism is documented | [docs:authentication] |
+| Web search, namespaces | Responses `web_search` works with our function tools and eager `namespace` tools in one request; a search adds 0.5–1 s, a second reasoning pass and ≈3,100 input tokens, plus $2.50/1k searches | live 2026-11-02, see §10 |
 
 ---
 
@@ -428,3 +429,35 @@ The offline path for the "secure/offline Psychologist" goal is a **LAN or deskto
 - `samples/pen_1280.jpg`, `samples/pen_640.jpg`: "04-BICcristal2008-03-26.jpg" by Trounce, **CC BY 3.0** (https://commons.wikimedia.org/wiki/File:04-BICcristal2008-03-26.jpg). Attribution is required.
 - `samples/mug_1280.jpg`, `samples/mug_640.jpg`: "Coffee Mug (Unsplash).jpg" by Ryan Holloway, **CC0** (https://commons.wikimedia.org/wiki/File:Coffee_Mug_(Unsplash).jpg).
 - `samples/sam_pen_mask_onebit.png`, `samples/sam_mug_mask_onebit.png`: SAM 3.1 output masks decoded by our decoder (box-local rasters).
+
+## 10. Web search grounding and tool namespaces (live 2026-11-02, ADR-0048)
+
+`muse-spark-1.3`, `POST /v1/responses`, `stream:true`, `store:false`, effort `minimal`, through a urllib script that writes the body exactly as `ResponsesRequestWriter` does (field order `model, stream, store, prompt_cache_key, instructions, tools, input, parallel_tool_calls, max_tool_calls, reasoning, include, max_output_tokens, safety_identifier`). Tools: one top-level function (`stop`), `{"type":"namespace","name":"actions","description":…,"tools":[{"type":"function","name":"dance",…}]}` with no `defer_loading`, and `{"type":"web_search","search_context_size":"low","user_location":{"type":"approximate","country":"GB","city":"London","timezone":"Europe/London"}}`; `max_tool_calls: 2`. All four requests returned HTTP 200. Docs: [docs:search-grounding.md], [docs:tool-search.md], [docs:tool-calling.md].
+
+### 10.1 Web search stream ("What's the weather like today?", local time in a user-role context block)
+| t (s) | event |
+|---|---|
+| 1.35 | `response.created`, `response.in_progress` |
+| 2.20 | reasoning item (encrypted) added and done |
+| 2.25 | message item with `"phase":"commentary"`: one delta "I'll check today's London weather for you.", then `output_item.done` |
+| 2.45 | `output_item.added` `{"type":"web_search_call","id":"ws_call_…","status":"in_progress","action":{"type":"search","query":"London weather today 2 November 2026","queries":[…]}}`, then `response.web_search_call.in_progress` and `.searching` (`item_id`) |
+| 2.96 | `response.web_search_call.completed`, `output_item.done` of the same item with `"status":"completed"` |
+| 3.12 | a second `response.in_progress`, a second reasoning item |
+| 3.23–3.31 | the answer: "It's dry and mostly sunny in London today with a high around 12 degrees." (`annotations: []`) |
+| 3.37 | `response.completed`, usage in 4,326 (cached 1,122), out 281 (reasoning 177) |
+
+The recorded run (fixture `Tests/Fixtures/sse/responses_web_search.txt`) took 3.8 s with in 4,374 (cached 2,274), out 270. The same request asking for a dance (no search) used in 1,233: a search adds about 3,100 input tokens at `low`. No `results` are returned unless `include: ["web_search_call.results"]` is asked for.
+
+### 10.2 Namespaced function calls
+- "Show me how to dance!" → commentary "I'll show you some moves right now." then `function_call` named **`actions.dance`**, `arguments "{}"`, no separate `namespace` field (completed at 1.99 s, in 1,233 / cached 1,137, out 132). The tool-search docs show a hosted-mode call as `"name":"list_open_orders","namespace":"crm"`; the client folds that shape into `crm.list_open_orders` too.
+- Round 2 with input `… assistant text, function_call {name:"actions.dance"}, function_call_output, {"type":"web_search_call","status":"completed","action":{…}}` (no `id`) → HTTP 200, "That was so much fun! Want me to show you again?" (in 1,394 / cached 1,137).
+- Orchestrator probe, same day: eager namespaces added ≈0.1 s and were chosen reliably ("Go stand behind me" → `actions.move_relative {"direction":"behind","distance_m":1.0}`). Deferred loading (`defer_loading:true` + `{"type":"tool_search"}`) streamed `tool_search_call {arguments:{paths:["actions"]}}` and `tool_search_output` before the call, +≈0.5 s; with `max_tool_calls:1` the model loaded the namespace, did not call the function and said it had; with 3 it worked.
+
+### 10.3 Rules that matter
+- `max_tool_calls` caps built-in tools only (web search, tool search), counted together; never function tools [docs:tool-calling.md].
+- With `web_search` present, function names `browser.search`, `browser.open` and `browser.find` are reserved (400) [docs:search-grounding.md].
+- Function names allow one dot; a namespace's name none [docs:tool-calling.md].
+- Without an instruction to search for the given location the model sometimes asked "what city?" first.
+- `user_location` fields are all optional; `type` must be `approximate`.
+- Price: $2.50 per 1,000 searches on top of tokens.
+

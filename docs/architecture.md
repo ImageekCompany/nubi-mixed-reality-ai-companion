@@ -383,9 +383,10 @@ Events not listed for a state are ignored and logged at Debug level.
 - `reasoning:{effort:"minimal"}`
 - `include:["reasoning.encrypted_content"]`
 - `parallel_tool_calls:true`
-- flat function tools `{"type":"function","name","description","parameters"}`
+- flat function tools `{"type":"function","name","description","parameters"}`; tools named `ns.fn` inside an eager `{"type":"namespace"}` tool (ADR-0047)
+- when web search is offered, `{"type":"web_search","search_context_size":"low","user_location":{…}}` last and `max_tool_calls:2` (ADR-0048)
 
-Verified live on 2026-11-01 (`api-spend.md`).
+Verified live on 2026-11-01 and 2026-11-02 (`api-spend.md`).
 
 **Events handled:**
 
@@ -395,7 +396,8 @@ Verified live on 2026-11-01 (`api-spend.md`).
 | `response.output_item.added` | Item types are `reasoning`, `message` (with `phase:"commentary"` before tools) and `function_call` (`call_id`, `name`) |
 | `response.output_text.delta` | Becomes SpeechDelta |
 | `response.function_call_arguments.delta` / `.done` | Arguments are accumulated |
-| `response.output_item.done` | For a `function_call` item, this emits the complete ToolCall |
+| `response.output_item.done` | For a `function_call` item, this emits the complete ToolCall; a `web_search_call` item ends the search badge; `web_search_call` and `tool_search_*` items are kept Opaque for replay |
+| `response.web_search_call.in_progress` | WebSearchStarted: the "Web search" badge (ADR-0048) |
 | `response.completed` | `usage.input_tokens`, `input_tokens_details.cached_tokens`, `output_tokens`, `output_tokens_details.reasoning_tokens` |
 | `response.failed`, `error` | Mapped to `ProviderException` |
 | `response.incomplete` | A normal `Completed` with `FinishReason.Length` (or `Incomplete`); the partial text may already have been spoken (ADR-0017) |
@@ -447,7 +449,7 @@ Fields:
 - `id`
 - display name, system prompt, greeting and optional safety notice: entries `{id}.name`, `{id}.prompt`, `{id}.greeting`, `{id}.safety` of the `Personas` string table (en, pl), resolved by `PersonaRepository` for the current locale
 - voice delivery: `voiceStyle` (empty keeps the character's), `voiceSpeedPercent`, `voicePitchPercent`, applied to the character's voice by `VoiceDelivery` (ADR-0031). The voice itself is the selected character's `VoiceProfile` (`CharacterDefinition.voice`), so personas never name a Wit voice
-- `allowedTools` (string[])
+- `allowedTools` (string[]; empty means every tool). The name `web_search` in it allows Meta's built-in web search, which is not a registered tool; a persona that lists tools without it never searches (ADR-0048)
 - `persistMemory`, `crisisHandoff`, `defaultMood`, `accentColor`
 
 Shipped personas: **Companion** (default, demo), **Mentor**, **Guru**, **Psychologist** (not demoed).

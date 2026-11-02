@@ -45,6 +45,7 @@
 | [0044](0044-point-and-tap-to-move.md) | Point and tap to move: a ring on walkable floor under the hand or controller ray; with it showing a pinch under 0.25 s moves (no ASR, no model), longer talks with the microphone pre-rolled from the pinch; the trigger moves | accepted |
 | [0045](0045-shell-fur.md) | Shell fur: `Jolly/Character/ShellFur` shells appended as extra materials on the skinned renderer's last submesh (skinned once), alpha-tested with alpha = visibility, 3 distance levels, spring inertia | accepted |
 | [0046](0046-model-facing.md) | `CharacterDefinition.modelYaw` turns the model to face the root's +z (Nubi and Jolly export facing -z: 180); the validator and AttentionTests measure the rendered face (eye-skinned vertices), not the bones | accepted |
+| [0048](0048-web-search-grounding.md) | Meta's built-in `web_search` (low context, `max_tool_calls` 2) for Online personas that allow `web_search`; location never finer than a city (`set_home_location` or the device locale, IANA time zone); local time in the per-turn context block; `SpokenText` strips markdown and citations; tool namespaces sent eagerly | accepted |
 
 Numbers 0027–0029 are unused and were not reserved on a dropped branch: no commit on any branch (`git log --all`) adds or mentions an ADR with those numbers.
 

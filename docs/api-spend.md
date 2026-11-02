@@ -65,4 +65,6 @@ Rows before 2026-11-01 02:00 (research phase, `docs/research/*.md`) were not ite
 
 | 2026-11-02 | final verification of shell fur: 1 device self-test run of the `--character jolly` release build `b0ab586` (app meter 0.0267) | muse-spark-1.3, sam-3.1, muse-voice-transcribe-1.0 (+ Wit, free) | ~8 Spark calls, 3 SAM, ~7 ASR sessions | 3 images; ~15 s audio | 0.027 |
 
-Running total (est.): **≤ $2.20** (sum of the rows: 2.194)
+| 2026-11-02 | web search grounding (ADR-0048): 4 live Responses calls through a script mirroring `ResponsesRequestWriter` (namespace + `web_search` + `max_tool_calls`): weather question, namespaced `actions.dance` call, its replay with a `web_search_call` input item, and the recording of `Tests/Fixtures/sse/responses_web_search.txt`; Wit `/synthesize` for `web_search.wav` (free) | muse-spark-1.3 (+ Wit, free) | 4 Spark calls, 2 web searches | in 11,327 (5,670 cached) / out 865; 2 searches | 0.017 |
+
+Running total (est.): **≤ $2.22** (sum of the rows: 2.211)

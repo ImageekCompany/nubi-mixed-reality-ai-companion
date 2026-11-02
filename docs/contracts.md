@@ -112,9 +112,9 @@ namespace Jolly.Contracts
     public readonly struct UsageRecord
     {
         public UsageRecord(string model, long inputTokens, long cachedInputTokens, long outputTokens,
-                           int images = 0, double audioSeconds = 0)
+                           int images = 0, double audioSeconds = 0, int webSearches = 0)
         { Model = model; InputTokens = inputTokens; CachedInputTokens = cachedInputTokens;
-          OutputTokens = outputTokens; Images = images; AudioSeconds = audioSeconds; }
+          OutputTokens = outputTokens; Images = images; AudioSeconds = audioSeconds; WebSearches = webSearches; }
 
         public string Model { get; }
         public long InputTokens { get; }       // includes cached
@@ -122,6 +122,7 @@ namespace Jolly.Contracts
         public long OutputTokens { get; }      // includes reasoning tokens
         public int Images { get; }             // SAM images
         public double AudioSeconds { get; }    // ASR
+        public int WebSearches { get; }        // built-in web_search calls of a Responses request (ADR-0048)
     }
 
     /// <summary>
@@ -188,9 +189,22 @@ namespace Jolly.Contracts
         public string Instructions { get; set; }
         public IReadOnlyList<ConversationItem> Input { get; set; }
         public IReadOnlyList<ToolDefinition> Tools { get; set; } = Array.Empty<ToolDefinition>();
+        /// <summary>The namespaces of the dotted names in <see cref="Tools"/> (ADR-0047).</summary>
+        public IReadOnlyList<ToolNamespace> Namespaces { get; set; } = Array.Empty<ToolNamespace>();
+        /// <summary>Null: no web search. Otherwise the provider's built-in, server-side web search is offered (ADR-0048).</summary>
+        public WebSearchOptions WebSearch { get; set; }
         public ReasoningEffort Effort { get; set; } = ReasoningEffort.Minimal;
         public int MaxOutputTokens { get; set; } = 1024;  // includes reasoning tokens; do not cap tightly
         public string SafetyIdentifier { get; set; }
+    }
+
+    /// <summary>The location only biases results; every field is optional and none is finer than a city (ADR-0048).</summary>
+    public sealed class WebSearchOptions
+    {
+        public string Country { get; set; }   // ISO 3166-1 alpha-2, e.g. "GB"
+        public string Region { get; set; }
+        public string City { get; set; }
+        public string Timezone { get; set; }  // IANA, e.g. "Europe/London"
     }
 
     public sealed class ToolCallRequest
@@ -211,14 +225,16 @@ namespace Jolly.Contracts
         public UsageRecord Usage { get; set; }
     }
 
-    public enum ModelEventKind { Started, TextDelta, ToolCall, Completed, TextDone }
+    /// <summary>WebSearchStarted / WebSearchCompleted: the provider's built-in web search (ADR-0048) began or ended;
+    /// both carry the search's item id in Text. Neither is a ToolCall: the server runs it.</summary>
+    public enum ModelEventKind { Started, TextDelta, ToolCall, Completed, TextDone, WebSearchStarted, WebSearchCompleted }
 
     public readonly struct ModelEvent
     {
         public ModelEvent(ModelEventKind kind, string text = null, ToolCallRequest toolCall = null, ModelTurnResult result = null)
         { Kind = kind; Text = text; ToolCall = toolCall; Result = result; }
         public ModelEventKind Kind { get; }
-        public string Text { get; }                 // TextDelta; TextDone: none, the text item ended (a call may follow)
+        public string Text { get; }                 // TextDelta; TextDone: none, the text item ended (a call may follow); WebSearch*: item id
         public ToolCallRequest ToolCall { get; }    // ToolCall: emitted once its arguments are complete
         public ModelTurnResult Result { get; }      // Completed: always the last event
     }
@@ -371,9 +387,25 @@ namespace Jolly.Contracts
         UniTask<ToolResult> Execute(IToolArguments args, ToolContext context, CancellationToken ct);
     }
 
+    /// <summary>
+    /// A group of tools the model sees under one name and description (ADR-0047). A member tool is named
+    /// "namespace.function": the model calls it by that name, and the request sends it inside the namespace as "function".
+    /// Namespace names hold no dot; "browser" is reserved by web search.
+    /// </summary>
+    public sealed class ToolNamespace
+    {
+        public ToolNamespace(string name, string description) { Name = name; Description = description; }
+        public string Name { get; }
+        public string Description { get; }   // model-facing, English: what the group is for
+    }
+
     public interface IToolRegistry
     {
         void Register(ITool tool);                                     // throws on a duplicate name
+        /// <summary>Throws on a duplicate. A tool named "ns.fn" needs namespace ns registered first.</summary>
+        void RegisterNamespace(ToolNamespace toolNamespace);
+        /// <summary>The namespaces at least one of tools belongs to, in registration order.</summary>
+        IReadOnlyList<ToolNamespace> NamespacesOf(IReadOnlyList<ToolDefinition> tools);
         bool TryGet(string name, out ITool tool);
         /// <summary>Filtered by persona.AllowedTools; in seated mode walk_to, go_to_surface and follow_user are removed (come_here stays).</summary>
         IReadOnlyList<ToolDefinition> DefinitionsFor(PersonaProfile persona, IUserPreferences preferences);
@@ -395,7 +427,7 @@ Nothing nested. That covers the whole catalogue and keeps the validator at about
 
 ### 4.2 Tool catalogue
 
-Wire format is the Responses flat function tool: `{"type":"function","name":…,"description":…,"parameters":<schema>}` (verified live). Parameter schemas:
+Wire format is the Responses flat function tool: `{"type":"function","name":…,"description":…,"parameters":<schema>}` (verified live). A tool named `ns.fn` goes inside `{"type":"namespace","name":"ns","description":…,"tools":[…]}` as `fn`, eagerly (no `defer_loading`), and the model calls it as `ns.fn` (live 2026-11-02, ADR-0047). With web search on, `{"type":"web_search","search_context_size":"low","user_location":{…}}` comes last and the body sets `max_tool_calls: 2`, which counts built-in tools only (ADR-0048). Parameter schemas:
 
 | name | description (model-facing) | parameters | timeout | concurrency | result `output` JSON |
 |---|---|---|---|---|---|
@@ -411,6 +443,7 @@ Wire format is the Responses flat function tool: `{"type":"function","name":…,
 | `play_gesture` | Play an expressive body gesture when it fits, e.g. wave hello or nod. | `{"type":"object","properties":{"name":{"type":"string","enum":["wave","nod","shake_head","shrug","point","happy_bounce","think"]}},"required":["name"],"additionalProperties":false}` | 4 s | Parallel | `{"status":"played"}` |
 | `set_persona` (*should*) | Switch Nubi's personality when the user asks for another mode. | `{"type":"object","properties":{"id":{"type":"string","enum":["companion","mentor","guru"]}},"required":["id"],"additionalProperties":false}` | 1 s | Exclusive | `{"status":"switching","id":"guru"}`, `EndsTurn=true`. The tool only calls `IPersonaProvider.RequestSwitch(id)`; the controller applies it once the turn is Idle and the new persona greets in its own voice. The enum is generated from `IPersonaProvider.AvailableIds` minus `psychologist`, which can only be chosen in Settings. |
 | `go_to_surface` (ADR-0025) | Walk Nubi to a piece of the user's real furniture from the room scan, e.g. the couch or the table, and stop beside it facing it. | `{"type":"object","properties":{"label":{"type":"string","enum":["couch","table","desk","bed","chair","storage","screen"],"description":"Furniture from the room scan"}},"required":["label"],"additionalProperties":false}` | 3 s | Locomotion | `{"status":"walking"\|"unreachable","label":"table","eta_s":3}` (`desk` is reported as `table`); errors `room_not_scanned`, `no_surface`. Withheld in seated mode. |
+| `set_home_location` (ADR-0048) | Remember the city the user lives in when they tell you, e.g. "I live in Krakow", so searches for weather or opening hours are about their home. Do not call it for places they only visit or ask about. | `{"type":"object","properties":{"city":{"type":"string","maxLength":64,"description":"City or town only, never a street or address."},"country":{"type":"string","maxLength":2,"description":"ISO 3166-1 alpha-2 code, e.g. GB, if known."}},"required":["city"],"additionalProperties":false}` | 1 s | Parallel | `{"status":"saved","city":"Kraków","country":"PL"}`; error `invalid_arguments`. Stored with the user preferences (`IUserPreferences.SetHomeLocation`); the city is sanitised like other context text. |
 | `request_room_scan` (ADR-0025) | Open the headset's Space Setup so the user can scan the room; afterwards Nubi can walk around the room and to the furniture. Call it only after the user agrees to scan. The app pauses until they finish. | `{"type":"object","properties":{},"additionalProperties":false}` | 2 s | Exclusive | `{"status":"opening"}`, `EndsTurn=true`, `SpokenText` = the `room.scan_opening` line; Space Setup opens once Nubi is idle and silent. Error `scan_unavailable` off Meta's runtime. |
 
 Locomotion tools never await arrival under `turnCts`: a barge-in cancels the turn, not the walk (`ICharacterController.MoveTo`, §7). Results are fast, so a locomotion call never holds the next model round or an `EndsTurn` round.
@@ -930,7 +963,7 @@ namespace Jolly.Contracts
         public string SystemPrompt { get; set; }               // resolved for the current locale
         public string SafetyNotice { get; set; }               // null if none; spoken and captioned once per session
         public VoiceSpec Voice { get; set; }                   // resolved for the current locale
-        public IReadOnlyList<string> AllowedTools { get; set; }
+        public IReadOnlyList<string> AllowedTools { get; set; }   // null: all; "web_search" allows the built-in search (ADR-0048)
         public bool PersistMemory { get; set; }
         public Mood DefaultMood { get; set; }
     }
@@ -1018,12 +1051,16 @@ namespace Jolly.Contracts
         public float SpeechRate { get; set; } = 1f; // 0.5..2; final Wit speed = clamp(persona speed * rate, 50, 200)
         public float Volume { get; set; } = 1f;
         public bool PttEitherHand { get; set; } = true;
+        public string HomeCity { get; set; }       // set_home_location; null until the user says; never finer than a city
+        public string HomeCountry { get; set; }    // ISO 3166-1 alpha-2, or null
     }
 
     public interface IUserPreferences
     {
         UserPreferencesSnapshot Current { get; }
         event Action<UserPreferencesSnapshot> Changed;
+        /// <summary>Persists the home location with the other preferences and raises Changed. Null clears.</summary>
+        void SetHomeLocation(string city, string country);
     }
 }
 ```

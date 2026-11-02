@@ -264,5 +264,12 @@ Each work package appends bullets under its own heading only (`docs/scope.md` §
 - `_StrandTaper` (strand fullness: strands keep their width higher up and read as plush, not bristles) and `_SkinStrands` (the strand noise shaded onto the base layer, so short or stretched patches read as pile); both default to the earlier look.
 - `tools/device/selftest.sh` without `--apk` installs the newer of `JollyXR/Builds/Android/Nubi.apk` and `artifacts/Nubi.apk` and says which.
 
+### Web search grounding (ADR-0048)
+- Meta's built-in `web_search` on live turns: `ResponsesRequestWriter` sends it last with an approximate `user_location` and `max_tool_calls: 2`, and groups `ns.fn` tools into eager `{"type":"namespace"}` tools from `ModelRequest.Namespaces` (ADR-0047's base). The reducer keeps `web_search_call` / `tool_search_*` items as Opaque, reports `WebSearchStarted`/`WebSearchCompleted`, counts searches, and folds a separate `namespace` field into the call name.
+- `WebSearchPolicy`: on when `JollyConfig.webSearch`, the persona allows `web_search` and the link is Online. `UserLocation` (city from the new `set_home_location` tool, else the locale's country; IANA time zone from the device, via Java on Android) feeds the search and a "Local time: … Home: …" line in the context block; the instructions say when to search.
+- `SpokenText.Clean` strips markdown, links, URLs and citation markers from every spoken and captioned sentence.
+- Web searches priced at $2.50 per 1,000 (`perWebSearch`), persisted as `webSearches`; `evt=llm.web_search` and `searches=` in the logs; a "Web search" tool badge while it runs.
+- Device self-test `voice_web_search` with a Wit-synthesised "What's the weather like today?".
+
 ### Docs
 - Demo script: mandatory problem voice-over, cost as a beat-5 overlay, a longer beat 2, reboot and greeting warm-up before beat 1, beat 1 as the guard walk with a canned line (ADR-0037, ADR-0040). README "A day with Nubi", "Living with it", current status and test counts; release checklist verification block for `36778c1`; device self-test reports for every change above (`docs/perf/selftest-report.md`).
