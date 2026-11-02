@@ -14,7 +14,7 @@ namespace Jolly.XR.Interaction
     /// <see cref="IPointerInput"/> over the rig (ADR-0044): the hand ray <see cref="PinchPushToTalk"/> would pinch with,
     /// else the far ray of a Touch controller, the side whose trigger was pressed last first. A controller side whose
     /// hand is tracked is in hand mode and ignored, as in <see cref="ControllerPushToTalk"/>. A ray that hovers UI or an
-    /// interactable, or hits the character's collider, is not free. The trigger is bound by Touch layout name
+    /// interactable, or aims at the character (<see cref="CharacterAim"/>), is not free. The trigger is bound by Touch layout name
     /// (<see cref="TouchBindings"/>); XRI still uses it for UI presses and Activate, which is why a busy ray is skipped.
     /// </summary>
     public sealed class XrPointer : IPointerInput, IDisposable
@@ -87,7 +87,13 @@ namespace Jolly.XR.Interaction
             return !InteractorRays.IsBusy(interactor) && InteractorRays.TryGetRay(interactor, out ray) && !HitsCharacter(ray);
         }
 
-        bool HitsCharacter(Ray ray) => _character != null && _character.enabled && _character.Raycast(ray, out _, CharacterHitDistance);
+        bool HitsCharacter(Ray ray)
+        {
+            if (_character == null || !_character.enabled || !_character.Raycast(ray, out _, CharacterHitDistance))
+                return false;
+            var bounds = _character.bounds;
+            return !CharacterAim.LandsJustPast(ray, new Vector3(bounds.center.x, bounds.min.y, bounds.center.z), bounds.extents.x);
+        }
 
         static Handedness Other(Handedness side) => side == Handedness.Left ? Handedness.Right : Handedness.Left;
 

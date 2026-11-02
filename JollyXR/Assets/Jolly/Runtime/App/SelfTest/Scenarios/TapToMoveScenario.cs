@@ -9,8 +9,12 @@ namespace Jolly.App.SelfTest.Scenarios
 {
     /// <summary>
     /// ADR-0044: a quick pinch with the ray on the floor sends the character there and never talks. The scripted pointer
-    /// aims from the head at walkable floor about 1.5 m from the character, and a 100 ms pinch goes through the real
-    /// tap/hold split, target resolution (the scene raycast and the NavMesh) and walk. It must arrive
+    /// aims from the head at walkable floor about 1.5 m from the character whose ray the real resolver takes for that
+    /// floor, and a 100 ms pinch goes through the real tap/hold split, target resolution (the scene raycast and the
+    /// NavMesh) and walk. Being walkable is not enough: on a keyed run the headset lay on a desk (user_h=0.71) and the
+    /// chosen ray met something above the floor, a depth or furniture hit, so no ring showed and the press talked
+    /// (no evt=move.request, and turn 4 opened in the same 115 ms). The character plays no part: the scripted pointer never
+    /// checks its collider and the scene raycast does not see it. With no such ray at all the scenario degrades. It must arrive
     /// (<c>walk=Arrived</c>) near the point with no conversation state change (so no ASR session, no model request,
     /// no "Listening…") and no spend. The microphone pre-roll must have started at the pinch and been dropped unheard.
     /// </summary>
@@ -40,8 +44,16 @@ namespace Jolly.App.SelfTest.Scenarios
                 r.Degrade("no walkable floor (no Space Setup and no fallback floor): nothing to tap on");
                 return r;
             }
-            if (!r.Check(TryPickPoint(world, head, nubi.Position, out var point), "no walkable floor point near the user"))
+            var picked = TryPickPoint(world, graph.Point.Resolver, head, nubi.Position, out var point, out var blocked);
+            r.Metric("rays_blocked", blocked);
+            if (!picked)
+            {
+                if (blocked > 0)
+                    r.Degrade("every ray from the head to walkable floor meets something above the floor");
+                else
+                    r.Check(false, "no walkable floor point near the user");
                 return r;
+            }
 
             c.Observer.Reset();
             var usage = graph.Foundation.Usage;
@@ -88,11 +100,17 @@ namespace Jolly.App.SelfTest.Scenarios
             return r;
         }
 
-        /// <summary>Walkable floor <see cref="UserRadius"/> from the user whose distance to the character is nearest
-        /// <see cref="TargetDistance"/>: inside the fallback disc too, which is 1.5 m around the user.</summary>
-        static bool TryPickPoint(IWorldQuery world, Vector3 head, Vector3 character, out Vector3 point)
+        /// <summary>
+        /// Walkable floor <see cref="UserRadius"/> from the user whose distance to the character is nearest
+        /// <see cref="TargetDistance"/> (inside the fallback disc too, which is 1.5 m around the user), among those the
+        /// ray from <paramref name="head"/> resolves to as floor. <paramref name="blocked"/> counts walkable points whose
+        /// ray did not.
+        /// </summary>
+        public static bool TryPickPoint(IWorldQuery world, MoveTargetResolver resolver, Vector3 head, Vector3 character,
+                                        out Vector3 point, out int blocked)
         {
             point = default;
+            blocked = 0;
             var best = float.PositiveInfinity;
             for (var degrees = 0; degrees < 360; degrees += 30)
             {
@@ -100,11 +118,16 @@ namespace Jolly.App.SelfTest.Scenarios
                 var candidate = new Vector3(head.x, character.y, head.z) + direction * UserRadius;
                 if (!world.TrySampleWalkable(candidate, SampleRadius, out var walkable))
                     continue;
-                var miss = Mathf.Abs(Flat(walkable - character) - TargetDistance);
+                if (!resolver.TryResolve(new Ray(head, walkable - head), out var target) || target.Kind != MoveTargetKind.Floor)
+                {
+                    blocked++;
+                    continue;
+                }
+                var miss = Mathf.Abs(Flat(target.Point - character) - TargetDistance);
                 if (miss >= best)
                     continue;
                 best = miss;
-                point = walkable;
+                point = target.Point;
             }
             return !float.IsPositiveInfinity(best);
         }

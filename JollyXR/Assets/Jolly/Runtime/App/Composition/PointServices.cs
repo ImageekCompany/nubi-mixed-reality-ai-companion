@@ -20,6 +20,7 @@ namespace Jolly.App.Composition
         /// <summary>The turn's microphone; hands over the pre-roll of a pinch that became a hold.</summary>
         public IAudioCapture Microphone { get; private set; }
         public PointerTargeting Targeting { get; private set; }
+        public MoveTargetResolver Resolver { get; private set; }
         public PointToMove Move { get; private set; }
 
         /// <param name="edges">A replaced <see cref="Edges.Voice"/> stands in for the pinch alone (no controller
@@ -47,6 +48,7 @@ namespace Jolly.App.Composition
                 Voice = voice,
                 Microphone = microphone,
                 Targeting = targeting,
+                Resolver = resolver,
                 Move = disposables.Add(new PointToMove(pinch, pointer, targeting, resolver, scene.nubi, settings, scene.moveReticle,
                     f.Clock, f.Log)),
             };
