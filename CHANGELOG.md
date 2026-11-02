@@ -261,6 +261,7 @@ Each work package appends bullets under its own heading only (`docs/scope.md` §
 - `Jolly/Character/ShellFur`: an opaque base layer and alpha-tested shells (normal push, gravity droop, comb flow, inertia swing, idle sway; per-vertex colour and light, one noise read per shell fragment), environment-depth occlusion and alpha = visibility like NubiSkin, SRP Batcher and single-pass instanced stereo.
 - `ShellFur` appends the shells as extra materials on a renderer whose last submesh is fur, so they reuse the vertices skinned once; three shell counts by the user's distance (`ShellFurLod`, 0.15 m band) and a spring on the root bone for the tips (`FurInertia`). `NubiCharacterController` attaches it at `Construct` and ticks it in `LateUpdate`.
 - `build_jolly.py` puts the gloss slot and faces first, so the local Jolly skin's fur is its last submesh.
+- `_StrandTaper` (strand fullness: strands keep their width higher up and read as plush, not bristles) and `_SkinStrands` (the strand noise shaded onto the base layer, so short or stretched patches read as pile); both default to the earlier look.
 - `tools/device/selftest.sh` without `--apk` installs the newer of `JollyXR/Builds/Android/Nubi.apk` and `artifacts/Nubi.apk` and says which.
 
 ### Docs
