@@ -8,9 +8,10 @@ namespace Jolly.Core.Conversation
     /// <summary>
     /// Splits a pinch into a tap that moves the character and a hold that talks (ADR-0044). At the press,
     /// <c>captureTarget</c> says whether a tap there would move the character (and holds that target for it). If so the
-    /// press waits: released within the tap time it is <see cref="Tapped"/> and never reaches the conversation, held past
-    /// it it becomes <see cref="IVoiceActivation.Pressed"/>. With no target the press talks at once, so pinch barge-in
-    /// keeps its 150 ms (architecture §5.2). <see cref="Began"/> marks a waiting press, for the microphone pre-roll.
+    /// press waits: released within the tap time it is <see cref="Tapped"/> and opens no turn, held past it it becomes
+    /// <see cref="IVoiceActivation.Pressed"/>. With no target the press talks at once. Either way pinch barge-in keeps its
+    /// 150 ms (architecture §5.2): <see cref="Interrupting"/> silences a busy turn at the press of a waiting one.
+    /// <see cref="Began"/> marks a waiting press, for the microphone pre-roll.
     /// Main thread only.
     /// </summary>
     public sealed class TapHoldClassifier : IVoiceActivation, IDisposable
@@ -35,6 +36,9 @@ namespace Jolly.Core.Conversation
         public bool IsHeld { get; private set; }
         public event Action Pressed;
         public event Action Released;
+        /// <summary>A press with a target, just before it waits: a busy turn is silenced now, tap or hold (ADR-0044), and
+        /// before <see cref="Began"/>, so the pre-roll hears a silent character.</summary>
+        public event Action Interrupting;
         /// <summary>A press with a target started waiting to become a tap or a hold.</summary>
         public event Action Began;
         /// <summary>A waiting press was released within the tap time.</summary>
@@ -57,6 +61,7 @@ namespace Jolly.Core.Conversation
                 Hold();
                 return;
             }
+            Interrupting?.Invoke();
             _waiting = new CancellationTokenSource();
             Began?.Invoke();
             Wait(_waiting).Forget();

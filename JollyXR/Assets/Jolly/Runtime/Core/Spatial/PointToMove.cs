@@ -12,8 +12,8 @@ namespace Jolly.Core.Spatial
     /// <summary>
     /// Point and tap to send the character (ADR-0044): a pinch tap with a target showing, or a controller trigger press
     /// on one, starts a walk there through the same <see cref="ICharacterController.TryStartMoveTo"/> as the locomotion
-    /// tools, watching the user so it ends facing them (ADR-0041). It never touches the conversation: a tap while the
-    /// character speaks moves it and the reply goes on. Logs <c>evt=move.request</c> and <c>evt=move.arrived</c> (or
+    /// tools, watching the user so it ends facing them (ADR-0041). It never touches the conversation: the pinch already
+    /// silenced a busy turn at the press, and a controller trigger leaves the reply going. Logs <c>evt=move.request</c> and <c>evt=move.arrived</c> (or
     /// <c>evt=move.ended</c>). Main thread only.
     /// </summary>
     public sealed class PointToMove : IDisposable

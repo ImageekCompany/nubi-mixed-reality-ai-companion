@@ -8,8 +8,9 @@ namespace Jolly.Core.Conversation
     /// hold loses none of the words said during the tap time. The waiting press starts a local capture session; a hold
     /// hands it, with everything heard so far, to the turn's <see cref="Start"/>; a tap, or a release that no turn
     /// claimed (offline, a persona switch), disposes it unheard: nothing reaches ASR or the model. It does not pre-roll
-    /// while <c>canPreRoll</c> is false: while the character speaks the pre-roll would hold its own voice (no verified
-    /// echo cancellation, research/voice.md §6), and while a turn listens a second start would abort its session.
+    /// while <c>canPreRoll</c> is false: while the character is audible, which a busy turn no longer is by now
+    /// (<see cref="TapHoldClassifier.Interrupting"/>) but an interaction line can be, the pre-roll would hold its own voice
+    /// (no verified echo cancellation, research/voice.md §6), and while a turn listens a second start would abort its session.
     /// Main thread only.
     /// </summary>
     public sealed class PreRollCapture : IAudioCapture, IDisposable

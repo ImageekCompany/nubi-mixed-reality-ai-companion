@@ -2,6 +2,7 @@
 using System;
 using System.Collections;
 using Cysharp.Threading.Tasks;
+using Jolly.App.SelfTest.Scenarios;
 using Jolly.Character;
 using Jolly.Contracts;
 using Jolly.Core.Tools;
@@ -94,6 +95,137 @@ namespace Jolly.Tests.PlayMode.E2E
                     "jump" => "Jump",
                     _ => "Bow",
                 }, 0.3);
+            }
+            finally
+            {
+                await app.Unload();
+            }
+        });
+
+        /// <summary>The fallback floor: the scan times out, as with no Space Setup, some seconds after boot.</summary>
+        static async UniTask<bool> FloorReady(AppHarness app) =>
+            await app.WaitUntil(() => app.Graph.Xr.World.WalkableArea != WalkableArea.None, TurnSeconds);
+
+        /// <summary>Aims the pinch's ray at floor a tap would walk to, so the ring shows and the press has to wait.</summary>
+        static void AimAtTheFloor(AppHarness app)
+        {
+            var graph = app.Graph;
+            var nubi = graph.Scene.nubi.Position;
+            var head = graph.Xr.User.Head.position;
+            var eye = new Vector3(head.x, nubi.y + 1.6f, head.z);
+            Assert.That(TapToMoveScenario.TryPickPoint(graph.Xr.World, graph.Point.Resolver, eye, nubi, out var point, out var blocked),
+                Is.True, $"floor to aim at (blocked={blocked})");
+            app.Pointer.Aim = new Ray(eye, point - eye);
+        }
+
+        [UnityTest]
+        public IEnumerator PinchWithTheRingShowing_DuringAMove_FadesWithinTheBargeInPromise() => UniTask.ToCoroutine(async () =>
+        {
+            var app = await Ready();
+            try
+            {
+                // Arrange
+                Assert.That(await FloorReady(app), Is.True);
+                var animator = app.Graph.Scene.nubi.Animator;
+                var layer = animator.GetLayerIndex(P.ActionLayer);
+                app.Asr.Will(ModelPhrasing).Will(string.Empty);
+                app.Http.Enqueue(Kind.Chat, new ResponsesScript().Say("Let me try.").Call(ToolNames.Actions.Dance, "{}").Complete());
+                await app.Talk();
+                Assert.That(await app.WaitUntil(() => animator.GetCurrentAnimatorStateInfo(layer).IsName("Dance"), TurnSeconds), Is.True,
+                    app.StatePath());
+                await UniTask.Delay(TimeSpan.FromSeconds(0.3), DelayType.Realtime);
+                AimAtTheFloor(app);
+
+                // Act: the press alone, still inside the tap time.
+                var pressedAt = Time.realtimeSinceStartupAsDouble;
+                app.Voice.Press();
+                var stateAtPress = app.State;
+                var gone = await app.WaitUntil(() => IsEmpty(animator, layer), 2);
+                var fadeMs = (Time.realtimeSinceStartupAsDouble - pressedAt) * 1000;
+                app.Voice.Release();
+                app.Pointer.Aim = null;
+
+                // Assert
+                Assert.That(stateAtPress, Is.EqualTo(ConversationState.Idle), app.StatePath());
+                Assert.That(gone, Is.True, "the Action layer emptied");
+                Assert.That(app.Speaker.IsPlaying, Is.False, "speech stopped too");
+                Assert.That(fadeMs, Is.LessThanOrEqualTo(MaxFadeMs), "not 0.25 s of tap time more");
+            }
+            finally
+            {
+                await app.Unload();
+            }
+        });
+
+        [UnityTest]
+        public IEnumerator PinchWithTheRingShowing_ThenHeld_InterruptsAndTalks() => UniTask.ToCoroutine(async () =>
+        {
+            var app = await Ready();
+            try
+            {
+                // Arrange
+                Assert.That(await FloorReady(app), Is.True);
+                app.Asr.Will(ModelPhrasing).Will("Tell me a joke.");
+                app.Http.Enqueue(Kind.Chat, new ResponsesScript().Say("Let me try.").Call(ToolNames.Actions.Dance, "{}").Complete());
+                app.Http.Enqueue(Kind.Chat, new ResponsesScript().Say("A joke.").Complete());
+                await app.Talk();
+                var animator = app.Graph.Scene.nubi.Animator;
+                var layer = animator.GetLayerIndex(P.ActionLayer);
+                Assert.That(await app.WaitUntil(() => animator.GetCurrentAnimatorStateInfo(layer).IsName("Dance"), TurnSeconds), Is.True,
+                    app.StatePath());
+                AimAtTheFloor(app);
+
+                // Act
+                app.Voice.Press();
+                var interrupted = app.State == ConversationState.Idle;
+                var listening = await app.WaitUntil(() => app.State == ConversationState.Listening, 1);
+                await UniTask.Delay(TimeSpan.FromSeconds(0.1), DelayType.Realtime);
+                app.Voice.Release();
+                app.Pointer.Aim = null;
+
+                // Assert
+                Assert.That(interrupted, Is.True, app.StatePath());
+                Assert.That(listening, Is.True, app.StatePath());
+                Assert.That(await app.WaitUntil(() => app.UserFinal == "Tell me a joke.", TurnSeconds), Is.True, app.UserFinal);
+                Assert.That(await app.WaitForIdle(TurnSeconds), Is.True, app.StatePath());
+            }
+            finally
+            {
+                await app.Unload();
+            }
+        });
+
+        [UnityTest]
+        public IEnumerator PinchWithTheRingShowing_ThenTapped_InterruptsAndWalks() => UniTask.ToCoroutine(async () =>
+        {
+            var app = await Ready();
+            try
+            {
+                // Arrange
+                Assert.That(await FloorReady(app), Is.True);
+                var moved = false;
+                app.Graph.Point.Move.Moved += (_, _) => moved = true;
+                app.Asr.Will(ModelPhrasing);
+                app.Http.Enqueue(Kind.Chat, new ResponsesScript().Say("Let me try.").Call(ToolNames.Actions.Dance, "{}").Complete());
+                await app.Talk();
+                var animator = app.Graph.Scene.nubi.Animator;
+                var layer = animator.GetLayerIndex(P.ActionLayer);
+                Assert.That(await app.WaitUntil(() => animator.GetCurrentAnimatorStateInfo(layer).IsName("Dance"), TurnSeconds), Is.True,
+                    app.StatePath());
+                AimAtTheFloor(app);
+
+                // Act
+                app.Voice.Press();
+                var interrupted = app.State == ConversationState.Idle;
+                await UniTask.Delay(TimeSpan.FromSeconds(0.05), DelayType.Realtime);
+                app.Voice.Release();
+                app.Pointer.Aim = null;
+
+                // Assert
+                Assert.That(interrupted, Is.True, app.StatePath());
+                Assert.That(moved, Is.True, "the tap walked");
+                Assert.That(await app.WaitForIdle(TurnSeconds), Is.True, app.StatePath());
+                Assert.That(app.Asr.Sessions, Is.EqualTo(1), "the tap opened no ASR session");
             }
             finally
             {

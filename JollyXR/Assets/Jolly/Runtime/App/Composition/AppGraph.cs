@@ -92,6 +92,10 @@ namespace Jolly.App.Composition
                 TranscriptAliases.ForName(Text.Name, character.aliases), Preferences, scene.nubi, Point.Voice, Point.Microphone,
                 edges.WrapMasks(scene.maskOverlay), Room, new RoomContext(Room, Xr.World, Xr.User, roomSettings),
                 edges.ModelReplies, d);
+            var pinch = Point.Pinch;
+            var controller = Conversation.Controller;
+            pinch.Interrupting += controller.InterruptBusyTurn;
+            d.Add(new Subscription(() => pinch.Interrupting -= controller.InterruptBusyTurn));
             d.Add(new StatusRelay(Cloud.Connectivity, scene.permissions, scene.status));
             Look = d.Add(new LookTelemetry(f.Machine, scene.nubi, Xr.User, f.Log));
             d.Add(new SettingsRouter(scene.settings, Personas, Text, Conversation.Controller, f.Log, appCt));

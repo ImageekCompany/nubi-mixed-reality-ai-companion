@@ -67,6 +67,33 @@ namespace Jolly.Tests.EditMode.Core.Conversation
         }
 
         [Test]
+        public void Press_WithATarget_InterruptsBeforeItBegins()
+        {
+            // Arrange
+            _classifier.Interrupting += () => _events.Add("interrupting");
+
+            // Act
+            _pinch.Press();
+
+            // Assert
+            Assert.That(_events, Is.EqualTo(new[] { "interrupting", "began" }), "so the pre-roll hears a silent character");
+        }
+
+        [Test]
+        public void Press_WithNoTarget_DoesNotRaiseInterrupting()
+        {
+            // Arrange
+            _canTap = false;
+            _classifier.Interrupting += () => _events.Add("interrupting");
+
+            // Act
+            _pinch.Press();
+
+            // Assert
+            Assert.That(_events, Is.EqualTo(new[] { "pressed" }), "the conversation's own press barges in");
+        }
+
+        [Test]
         public void Press_WithNoTarget_TalksAtOnce()
         {
             _canTap = false;

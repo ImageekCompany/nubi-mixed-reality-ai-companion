@@ -5,6 +5,7 @@ using Cysharp.Threading.Tasks;
 using Jolly.App;
 using Jolly.App.Composition;
 using Jolly.App.Platform;
+using Jolly.App.SelfTest;
 using Jolly.Contracts;
 using Jolly.Testing;
 using Jolly.Tests.PlayMode.E2E.Doubles;
@@ -32,6 +33,8 @@ namespace Jolly.Tests.PlayMode.E2E
         public ToneTextToSpeech Tts { get; } = new();
         public SimulatedSpeechOutput Speaker { get; } = new();
         public FakeVoiceActivation Voice { get; } = new();
+        /// <summary>The ray the pinch would use; aims nowhere until a test sets <see cref="ScriptedPointer.Aim"/>.</summary>
+        public ScriptedPointer Pointer { get; } = new();
         public bool NetworkUp { get; set; } = true;
         public JollyBootstrap Bootstrap { get; private set; }
         public AppGraph Graph => Bootstrap.Graph;
@@ -112,6 +115,7 @@ namespace Jolly.Tests.PlayMode.E2E
             TextToSpeech = Tts,
             Microphone = new SilentMicrophone(),
             Voice = Voice,
+            Pointer = Pointer,
             SpeechOutput = Speaker,
         };
 
