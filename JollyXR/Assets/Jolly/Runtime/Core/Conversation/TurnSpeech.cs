@@ -111,7 +111,7 @@ namespace Jolly.Core.Conversation
         /// <summary>The utterance id, or 0 when there was nothing to say or it was only captioned.</summary>
         int Speak(string sentence)
         {
-            sentence = sentence?.Trim();
+            sentence = SpokenText.Clean(sentence?.Trim());
             if (string.IsNullOrEmpty(sentence))
                 return 0;
             var id = NextUtteranceId();
