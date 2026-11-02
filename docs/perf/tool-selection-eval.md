@@ -129,3 +129,14 @@ The instructions' action rule gained "asking whether you can do one ('can you ju
 | 2026-11-02 | `ef949c1+dirty` | minimal | 6 (greeting, small_talk) | 6 | 0.0062 |
 
 Total **$0.0528**, $0.003 over the batch's $0.05 eval cap: the second run was sized from the first run's cost per call, and its output (~300 tokens per call, mostly reasoning even at `minimal`) is what a run costs (output is 71 % of its metered cost). The baseline ran the harness of `7e6ccc9` before it was committed, on the `88047fe` runtime.
+
+## ADR-0047 `action_through_model`, effort `minimal`, 2026-11-02
+
+The new phrase replaces "Show me how to dance!" as this eval's dance case, since that one now takes the guard and never reaches the model on a live turn. Five live samples of the first round, `a19c70f` plus this change's uncommitted work, whose prompt and tools are those of `a19c70f`.
+
+| Utterance | Called | Result |
+|---|---|---|
+| Could you do a little dance for my friends? | (none), `actions.dance`, `actions.dance`, `actions.dance` | 3 / 4 |
+| Show me how to dance! | (none) | 0 / 1 |
+
+The two misses came in the same run; what the model said there was not logged. Each of the three passes said "Let me try." and called `actions.dance`. Four samples do not settle the rate, so `action_through_model` can fail on a device for this reason.

@@ -188,7 +188,7 @@ character locomotion: separate commandCts inside NubiCharacterController.
   turnCts owns the motion, so cancelling turnCts cannot stop it (contracts §7).
 ```
 - There is no server-side cancel. `POST /v1/responses/{id}/cancel` applies only to background responses (critic C4).
-- Target: under 150 ms from pinch to silence.
+- Target: under 150 ms from pinch to silence, with the move ring showing too: a press that may yet be a tap silences a busy turn before it waits (ADR-0044).
 - Voice barge-in (playback-gated VAD) is *could* tier and off by default (`JollyConfig.voiceBargeIn=false`).
 
 ### 5.3 capture_and_identify
@@ -238,7 +238,7 @@ sequenceDiagram
   - A quad textured with the box-local mask, using an outline shader with a translucent fill.
   - Placed at the median hit distance, facing the capture camera pose, sized from the intrinsics.
   - Fades out after 6 s or on the next turn.
-- **`EndsSpokenTurn`.** When every tool in a round returns it (a finished whole-body move, ADR-0047) and the round's text said something, the agent skips the closing round too.
+- **`EndsSpokenTurn`.** When every tool in a round returns it (a finished whole-body move, ADR-0047), the round's text said something and the user's turn is one short clause with no connector (`ShortRequest`), the agent skips the closing round too.
 - **`EndsTurn`.** When every tool in a round returns `EndsTurn`, the agent skips the next model round, saving about 1–1.5 s. A `SpokenText` is spoken if set; `capture_and_identify` sets none because it already streamed its answer. The `function_call_output` is still committed to memory, so later turns stay coherent.
 - **Failure paths** (one set of numbers in `JollyConfig`: SAM 5 s, vision 8 s, tool 12 s).
   - SAM returns no match after the retry: the answer is spoken without a mask. Empty output is not an error.

@@ -285,6 +285,12 @@ Each work package appends bullets under its own heading only (`docs/scope.md` §
 - `ToolResult.EndsSpokenTurn`: a whole-body move that followed spoken words ends the turn when it ends, with no closing model round. Failures, walks and silent rounds keep the round.
 - The search's Think gesture plays on into the Thinking pose instead of fading as the same pose fades in, which dropped the hands 10 cm.
 - `tap_to_move` picks a point whose ray the resolver takes for floor; `rays_blocked` reports the rest. A ray through the character that lands just past its footprint now shows the ring there (`CharacterAim`).
+- `ActionGuard` no longer takes an unknown word in its own clause as the character's name: "Dance. Go behind me." and "Nope. Dance." go to the model instead of running one move or a refused one. The real name and known mishearings still match. `ComeGuard`, `StopGuard` and `SettingsGuard` are unchanged.
+- The closing round is skipped only when the user's turn is one short clause with no connector, so "Dance and then tell me a joke" gets its joke (`ShortRequest`, `action.connectors`).
+- A pinch with the move ring showing silences a busy turn at the press, tap or hold, instead of 0.25 s later or not at all (ADR-0044). A hold now keeps the words said during the tap time on a busy turn too.
+- A ray through the character means the floor past it only if it enters below the knee: at normal standing distance, a chest aim showed the ring (`CharacterAim`).
+- The guards run their tools under the tool's timeout and catch exceptions, leaving the turn to the model instead of holding Acting for the watchdog or crashing the turn.
+- Self-test: `action_through_model` covers the model's path to the body with a new Wit clip; `action_source` reports `guard+model` and keeps the reply, first-audio and facing checks there; `tap_to_move` degrades on blocked rays only when the headset is not worn.
 - `BodyMoveFlowTests` and `BehaviourHandoverTests`: barge-in during a dance, jump, bow and spin through the shipped scene, and the hand-overs between moves, poses and walks.
 
 ### Docs

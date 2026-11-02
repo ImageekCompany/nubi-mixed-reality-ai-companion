@@ -83,4 +83,6 @@ Rows before 2026-11-01 02:00 (research phase, `docs/research/*.md`) were not ite
 
 | 2026-11-02 | ADR-0047 short commands: replay of a `guard_action_<guid>` call id with `actions.dance` and its output in a later turn (200, coherent) | muse-spark-1.3 | 1 | in 595 / out 41 | 0.001 |
 
-Running total (est.): **≤ $2.57** (sum of the rows: 2.566)
+| 2026-11-02 | ADR-0047 `action_through_model` phrase: tool-selection eval, tag `actions.dance`, then the new phrase alone (metered 0.0085 + 0.0023 + 0.0047) | muse-spark-1.3 | 5 | in 20,316 (cached 15,812) / out 1,767 | 0.016 |
+
+Running total (est.): **≤ $2.59** (sum of the rows: 2.582)

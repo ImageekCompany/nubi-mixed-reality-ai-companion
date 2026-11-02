@@ -17,7 +17,7 @@ Jolly is a small plush AI companion that lives in your real room on a Meta Quest
 | **Pinch and hold** thumb and index finger, speak, then let go | Jolly listens, then answers. On a controller, hold **A** or **X** |
 | **Point at the floor** until a ring appears, then **quick pinch** (or pull the controller trigger) | Jolly walks to the ring |
 
-- Wait for Jolly to finish, or pinch while it's talking to interrupt it.
+- Wait for Jolly to finish, or pinch while it's talking or moving to interrupt it at once. That holds for a quick pinch at the floor too: Jolly stops talking and walks to the ring.
 - Answers usually start within 2 to 4 seconds. Searching the web takes a few seconds longer.
 
 ## Things to say
@@ -62,7 +62,7 @@ Hold an object 40 to 50 cm from your face and point at it with your other hand.
 - "Do a little show: jump, spin and take a bow."
 - "Surprise me." / "Do a trick."
 
-A short command ("Dance.", "Jump!", "Spin around.", "Take a bow.", "Wave.", "Nod.", "Celebrate!", "Go behind me.", "Stand on my left.", "Back off.") starts at once, and Jolly does the move without saying anything. Anything longer or asked as a question goes through the usual conversation and takes 2-4 s. Pinch during any move and it stops and Jolly listens.
+A short command ("Dance.", "Jump!", "Spin around.", "Take a bow.", "Wave.", "Nod.", "Celebrate!", "Go behind me.", "Stand on my left.", "Back off.") starts at once, and Jolly does the move without saying anything. Anything longer or asked as a question goes through the usual conversation and takes 2-4 s. Pinch during any move and it stops and Jolly listens. Two commands at once ("Dance. Go behind me.") or a word it doesn't know ("Sorry, jump.") also go through the conversation, so Jolly can do both or understand you changed your mind. You can use its name: "Jolly, jump".
 
 ### Change its personality
 
@@ -94,6 +94,7 @@ Jolly doesn't freeze. It plays short built-in lines and shows captions until the
 ## Known rough edges
 
 - "Can you jump?" sometimes gets an answer in words. "Jump!" is more reliable.
+- To point at the floor just behind Jolly from nearby, aim beside it: a ray through its body means Jolly, so the pinch talks.
 - A long sentence mixing moves and walking can cut a move short. Saying "Come here and jump" works better than "Jump and come here".
 - "Go behind me" needs about 1 m of free floor there; otherwise Jolly says it can't get there.
 - Hands and real objects should hide Jolly when they're in front of it; the edges may look rough.
