@@ -271,5 +271,12 @@ Each work package appends bullets under its own heading only (`docs/scope.md` §
 - Web searches priced at $2.50 per 1,000 (`perWebSearch`), persisted as `webSearches`; `evt=llm.web_search` and `searches=` in the logs; a "Web search" tool badge while it runs.
 - Device self-test `voice_web_search` with a Wit-synthesised "What's the weather like today?".
 
+### Character action catalog (ADR-0047)
+- `CharacterActionCatalog`: the active character's body actions as tools in the `actions` namespace, offered only when the character can play the clips they need (`ICharacterController.CanPlay`), with a namespace description generated from what is offered: `actions.jump`, `actions.dance {duration_s?}`, `actions.bow`, `actions.spin {turns?, direction?}`, `actions.celebrate` and `actions.move_relative {direction, distance_m?}` (front, behind, left, right, closer, away from the user's head yaw; withheld when seated).
+- `ICharacterController` gains `CanPlay`, `PlayLooped` and `Spin`; `GestureId` gains `Dance`, `Jump`, `Bow`. Full-body clips play on a new unmasked `Action` Animator layer, a looping one held by the `GestureHold` parameter; they are optional clips (a validator warning when missing). `SpinMotion` turns the root with smoothstep easing while attention is off.
+- The instructions tell the model to call an action rather than claim one, when actions are offered; `evt=action.<verb>` and `evt=actions.offered` logs; `tool.actions.*` badges (en, pl).
+- `CharacterAnimatorBuilder.BuildLocal` rebuilds every local character's controller in batch.
+- Device self-test `action_dance` and `action_move_behind` with Wit-synthesised clips; four action cases in the tool-selection eval, which now sends the registry's namespaces.
+
 ### Docs
 - Demo script: mandatory problem voice-over, cost as a beat-5 overlay, a longer beat 2, reboot and greeting warm-up before beat 1, beat 1 as the guard walk with a canned line (ADR-0037, ADR-0040). README "A day with Nubi", "Living with it", current status and test counts; release checklist verification block for `36778c1`; device self-test reports for every change above (`docs/perf/selftest-report.md`).

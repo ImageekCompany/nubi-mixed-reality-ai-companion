@@ -31,9 +31,9 @@ checks every point marked ✔.
 | Shape keys ✔ | One or more per canonical face channel (below), or a jaw bone for the visemes |
 
 **Canonical clips** (`CharacterClips`). Required: `Idle`, `Walk`, `Hop`, `Sad`, `Talk`, `Listen`, `Think`, `Wave`,
-`Nod`, `ShakeHead`, `Shrug`, `Point`, `Happy`, `Stretch`. Optional: `Surprised`. Loops: `Idle`, `Walk`, `Hop`, `Talk`,
-`Listen`, `Think`, `Sad`. Nubi and Jolly also carry the action takes `Dance` (loop), `Jump` and `Bow` (in place, 30 fps;
-`Jump` lifts the hips and feet itself). `Walk` and `Hop` are in place; measure the ground speed each one matches at 1× and put it in
+`Nod`, `ShakeHead`, `Shrug`, `Point`, `Happy`, `Stretch`. Optional: `Surprised` and the full-body action clips `Dance`
+(loop), `Jump` and `Bow` (in place, 30 fps; `Jump` lifts the hips and feet itself). Loops: `Idle`, `Walk`, `Hop`, `Talk`,
+`Listen`, `Think`, `Sad`, `Dance`. Nubi and Jolly carry all three action clips. `Walk` and `Hop` are in place; measure the ground speed each one matches at 1× and put it in
 `tuning.locomotion.walkClipSpeed` / `hopClipSpeed`.
 
 **Canonical face channels** (`FaceChannels.ShapeNames`): visemes `sil`, `A`, `I`, `U`, `E`, `O`; expressions `Smile`,
@@ -94,7 +94,27 @@ Where to put it:
 Select the definition, then **Jolly ▸ Character ▸ Build Animator For Selected Definition**. It writes
 `Animator/<Id>.controller` and `Animator/<Id>UpperBody.mask` next to the definition and assigns the controller. States
 carry the canonical names, so gestures, conversation poses and face presets work unchanged. Re-run it after changing
-clips, `bones.upperBody` or `tuning.locomotion.hopAbove`.
+clips, `bones.upperBody` or `tuning.locomotion.hopAbove`. Every local character's controller is rebuilt at once with
+**Jolly ▸ Character ▸ Rebuild Local Character Animators** or
+`-executeMethod Jolly.Editor.Character.CharacterAnimatorBuilder.BuildLocal` (after its model gained takes).
+
+### 4a. Its actions follow from its clips
+
+What the character can do on request is the `actions` tool namespace (ADR-0047), built from what its controller can
+play (`ICharacterController.CanPlay`):
+
+| Action | Needs |
+|---|---|
+| `actions.jump` | `Jump` |
+| `actions.dance` | `Dance` (looping) |
+| `actions.bow` | `Bow` |
+| `actions.celebrate` | `Jump` and `Happy` |
+| `actions.spin` | `Happy` (always present; the turn itself is procedural) |
+| `actions.move_relative` | nothing beyond walking |
+
+The full-body clips play on the controller's unmasked `Action` layer. A character without one of them validates with a
+warning and is simply not offered the actions it backs; the namespace description the model reads lists only what it can
+do. Adding a take with the canonical name and rebuilding the Animator is all it takes to offer the action.
 
 ### 4b. Bake its named lines
 
@@ -119,7 +139,8 @@ Nubi's assets are rebuilt with **Jolly ▸ Character ▸ Rebuild Nubi Assets** (
 ## 5. Validate it
 
 **Jolly ▸ Character ▸ Validate Characters** checks every definition in the project: required clips present and played
-by the controller, its parameters and layers, the preset file, every canonical channel bound to a blendshape the face
+by the controller (a missing optional action clip is a warning; one the model has but the controller does not play is an
+error), its parameters and layers, the preset file, every canonical channel bound to a blendshape the face
 mesh has (or the jaw), every bone present, ≤ 4 influences, positive sizes and speeds, and a triangle-budget warning.
 
 `tools/ci/test.sh` runs the same check through the content validator and `CharacterDefinitionTests` (PlayMode). A

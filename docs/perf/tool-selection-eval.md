@@ -71,11 +71,27 @@ Pass rate: **9 / 12 (75 %)**; the same 12 cases in the baseline: 9 / 12. Metered
 - `stop` with nothing moving got no call in the baseline; not targeted here.
 - **`low` effort was not run**: the two runs used the batch's eval budget. Effort stays `minimal` (ADR-0035).
 
+## Character actions (ADR-0047): `290385a+dirty`, effort `minimal`
+
+The catalog now sends the `actions` namespace, and four action cases were added ("come closer" also accepts `actions.move_relative`).
+
+| Utterance | Expected | Called | Result |
+|---|---|---|---|
+| Show me how to dance! | `actions.dance` | `actions.dance` | PASS |
+| Can you jump? | `actions.jump` or `actions.celebrate` | (none) | **FAIL** |
+| Spin around for me | `actions.spin` | `actions.spin` | PASS |
+| Go stand behind me | `actions.move_relative` | `actions.move_relative` | PASS |
+| come closer | `come_here` or `actions.move_relative` | `actions.move_relative` | PASS |
+
+The other greeting and come-here cases of the run passed (11 / 12). "Can you jump?" was answered in words; after the namespace description added "or asks whether you can … to show them", a re-run of that one case called `actions.jump` (one sample).
+
 ## Runs
 
 | Date (UTC) | Commit | Effort | Cases | Passed | Metered USD |
 |---|---|---|---|---|---|
 | 2026-11-01 | `88047fe` | minimal | all 20 | 16 | 0.0307 |
 | 2026-11-01 | `c52b250` | minimal | 12 (greeting, come_here, find_object) | 9 | 0.0221 |
+| 2026-11-02 | `290385a+dirty` | minimal | 12 (greeting, come_here, 4 action tags) | 11 | 0.0263 |
+| 2026-11-02 | `290385a+dirty` | minimal | 1 (actions.jump) | 1 | 0.0052 |
 
 Total **$0.0528**, $0.003 over the batch's $0.05 eval cap: the second run was sized from the first run's cost per call, and its output (~300 tokens per call, mostly reasoning even at `minimal`) is what a run costs (output is 71 % of its metered cost). The baseline ran the harness of `7e6ccc9` before it was committed, on the `88047fe` runtime.

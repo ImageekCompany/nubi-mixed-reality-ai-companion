@@ -283,6 +283,7 @@ stateDiagram-v2
 ```mermaid
 graph LR
   Tools[walk_to / go_to_surface / come_here / follow_user / look_at / play_gesture / stop] --> CC[ICharacterController]
+  Actions[actions.* from CharacterActionCatalog: jump / dance / bow / spin / celebrate / move_relative] --> CC
   Conv[ConversationState] --> CC
   Lip[ILipSyncDriver.Current] --> Mouth[MouthSmoother → FaceMixer → FaceRenderer: mouth blendshapes A/I/U/E/O]
   CC --> Agent[NavMeshAgent on runtime-baked floor]
@@ -317,7 +318,13 @@ graph LR
     If none resolves, the tool returns `unknown_place` and the model asks the user to teach it with `remember_place`.
   - `go_to_surface(label)`: the nearest surface with that label; Nubi stops 0.25 m outside the footprint edge nearest to it and looks at the centre of the top, so it ends facing the furniture. `room_not_scanned` / `no_surface` otherwise. No perching: box tops never bake as walkable and the rig has no climb or sit clips.
   - Unreachable target: point toward it and return `unreachable`.
-  - Seated mode (`IUserPreferences.Seated`): `walk_to`, `go_to_surface` and `follow_user` are not offered to the model, and the instructions say the user is seated.
+  - Seated mode (`IUserPreferences.Seated`): `walk_to`, `go_to_surface`, `follow_user` and `actions.move_relative` are not offered to the model, and the instructions say the user is seated.
+- **Character actions (ADR-0047).** The active character's body actions are tools in the `actions` namespace, built once by `CharacterActionCatalog` in `ToolCatalog` after the character is chosen. An action is offered only when `ICharacterController.CanPlay` is true for every gesture it needs (read from the character's Animator states), and the namespace description lists exactly the offered actions; when it is offered, the instructions add that the character must call an action instead of only saying it did it.
+  - `actions.jump`, `actions.bow`, `actions.celebrate` (Jump then Happy): clip gestures, awaited to the end.
+  - `actions.dance {duration_s?}`: the looping Dance clip, held for at least `duration_s` (default 4, 2–12) and ended where a loop ends (`GestureHold`).
+  - `actions.spin {turns?, direction?}`: procedural (`SpinMotion`: 1.2 s per turn, smoothstep) with a Happy bounce; attention is off while spinning and faces the user again after.
+  - `actions.move_relative {direction, distance_m?}`: front, behind, left or right of the user's head yaw at `distance_m` (default 1), closer (0.7 m from the user) or away (backs off along the user → character line). Snaps to walkable floor within 0.5 m, never nearer the user than 0.5 m, otherwise `unreachable`; a Locomotion tool like `come_here`.
+  - Full-body clips (Dance, Jump, Bow) play on the unmasked **Action** layer above Gesture; on the upper-body layer the hips and legs, and so the jump, would not move. They are optional clips: a character without one is still valid and is not offered the actions it backs.
 - **Animator parameters** (hashed once with `Animator.StringToHash`):
   - `Speed` (float, m/s; the clip playback rate is a separate `LocomotionRate`, clamped 0.7–1.5×)
   - `Listening`, `Thinking`, `Talking` (bool)

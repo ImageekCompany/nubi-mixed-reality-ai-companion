@@ -67,4 +67,6 @@ Rows before 2026-11-01 02:00 (research phase, `docs/research/*.md`) were not ite
 
 | 2026-11-02 | web search grounding (ADR-0048): 4 live Responses calls through a script mirroring `ResponsesRequestWriter` (namespace + `web_search` + `max_tool_calls`): weather question, namespaced `actions.dance` call, its replay with a `web_search_call` input item, and the recording of `Tests/Fixtures/sse/responses_web_search.txt`; Wit `/synthesize` for `web_search.wav` (free) | muse-spark-1.3 (+ Wit, free) | 4 Spark calls, 2 web searches | in 11,327 (5,670 cached) / out 865; 2 searches | 0.017 |
 
-Running total (est.): **≤ $2.22** (sum of the rows: 2.211)
+| 2026-11-02 | character action catalog (ADR-0047): tool-selection eval, 12 cases (greeting, come_here, 4 action tags) + 1 re-run of "Can you jump?"; Wit `/synthesize` for `dance.wav` and `move_behind.wav` (free) | muse-spark-1.3 (+ Wit, free) | 13 Spark calls | in 40,165 (33,627 cached) / out 4,293 | 0.032 |
+
+Running total (est.): **≤ $2.24** (sum of the rows: 2.243)

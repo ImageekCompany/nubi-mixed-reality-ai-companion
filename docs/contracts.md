@@ -407,7 +407,7 @@ namespace Jolly.Contracts
         /// <summary>The namespaces at least one of tools belongs to, in registration order.</summary>
         IReadOnlyList<ToolNamespace> NamespacesOf(IReadOnlyList<ToolDefinition> tools);
         bool TryGet(string name, out ITool tool);
-        /// <summary>Filtered by persona.AllowedTools; in seated mode walk_to, go_to_surface and follow_user are removed (come_here stays).</summary>
+        /// <summary>Filtered by persona.AllowedTools; in seated mode walk_to, go_to_surface, follow_user and actions.move_relative are removed (come_here stays).</summary>
         IReadOnlyList<ToolDefinition> DefinitionsFor(PersonaProfile persona, IUserPreferences preferences);
         /// <summary>Validates against the tool's schema subset. On failure, error is a model-facing message.</summary>
         bool TryValidate(string name, string argumentsJson, out IToolArguments args, out string error);
@@ -445,6 +445,12 @@ Wire format is the Responses flat function tool: `{"type":"function","name":…,
 | `go_to_surface` (ADR-0025) | Walk Nubi to a piece of the user's real furniture from the room scan, e.g. the couch or the table, and stop beside it facing it. | `{"type":"object","properties":{"label":{"type":"string","enum":["couch","table","desk","bed","chair","storage","screen"],"description":"Furniture from the room scan"}},"required":["label"],"additionalProperties":false}` | 3 s | Locomotion | `{"status":"walking"\|"unreachable","label":"table","eta_s":3}` (`desk` is reported as `table`); errors `room_not_scanned`, `no_surface`. Withheld in seated mode. |
 | `set_home_location` (ADR-0048) | Remember the city the user lives in when they tell you, e.g. "I live in Krakow", so searches for weather or opening hours are about their home. Do not call it for places they only visit or ask about. | `{"type":"object","properties":{"city":{"type":"string","maxLength":64,"description":"City or town only, never a street or address."},"country":{"type":"string","maxLength":2,"description":"ISO 3166-1 alpha-2 code, e.g. GB, if known."}},"required":["city"],"additionalProperties":false}` | 1 s | Parallel | `{"status":"saved","city":"Kraków","country":"PL"}`; error `invalid_arguments`. Stored with the user preferences (`IUserPreferences.SetHomeLocation`); the city is sanitised like other context text. |
 | `request_room_scan` (ADR-0025) | Open the headset's Space Setup so the user can scan the room; afterwards Nubi can walk around the room and to the furniture. Call it only after the user agrees to scan. The app pauses until they finish. | `{"type":"object","properties":{},"additionalProperties":false}` | 2 s | Exclusive | `{"status":"opening"}`, `EndsTurn=true`, `SpokenText` = the `room.scan_opening` line; Space Setup opens once Nubi is idle and silent. Error `scan_unavailable` off Meta's runtime. |
+| `actions.jump` (ADR-0047) | Jump on the spot, e.g. 'jump!', 'can you jump?'. | `{"type":"object","properties":{},"additionalProperties":false}` | 4 s | Exclusive | `{"status":"done"}` once the clip has ended |
+| `actions.dance` (ADR-0047) | Dance for the user, e.g. 'show me how to dance', 'dance for me', 'let's dance'. | `{"type":"object","properties":{"duration_s":{"type":"number","minimum":2,"maximum":12,"description":"Roughly how long to dance, seconds; default 4"}},"additionalProperties":false}` | 18 s | Exclusive | `{"status":"done"}` once the dance has ended |
+| `actions.bow` (ADR-0047) | Take a bow, e.g. 'take a bow', or when the user applauds you. | `{"type":"object","properties":{},"additionalProperties":false}` | 4 s | Exclusive | `{"status":"done"}` |
+| `actions.spin` (ADR-0047) | Spin around on the spot, e.g. 'spin around', 'do a twirl', 'turn around'. | `{"type":"object","properties":{"turns":{"type":"number","minimum":1,"maximum":3,"description":"Full turns; default 1"},"direction":{"type":"string","enum":["left","right"],"description":"Which way to turn; default right"}},"additionalProperties":false}` | 6 s | Exclusive | `{"status":"done"}` |
+| `actions.celebrate` (ADR-0047) | Jump for joy when the user asks you to celebrate, e.g. 'let's celebrate!'. | `{"type":"object","properties":{},"additionalProperties":false}` | 8 s | Exclusive | `{"status":"done"}` after Jump then Happy |
+| `actions.move_relative` (ADR-0047) | Go and stand somewhere relative to the user: in front of them, behind them, on their left or right, closer, or further away. Call it whenever they ask, e.g. 'go behind me', 'stand on my left', 'back off a bit'. | `{"type":"object","properties":{"direction":{"type":"string","enum":["front","behind","left","right","closer","away"],"description":"…"},"distance_m":{"type":"number","minimum":0.5,"maximum":3,"description":"…"}},"required":["direction"],"additionalProperties":false}` | 3 s | Locomotion | `{"direction":"behind","status":"walking","eta_s":3}`, `"unreachable"` or `"already_close"`; withheld when seated |
 
 Locomotion tools never await arrival under `turnCts`: a barge-in cancels the turn, not the walk (`ICharacterController.MoveTo`, §7). Results are fast, so a locomotion call never holds the next model round or an `EndsTurn` round.
 
@@ -846,7 +852,9 @@ namespace Jolly.Contracts
 
     public enum ConversationState { Idle, Listening, Thinking, Speaking, Acting }
     public enum Mood { Neutral, Happy, Curious, Concerned, Sleepy }
-    public enum GestureId { Wave, Nod, ShakeHead, Shrug, Point, HappyBounce, Think, Stretch, LookAround }
+    /// <summary>Values are Animator conditions in built controllers: append only. Dance, Jump and Bow are full-body clips a
+    /// character may lack (<see cref="ICharacterController.CanPlay"/>).</summary>
+    public enum GestureId { Wave, Nod, ShakeHead, Shrug, Point, HappyBounce, Think, Stretch, LookAround, Dance, Jump, Bow }
     public enum MoveOutcome { Arrived, Unreachable, Cancelled, TimedOut }
     public enum LookTargetKind { None, User, WorldPoint }
 
@@ -890,6 +898,14 @@ namespace Jolly.Contracts
         /// following, or when near (ADR-0041). A new Listening state drops a held point.</summary>
         void LookAt(LookTarget target);
         UniTask PlayGesture(GestureId gesture, CancellationToken ct);
+        /// <summary>Plays a looping gesture (Dance) for at least <paramref name="seconds"/>, ending where a loop ends; a
+        /// one-shot gesture plays once. Completes when the gesture has ended; cancelling fades it out.</summary>
+        UniTask PlayLooped(GestureId gesture, float seconds, CancellationToken ct);
+        /// <summary>Whether this character has the gesture's clip (ADR-0047). PlayGesture of one it lacks throws.</summary>
+        bool CanPlay(GestureId gesture);
+        /// <summary>Turns on the spot by <paramref name="degrees"/> (positive: clockwise seen from above), easing in and
+        /// out, then attends the user again (ADR-0041). A newer spin supersedes a running one, whose awaiter completes.</summary>
+        UniTask Spin(float degrees, CancellationToken ct);
         void SetMood(Mood mood);
         void SetConversationState(ConversationState state);
     }
