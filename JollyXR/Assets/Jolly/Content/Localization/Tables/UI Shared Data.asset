@@ -231,6 +231,30 @@ MonoBehaviour:
     m_Key: tool.set_home_location
     m_Metadata:
       m_Items: []
+  - m_Id: 380624946
+    m_Key: tool.actions.jump
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624947
+    m_Key: tool.actions.dance
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624948
+    m_Key: tool.actions.bow
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624949
+    m_Key: tool.actions.spin
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624950
+    m_Key: tool.actions.celebrate
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624951
+    m_Key: tool.actions.move_relative
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:

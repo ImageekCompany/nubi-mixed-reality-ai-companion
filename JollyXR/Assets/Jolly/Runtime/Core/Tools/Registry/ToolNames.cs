@@ -23,7 +23,20 @@ namespace Jolly.Core.Tools
         /// it like a tool name to allow it.</summary>
         public const string WebSearch = "web_search";
 
-        public static bool IsWithheldWhenSeated(string name) => name == WalkTo || name == FollowUser || name == GoToSurface;
+        /// <summary>The character's body actions (ADR-0047), offered in the "actions" namespace when it can do them.</summary>
+        public static class Actions
+        {
+            public const string Namespace = "actions";
+            public const string Jump = "actions.jump";
+            public const string Dance = "actions.dance";
+            public const string Bow = "actions.bow";
+            public const string Spin = "actions.spin";
+            public const string Celebrate = "actions.celebrate";
+            public const string MoveRelative = "actions.move_relative";
+        }
+
+        public static bool IsWithheldWhenSeated(string name) =>
+            name == WalkTo || name == FollowUser || name == GoToSurface || name == Actions.MoveRelative;
 
         /// <summary>A persona's null AllowedTools allows every tool.</summary>
         public static bool IsAllowed(IReadOnlyList<string> allowed, string name)

@@ -1,0 +1,43 @@
+using System;
+using System.Globalization;
+using System.Threading;
+using Cysharp.Threading.Tasks;
+using Jolly.Contracts;
+
+namespace Jolly.Core.Tools
+{
+    /// <summary>
+    /// actions.dance (ADR-0047): loops the Dance clip for at least <c>duration_s</c>, ending where a loop ends, then
+    /// returns; the character keeps attending the user throughout (ADR-0041). Logs <c>evt=action.dance</c>.
+    /// </summary>
+    public sealed class DanceTool : ITool
+    {
+        const double DefaultSeconds = 4;
+        const string Schema =
+            "{\"type\":\"object\",\"properties\":{\"duration_s\":{\"type\":\"number\",\"minimum\":2,\"maximum\":12," +
+            "\"description\":\"Roughly how long to dance, seconds; default 4\"}},\"additionalProperties\":false}";
+
+        readonly ICharacterController _character;
+        readonly ILog _log;
+
+        public DanceTool(ICharacterController character, ILog log)
+        {
+            _character = character;
+            _log = log;
+        }
+
+        /// <summary>The longest dance plus one more 4 s loop to finish on, and a margin.</summary>
+        public ToolDefinition Definition { get; } = new(ToolNames.Actions.Dance,
+            "Dance for the user, e.g. 'show me how to dance', 'dance for me', 'let's dance'.",
+            Schema, TimeSpan.FromSeconds(18), ToolConcurrency.Exclusive);
+
+        public async UniTask<ToolResult> Execute(IToolArguments args, ToolContext context, CancellationToken ct)
+        {
+            var seconds = args.TryGetNumber("duration_s", out var d) ? d : DefaultSeconds;
+            await _character.PlayLooped(GestureId.Dance, (float)seconds, ct);
+            _log.Write(LogLevel.Info, "tools",
+                $"evt=action.dance duration_s={seconds.ToString("0.#", CultureInfo.InvariantCulture)} status=done");
+            return ToolResult.Success("{\"status\":\"done\"}");
+        }
+    }
+}

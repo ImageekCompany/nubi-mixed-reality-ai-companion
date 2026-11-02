@@ -234,6 +234,30 @@ MonoBehaviour:
     m_Localized: Home city
     m_Metadata:
       m_Items: []
+  - m_Id: 380624946
+    m_Localized: Jump
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624947
+    m_Localized: Dance
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624948
+    m_Localized: Bow
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624949
+    m_Localized: Spin
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624950
+    m_Localized: Celebrate
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624951
+    m_Localized: Moving
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

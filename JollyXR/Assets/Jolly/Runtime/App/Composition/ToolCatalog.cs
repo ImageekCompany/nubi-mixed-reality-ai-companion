@@ -6,7 +6,8 @@ using Jolly.Core.Tools;
 
 namespace Jolly.App.Composition
 {
-    /// <summary>Registers the whole tool catalogue of contracts §4.2 against the real adapters.</summary>
+    /// <summary>Registers the whole tool catalogue of contracts §4.2 against the real adapters, then the active
+    /// character's actions (ADR-0047): the character is chosen and constructed before this runs.</summary>
     public static class ToolCatalog
     {
         public static ToolRegistry Build(Foundation f, JollyConfig config, CloudServices cloud, XrServices xr, ICharacterController character,
@@ -38,7 +39,19 @@ namespace Jolly.App.Composition
             registry.Register(new GoToSurfaceTool(character, xr.World, room, locomotion));
             registry.Register(new RequestRoomScanTool(room, localizer));
             registry.Register(new SetHomeLocationTool());
+
+            var actions = CharacterActionCatalog.For(character, xr.User, xr.World, locomotion, f.Log);
+            actions.RegisterInto(registry);
+            f.Log.Write(LogLevel.Info, "tools", $"evt=actions.offered count={actions.Tools.Count} tools={ActionNames(actions)}");
             return registry;
+        }
+
+        static string ActionNames(CharacterActionCatalog actions)
+        {
+            var names = new string[actions.Tools.Count];
+            for (var i = 0; i < names.Length; i++)
+                names[i] = actions.Tools[i].Definition.Name;
+            return string.Join(",", names);
         }
     }
 }

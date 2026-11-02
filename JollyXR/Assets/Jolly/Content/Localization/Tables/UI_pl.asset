@@ -234,6 +234,30 @@ MonoBehaviour:
     m_Localized: Miasto domowe
     m_Metadata:
       m_Items: []
+  - m_Id: 380624946
+    m_Localized: Skok
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624947
+    m_Localized: Taniec
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624948
+    m_Localized: Ukłon
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624949
+    m_Localized: Obrót
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624950
+    m_Localized: Świętowanie
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624951
+    m_Localized: Przechodzę
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

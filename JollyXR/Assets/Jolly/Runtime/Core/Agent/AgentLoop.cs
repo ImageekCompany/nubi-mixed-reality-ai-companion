@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using Cysharp.Threading.Tasks.Linq;
@@ -86,13 +87,14 @@ namespace Jolly.Core.Agent
                     Speech = events, Preferences = _preferences,
                 };
                 var tools = _registry.DefinitionsFor(persona, _preferences);
+                var namespaces = _registry.NamespacesOf(tools);
                 var search = _webSearch?.For(persona);
                 var request = new ModelRequest
                 {
                     Route = ModelRoute.LiveUser,
-                    Instructions = _prompt.Instructions(persona, search != null),
+                    Instructions = _prompt.Instructions(persona, search != null, Offers(namespaces, ToolNames.Actions.Namespace)),
                     Tools = tools,
-                    Namespaces = _registry.NamespacesOf(tools),
+                    Namespaces = namespaces,
                     WebSearch = search,
                     Effort = ReasoningEffort.Minimal,
                     SafetyIdentifier = _settings.SafetyIdentifier,
@@ -216,6 +218,16 @@ namespace Jolly.Core.Agent
                 _settings.ReplyObserved(reply);
             }
             return result;
+        }
+
+        static bool Offers(IReadOnlyList<ToolNamespace> namespaces, string name)
+        {
+            foreach (var ns in namespaces)
+            {
+                if (ns.Name == name)
+                    return true;
+            }
+            return false;
         }
 
         /// <summary>

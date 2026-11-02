@@ -1,9 +1,31 @@
 using System.Collections.Generic;
 using Jolly.Contracts;
+using Jolly.XR.Navigation;
 using UnityEngine;
 
 namespace Jolly.Tests.PlayMode.Character
 {
+    /// <summary>IWorldQuery over the rig's NavMeshBaker and a fixed list of scanned surfaces.</summary>
+    sealed class RigWorld : IWorldQuery
+    {
+        readonly NavMeshBaker _navMesh;
+        public RigWorld(NavMeshBaker navMesh) => _navMesh = navMesh;
+        public List<SceneSurface> Surfaces { get; } = new();
+        public WalkableArea WalkableArea => WalkableArea.Scanned;
+        public bool TryRaycast(Ray ray, float maxDistance, out Vector3 hit)
+        {
+            hit = default;
+            return false;
+        }
+        public bool TrySampleWalkable(Vector3 near, float radius, out Vector3 point) =>
+            _navMesh.TrySampleWalkable(near, radius, out point);
+        public void GetSurfaces(List<SceneSurface> into)
+        {
+            into.Clear();
+            into.AddRange(Surfaces);
+        }
+    }
+
     sealed class StubUserPose : IUserPoseProvider
     {
         public Pose Head { get; set; } = new(new Vector3(0f, 1.6f, 2f), Quaternion.Euler(0f, 180f, 0f));

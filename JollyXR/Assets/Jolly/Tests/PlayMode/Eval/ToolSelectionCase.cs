@@ -12,7 +12,10 @@ namespace Jolly.Tests.PlayMode.Eval
     /// </summary>
     public sealed class ToolSelectionCase
     {
-        static readonly string[] Movement = { ToolNames.ComeHere, ToolNames.WalkTo, ToolNames.FollowUser, ToolNames.GoToSurface };
+        static readonly string[] Movement =
+        {
+            ToolNames.ComeHere, ToolNames.WalkTo, ToolNames.FollowUser, ToolNames.GoToSurface, ToolNames.Actions.MoveRelative,
+        };
 
         public const string Greeting = "greeting";
         public const string SmallTalk = "small_talk";
@@ -58,7 +61,8 @@ namespace Jolly.Tests.PlayMode.Eval
             StaysPut("Good morning Nubi, how are you today?", Greeting),
             Calls("Nubi, come here", ToolNames.ComeHere),
             Calls("Hi Nubi, come here", ToolNames.ComeHere),
-            Calls("come closer", ToolNames.ComeHere),
+            // Both walk up to the user; move_relative "closer" is the same move.
+            Calls("come closer", ToolNames.ComeHere, ToolNames.Actions.MoveRelative),
             Calls("come to me please", ToolNames.ComeHere),
             Calls("can you come over here?", ToolNames.ComeHere),
             Calls("follow me", ToolNames.FollowUser),
@@ -69,6 +73,10 @@ namespace Jolly.Tests.PlayMode.Eval
             Calls("what is this?", ToolNames.CaptureAndIdentify),
             Calls("look at me", ToolNames.LookAt),
             Calls("stop", ToolNames.Stop),
+            Calls("Show me how to dance!", ToolNames.Actions.Dance),
+            Calls("Can you jump?", ToolNames.Actions.Jump, ToolNames.Actions.Celebrate),
+            Calls("Spin around for me", ToolNames.Actions.Spin),
+            Calls("Go stand behind me", ToolNames.Actions.MoveRelative),
             StaysPut("what's your favourite colour?"),
             StaysPut("tell me a joke"),
             StaysPut("it's a lovely day today, isn't it?"),

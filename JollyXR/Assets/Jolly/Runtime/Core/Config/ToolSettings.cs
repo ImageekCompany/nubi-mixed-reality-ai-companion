@@ -16,6 +16,12 @@ namespace Jolly.Core.Config
         /// plus a margin, since the scanned box edge is only as exact as Space Setup.</summary>
         public float SurfaceClearance { get; set; } = 0.25f;
         public float SurfaceStopDistance { get; set; } = 0.1f;
+        /// <summary>actions.move_relative "closer": where the character stops in front of the user, m.</summary>
+        public float CloserDistance { get; set; } = 0.7f;
+        /// <summary>No relative move ends nearer the user than this, the same 0.5 m as a tap target (PointMoveSettings).</summary>
+        public float UserMinDistance { get; set; } = 0.5f;
+        /// <summary>A relative target snaps to walkable floor only this far, so "behind me" stays behind the user.</summary>
+        public float RelativeSampleRadius { get; set; } = 0.5f;
     }
 
     /// <summary>Capture, SAM and vision numbers of architecture §5.3 (one set, shared with JollyConfig).</summary>

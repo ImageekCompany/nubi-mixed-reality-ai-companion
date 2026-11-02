@@ -24,6 +24,7 @@ using Jolly.Net.Retry;
 using Jolly.Providers.MetaApi.Chat;
 using Jolly.Providers.MetaApi.Common;
 using Jolly.Testing;
+using Jolly.Testing.Offline;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
@@ -65,7 +66,9 @@ namespace Jolly.Tests.PlayMode.Eval
             var personas = new PersonaRepository(config.personas.Select(p => p.ToDefinition()).ToArray(),
                 config.defaultPersonaId, text, character.voice);
             var preferences = new FakeUserPreferences();
-            var tools = Catalog(personas).DefinitionsFor(personas.Current, preferences);
+            var registry = Catalog(personas);
+            var tools = registry.DefinitionsFor(personas.Current, preferences);
+            var namespaces = registry.NamespacesOf(tools);
 
             var clock = new UnityClock();
             var usage = new ApiUsageMeter(Prices(config),
@@ -95,9 +98,11 @@ namespace Jolly.Tests.PlayMode.Eval
                     var request = new ModelRequest
                     {
                         Route = ModelRoute.LiveUser,
-                        Instructions = prompt.Instructions(personas.Current),
+                        Instructions = prompt.Instructions(personas.Current,
+                            bodyActions: namespaces.Any(n => n.Name == ToolNames.Actions.Namespace)),
                         Input = input,
                         Tools = tools,
+                        Namespaces = namespaces,
                         Effort = effort,
                     };
 
@@ -133,7 +138,7 @@ namespace Jolly.Tests.PlayMode.Eval
             Assert.That(report.Total, Is.EqualTo(cases.Count));
         });
 
-        /// <summary>The definitions of ToolCatalog.Build, in its order. A definition depends only on the tool's type (and
+        /// <summary>The definitions and namespaces of ToolCatalog.Build, in its order. A definition depends only on the tool's type (and
         /// on the persona ids for set_persona), so the adapters it needs to run are left out.</summary>
         static ToolRegistry Catalog(IPersonaProvider personas)
         {
@@ -153,6 +158,8 @@ namespace Jolly.Tests.PlayMode.Eval
             registry.Register(new GoToSurfaceTool(null, null, null, locomotion));
             registry.Register(new RequestRoomScanTool(null, null));
             registry.Register(new SetHomeLocationTool());
+            // A character that can play every gesture, so every action is offered, as for Nubi and Jolly.
+            CharacterActionCatalog.For(new FakeCharacter(), null, null, locomotion, null).RegisterInto(registry);
             return registry;
         }
 
