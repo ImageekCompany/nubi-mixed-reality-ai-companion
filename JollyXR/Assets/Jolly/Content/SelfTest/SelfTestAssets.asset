@@ -38,4 +38,10 @@ MonoBehaviour:
   webSearch:
     clip: {fileID: 8300000, guid: d1543a1d15cb4f518918fb961bb4e4c4, type: 3}
     expectedText: What's the weather like today?
+  dance:
+    clip: {fileID: 8300000, guid: 68e974a90da3473f9dec941529b4af86, type: 3}
+    expectedText: Show me how to dance!
+  moveBehind:
+    clip: {fileID: 8300000, guid: cbb5a094d7f74222a87d6ccc45604579, type: 3}
+    expectedText: Go stand behind me.
   fallbackStill: {fileID: 4900000, guid: 8d67d578542784ffc9f64d6a7139c4be, type: 3}

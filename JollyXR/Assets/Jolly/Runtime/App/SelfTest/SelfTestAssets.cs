@@ -40,6 +40,10 @@ namespace Jolly.App.SelfTest
         public Utterance findObject = new();
         [Tooltip("A question about today that needs a web search (ADR-0048).")]
         public Utterance webSearch = new();
+        [Tooltip("Asks the character to dance, for actions.dance (ADR-0047). Names no character.")]
+        public Utterance dance = new();
+        [Tooltip("Asks the character to stand behind the user, for actions.move_relative (ADR-0047). Names no character.")]
+        public Utterance moveBehind = new();
         [Tooltip("JPEG bytes (.bytes) of a CC-licensed still, see Content/SelfTest/ATTRIBUTION.md.")]
         public TextAsset fallbackStill;
 

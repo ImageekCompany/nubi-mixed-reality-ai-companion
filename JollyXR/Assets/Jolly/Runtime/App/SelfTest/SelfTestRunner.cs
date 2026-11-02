@@ -30,6 +30,9 @@ namespace Jolly.App.SelfTest
             (VisionPartScenario.Name, VisionPartScenario.Run),
             (FindObjectScenario.Name, FindObjectScenario.Run),
             (WebSearchScenario.Name, WebSearchScenario.Run),
+            (ActionDanceScenario.Name, ActionDanceScenario.Run),
+            // Leaves the character behind the user, so it runs after every scenario that wants it in front.
+            (ActionMoveBehindScenario.Name, ActionMoveBehindScenario.Run),
             (BargeInScenario.Name, BargeInScenario.Run),
             (PerfScenario.Name, PerfScenario.Run),
         };
