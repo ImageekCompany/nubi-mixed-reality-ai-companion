@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using Jolly.Contracts;
@@ -12,7 +13,8 @@ namespace Jolly.Character
     /// The companion's <see cref="ICharacterController"/>: a thin MonoBehaviour shell that orders the plain-C# parts per
     /// frame. Update: relocation pop → locomotion → body yaw → Animator parameters. The Animator then evaluates, and
     /// LateUpdate layers the look-at on the animated bones (attending the user unless a tool's point holds, ADR-0041),
-    /// writes the face (clip preset/mood → lip-sync → blink) and shapes the contact shadow from the animated feet.
+    /// writes the face (clip preset/mood → lip-sync → blink), shapes the contact shadow from the animated feet and picks
+    /// the fur's shell count for the user's distance (ADR-0045).
     /// Everything character-specific comes from its <see cref="CharacterDefinition"/>: the prefab ships Nubi's model and
     /// definition, and <see cref="TryUse"/> swaps in another before <see cref="Construct"/> (ADR-0026).
     /// Inert until <see cref="Construct"/> is called by the composition root.
@@ -50,6 +52,7 @@ namespace Jolly.Character
         FaceMixer _mixer;
         FaceRenderer _faceRenderer;
         ContactShadow _shadow;
+        List<ShellFur> _fur;
         LookTarget _lookTarget = LookTarget.User;
         double _lookTargetSince;
         Mood _mood;
@@ -161,6 +164,7 @@ namespace Jolly.Character
                 };
                 _shadow = new ContactShadow(ShadowRig, transform, _settings.shadow);
             }
+            _fur = ShellFur.AttachAll(_model);
             _locomotion = new AgentLocomotion(_agent, clock, _settings.locomotion);
             _scale = transform.localScale;
         }
@@ -266,12 +270,18 @@ namespace Jolly.Character
             _mixer.Mix(_expression.Select(_speed), MoodFace.For(_mood), _mouth, _blink.Tick(dt), dt);
             _faceRenderer.Write(_mixer.Output);
             _shadow?.Update();
+            var viewer = _user.Head.position;
+            foreach (var fur in _fur)
+                fur.Tick(viewer, dt);
         }
 
         void OnDestroy()
         {
-            if (IsConstructed)
-                _locomotion.Stop();
+            if (!IsConstructed)
+                return;
+            _locomotion.Stop();
+            foreach (var fur in _fur)
+                fur.Dispose();
         }
 
         async UniTask PlayClip(GestureId gesture, CancellationToken ct)
