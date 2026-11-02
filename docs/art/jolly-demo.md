@@ -58,7 +58,7 @@ afterwards gives the same bytes as before: `Nubi.fbx` and `T_Nubi_Albedo.png` ma
 | Shape keys | Nubi's: `sil A I U E O Smile Frown Blink_L Blink_R Happy_Eyes Wide_Eyes Sad_Eyes`. |
 | Rig | Nubi's 22 bones, placed for Jolly. The two `Sprout` bones are kept for the contract but skin nothing. The armature is still named `Nubi_Rig`, so Animator paths match Nubi's. |
 | Clips | Same 15 names, lengths, loop flags and gait timing. Jolly's own: `Idle` (breathing stretch, weight sway, late head tilt), `Walk` (waddle roll, squash after each contact, flapping arms), `Hop` (squash on the ground, stretch in the air), `Talk` (Nubi's gestures plus a body bounce on the beats), `Wave` (**left** arm, like the reference: dip, overshoot, three forearm wags with the paw trailing), `Happy` (crouch, jump with arms high, squash on landing). The rest are Nubi's, with inward arm swings clamped (the arms hang close to the torso); `Nod` squashes harder. |
-| Look | Blush-pink plush (base sRGB ≈ #F2C1B8, picked from the user's reference photo, warm peach-pink), a warm cream face plate (#E9CFC6) with a darker inset rim, glossy black bead eyes, soft cheek blush, a thin dark smile. The albedo carries no strands; the fur is the shell shader's job (§1b). |
+| Look | Oatmeal-beige plush (base sRGB ≈ #DCC4A7, from the user's warm plush references of 2026-11-02; the first photo's peach-pink #F2C1B8 read as bubble-gum pink on the headset), a warm cream face plate (#F2E0C8) with a darker inset rim, glossy black bead eyes, soft cheek blush, a thin dark smile. The albedo carries no strands; the fur is the shell shader's job (§1b). |
 
 The reference photo (local only, `tools/blender/out/jolly/reference/`, git-ignored) is the colour and
 pose reference; the print is the shape reference.
@@ -129,7 +129,7 @@ Unity assets:
 | rig bones | Nubi's: `Chest, Neck, Head, Eye_L, Eye_R`, upper body `Spine`, feet `Foot_L`/`Foot_R` (ADR-0024) |
 | height / agent radius / collider radius | 0.88 m / 0.24 m / 0.32 m |
 | contact shadow radius | (0.39, 0.31) |
-| locomotion, look and face tuning | Nubi's (Walk 0.49 m/s, Hop 0.90 m/s, ±16° / ±8° eyes; the pivots sit 0.30 m behind the eyes) |
+| locomotion, look and face tuning | Nubi's (Walk 0.49 m/s, Hop 0.90 m/s), except no look-at eye travel (eye yaw, pitch and lead 0: the head takes the whole look). The eye pivots sit 0.02 m behind the beads, so a clip's eye keys roll them in place; at Nubi's 0.30 m they slid across the flat plate and off it |
 | voice | `JollyVoice.asset`: Wit `Railey`, pitch 112, speed 105, default style, no sfx (brighter and higher than Nubi's Rubie, ~310–325 Hz; the only one of six auditioned voices that Wit transcribed without an error, including the name) |
 | line clips | All 32 English canned lines in `Lines/en/`, the named ones saying "Jolly", baked in that voice (its voice differs from the shared library's) |
 

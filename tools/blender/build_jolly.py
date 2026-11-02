@@ -184,7 +184,9 @@ PROFILE = {
         EYE_RADIUS_H=0.024,
         EYE_DEPTH=0.012,
         EYE_EMBED=0.40,
-        EYE_PIVOT_DEPTH=0.30,
+        # Bead eyes on a flat plate: a deep pivot (Nubi's 0.27) slides them across the face and off it when a clip or
+        # the look-at turns them. Just behind the bead they only roll in place.
+        EYE_PIVOT_DEPTH=0.02,
         EYE_SEGMENTS=16,
         EYE_RINGS=8,
         EYE_TILT_DEG=0.0,
@@ -238,15 +240,17 @@ MOUTH_SCALE = 0.72
 MOUTH_THICKNESS_SCALE = 0.78
 
 # ------------------------------------------------------------- palette ----
-# sRGB 0..1, picked from the reference photo (sunlit belly ~ #DDC2B9, plate ~ #E4D6D1) and pushed a little
-# towards blush pink: the shell shader darkens roots and lightens tips around this base.
-COLOR_FUR = (0.950, 0.755, 0.720)
-COLOR_FUR_TOP = (0.960, 0.790, 0.755)
-COLOR_FUR_SHADE = (0.890, 0.680, 0.650)
-COLOR_PLATE = (0.915, 0.810, 0.775)
-COLOR_PLATE_RIM = (0.935, 0.790, 0.760)
-COLOR_CHEEK = (0.965, 0.640, 0.650)
-COLOR_SOLE = (0.860, 0.700, 0.680)
+# sRGB 0..1, picked from the user's warm plush references of 2026-11-02 (sunlit fur ~ #DCC4A7, shaded ~ #C3A98C,
+# plate ~ #F2E0C8): oatmeal beige, not pink; only the cheeks keep the blush. The shell shader darkens roots and
+# lightens tips around this base, and the headset's cool default light whitens it: a paler base
+# read off-white there. The first photo's pinker #DDC2B9 read as bubble-gum pink on the headset.
+COLOR_FUR = (0.865, 0.770, 0.655)
+COLOR_FUR_TOP = (0.895, 0.810, 0.700)
+COLOR_FUR_SHADE = (0.765, 0.665, 0.550)
+COLOR_PLATE = (0.950, 0.880, 0.785)
+COLOR_PLATE_RIM = (0.915, 0.835, 0.735)
+COLOR_CHEEK = (0.960, 0.620, 0.600)
+COLOR_SOLE = (0.765, 0.675, 0.575)
 CHEEK_OPACITY = 0.80
 COLOR_VARIATION = 0.035         # low-frequency clump tint in the albedo (fraction of value)
 NORMAL_STRENGTH = 1.2
