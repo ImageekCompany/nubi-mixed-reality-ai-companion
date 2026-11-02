@@ -61,4 +61,6 @@ Rows before 2026-11-01 02:00 (research phase, `docs/research/*.md`) were not ite
 
 | 2026-11-02 | review of ADR-0044: 1 device self-test run of the `--character jolly` release build `673c2cf` (app meter 0.0246); `tap_to_move` itself spent $0 | muse-spark-1.3, sam-3.1, muse-voice-transcribe-1.0 (+ Wit, free) | ~8 Spark calls, 2 SAM, ~7 ASR sessions | 2 images; ~15 s audio | 0.025 |
 
-Running total (est.): **≤ $2.14** (sum of the rows: 2.140)
+| 2026-11-02 | shell fur (ADR-0045): 1 device self-test run of the `--character jolly` release build with fur (app meter 0.0274); the 6 idle GPU A/B launches ran without a self-test or any interaction, so no turn and no paid model call | muse-spark-1.3, sam-3.1, muse-voice-transcribe-1.0 (+ Wit, free) | ~8 Spark calls, 3 SAM, ~7 ASR sessions | 3 images; ~15 s audio | 0.027 |
+
+Running total (est.): **≤ $2.17** (sum of the rows: 2.167)
