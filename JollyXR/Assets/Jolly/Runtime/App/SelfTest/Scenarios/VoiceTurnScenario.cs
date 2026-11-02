@@ -9,7 +9,7 @@ namespace Jolly.App.SelfTest.Scenarios
     /// Checks the transcript, the reply, the first-audio budget and the tools (<see cref="TurnChecks"/>); with
     /// <c>otherToolDegrades</c> another tool than <c>expectedTool</c> degrades instead of failing (<see cref="TurnChecks.PreferredTool"/>).
     /// A short command the local guard ran has no model round and no words (ADR-0047), so reply, first-audio and facing
-    /// are only checked when the model answered; <c>action_source</c> says which.
+    /// are checked unless the guard alone answered; <c>action_source</c> says who did (<see cref="TurnChecks.ActionSource"/>).
     /// With <c>checkFacing</c> the character must face the user at first audio (<see cref="TurnChecks.Facing"/>); the
     /// sample is recorded either way.
     /// </summary>
@@ -43,11 +43,11 @@ namespace Jolly.App.SelfTest.Scenarios
              .Metric("llm_reply", string.Join(" | ", c.Observer.Replies))
              .Metric("states", c.Observer.StatePath());
 
-            var guarded = TurnChecks.GuardRan(c.Observer.ToolCallIds);
-            r.Metric("action_source", guarded ? "guard" : "model");
+            var source = TurnChecks.ActionSource(c.Observer.ToolCallIds, c.Observer.Replies.Count);
+            r.Metric("action_source", source);
             r.Check(idle, "did not return to Idle within 40 s");
             r.Check(similarity >= MinSimilarity, "transcript too far from the spoken text");
-            if (!guarded)
+            if (source != TurnChecks.GuardSource)
             {
                 r.Check(c.Observer.Captions.Count > 0, "no reply caption");
                 TurnChecks.FirstAudio(r, firstAudio);

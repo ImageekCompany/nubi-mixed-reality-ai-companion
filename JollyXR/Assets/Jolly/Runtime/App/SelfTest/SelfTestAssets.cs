@@ -42,6 +42,8 @@ namespace Jolly.App.SelfTest
         public Utterance webSearch = new();
         [Tooltip("Asks the character to dance, for actions.dance (ADR-0047). Names no character.")]
         public Utterance dance = new();
+        [Tooltip("Asks for a dance in words outside the guard's tables, for the model's own call (ADR-0047). Names no character.")]
+        public Utterance danceThroughModel = new();
         [Tooltip("Asks the character to stand behind the user, for actions.move_relative (ADR-0047). Names no character.")]
         public Utterance moveBehind = new();
         [Tooltip("JPEG bytes (.bytes) of a CC-licensed still, see Content/SelfTest/ATTRIBUTION.md.")]

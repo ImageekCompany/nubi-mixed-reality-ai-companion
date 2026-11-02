@@ -8,7 +8,8 @@ using UnityEngine;
 namespace Jolly.App.SelfTest.Scenarios
 {
     /// <summary>
-    /// "Show me how to dance!" must call actions.dance (ADR-0047) and the Animator must actually enter the Dance state.
+    /// The guard path of a short command (ADR-0047): "Show me how to dance!" must run actions.dance with no model round
+    /// and the Animator must actually enter the Dance state. <see cref="ActionThroughModelScenario"/> is the model's.
     /// A character without the Dance clip is not offered the action, so the scenario is skipped for it.
     /// </summary>
     public static class ActionDanceScenario
@@ -28,6 +29,7 @@ namespace Jolly.App.SelfTest.Scenarios
             var seen = await danced;
             r.Metric("dance_state", seen ? "played" : "never");
             r.Check(seen, "the Dance state never played");
+            TurnChecks.GuardPath(r, TurnChecks.ActionSource(c.Observer.ToolCallIds, c.Observer.Replies.Count));
             return r;
         }
 

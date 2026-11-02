@@ -31,6 +31,7 @@ namespace Jolly.App.SelfTest
             (FindObjectScenario.Name, FindObjectScenario.Run),
             (WebSearchScenario.Name, WebSearchScenario.Run),
             (ActionDanceScenario.Name, ActionDanceScenario.Run),
+            (ActionThroughModelScenario.Name, ActionThroughModelScenario.Run),
             (BargeInScenario.Name, BargeInScenario.Run),
             (PerfScenario.Name, PerfScenario.Run),
             // Leaves the character behind the user, so it runs last: before perf, perf measured an empty view (2k triangles,

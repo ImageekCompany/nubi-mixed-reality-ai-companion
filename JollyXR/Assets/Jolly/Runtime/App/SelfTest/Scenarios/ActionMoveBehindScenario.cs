@@ -8,7 +8,8 @@ using UnityEngine;
 namespace Jolly.App.SelfTest.Scenarios
 {
     /// <summary>
-    /// "Go stand behind me." must call actions.move_relative (ADR-0047) and the character must end up behind where the
+    /// The guard path of a short walk (ADR-0047): "Go stand behind me." must run actions.move_relative with no model round
+    /// and the character must end up behind where the
     /// user faced when they spoke: at least <see cref="MinBehindDegrees"/> off their forward, within reach. It needs free
     /// floor behind the headset; with no walkable area at all it is degraded, like voice_come_here.
     /// </summary>
@@ -26,6 +27,7 @@ namespace Jolly.App.SelfTest.Scenarios
             var head = c.Graph.Xr.User.Head;
             var from = nubi.Position;
             var r = await VoiceTurnScenario.Run(c, Name, c.Assets.moveBehind, ToolNames.Actions.MoveRelative, ct, checkFacing: false);
+            TurnChecks.GuardPath(r, TurnChecks.ActionSource(c.Observer.ToolCallIds, c.Observer.Replies.Count));
             var outcome = await nubi.WhenArrived(ct).TimeoutWithoutException(ArrivalWait);
             var at = nubi.Position;
             var moved = RelativeTarget.FlatDistance(from, at);

@@ -217,6 +217,84 @@ namespace Jolly.Tests.PlayMode.App
             }));
         }
 
+        [TestCase(new[] { "guard_action_1" }, 0, "guard")]
+        [TestCase(new[] { "guard_action_1" }, 1, "guard+model")]
+        [TestCase(new[] { "guard_action_1", "call_1" }, 1, "guard+model")]
+        [TestCase(new[] { "call_1" }, 2, "model")]
+        [TestCase(new string[0], 1, "model")]
+        public void ActionSource_SaysWhoAnswered(string[] callIds, int modelRounds, string expected)
+        {
+            Assert.That(TurnChecks.ActionSource(callIds, modelRounds), Is.EqualTo(expected));
+        }
+
+        [TestCase("guard", ScenarioStatus.Pass)]
+        [TestCase("guard+model", ScenarioStatus.Degraded)]
+        [TestCase("model", ScenarioStatus.Degraded)]
+        public void GuardPath_OnlyTheGuardAloneKeepsIt(string source, ScenarioStatus expected)
+        {
+            // Arrange
+            var r = new ScenarioResult("t");
+
+            // Act
+            TurnChecks.GuardPath(r, source);
+
+            // Assert
+            Assert.That(r.Status, Is.EqualTo(expected));
+        }
+
+        [Test]
+        public void ModelAction_TheModelCalledAnAction_Passes()
+        {
+            // Arrange
+            var r = new ScenarioResult("t");
+
+            // Act
+            TurnChecks.ModelAction(r, new[] { "actions.wave" }, new[] { "actions.wave" }, new[] { "call_1" });
+
+            // Assert
+            Assert.That(r.Status, Is.EqualTo(ScenarioStatus.Pass));
+        }
+
+        [Test]
+        public void ModelAction_TheActionFailed_Fails()
+        {
+            // Arrange
+            var r = new ScenarioResult("t");
+
+            // Act
+            TurnChecks.ModelAction(r, new[] { "actions.dance" }, new[] { "actions.dance" + TurnObserver.FailedSuffix }, new[] { "call_1" });
+
+            // Assert
+            Assert.That(r.Status, Is.EqualTo(ScenarioStatus.Fail));
+        }
+
+        [Test]
+        public void ModelAction_OnlyTheGuardRanIt_Fails()
+        {
+            // Arrange
+            var r = new ScenarioResult("t");
+
+            // Act
+            TurnChecks.ModelAction(r, new[] { "actions.dance" }, new[] { "actions.dance" }, new[] { "guard_action_1" });
+
+            // Assert
+            Assert.That(r.Status, Is.EqualTo(ScenarioStatus.Fail));
+            Assert.That(r.Notes, Is.EqualTo(new[] { "the model called no action" }));
+        }
+
+        [Test]
+        public void ModelAction_AnotherToolOrWordsOnly_Fails()
+        {
+            // Arrange
+            var r = new ScenarioResult("t");
+
+            // Act
+            TurnChecks.ModelAction(r, new[] { "look_at" }, new[] { "look_at" }, new[] { "call_1" });
+
+            // Assert
+            Assert.That(r.Status, Is.EqualTo(ScenarioStatus.Fail));
+        }
+
         [TestCase(new[] { "come_here" }, new[] { "guard_come_here" }, "guard")]
         [TestCase(new[] { "come_here", "come_here" }, new[] { "guard_come_here", "call_1" }, "guard+model")]
         [TestCase(new[] { "play_gesture", "come_here" }, new[] { "call_1", "call_2" }, "model")]

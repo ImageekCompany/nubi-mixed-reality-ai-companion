@@ -106,15 +106,52 @@ namespace Jolly.App.SelfTest
             return guard ? model ? "guard+model" : "guard" : model ? "model" : "none";
         }
 
-        /// <summary>A local guard's body action ran this turn (ADR-0047).</summary>
-        public static bool GuardRan(IReadOnlyList<string> callIds)
+        public const string GuardSource = "guard";
+
+        /// <summary>
+        /// Who answered a turn (ADR-0047): "guard" (a local guard's body action and no model round), "guard+model" (the
+        /// guard's action did not do what was asked, so the model explained it, and that turn has words to check), else
+        /// "model". <paramref name="modelRounds"/> is the turn's <see cref="TurnObserver.Replies"/> count.
+        /// </summary>
+        public static string ActionSource(IReadOnlyList<string> callIds, int modelRounds)
         {
+            bool guard = false, model = modelRounds > 0;
             foreach (var id in callIds)
             {
                 if (id.StartsWith(TurnGuards.ActionCallPrefix, System.StringComparison.Ordinal))
-                    return true;
+                    guard = true;
+                else
+                    model = true;
             }
-            return false;
+            return guard ? model ? "guard+model" : GuardSource : "model";
+        }
+
+        /// <summary>
+        /// A short command the guard's tables hold must stay on the guard path; degrades, since the move still ran through
+        /// the model.
+        /// </summary>
+        public static void GuardPath(ScenarioResult r, string source)
+        {
+            if (source != GuardSource)
+                r.Degrade($"action_source={source}, not the guard");
+        }
+
+        /// <summary>
+        /// The model itself must have called some action and it must have succeeded, for a phrase outside the guard's
+        /// tables; which action is its choice. <paramref name="callIds"/> is parallel to <paramref name="started"/>.
+        /// </summary>
+        public static void ModelAction(ScenarioResult r, IReadOnlyList<string> started, IReadOnlyList<string> completed,
+                                       IReadOnlyList<string> callIds)
+        {
+            string action = null;
+            for (var i = 0; i < started.Count && action == null; i++)
+            {
+                if (started[i].StartsWith(ToolNames.Actions.Namespace + ".", System.StringComparison.Ordinal)
+                    && !callIds[i].StartsWith(TurnGuards.ActionCallPrefix, System.StringComparison.Ordinal))
+                    action = started[i];
+            }
+            if (r.Check(action != null, "the model called no action"))
+                Tools(r, started, completed, action);
         }
 
         /// <summary>The body may face this far off the user's head while speaking (ADR-0041), degrees.</summary>

@@ -41,6 +41,9 @@ MonoBehaviour:
   dance:
     clip: {fileID: 8300000, guid: 68e974a90da3473f9dec941529b4af86, type: 3}
     expectedText: Show me how to dance!
+  danceThroughModel:
+    clip: {fileID: 8300000, guid: 2b0616476fa44ae89e98d320b00992f7, type: 3}
+    expectedText: Could you do a little dance for my friends?
   moveBehind:
     clip: {fileID: 8300000, guid: cbb5a094d7f74222a87d6ccc45604579, type: 3}
     expectedText: Go stand behind me.

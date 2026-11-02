@@ -71,7 +71,8 @@ namespace Jolly.Tests.PlayMode.Eval
             Calls("what is this?", ToolNames.CaptureAndIdentify),
             Calls("look at me", ToolNames.LookAt),
             Calls("stop", ToolNames.Stop),
-            Calls("Show me how to dance!", ToolNames.Actions.Dance),
+            // The self-test's action_through_model clip: "Show me how to dance!" no longer reaches the model on a live turn.
+            Calls("Could you do a little dance for my friends?", ToolNames.Actions.Dance),
             Calls("Can you jump?", ToolNames.Actions.Jump, ToolNames.Actions.Celebrate),
             Calls("Take a bow!", ToolNames.Actions.Bow),
             Calls("Spin around for me", ToolNames.Actions.Spin),

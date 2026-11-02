@@ -8,6 +8,22 @@ namespace Jolly.Tests.PlayMode.App
     {
         SelfTestAssets _assets;
 
+#if UNITY_EDITOR
+        [Test]
+        public void ShippedClips_TheGuardScenariosAreInTheTablesAndTheModelOneIsNot()
+        {
+            // Arrange
+            var shipped = UnityEditor.AssetDatabase.LoadAssetAtPath<SelfTestAssets>("Assets/Jolly/Content/SelfTest/SelfTestAssets.asset");
+            var guard = new Jolly.Core.Conversation.ActionGuard(new Jolly.Testing.FakeLocalizer());
+
+            // Act + Assert
+            Assert.That(guard.TryMatch(shipped.dance.expectedText, out _, out _), Is.True);
+            Assert.That(guard.TryMatch(shipped.moveBehind.expectedText, out _, out _), Is.True);
+            Assert.That(guard.TryMatch(shipped.danceThroughModel.expectedText, out _, out _), Is.False);
+            Assert.That(shipped.danceThroughModel.clip, Is.Not.Null);
+        }
+#endif
+
         [SetUp]
         public void SetUp()
         {
