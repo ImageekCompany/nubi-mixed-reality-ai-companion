@@ -54,10 +54,11 @@ namespace Jolly.Core.Conversation
         readonly IUserPreferences _preferences;
         readonly ConversationEvents _events;
         readonly ILog _log;
+        readonly IClock _clock;
 
         public TurnGuards(StopGuard stop, ComeGuard come, ActionGuard actions, SettingsGuard settings, CrisisGuard crisis, QuestionCue question, ICharacterController character,
                           IToolRegistry tools, IPersonaProvider personas, IUserPreferences preferences,
-                          ConversationEvents events, ILog log)
+                          ConversationEvents events, ILog log, IClock clock)
         {
             _stop = stop;
             _come = come;
@@ -71,6 +72,7 @@ namespace Jolly.Core.Conversation
             _preferences = preferences;
             _events = events;
             _log = log;
+            _clock = clock;
         }
 
         /// <summary>A short "open settings" (true) or "close settings" (false); the composition root shows or hides the panel.</summary>
@@ -98,7 +100,7 @@ namespace Jolly.Core.Conversation
                 return false;
 
             _events.RaiseToolStarted(ComeHereCallId, ToolNames.ComeHere);
-            var result = await tool.Execute(args, new ToolContext { Persona = persona, Preferences = _preferences }, ct);
+            var result = await Execute(tool, ToolNames.ComeHere, args, persona, ct);
             _events.RaiseToolCompleted(ComeHereCallId, ToolNames.ComeHere, result.Ok);
             var walking = result.Ok && _character.Mode == LocomotionMode.MovingTo;
             _log.Write(LogLevel.Info, "conversation", $"evt=guard.come status={(walking ? "walking" : "unreachable")}");
@@ -122,20 +124,48 @@ namespace Jolly.Core.Conversation
 
         /// <summary>
         /// Runs a matched action to its end (a walk: until it starts) and returns its output, or null when it did not do
-        /// what was asked and the model should explain: a failed call, or a walk that never started (unreachable, already
-        /// close), as for <see cref="ApplyComeHere"/>. Cancelling fades the move out and throws.
+        /// what was asked and the model should explain: a failed, timed-out or throwing call, or a walk that never started
+        /// (unreachable, already close), as for <see cref="ApplyComeHere"/>. Cancelling fades the move out and throws.
         /// </summary>
         public async UniTask<string> RunAction(GuardedAction action, CancellationToken ct)
         {
             _events.RaiseToolStarted(action.CallId, action.Name);
-            var result = await action.Tool.Execute(action.Arguments,
-                new ToolContext { Persona = action.Persona, Preferences = _preferences }, ct);
+            var result = await Execute(action.Tool, action.Name, action.Arguments, action.Persona, ct);
             _events.RaiseToolCompleted(action.CallId, action.Name, result.Ok);
             var done = result.Ok && (action.Tool.Definition.Concurrency != ToolConcurrency.Locomotion
                                      || _character.Mode == LocomotionMode.MovingTo);
             _log.Write(done ? LogLevel.Info : LogLevel.Warning, "conversation",
                        $"evt=guard.action tool={action.Name} status={(done ? "done" : "left_to_model")}");
             return done ? result.OutputJson : null;
+        }
+
+        /// <summary>
+        /// A tool call under its own timeout, as in the agent's round: a stuck move would otherwise hold Acting for the 30 s
+        /// watchdog and an exception would crash the turn, when the model can still explain. Only the turn's cancel throws.
+        /// </summary>
+        async UniTask<ToolResult> Execute(ITool tool, string name, IToolArguments args, PersonaProfile persona, CancellationToken ct)
+        {
+            try
+            {
+                using var scope = new TimeoutScope(_clock, tool.Definition.Timeout, ct);
+                try
+                {
+                    return await tool.Execute(args, new ToolContext { Persona = persona, Preferences = _preferences }, scope.Token);
+                }
+                catch (OperationCanceledException) when (!ct.IsCancellationRequested && scope.TimedOut)
+                {
+                    return ToolResult.Failure("timeout");
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception e)
+            {
+                _log.Write(LogLevel.Error, "conversation", $"evt=tool.error tool={name}", e);
+                return ToolResult.Failure("tool_error");
+            }
         }
 
         /// <summary>True on a short settings command, after raising <see cref="SettingsRequested"/>; the turn then ends

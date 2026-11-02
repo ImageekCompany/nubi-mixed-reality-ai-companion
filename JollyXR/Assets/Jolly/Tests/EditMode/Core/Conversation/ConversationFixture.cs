@@ -86,7 +86,7 @@ namespace Jolly.Tests.EditMode.Core.Conversation
             Actions.RegisterInto(Tools);
             Guards = new TurnGuards(new StopGuard(Localizer), new ComeGuard(Localizer), new ActionGuard(Localizer), new SettingsGuard(Localizer),
                 new CrisisGuard(Localizer), new QuestionCue(Localizer), Character, Tools, Personas, new FakeUserPreferences(),
-                Events, Log);
+                Events, Log, Clock);
             var speech = new TurnSpeech(Queue, new FakeSentenceSplitter(), Output, Machine, Events, latency, Clock);
             var pipeline = new TurnPipeline(listener, Guards, speech, agentLoop, Offline, Memory, Personas, Machine, Events,
                 latency, Localizer, Log, Timings);

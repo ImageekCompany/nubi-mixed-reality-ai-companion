@@ -1,5 +1,7 @@
+using System;
 using System.Collections.Generic;
 using System.Threading;
+using Cysharp.Threading.Tasks;
 using Jolly.Contracts;
 using Jolly.Core.Config;
 using Jolly.Core.Conversation;
@@ -398,6 +400,7 @@ namespace Jolly.Tests.EditMode.Core.Conversation
             public readonly FakeWorldQuery World = new();
             public readonly FakePersonaProvider Personas = new();
             public readonly RecordingLog Log = new();
+            public readonly FakeClock Clock = new();
             public readonly List<string> Tools = new();
             public readonly TurnGuards Guards;
 
@@ -413,8 +416,99 @@ namespace Jolly.Tests.EditMode.Core.Conversation
                 events.ToolStarted += (id, name) => Tools.Add("start:" + id);
                 events.ToolCompleted += (id, name, ok) => Tools.Add("done:" + id);
                 Guards = new TurnGuards(new StopGuard(localizer), new ComeGuard(localizer), new ActionGuard(localizer), new SettingsGuard(localizer),
-                    new CrisisGuard(localizer), new QuestionCue(localizer), Character, registry, Personas, new FakeUserPreferences(), events, Log);
+                    new CrisisGuard(localizer), new QuestionCue(localizer), Character, registry, Personas, new FakeUserPreferences(), events, Log, Clock);
             }
+
+            /// <summary>Only <paramref name="tool"/> on offer, for a tool that hangs or throws.</summary>
+            public GuardContext(ITool tool)
+            {
+                var localizer = new FakeLocalizer();
+                var registry = new ToolRegistry();
+                registry.RegisterNamespace(new ToolNamespace(ToolNames.Actions.Namespace, "test"));
+                registry.Register(tool);
+                var events = new ConversationEvents();
+                events.ToolStarted += (id, name) => Tools.Add("start:" + name);
+                events.ToolCompleted += (id, name, ok) => Tools.Add((ok ? "done:" : "failed:") + name);
+                Guards = new TurnGuards(new StopGuard(localizer), new ComeGuard(localizer), new ActionGuard(localizer), new SettingsGuard(localizer),
+                    new CrisisGuard(localizer), new QuestionCue(localizer), Character, registry, Personas, new FakeUserPreferences(), events, Log, Clock);
+            }
+        }
+
+        [Test]
+        public void RunAction_ToolHangsPastItsTimeout_CancelsItAndLeavesItToTheModel()
+        {
+            // Arrange
+            var tool = new ScriptedTool(ToolNames.Actions.Jump, ToolConcurrency.Exclusive, timeout: TimeSpan.FromSeconds(3)) { Manual = true };
+            var c = new GuardContext(tool);
+            Assert.That(c.Guards.TryMatchAction("Jump!", out var action), Is.True);
+
+            // Act
+            var run = c.Guards.RunAction(action, CancellationToken.None).Preserve();
+            c.Clock.Advance(TimeSpan.FromSeconds(2.9));
+            var whileWithinIt = run.Status;
+            c.Clock.Advance(TimeSpan.FromSeconds(0.2));
+
+            // Assert
+            Assert.That(whileWithinIt, Is.EqualTo(UniTaskStatus.Pending));
+            Assert.That(run.Status, Is.EqualTo(UniTaskStatus.Succeeded), "the move no longer holds Acting for the 30 s watchdog");
+            Assert.That(Sync.Run(run), Is.Null);
+            Assert.That(tool.Cancelled, Is.EqualTo(1));
+            Assert.That(c.Tools, Is.EqualTo(new[] { "start:" + ToolNames.Actions.Jump, "failed:" + ToolNames.Actions.Jump }));
+            Assert.That(c.Log.Contains(LogLevel.Warning, "evt=guard.action tool=actions.jump status=left_to_model"), Is.True);
+        }
+
+        [Test]
+        public void RunAction_ToolThrows_LeavesItToTheModel()
+        {
+            // Arrange
+            var tool = new ScriptedTool(ToolNames.Actions.Jump, ToolConcurrency.Exclusive)
+            {
+                OnExecute = (_, _) => throw new InvalidOperationException("no animator"),
+            };
+            var c = new GuardContext(tool);
+            Assert.That(c.Guards.TryMatchAction("Jump!", out var action), Is.True);
+
+            // Act
+            var output = Sync.Run(c.Guards.RunAction(action, CancellationToken.None));
+
+            // Assert
+            Assert.That(output, Is.Null);
+            Assert.That(c.Tools, Is.EqualTo(new[] { "start:" + ToolNames.Actions.Jump, "failed:" + ToolNames.Actions.Jump }));
+            Assert.That(c.Log.Contains(LogLevel.Warning, "evt=guard.action tool=actions.jump status=left_to_model"), Is.True);
+        }
+
+        [Test]
+        public void RunAction_TurnCancelled_StillThrowsForTheInterruptedCommit()
+        {
+            // Arrange
+            var tool = new ScriptedTool(ToolNames.Actions.Jump, ToolConcurrency.Exclusive) { Manual = true };
+            var c = new GuardContext(tool);
+            Assert.That(c.Guards.TryMatchAction("Jump!", out var action), Is.True);
+            using var turn = new CancellationTokenSource();
+
+            // Act
+            var run = c.Guards.RunAction(action, turn.Token).Preserve();
+            turn.Cancel();
+
+            // Assert
+            Assert.That(run.Status, Is.EqualTo(UniTaskStatus.Canceled));
+        }
+
+        [Test]
+        public void ApplyComeHere_ToolThrows_LeavesItToTheModel()
+        {
+            // Arrange
+            var c = new GuardContext(new ScriptedTool(ToolNames.ComeHere, ToolConcurrency.Locomotion)
+            {
+                OnExecute = (_, _) => throw new InvalidOperationException("no navmesh"),
+            });
+
+            // Act
+            var walking = Sync.Run(c.Guards.ApplyComeHere("come here", CancellationToken.None));
+
+            // Assert
+            Assert.That(walking, Is.False);
+            Assert.That(c.Tools, Is.EqualTo(new[] { "start:" + ToolNames.ComeHere, "failed:" + ToolNames.ComeHere }));
         }
 
         [Test]
