@@ -62,6 +62,8 @@ Hold an object 40 to 50 cm from your face and point at it with your other hand.
 - "Do a little show: jump, spin and take a bow."
 - "Surprise me." / "Do a trick."
 
+A short command ("Dance.", "Jump!", "Spin around.", "Take a bow.", "Wave.", "Nod.", "Celebrate!", "Go behind me.", "Stand on my left.", "Back off.") starts at once, and Jolly does the move without saying anything. Anything longer or asked as a question goes through the usual conversation and takes 2-4 s. Pinch during any move and it stops and Jolly listens.
+
 ### Change its personality
 
 - "Be my mentor." (step-by-step teacher)

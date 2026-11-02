@@ -126,7 +126,7 @@ sequenceDiagram
   C->>M: Stop() (completes Chunks → endStream within one frame)
   C->>C: pre-capture camera frame + JPEG encode (on device, no API cost) → UserTurn.PreCaptured
   S-->>C: Final (≈145 ms after endStream, measured), state Thinking
-  C->>C: TranscriptAliases ("newbie" → "Nubi"), StopGuard, ComeGuard, CrisisGuard
+  C->>C: TranscriptAliases ("newbie" → "Nubi"), StopGuard, ComeGuard, CrisisGuard, ActionGuard
   C->>O: a question the guards left alone: play ack clip ("Hmm!") (ADR-0040)
   C->>A: RunTurn(UserTurn)
   A->>L: Stream(instructions + summary + scene ctx + recent + user, tools)
@@ -149,6 +149,7 @@ Implementation rules:
 - **Pre-capture.** At release, if `ICameraFrameSource.Availability == Ready`, one frame is captured at 640 px and encoded on a worker (~tens of ms, UNVERIFIED on device). It stays in RAM for this turn and is never sent unless a vision tool runs. `capture_and_identify` uses it when it is under 3 s old; otherwise it captures fresh. This removes the 1.0–1.4 s first-round delay between "what is this?" and the shutter, while the user is still holding the object up.
 - **Transcript aliases.** Live ASR heard "Hi Nubi" as "Hi newbie" (2026-11-01). `TranscriptAliases` rewrites the selected character's known mishearings (`CharacterDefinition.aliases`) to its name before captions and the model.
 - **Local stop.** `StopGuard` matches a short "stop"/"wait"/"stay" final and calls `ICharacterController.Stop()` before any model call, then continues the turn normally (the model still sees and answers it).
+- **Local body commands.** `ActionGuard` runs a short "dance", "jump" or "go behind me" with no model round and no words; the turn stays Acting until the move ends (ADR-0047).
 - **Local come here.** `ComeGuard` matches a short final made only of "come here"/"come to me"/"come closer"/"come over here", the name, "please" and a greeting (≤ 6 words). When the persona is offered `come_here`, `TurnGuards` runs that tool from the registry before the model call (same walkable sampling and NavMesh path). When Nubi is walking and no crisis words matched, the turn makes no model call: a canned ComingOver line ("On my way!") plays as the turn's first audio and both sides go into conversation memory (ADR-0037); an unreachable target leaves the turn to the model. A greeting alone never matches (ADR-0032); see ADR-0036.
 - **Sentence splitter.** Flush on `.?!…` followed by whitespace or end of stream, on a newline, or at a comma or space once the buffer reaches 120 characters. The first chunk may flush at 60 characters on a comma, to get audio started sooner. Hard cap is 240 characters, because the Wit SDK constant is 280 (`voice.md` §1). Normalise `。` to `.` (seen in ASR output).
 - **TTS pipelining.** The SpeechQueue synthesizes sentence *n+1* while sentence *n* plays, with prefetch depth 1. Each sentence's caption is shown when its first PCM sample is played, not when it is enqueued.
@@ -237,6 +238,7 @@ sequenceDiagram
   - A quad textured with the box-local mask, using an outline shader with a translucent fill.
   - Placed at the median hit distance, facing the capture camera pose, sized from the intrinsics.
   - Fades out after 6 s or on the next turn.
+- **`EndsSpokenTurn`.** When every tool in a round returns it (a finished whole-body move, ADR-0047) and the round's text said something, the agent skips the closing round too.
 - **`EndsTurn`.** When every tool in a round returns `EndsTurn`, the agent skips the next model round, saving about 1–1.5 s. A `SpokenText` is spoken if set; `capture_and_identify` sets none because it already streamed its answer. The `function_call_output` is still committed to memory, so later turns stay coherent.
 - **Failure paths** (one set of numbers in `JollyConfig`: SAM 5 s, vision 8 s, tool 12 s).
   - SAM returns no match after the retry: the answer is spoken without a mask. Empty output is not an error.

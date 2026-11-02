@@ -79,4 +79,8 @@ Rows before 2026-11-01 02:00 (research phase, `docs/research/*.md`) were not ite
 
 | 2026-11-02 | device self-tests of ADR-0047/0048, scenario order and perf view metric: 2 runs of the `--character jolly` release builds `416ec85` and the following commit (app meter 0.0426 + 0.0508) | muse-spark-1.3, sam-3.1, muse-voice-transcribe-1.0 (+ Wit, free) | ~22 Spark calls, 4 SAM, 2 web searches, ~20 ASR sessions | 4 images; ~40 s audio | 0.093 |
 
-Running total (est.): **≤ $2.53** (sum of the rows: 2.522)
+| 2026-11-02 | device self-test of the keyed build (ADR-0049) (app meter 0.0432) | muse-spark-1.3, sam-3.1, muse-voice-transcribe-1.0 (+ Wit, free) | ~11 Spark calls, 2 SAM, 1 web search, ~10 ASR sessions | 2 images; ~20 s audio | 0.043 |
+
+| 2026-11-02 | ADR-0047 short commands: replay of a `guard_action_<guid>` call id with `actions.dance` and its output in a later turn (200, coherent) | muse-spark-1.3 | 1 | in 595 / out 41 | 0.001 |
+
+Running total (est.): **≤ $2.57** (sum of the rows: 2.566)

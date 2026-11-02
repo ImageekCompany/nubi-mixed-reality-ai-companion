@@ -327,8 +327,11 @@ namespace Jolly.Contracts
 
     public readonly struct ToolResult
     {
-        public ToolResult(bool ok, string outputJson, string spokenText = null, bool endsTurn = false)
-        { Ok = ok; _outputJson = outputJson; SpokenText = spokenText; EndsTurn = endsTurn; }
+        /// <summary>The output of a call a barge-in or other cancel cut off (Responses rejects an orphan function_call).</summary>
+        public const string InterruptedOutput = "{\"error\":\"interrupted\"}";
+
+        public ToolResult(bool ok, string outputJson, string spokenText = null, bool endsTurn = false, bool endsSpokenTurn = false)
+        { Ok = ok; _outputJson = outputJson; SpokenText = spokenText; EndsTurn = endsTurn; EndsSpokenTurn = endsSpokenTurn; }
         public bool Ok { get; }
         /// <summary>Sent to the model as function_call_output. default(ToolResult) yields "{}".</summary>
         public string OutputJson => _outputJson ?? "{}";
@@ -337,9 +340,13 @@ namespace Jolly.Contracts
         public string SpokenText { get; }
         /// <summary>If every result in a round has EndsTurn, the agent skips the next model round (saves ~1–1.5 s).</summary>
         public bool EndsTurn { get; }
+        /// <summary>The call itself was the answer (a finished whole-body move, ADR-0047): if every result in a round has it
+        /// and the round's text said something, the agent skips the closing round. With no text the round still runs,
+        /// so the turn is not left wordless.</summary>
+        public bool EndsSpokenTurn { get; }
 
-        public static ToolResult Success(string outputJson, string spokenText = null, bool endsTurn = false)
-            => new(true, outputJson, spokenText, endsTurn);
+        public static ToolResult Success(string outputJson, string spokenText = null, bool endsTurn = false, bool endsSpokenTurn = false)
+            => new(true, outputJson, spokenText, endsTurn, endsSpokenTurn);
         /// <summary>code is snake_case, e.g. "unknown_place", "camera_unavailable", "timeout", "invalid_arguments".</summary>
         public static ToolResult Failure(string code, string detail = null)
             => new(false, "{\"error\":" + JsonString(code) + (detail == null ? "" : ",\"detail\":" + JsonString(detail)) + "}");

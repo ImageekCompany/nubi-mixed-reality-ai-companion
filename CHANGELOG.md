@@ -280,5 +280,12 @@ Each work package appends bullets under its own heading only (`docs/scope.md` §
 - Device self-test `action_dance` and `action_move_behind` with Wit-synthesised clips; four action cases in the tool-selection eval, which now sends the registry's namespaces.
 - Review fixes: `move_relative` walks round the user in two legs when the straight line passes within 0.6 m of them; jump, bow, celebrate, dance and spin stop a walk first; the Gesture and Action layers have independent generations, so a nod no longer ends a dance; a dance ends at the first loop end at or after `duration_s` (the default is one 4 s loop, not two); the namespace description names no action, so a seated or persona-limited request is never told about a move it lacks; `actions.wave`, `nod`, `shake_head`, `shrug`, `think`, `bounce`, `stretch` and `look_around` replace `play_gesture`; the eval sends `AgentLoop.LiveRequest`, the live turn's own request with web search.
 
+### Natural interaction flows (ADR-0047)
+- `ActionGuard`: a short "dance", "jump", "spin", "bow", "wave", "nod", "celebrate" or `move_relative` direction ("go behind me", "back off"), en and pl, runs at once with no model round and no words, within the persona's list and the character's clips. `evt=guard.action`.
+- `ToolResult.EndsSpokenTurn`: a whole-body move that followed spoken words ends the turn when it ends, with no closing model round. Failures, walks and silent rounds keep the round.
+- The search's Think gesture plays on into the Thinking pose instead of fading as the same pose fades in, which dropped the hands 10 cm.
+- `tap_to_move` picks a point whose ray the resolver takes for floor; `rays_blocked` reports the rest. A ray through the character that lands just past its footprint now shows the ring there (`CharacterAim`).
+- `BodyMoveFlowTests` and `BehaviourHandoverTests`: barge-in during a dance, jump, bow and spin through the shipped scene, and the hand-overs between moves, poses and walks.
+
 ### Docs
 - Demo script: mandatory problem voice-over, cost as a beat-5 overlay, a longer beat 2, reboot and greeting warm-up before beat 1, beat 1 as the guard walk with a canned line (ADR-0037, ADR-0040). README "A day with Nubi", "Living with it", current status and test counts; release checklist verification block for `36778c1`; device self-test reports for every change above (`docs/perf/selftest-report.md`).
