@@ -156,11 +156,18 @@ namespace Jolly.Contracts
         public float SpeechRate { get; set; } = 1f; // 0.5..2; final Wit speed = clamp(persona speed * rate, 50, 200)
         public float Volume { get; set; } = 1f;
         public bool PttEitherHand { get; set; } = true;
+        /// <summary>Where the user said they live (set_home_location), for web search; null until they say. Never finer
+        /// than a city (ADR-0048).</summary>
+        public string HomeCity { get; set; }
+        /// <summary>ISO 3166-1 alpha-2, or null.</summary>
+        public string HomeCountry { get; set; }
     }
 
     public interface IUserPreferences
     {
         UserPreferencesSnapshot Current { get; }
         event Action<UserPreferencesSnapshot> Changed;
+        /// <summary>Persists the home location with the other preferences and raises <see cref="Changed"/>. Null clears.</summary>
+        void SetHomeLocation(string city, string country);
     }
 }

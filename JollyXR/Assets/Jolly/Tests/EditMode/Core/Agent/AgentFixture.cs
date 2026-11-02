@@ -8,6 +8,7 @@ using Jolly.Core.Agent;
 using Jolly.Core.Config;
 using Jolly.Core.Conversation;
 using Jolly.Core.Diagnostics;
+using Jolly.Core.Location;
 using Jolly.Core.Memory;
 using Jolly.Core.Spatial;
 using Jolly.Core.Tools;
@@ -34,18 +35,22 @@ namespace Jolly.Tests.EditMode.Core.Agent
         public readonly FakeUserPoseProvider User = new();
         public readonly AgentLoop Loop;
         public readonly AgentSettings Settings = new() { SafetyIdentifier = "0123456789abcdef0123456789abcdef" };
+        public readonly FakeConnectivityMonitor Connectivity = new();
+        public readonly FakeDeviceRegion Region = new();
         public string Spoken = "";
 
         /// <param name="model">Replaces <see cref="Model"/> (left unused then), e.g. a real adapter over a fake transport
         /// timed by <see cref="Clock"/>.</param>
-        public AgentFixture(Func<FakeClock, IChatModel> model = null)
+        /// <param name="webSearch">Adds a <see cref="WebSearchPolicy"/> over <see cref="Connectivity"/> and <see cref="Region"/>.</param>
+        public AgentFixture(Func<FakeClock, IChatModel> model = null, bool webSearch = false)
         {
             var limits = new MemoryLimits();
             Memory = new ConversationMemory("unused", Personas, limits, Log);
             Scene = new SceneMemory("unused", new FakeSpatialAnchors(), Clock, limits, Log);
             var room = new RoomContext(RoomScan, World, User, new RoomSettings());
+            var search = webSearch ? new WebSearchPolicy(new UserLocation(Preferences, Region, Clock), Connectivity) : null;
             Loop = new AgentLoop(model?.Invoke(Clock) ?? Model, Registry, Memory, Scene, room, Personas, Localizer, Preferences, Log, Clock,
-                new LatencyTracker(Clock, Log), Events, Settings);
+                new LatencyTracker(Clock, Log), Events, Settings, search);
         }
 
         public ScriptedTool Tool(string name, ToolConcurrency concurrency = ToolConcurrency.Parallel, bool manual = false,

@@ -75,6 +75,25 @@ namespace Jolly.Tests.PlayMode.Presentation
         }
 
         [Test]
+        public void SetHomeLocation_RaisesChangedAndPersistsIt_AndAStepKeepsIt()
+        {
+            // Arrange
+            var before = _panel.Current;
+            UserPreferencesSnapshot raised = null;
+            _panel.Changed += p => raised = p;
+
+            // Act
+            _panel.SetHomeLocation("Kraków", "PL");
+            Row("SpeechRate").Next.onClick.Invoke();
+
+            // Assert
+            Assert.That(raised.HomeCity, Is.EqualTo("Kraków"));
+            Assert.That(before.HomeCity, Is.Null, "the previous snapshot is never mutated");
+            Assert.That(_store.Stored.HomeCity, Is.EqualTo("Kraków"));
+            Assert.That(_store.Stored.HomeCountry, Is.EqualTo("PL"));
+        }
+
+        [Test]
         public void Stepping_RaisesChangedWithANewSnapshot_AndPersistsIt()
         {
             var before = _panel.Current;

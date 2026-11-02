@@ -5,7 +5,9 @@ using Cysharp.Threading.Tasks.Linq;
 using Jolly.Contracts;
 using Jolly.Core.Config;
 using Jolly.Core.Conversation;
+using Jolly.Core.Location;
 using Jolly.Core.Spatial;
+using Jolly.Core.Tools;
 
 namespace Jolly.Core.Agent
 {
@@ -29,11 +31,14 @@ namespace Jolly.Core.Agent
         readonly ConversationEvents _events;
         readonly AgentSettings _settings;
         readonly PromptBuilder _prompt;
+        readonly WebSearchPolicy _webSearch;
 
         /// <param name="room">The room line of the context block; null leaves it out.</param>
+        /// <param name="webSearch">Null: no web search and no local time or home line in the context block.</param>
         public AgentLoop(IChatModel model, IToolRegistry registry, IConversationMemory memory, ISceneMemory scene,
                          RoomContext room, IPersonaProvider personas, ILocalizer localizer, IUserPreferences preferences, ILog log,
-                         IClock clock, ILatencyTracker latency, ConversationEvents events, AgentSettings settings)
+                         IClock clock, ILatencyTracker latency, ConversationEvents events, AgentSettings settings,
+                         WebSearchPolicy webSearch = null)
         {
             _model = model;
             _registry = registry;
@@ -46,7 +51,8 @@ namespace Jolly.Core.Agent
             _latency = latency;
             _events = events;
             _settings = settings;
-            _prompt = new PromptBuilder(localizer, preferences, memory, scene, room, settings);
+            _webSearch = webSearch;
+            _prompt = new PromptBuilder(localizer, preferences, memory, scene, room, settings, webSearch?.Location);
         }
 
         public IUniTaskAsyncEnumerable<AgentEvent> RunTurn(UserTurn turn, Func<string> spokenSoFar, CancellationToken ct) =>
@@ -79,11 +85,15 @@ namespace Jolly.Core.Agent
                     Turn = turn, Persona = persona, PersonaInstructions = _prompt.PersonaInstructions(persona),
                     Speech = events, Preferences = _preferences,
                 };
+                var tools = _registry.DefinitionsFor(persona, _preferences);
+                var search = _webSearch?.For(persona);
                 var request = new ModelRequest
                 {
                     Route = ModelRoute.LiveUser,
-                    Instructions = _prompt.Instructions(persona),
-                    Tools = _registry.DefinitionsFor(persona, _preferences),
+                    Instructions = _prompt.Instructions(persona, search != null),
+                    Tools = tools,
+                    Namespaces = _registry.NamespacesOf(tools),
+                    WebSearch = search,
                     Effort = ReasoningEffort.Minimal,
                     SafetyIdentifier = _settings.SafetyIdentifier,
                 };
@@ -99,6 +109,9 @@ namespace Jolly.Core.Agent
                         break;
                     }
                     request.Input = transcript.Input(contextItem, _memory.Recent);
+                    // set_home_location may have run in the previous round.
+                    if (request.WebSearch != null)
+                        request.WebSearch = _webSearch.Location.SearchOptions();
                     open = new ToolRoundExecutor(_registry, request.Tools, _clock, context, events, ct, _log);
                     var result = await StreamRound(turn.TurnId, round, request, open, events, ct);
                     await open.WhenAll();
@@ -175,6 +188,13 @@ namespace Jolly.Core.Agent
                             break;
                         case ModelEventKind.ToolCall:
                             tools.Start(e.ToolCall);
+                            break;
+                        // The server runs the search: no ToolRoundExecutor call, only the badge the user sees meanwhile.
+                        case ModelEventKind.WebSearchStarted:
+                            _events.RaiseToolStarted(e.Text, ToolNames.WebSearch);
+                            break;
+                        case ModelEventKind.WebSearchCompleted:
+                            _events.RaiseToolCompleted(e.Text, ToolNames.WebSearch, true);
                             break;
                         case ModelEventKind.Completed:
                             result = e.Result;

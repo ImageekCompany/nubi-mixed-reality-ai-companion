@@ -28,8 +28,8 @@ namespace Jolly.App
         public float chatReservationUsd = 0.02f;
         public ModelPriceEntry[] prices =
         {
-            new() { model = "muse-spark-1.3", inputPerMillion = 1.25f, cachedInputPerMillion = 0.15f, outputPerMillion = 4.25f },
-            new() { model = "muse-spark-1.3-contributor", inputPerMillion = 0.10f, cachedInputPerMillion = 0.002f, outputPerMillion = 0.20f },
+            new() { model = "muse-spark-1.3", inputPerMillion = 1.25f, cachedInputPerMillion = 0.15f, outputPerMillion = 4.25f, perWebSearch = 0.0025f },
+            new() { model = "muse-spark-1.3-contributor", inputPerMillion = 0.10f, cachedInputPerMillion = 0.002f, outputPerMillion = 0.20f, perWebSearch = 0.0025f },
             new() { model = "sam-3.1", perImage = 0.0025f },
             new() { model = "muse-voice-transcribe-1.0", perAudioHour = 0.18f },
         };
@@ -100,6 +100,11 @@ namespace Jolly.App
                  "talks. Words said meanwhile are kept: the microphone starts at the pinch.")]
         public float tapMaxSeconds = 0.25f;
 
+        [Header("Web search (ADR-0048)")]
+        [Tooltip("Offer Meta's built-in web search to personas that allow \"web_search\", while Online. $2.50 per 1,000 " +
+                 "searches plus about 3,000 input tokens each.")]
+        public bool webSearch = true;
+
         [Header("Behaviour")]
         [Tooltip("Play a short canned acknowledgement at the final when it is a question for the model (ADR-0040).")]
         public bool acknowledgeQuestions = true;
@@ -117,5 +122,6 @@ namespace Jolly.App
         public float outputPerMillion;
         public float perImage;
         public float perAudioHour;
+        public float perWebSearch;
     }
 }

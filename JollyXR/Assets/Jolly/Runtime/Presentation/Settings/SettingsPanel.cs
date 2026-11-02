@@ -108,6 +108,17 @@ namespace Jolly.Presentation
             Changed?.Invoke(Current);
         }
 
+        /// <summary>Not a panel row: set by voice (set_home_location) and kept with the other preferences.</summary>
+        public void SetHomeLocation(string city, string country)
+        {
+            var next = SettingsModel.Copy(Current);
+            next.HomeCity = city;
+            next.HomeCountry = country;
+            Current = next;
+            _store.Save(Current);
+            Changed?.Invoke(Current);
+        }
+
         void OnClearMemoryClicked()
         {
             Interacted?.Invoke();

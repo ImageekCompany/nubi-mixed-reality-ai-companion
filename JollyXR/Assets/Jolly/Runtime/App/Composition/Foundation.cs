@@ -55,7 +55,7 @@ namespace Jolly.App.Composition
             foreach (var p in config.prices)
             {
                 prices[p.model] = new ModelPrice((decimal)p.inputPerMillion, (decimal)p.cachedInputPerMillion,
-                    (decimal)p.outputPerMillion, (decimal)p.perImage, (decimal)p.perAudioHour);
+                    (decimal)p.outputPerMillion, (decimal)p.perImage, (decimal)p.perAudioHour, (decimal)p.perWebSearch);
             }
             return new PriceTable(prices);
         }

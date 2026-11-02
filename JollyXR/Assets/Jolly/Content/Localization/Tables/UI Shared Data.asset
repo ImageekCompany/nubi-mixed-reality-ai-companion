@@ -223,6 +223,14 @@ MonoBehaviour:
     m_Key: caption.listening
     m_Metadata:
       m_Items: []
+  - m_Id: 380624944
+    m_Key: tool.web_search
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624945
+    m_Key: tool.set_home_location
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:

@@ -15,6 +15,13 @@ namespace Jolly.Testing
 
         public void RaiseChanged() => Changed?.Invoke(Current);
 
+        public void SetHomeLocation(string city, string country)
+        {
+            Current.HomeCity = city;
+            Current.HomeCountry = country;
+            Changed?.Invoke(Current);
+        }
+
         public void Set(UserPreferencesSnapshot snapshot)
         {
             Current = snapshot;

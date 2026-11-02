@@ -1,8 +1,10 @@
 using System;
+using Jolly.App.Platform;
 using Jolly.Contracts;
 using Jolly.Core.Agent;
 using Jolly.Core.Config;
 using Jolly.Core.Conversation;
+using Jolly.Core.Location;
 using Jolly.Core.Memory;
 using Jolly.Core.Personas;
 using Jolly.Core.Spatial;
@@ -37,6 +39,7 @@ namespace Jolly.App.Composition
             var conversation = new ConversationMemory(f.Paths.MemoryDirectory, personas, limits, f.Log);
             var scene = new SceneMemory(f.Paths.SceneMemory, xr.Anchors, f.Clock, limits, f.Log);
             var tools = ToolCatalog.Build(f, config, cloud, xr, character, scene, personas, localizer, masks, room, out var frames);
+            var location = new UserLocation(preferences, new DeviceRegion(f.Log), f.Clock);
             var agent = new AgentLoop(cloud.VoiceChat, tools, conversation, scene, roomContext, personas, localizer, preferences, f.Log,
                 f.Clock, f.Latency, f.Events, new AgentSettings
                 {
@@ -44,7 +47,7 @@ namespace Jolly.App.Composition
                     HoldLineAfter = TimeSpan.FromSeconds(config.holdLineSeconds),
                     HoldLineRepeat = TimeSpan.FromSeconds(config.holdLineRepeatSeconds),
                     ReplyObserved = modelReplies,
-                });
+                }, new WebSearchPolicy(location, cloud.Connectivity, config.webSearch));
 
             var listener = new TurnListener(microphone, cloud.SpeechToText, frames, aliases,
                 localizer, f.Events, f.Latency, f.Log, timings);

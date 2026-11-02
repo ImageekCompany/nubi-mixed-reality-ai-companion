@@ -37,6 +37,7 @@ namespace Jolly.App.Composition
             registry.Register(new SetPersonaTool(personas));
             registry.Register(new GoToSurfaceTool(character, xr.World, room, locomotion));
             registry.Register(new RequestRoomScanTool(room, localizer));
+            registry.Register(new SetHomeLocationTool());
             return registry;
         }
     }

@@ -54,6 +54,8 @@ namespace Jolly.Presentation
             SpeechRate = s.SpeechRate,
             Volume = s.Volume,
             PttEitherHand = s.PttEitherHand,
+            HomeCity = s.HomeCity,
+            HomeCountry = s.HomeCountry,
         };
 
         /// <summary>Rounds to the step grid so repeated float steps never drift (0.1 * 3 != 0.3).</summary>

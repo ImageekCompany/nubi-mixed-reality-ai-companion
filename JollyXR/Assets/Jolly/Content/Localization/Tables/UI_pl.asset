@@ -226,6 +226,14 @@ MonoBehaviour:
     m_Localized: "S\u0142ucham\u2026"
     m_Metadata:
       m_Items: []
+  - m_Id: 380624944
+    m_Localized: Szukam w sieci
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624945
+    m_Localized: Miasto domowe
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

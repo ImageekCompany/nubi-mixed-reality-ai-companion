@@ -152,12 +152,13 @@ namespace Jolly.Tests.PlayMode.Eval
             registry.Register(new SetPersonaTool(personas));
             registry.Register(new GoToSurfaceTool(null, null, null, locomotion));
             registry.Register(new RequestRoomScanTool(null, null));
+            registry.Register(new SetHomeLocationTool());
             return registry;
         }
 
         static PriceTable Prices(JollyConfig config) => new(config.prices.ToDictionary(p => p.model,
             p => new ModelPrice((decimal)p.inputPerMillion, (decimal)p.cachedInputPerMillion, (decimal)p.outputPerMillion,
-                (decimal)p.perImage, (decimal)p.perAudioHour), StringComparer.Ordinal));
+                (decimal)p.perImage, (decimal)p.perAudioHour, (decimal)p.perWebSearch), StringComparer.Ordinal));
 
         static string Env(string name, string fallback)
         {
