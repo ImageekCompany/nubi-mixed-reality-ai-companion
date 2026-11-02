@@ -7,6 +7,9 @@
 // object is in front), so the fur cannot thin the eye buffer's alpha and let passthrough show through the body.
 // Everything a shell fragment needs except the strand noise is read per vertex (albedo, length, density, AO, lighting):
 // a shell fragment is one texture read, one clip and the occlusion test.
+// A strand survives shell h where its noise height > h^_StrandTaper: 1 is a cone (spiky), above 1 the strand keeps its
+// width higher up (plush). _SkinStrands prints the same noise onto the base layer, so short or skin-stretched patches
+// (armpits under a raised arm) read as pile, not bare plastic.
 // Maps (all UV0): _FurMap R length 0..1, G density, B tip lightening, A ambient occlusion (linear);
 // _FurFlowMap RG comb direction in UV space (rg * 2 - 1), B comb strength (linear); _FurNoiseMap R strand height,
 // B per-strand random (linear, Repeat). Tangents must be imported (Mikktspace) for the comb.
@@ -27,12 +30,14 @@ Shader "Jolly/Character/ShellFur"
         _FurComb ("Comb", Range(0, 1.5)) = 0.5
         _DensityThin ("Thinning At Low Density", Range(0, 1)) = 0.6
         _MinLength ("Bald Below Length", Range(0, 0.2)) = 0.03
+        _StrandTaper ("Strand Fullness", Range(0.3, 3)) = 1
 
         [Header(Colour)]
         _RootShade ("Root Shade", Range(0, 1)) = 0.7
         _TipTint ("Tip Brightness", Range(0.5, 2)) = 1.1
         _TipLighten ("Tip Lightening", Range(0, 1)) = 0.1
         _StrandJitter ("Strand Colour Jitter", Range(0, 0.5)) = 0.14
+        _SkinStrands ("Strand Shading On Skin", Range(0, 1)) = 0
 
         [Header(Light)]
         _Wrap ("Diffuse Wrap", Range(0, 1)) = 0.5
@@ -69,10 +74,12 @@ Shader "Jolly/Character/ShellFur"
             half _FurComb;
             half _DensityThin;
             half _MinLength;
+            half _StrandTaper;
             half _RootShade;
             half _TipTint;
             half _TipLighten;
             half _StrandJitter;
+            half _SkinStrands;
             half _Wrap;
             half4 _RimColor;
             half _RimPower;
@@ -155,6 +162,7 @@ Shader "Jolly/Character/ShellFur"
             #else
                 float3 normalWS : TEXCOORD2;
                 half4 shade : TEXCOORD3;     // rgb ambient SH, a root shade × AO
+                half skinStrands : TEXCOORD4;
             #endif
                 UNITY_VERTEX_OUTPUT_STEREO
             };
@@ -189,10 +197,11 @@ Shader "Jolly/Character/ShellFur"
                 half shade = lerp(_RootShade, _TipTint, h) * (1.0h + fur.b * _TipLighten * h) * lerp(fur.a, 1.0h, h);
                 half3 v = GetWorldSpaceNormalizeViewDir(positionWS);
                 output.color = Lit(albedo * shade, normalize(normal.normalWS), v, ambient, h);
-                output.strand = half2(h + (1.0h - fur.g) * _DensityThin, fur.r);
+                output.strand = half2(pow(h, _StrandTaper) + (1.0h - fur.g) * _DensityThin, fur.r);
             #else
                 output.normalWS = normal.normalWS;
                 output.shade = half4(ambient, lerp(1.0h, _RootShade, fur.r) * fur.a);
+                output.skinStrands = _SkinStrands * saturate(fur.r * 8.0h);
             #endif
                 return output;
             }
@@ -207,7 +216,9 @@ Shader "Jolly/Character/ShellFur"
             #else
                 half3 albedo = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, input.uv).rgb * _BaseColor.rgb;
                 half3 v = GetWorldSpaceNormalizeViewDir(input.positionWS);
+                half noise = SAMPLE_TEXTURE2D(_FurNoiseMap, sampler_FurNoiseMap, input.uv * _NoiseTiling).r;
                 half3 color = Lit(albedo * input.shade.a, normalize(input.normalWS), v, input.shade.rgb, 0.0h);
+                color *= 1.0h + input.skinStrands * (noise - 0.5h);
             #endif
                 half visible = EnvironmentVisibility(input.positionWS);
                 return half4(color * visible, visible);
@@ -252,7 +263,7 @@ Shader "Jolly/Character/ShellFur"
                 output.positionCS = TransformWorldToHClip(positionWS);
             #if defined(_FUR_SHELL)
                 output.uv = TRANSFORM_TEX(input.uv, _BaseMap);
-                output.strand = half2(_ShellHeight + (1.0h - fur.g) * _DensityThin, fur.r);
+                output.strand = half2(pow((half)_ShellHeight, _StrandTaper) + (1.0h - fur.g) * _DensityThin, fur.r);
             #endif
                 return output;
             }
