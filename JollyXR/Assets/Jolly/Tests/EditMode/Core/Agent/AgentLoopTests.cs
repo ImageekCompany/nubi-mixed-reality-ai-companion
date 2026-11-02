@@ -209,6 +209,71 @@ namespace Jolly.Tests.EditMode.Core.Agent
             Assert.That(_f.Model.Requests.Count, Is.EqualTo(1));
         }
 
+        static ToolResult Move => ToolResult.Success("{\"status\":\"done\"}", endsSpokenTurn: true);
+
+        [Test]
+        public void EndsSpokenTurn_RoundAlreadySpoke_SkipsTheClosingRound()
+        {
+            // Arrange
+            _f.Tool("dance", ToolConcurrency.Exclusive).Result = Move;
+            _f.Model.Enqueue().Text("Let me try.").Call("c1", "dance");
+
+            // Act
+            var run = _f.Run();
+
+            // Assert
+            AgentFixture.Completed(run);
+            Assert.That(_f.Model.Requests.Count, Is.EqualTo(1), "the turn ends when the move ends");
+            Assert.That(_f.MemoryKinds(), Does.Contain("AssistantText").And.Contain("ToolResult"));
+        }
+
+        [Test]
+        public void EndsSpokenTurn_RoundSaidNothing_TheModelStillSpeaksAfterTheMove()
+        {
+            // Arrange
+            _f.Tool("dance", ToolConcurrency.Exclusive).Result = Move;
+            _f.Model.Enqueue().Call("c1", "dance");
+            _f.Model.Enqueue().Text("Ta-da!");
+
+            // Act
+            AgentFixture.Completed(_f.Run());
+
+            // Assert
+            Assert.That(_f.Model.Requests.Count, Is.EqualTo(2));
+        }
+
+        [Test]
+        public void EndsSpokenTurn_AnotherCallNeedsExplaining_KeepsTheClosingRound(
+            [Values("{\"error\":\"timeout\"}", "{\"status\":\"unreachable\"}")] string other)
+        {
+            // Arrange
+            _f.Tool("dance", ToolConcurrency.Exclusive).Result = Move;
+            _f.Tool("move_relative", ToolConcurrency.Locomotion).Result = new ToolResult(other.Contains("status"), other);
+            _f.Model.Enqueue().Text("Sure.").Call("c1", "move_relative").Call("c2", "dance");
+            _f.Model.Enqueue().Text("I couldn't get there.");
+
+            // Act
+            AgentFixture.Completed(_f.Run());
+
+            // Assert
+            Assert.That(_f.Model.Requests.Count, Is.EqualTo(2));
+        }
+
+        [Test]
+        public void EndsSpokenTurn_MoveFailed_KeepsTheClosingRound()
+        {
+            // Arrange
+            _f.Tool("dance", ToolConcurrency.Exclusive).Result = ToolResult.Failure("timeout");
+            _f.Model.Enqueue().Text("Let me try.").Call("c1", "dance");
+            _f.Model.Enqueue().Text("My legs would not move.");
+
+            // Act
+            AgentFixture.Completed(_f.Run());
+
+            // Assert
+            Assert.That(_f.Model.Requests.Count, Is.EqualTo(2));
+        }
+
         [Test]
         public void RoundCap_StopsAfterFourRoundsWithTheTangledLine()
         {

@@ -186,6 +186,49 @@ namespace Jolly.Tests.EditMode.Core.Tools
             Assert.That(_character.Mode, Is.EqualTo(LocomotionMode.None));
         }
 
+        [TestCase(ToolNames.Actions.Jump, true)]
+        [TestCase(ToolNames.Actions.Dance, true)]
+        [TestCase(ToolNames.Actions.Bow, true)]
+        [TestCase(ToolNames.Actions.Spin, true)]
+        [TestCase(ToolNames.Actions.Celebrate, true)]
+        [TestCase(ToolNames.Actions.Wave, false)]
+        [TestCase(ToolNames.Actions.Nod, false)]
+        public void PlayedOut_OnlyAWholeBodyMoveAnswersByItself(string name, bool endsSpokenTurn)
+        {
+            // Arrange
+            var tool = Catalog().Tools.Single(t => t.Definition.Name == name);
+
+            // Act
+            var result = Run(tool, "{}");
+
+            // Assert
+            Assert.That(result.EndsSpokenTurn, Is.EqualTo(endsSpokenTurn));
+        }
+
+        [Test]
+        public void MoveRelative_NeverEndsTheTurnByItself()
+        {
+            // Act
+            var result = Run(MoveRelative(), "{\"direction\":\"left\"}");
+
+            // Assert
+            Assert.That(result.EndsSpokenTurn, Is.False);
+        }
+
+        [Test]
+        public void WalkCutTheMoveShort_TheModelIsStillAsked()
+        {
+            // Arrange
+            var tool = Catalog().Tools.Single(t => t.Definition.Name == ToolNames.Actions.Dance);
+            _character.WhilePlaying = () => _character.TryStartMoveTo(Vector3.one, 0.1f, out _);
+
+            // Act
+            var result = Run(tool, "{}");
+
+            // Assert
+            Assert.That(result.EndsSpokenTurn, Is.False);
+        }
+
         [TestCase(ToolNames.Actions.Jump)]
         [TestCase(ToolNames.Actions.Celebrate)]
         [TestCase(ToolNames.Actions.Dance)]

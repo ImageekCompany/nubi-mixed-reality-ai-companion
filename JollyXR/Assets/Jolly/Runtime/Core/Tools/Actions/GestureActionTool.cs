@@ -57,7 +57,9 @@ namespace Jolly.Core.Tools
                 if (_wholeBody && BodyAction.CutShort(_character))
                     return BodyAction.Interrupted(_log, Definition.Name, "");
             }
-            return BodyAction.Done(_log, Definition.Name, "");
+            return _wholeBody
+                ? BodyAction.Done(_log, Definition.Name, "")
+                : BodyAction.Played(_log, Definition.Name);
         }
     }
 
@@ -91,17 +93,32 @@ namespace Jolly.Core.Tools
         /// <summary>After the move: a walk running now started during it and ended it.</summary>
         public static bool CutShort(ICharacterController character) => character.Mode != LocomotionMode.None;
 
+        /// <summary>A whole-body move played out: it is the answer, so a round that already spoke needs no closing words
+        /// after it, and the turn ends when the move ends (the closing round took 1.5-2 s on the headset, 2026-11-02).</summary>
         /// <param name="detail">Log fields before the status, each with a trailing space.</param>
-        public static ToolResult Done(ILog log, string toolName, string detail) => Result(log, toolName, detail, "done");
+        public static ToolResult Done(ILog log, string toolName, string detail)
+        {
+            Log(log, toolName, detail, "done");
+            return ToolResult.Success(Output("done"), endsSpokenTurn: true);
+        }
+
+        /// <summary>An upper-body gesture played out: punctuation, so the model may still have something to say.</summary>
+        public static ToolResult Played(ILog log, string toolName)
+        {
+            Log(log, toolName, "", "done");
+            return ToolResult.Success(Output("done"));
+        }
 
         /// <inheritdoc cref="Done"/>
-        public static ToolResult Interrupted(ILog log, string toolName, string detail) =>
-            Result(log, toolName, detail, "interrupted_by_walk");
-
-        static ToolResult Result(ILog log, string toolName, string detail, string status)
+        public static ToolResult Interrupted(ILog log, string toolName, string detail)
         {
-            log.Write(LogLevel.Info, "tools", $"evt=action.{Verb(toolName)} {detail}status={status}");
-            return ToolResult.Success("{\"status\":\"" + status + "\"}");
+            Log(log, toolName, detail, "interrupted_by_walk");
+            return ToolResult.Success(Output("interrupted_by_walk"));
         }
+
+        static void Log(ILog log, string toolName, string detail, string status) =>
+            log.Write(LogLevel.Info, "tools", $"evt=action.{Verb(toolName)} {detail}status={status}");
+
+        static string Output(string status) => "{\"status\":\"" + status + "\"}";
     }
 }

@@ -135,7 +135,7 @@ namespace Jolly.Core.Agent
                     var result = await StreamRound(turn.TurnId, round, request, open, events, ct);
                     await open.WhenAll();
                     transcript.AddRound(result.OutputItems, open);
-                    var finished = open.Count == 0 || open.EndsTurn;
+                    var finished = open.Count == 0 || open.EndsTurn || (open.EndsSpokenTurn && Spoke(result));
                     open = null;
                     if (finished)
                         break;
@@ -243,6 +243,16 @@ namespace Jolly.Core.Agent
                 _settings.ReplyObserved(reply);
             }
             return result;
+        }
+
+        static bool Spoke(ModelTurnResult result)
+        {
+            foreach (var item in result.OutputItems)
+            {
+                if (item.Kind == ItemKind.AssistantText && !string.IsNullOrWhiteSpace(item.Text))
+                    return true;
+            }
+            return false;
         }
 
         static bool Offers(IReadOnlyList<ToolNamespace> namespaces, string name)

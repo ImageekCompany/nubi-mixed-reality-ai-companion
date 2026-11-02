@@ -16,8 +16,6 @@ namespace Jolly.Core.Agent
     /// </summary>
     sealed class ToolRoundExecutor
     {
-        public const string Interrupted = "{\"error\":\"interrupted\"}";
-
         sealed class Call
         {
             public ToolCallRequest Request;
@@ -71,6 +69,21 @@ namespace Jolly.Core.Agent
             }
         }
 
+        /// <summary>True when the round ran at least one call and every result, locomotion included, has EndsSpokenTurn:
+        /// an unreachable move_relative beside a dance still has to be explained.</summary>
+        public bool EndsSpokenTurn
+        {
+            get
+            {
+                foreach (var call in _calls)
+                {
+                    if (call.Result is not { EndsSpokenTurn: true })
+                        return false;
+                }
+                return _calls.Count > 0;
+            }
+        }
+
         public void Start(ToolCallRequest request)
         {
             var call = new Call { Request = request };
@@ -118,7 +131,7 @@ namespace Jolly.Core.Agent
             {
                 if (includeCalls)
                     into.Add(ConversationItem.Call(call.Request.CallId, call.Request.Name, call.Request.ArgumentsJson));
-                into.Add(ConversationItem.Result(call.Request.CallId, call.Result?.OutputJson ?? Interrupted));
+                into.Add(ConversationItem.Result(call.Request.CallId, call.Result?.OutputJson ?? ToolResult.InterruptedOutput));
             }
         }
 
