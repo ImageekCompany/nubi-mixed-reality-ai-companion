@@ -87,13 +87,7 @@ namespace Jolly.XR.Interaction
             return !InteractorRays.IsBusy(interactor) && InteractorRays.TryGetRay(interactor, out ray) && !HitsCharacter(ray);
         }
 
-        bool HitsCharacter(Ray ray)
-        {
-            if (_character == null || !_character.enabled || !_character.Raycast(ray, out _, CharacterHitDistance))
-                return false;
-            var bounds = _character.bounds;
-            return !CharacterAim.LandsJustPast(ray, new Vector3(bounds.center.x, bounds.min.y, bounds.center.z), bounds.extents.x);
-        }
+        bool HitsCharacter(Ray ray) => CharacterAim.AimsAt(_character, ray, CharacterHitDistance);
 
         static Handedness Other(Handedness side) => side == Handedness.Left ? Handedness.Right : Handedness.Left;
 
