@@ -43,7 +43,8 @@ namespace Jolly.Core.Agent
         // Without the first sentence the model asked "what city?" instead of searching (live probe 2026-11-02, ADR-0048).
         const string SearchRules =
             "For anything current or local (weather, news, scores, prices, opening hours, recent events) search the web " +
-            "for the user's home or the location you were given instead of asking where they are. " +
+            "for the user's home or the place the context says they are probably near, instead of asking where they are; " +
+            "name the place you checked so they can correct you. " +
             "Answer from the search in one or two short sentences; never read out URLs, sources, citations or markdown.";
 
         readonly ILocalizer _localizer;

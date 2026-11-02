@@ -56,20 +56,30 @@ namespace Jolly.Core.Location
 
         public WebSearchOptions SearchOptions() => new() { Country = Country, City = City, Timezone = TimeZone };
 
-        /// <summary>"Local time: Monday, 2 November 2026, 10:15. Home: London, GB." for the context block.</summary>
-        /// <param name="withHome">False leaves the home city out (a persona that may not search, ADR-0048).</param>
+        /// <summary>
+        /// "Local time: Monday, 2 November 2026, 10:15. Home: London, GB." for the context block; without a home the time
+        /// zone's city as "Probably near: Warsaw (device time zone)." Leaving that out made the model ask for the town
+        /// instead of searching (device self-test 2026-11-02), even with the city in the search's user_location.
+        /// </summary>
+        /// <param name="withHome">False leaves any city out (a persona that may not search, ADR-0048).</param>
         public string PromptLine(bool withHome = true)
         {
             var sb = new StringBuilder("Local time: ")
                 .Append(LocalNow.ToString("dddd, d MMMM yyyy, HH:mm", CultureInfo.InvariantCulture)).Append('.');
-            var city = withHome ? HomeCity : null;
-            if (city != null)
+            if (!withHome)
+                return sb.ToString();
+            var home = HomeCity;
+            if (home != null)
             {
-                sb.Append(" Home: ").Append(city);
+                sb.Append(" Home: ").Append(home);
                 var country = Country;
                 if (country != null)
                     sb.Append(", ").Append(country);
                 sb.Append('.');
+            }
+            else if (City is { } near)
+            {
+                sb.Append(" Probably near: ").Append(near).Append(" (device time zone).");
             }
             return sb.ToString();
         }

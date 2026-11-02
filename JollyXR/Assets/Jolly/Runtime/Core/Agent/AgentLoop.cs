@@ -112,6 +112,11 @@ namespace Jolly.Core.Agent
                     Speech = events, Preferences = _preferences,
                 };
                 var request = LiveRequest(_prompt, _registry, persona, _preferences, _webSearch, _settings, out var contextItem);
+                // What the model could choose from: a refusal like "I can't go behind you" is otherwise unexplainable on a device.
+                if (_log.IsEnabled(LogLevel.Info))
+                    _log.Write(LogLevel.Info, "agent",
+                               $"evt=llm.offer turn={turn.TurnId} persona={persona.Id} tools={request.Tools.Count} " +
+                               $"seated={(_preferences.Current?.Seated == true ? 1 : 0)} search={(request.WebSearch != null ? 1 : 0)}");
 
                 for (var round = 0; ; round++)
                 {

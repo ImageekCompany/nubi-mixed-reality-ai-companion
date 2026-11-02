@@ -163,13 +163,13 @@ namespace Jolly.Tests.EditMode.Core.Location
         }
 
         [Test]
-        public void PromptLine_WithoutAHome_HasOnlyTheTimeNotTheTimeZonesCity()
+        public void PromptLine_WithoutAHome_NamesTheTimeZonesCityAsApproximate()
         {
             // Act
             var line = _location.PromptLine();
 
             // Assert
-            Assert.That(line, Is.EqualTo("Local time: Monday, 2 November 2026, 09:05."));
+            Assert.That(line, Is.EqualTo("Local time: Monday, 2 November 2026, 09:05. Probably near: London (device time zone)."));
         }
 
         [Test]
