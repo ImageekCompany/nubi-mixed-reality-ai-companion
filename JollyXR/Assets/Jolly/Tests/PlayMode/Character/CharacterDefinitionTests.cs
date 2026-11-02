@@ -114,6 +114,28 @@ namespace Jolly.Tests.PlayMode.Character
         }
 
         [Test]
+        public void Validate_NubiNotTurnedToFacePlusZ_IsAnError()
+        {
+            // Arrange: Nubi.fbx faces -z; without its 180° the face points away from the root's +z.
+            var unturned = Object.Instantiate(AssetDatabase.LoadAssetAtPath<CharacterDefinition>(NubiAssetPaths.Definition));
+            unturned.modelYaw = 0f;
+
+            try
+            {
+                // Act
+                var errors = CharacterDefinitionValidator.Validate(unturned).Where(i => i.Level == CharacterIssueLevel.Error)
+                                                         .Select(i => i.Message);
+
+                // Assert
+                Assert.That(errors, Has.Some.Contains("set modelYaw"));
+            }
+            finally
+            {
+                Object.DestroyImmediate(unturned);
+            }
+        }
+
+        [Test]
         public void Validate_NoVoice_IsAnError()
         {
             // Arrange

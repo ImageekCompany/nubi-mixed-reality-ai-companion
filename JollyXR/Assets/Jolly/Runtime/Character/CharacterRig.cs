@@ -88,7 +88,7 @@ namespace Jolly.Character
                 footRestHeight = BindPoseFootHeight(definition.model.transform, names);
 
             rig = new CharacterRig(animator, face, bones, jaw, footLeft, footRight, footRestHeight,
-                                   BindPoseHeadForward(definition.model.transform, names));
+                                   BindPoseHeadForward(definition.model.transform, names, definition.modelYaw));
             error = null;
             return true;
         }
@@ -122,13 +122,16 @@ namespace Jolly.Character
         }
 
         /// <summary>
-        /// From the model asset, like <see cref="BindPoseFootHeight"/>. The instance is the asset under the character root,
-        /// so the head's bind rotation relative to the character root is its world rotation in the asset.
+        /// From the model asset, like <see cref="BindPoseFootHeight"/>. The instance is the asset under the character root
+        /// turned by <paramref name="modelYaw"/>, so the head's bind rotation relative to the root is that yaw times its
+        /// world rotation in the asset.
         /// </summary>
-        static Vector3 BindPoseHeadForward(Transform asset, RigBoneNames names)
+        static Vector3 BindPoseHeadForward(Transform asset, RigBoneNames names, float modelYaw)
         {
             var head = Find(asset, names.head);
-            return head == null ? Vector3.forward : Quaternion.Inverse(head.rotation) * Vector3.forward;
+            return head == null
+                ? Vector3.forward
+                : Quaternion.Inverse(Quaternion.Euler(0f, modelYaw, 0f) * head.rotation) * Vector3.forward;
         }
 
         public static SkinnedMeshRenderer FindFace(GameObject model, string name)

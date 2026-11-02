@@ -1,6 +1,7 @@
 #if UNITY_EDITOR
 using System;
 using System.Collections;
+using System.Linq;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using Jolly.Character;
@@ -9,6 +10,7 @@ using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.TestTools;
+using Object = UnityEngine.Object;
 
 namespace Jolly.Tests.PlayMode.Character
 {
@@ -45,12 +47,48 @@ namespace Jolly.Tests.PlayMode.Character
 
         bool Facing() => Offsets() is var o && o.Body < 5f && o.Head < 10f;
 
+        /// <summary>
+        /// Unsigned yaw from where the rendered face points to the user's head: the skinned eye vertices relative to the
+        /// head bone. Unlike <see cref="NubiCharacterController.TryMeasureUser"/> it assumes nothing about which way the
+        /// model faces, so a model turned away from the root's +z fails here (ADR-0046).
+        /// </summary>
+        float FaceYawOff()
+        {
+            var bones = _rig.Nubi.Definition.bones;
+            var head = CharacterRig.Find(_rig.Nubi.transform, bones.head);
+            var eyes = new[] { CharacterRig.Find(_rig.Nubi.transform, bones.eyeLeft), CharacterRig.Find(_rig.Nubi.transform, bones.eyeRight) };
+            var face = _rig.Nubi.GetComponentsInChildren<SkinnedMeshRenderer>().First(r => r.bones.Contains(eyes[0]));
+            var baked = new Mesh();
+            try
+            {
+                face.BakeMesh(baked, true);
+                var vertices = baked.vertices;
+                var weights = face.sharedMesh.boneWeights;
+                var sum = Vector3.zero;
+                var count = 0;
+                for (var i = 0; i < weights.Length; i++)
+                {
+                    if (weights[i].weight0 < 0.5f || !eyes.Contains(face.bones[weights[i].boneIndex0]))
+                        continue;
+                    sum += face.transform.TransformPoint(vertices[i]);
+                    count++;
+                }
+                Assert.That(count, Is.GreaterThan(0), "no vertex is skinned to the eyes");
+                return Mathf.Abs(LookAtSolver.Yaw(sum / count - head.position, _rig.User.Head.position - head.position, Vector3.up));
+            }
+            finally
+            {
+                Object.Destroy(baked);
+            }
+        }
+
         async UniTask AssertFacesTheUser()
         {
             await CharacterTestRig.Until(Facing, SettleSeconds);
             var (body, head) = Offsets();
             Assert.That(body, Is.LessThan(BodyLimit), "body yaw off the user");
             Assert.That(head, Is.LessThan(HeadLimit), "head yaw off the user");
+            Assert.That(FaceYawOff(), Is.LessThan(BodyLimit), "the rendered face points away from the user");
             Assert.That(_rig.Nubi.Attending, Is.EqualTo(AttentionTarget.User));
         }
 

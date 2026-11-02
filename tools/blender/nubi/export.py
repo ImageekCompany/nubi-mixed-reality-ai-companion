@@ -64,7 +64,8 @@ def _without_shape_key_curves():
 
 
 def export_fbx(path, mesh_obj, arm_obj):
-    """Unity-oriented FBX: metres at scale 1 (UnitScaleFactor 100 = 1 m), Y-up, Nubi faces Unity +Z,
+    """Unity-oriented FBX: metres at scale 1 (UnitScaleFactor 100 = 1 m), Y-up, the character faces Unity -Z
+    (CharacterDefinition.modelYaw 180 turns it to the root's +Z, ADR-0046),
     no leaf bones, one take per NLA strip (take name == strip name), shape keys included.
     bake_space_transform bakes the mesh, but the exporter still writes the armature node with a -90 X
     rotation (compensated on Root); Unity's "Bake Axis Conversion" import option removes it.

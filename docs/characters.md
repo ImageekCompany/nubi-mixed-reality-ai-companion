@@ -75,6 +75,7 @@ face mapping; fill in:
 | `jaw` | `bone` and `openRotation` (local Euler degrees at fully open) for a jaw-bone mouth; leave `bone` empty otherwise. Clips must not key the jaw |
 | `bones` | `chest`, `neck`, `head`, `eyeLeft`, `eyeRight`, `upperBody` (this bone and its children play gestures and talk poses over the walk), and `footLeft`/`footRight` (optional: the contact shadow shrinks and fades as the lower foot rises above its bind-pose height, ADR-0024; without them it stays at standing size and the validator warns) |
 | `scale` | Uniform scale of the model instance |
+| `modelYaw` | Degrees about up that turn the model to face the root's +z, where look-at, body turns and walking point the face. 180 for our Blender exports, which face -z; the validator measures the face (the vertices skinned to the eyes) and errors when it points elsewhere (ADR-0046) |
 | `height`, `agentRadius`, `colliderRadius` | NavMeshAgent and capsule collider (also what the poke and gaze triggers hit), metres |
 | `contactShadowRadius` | Half-extents of the blob shadow on the floor: x across, y front to back |
 | `tuning` | Walk/catch-up speeds, clip ground speeds, Walk→Hop threshold, playback-rate clamp, turn rate; look-at limits (keep eye yaw/pitch where the eyes stay in the head); blink and mouth timing |

@@ -4,7 +4,7 @@ using UnityEngine.AI;
 namespace Jolly.Character
 {
     /// <summary>
-    /// Sizes the character root's parts from its definition: model scale, agent, collider and contact shadow. Shared
+    /// Sizes the character root's parts from its definition: model scale and facing, agent, collider and contact shadow. Shared
     /// by the prefab builder and the runtime swap, so a definition edit needs no prefab rebuild. Null parts are skipped.
     /// </summary>
     public static class CharacterBody
@@ -13,7 +13,10 @@ namespace Jolly.Character
                                  Transform contactShadow)
         {
             if (model != null)
+            {
                 model.localScale = Vector3.one * d.scale;
+                model.localRotation = Quaternion.Euler(0f, d.modelYaw, 0f);
+            }
             if (agent != null)
             {
                 agent.radius = d.agentRadius;

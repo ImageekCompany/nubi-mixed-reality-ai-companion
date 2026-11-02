@@ -114,6 +114,7 @@ MonoBehaviour:
     footLeft: Foot_L
     footRight: Foot_R
   scale: 1
+  modelYaw: 180
   height: 0.9
   agentRadius: 0.22
   colliderRadius: 0.3
@@ -143,6 +144,10 @@ MonoBehaviour:
       headPitchMax: 20
       bodyTurnBeyond: 45
       bodySettleWithin: 5
+      faceUserBeyond: 15
+      bodyTurnSpeed: 150
+      attendWithin: 3
+      pointHoldSeconds: 2.5
       blendSeconds: 0.25
       chestShare: 0.2
       neckShare: 0.3

@@ -58,6 +58,9 @@ namespace Jolly.Character
         [Header("Body (metres, in the character root's space)")]
         [Tooltip("Uniform scale of the model instance.")]
         public float scale = 1f;
+        [Tooltip("Yaw about up that turns the model to face the root's +z, degrees. Look-at, body turns and walking all " +
+                 "take +z as where the face points; the Blender exports face -z, so they need 180 (ADR-0046).")]
+        public float modelYaw;
         [Tooltip("NavMeshAgent and collider height.")]
         public float height = 0.9f;
         public float agentRadius = 0.22f;

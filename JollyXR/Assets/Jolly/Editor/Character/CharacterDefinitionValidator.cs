@@ -21,15 +21,18 @@ namespace Jolly.Editor.Character
 
     /// <summary>
     /// The rig contract every character must meet (docs/characters.md): required clips, every canonical face channel
-    /// bound to a blendshape the face mesh has (or the jaw), the look-at and upper-body bones, at most four bone
-    /// influences, usable body and tuning values, and a triangle budget (a warning). Run by the content validator
-    /// (tools/ci/test.sh) on every definition in the project, and from Jolly/Character/Validate Characters.
+    /// bound to a blendshape the face mesh has (or the jaw), the look-at and upper-body bones, a face that points the
+    /// root's +z, at most four bone influences, usable body and tuning values, and a triangle budget (a warning). Run
+    /// by the content validator (tools/ci/test.sh) on every definition in the project, and from Jolly/Character/Validate
+    /// Characters.
     /// </summary>
     public static class CharacterDefinitionValidator
     {
         /// <summary>Architecture §11 Performance: under 30k triangles.</summary>
         public const int TriangleBudget = 30000;
         public const int MaxBoneInfluences = 4;
+        /// <summary>Degrees the face may point off the root's +z: generous, a wrong model faces 90° or 180° off.</summary>
+        public const float FacingTolerance = 30f;
 
         static readonly Regex IdPattern = new("^[a-z0-9_-]+$");
         static readonly string[] Parameters =
@@ -196,6 +199,69 @@ namespace Jolly.Editor.Character
                 return;
             }
             CheckFace(d, face.sharedMesh, hasJaw, issues);
+            CheckFacing(d, issues);
+        }
+
+        /// <summary>
+        /// Everything that turns the character takes the root's +z as where the face points (ADR-0046). The face is
+        /// where the vertices skinned to the eyes sit; the eye bones themselves are pivots inside the head, so their
+        /// position says nothing about the facing.
+        /// </summary>
+        static void CheckFacing(CharacterDefinition d, List<CharacterIssue> issues)
+        {
+            // An unanimated instance stands in its bind pose; baking it reads vertices the import keeps unreadable.
+            var model = UnityEngine.Object.Instantiate(d.model);
+            var baked = new Mesh();
+            try
+            {
+                var root = model.transform;
+                var head = CharacterRig.Find(root, d.bones.head);
+                var eyes = new[] { CharacterRig.Find(root, d.bones.eyeLeft), CharacterRig.Find(root, d.bones.eyeRight) };
+                var face = CharacterRig.FindFace(model, d.faceMesh);
+                if (head == null || eyes[0] == null || eyes[1] == null || face == null)
+                    return;
+                face.BakeMesh(baked, true);
+                if (!TryEyeCentroid(face, baked.vertices, eyes, out var centroid))
+                {
+                    Warn(issues, $"no vertex of '{face.name}' is skinned to the eye bones: the facing is unchecked");
+                    return;
+                }
+                var toFace = Vector3.ProjectOnPlane(Quaternion.Euler(0f, d.modelYaw, 0f) * root.InverseTransformVector(centroid - head.position),
+                                                    Vector3.up);
+                var off = Vector3.SignedAngle(Vector3.forward, toFace, Vector3.up);
+                if (toFace.sqrMagnitude < 1e-8f || Mathf.Abs(off) > FacingTolerance)
+                    Error(issues, $"with modelYaw {d.modelYaw:0.#} the face points {off:0}° from the root's +z; set modelYaw so " +
+                                  "it faces +z (ADR-0046)");
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(baked);
+                UnityEngine.Object.DestroyImmediate(model);
+            }
+        }
+
+        /// <summary>World centroid of the baked vertices mostly skinned to the eye bones.</summary>
+        static bool TryEyeCentroid(SkinnedMeshRenderer face, Vector3[] vertices, Transform[] eyes, out Vector3 centroid)
+        {
+            centroid = default;
+            var bones = face.bones;
+            var weights = face.sharedMesh.boneWeights;
+            if (weights.Length != vertices.Length)
+                return false;
+            var sum = Vector3.zero;
+            var count = 0;
+            for (var i = 0; i < weights.Length; i++)
+            {
+                var w = weights[i];
+                if (w.weight0 < 0.5f || w.boneIndex0 >= bones.Length || Array.IndexOf(eyes, bones[w.boneIndex0]) < 0)
+                    continue;
+                sum += face.transform.TransformPoint(vertices[i]);
+                count++;
+            }
+            if (count == 0)
+                return false;
+            centroid = sum / count;
+            return true;
         }
 
         static void CheckFace(CharacterDefinition d, Mesh mesh, bool hasJaw, List<CharacterIssue> issues)
