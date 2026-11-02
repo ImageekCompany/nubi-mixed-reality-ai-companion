@@ -1,7 +1,7 @@
 # Jolly demo skin (local only)
 
 A "Jolly-like" skin for demos. It is built on your machine from a mesh you supply and drops in for Nubi:
-the same 22 bones, 13 shape keys and 15 clips.
+the same 22 bones, 13 shape keys and 18 clips.
 
 ## IP constraint
 
@@ -57,7 +57,7 @@ afterwards gives the same bytes as before: `Nubi.fbx` and `T_Nubi_Albedo.png` ma
 | UVs | Smart project, arms and the rest projected separately (in one projection the arm's outer side and the torso under it overlap), then averaged and packed. |
 | Shape keys | Nubi's: `sil A I U E O Smile Frown Blink_L Blink_R Happy_Eyes Wide_Eyes Sad_Eyes`. |
 | Rig | Nubi's 22 bones, placed for Jolly. The two `Sprout` bones are kept for the contract but skin nothing. The armature is still named `Nubi_Rig`, so Animator paths match Nubi's. |
-| Clips | Same 15 names, lengths, loop flags and gait timing. Jolly's own: `Idle` (breathing stretch, weight sway, late head tilt), `Walk` (waddle roll, squash after each contact, flapping arms), `Hop` (squash on the ground, stretch in the air), `Talk` (Nubi's gestures plus a body bounce on the beats), `Wave` (**left** arm, like the reference: dip, overshoot, three forearm wags with the paw trailing), `Happy` (crouch, jump with arms high, squash on landing). The rest are Nubi's, with inward arm swings clamped (the arms hang close to the torso); `Nod` squashes harder. |
+| Clips | Same 18 names, lengths, loop flags and gait timing. Jolly's own: `Idle` (breathing stretch, weight sway, late head tilt), `Walk` (waddle roll, squash after each contact, flapping arms), `Hop` (squash on the ground, stretch in the air), `Talk` (Nubi's gestures plus a body bounce on the beats), `Wave` (**left** arm, like the reference: dip, overshoot, three forearm wags with the paw trailing), `Happy` (crouch, jump with arms high, squash on landing), `Bow` (Nubi's fold with the right paw to the belly and the left hanging; swept out, the long paddle arm read as a stick). The rest, including `Dance` and `Jump`, are Nubi's, with inward arm swings clamped (the arms hang close to the torso); `Nod` squashes harder. |
 | Look | Oatmeal-beige plush (base sRGB ≈ #DCC4A7, from the user's warm plush references of 2026-11-02; the first photo's peach-pink #F2C1B8 read as bubble-gum pink on the headset), a warm cream face plate (#F2E0C8) with a darker inset rim, glossy black bead eyes, soft cheek blush, a thin dark smile. The albedo carries no strands; the fur is the shell shader's job (§1b). |
 
 The reference photo (local only, `tools/blender/out/jolly/reference/`, git-ignored) is the colour and
@@ -100,7 +100,7 @@ Shader recipe (the Blender preview, `Jolly.blend`, does exactly this; numbers ar
 
 - Generic rig, avatar created from this model, Bake Axis Conversion on, Optimize Game Objects off,
   blend shapes on, no cameras, lights or visibility, not readable, Optimal compression.
-- Loop Time on the `loopingClips` from `Jolly_FacePresets.json`: Idle, Walk, Hop, Talk, Listen, Think and Sad.
+- Loop Time on the `loopingClips` from `Jolly_FacePresets.json`: Idle, Walk, Hop, Talk, Listen, Think, Sad and Dance.
 - The material remaps `M_Jolly_Gloss` and `M_Jolly_Fur` point to:
   - Gloss on `Jolly/Character/NubiSkin`: rim 0, spec 0.7/96, the same as Nubi's eyes.
   - Fur on `Jolly/Character/ShellFur` (ADR-0045) with `T_Jolly_{Albedo,Fur,FurFlow,FurNoise}`: 16 / 10 / 6 shells
@@ -159,9 +159,11 @@ mishearings `Jolie`/`Jollie` become "Jolly".
 ## Validation (latest local build)
 
 26,012 tris and 13,046 verts, 22 bones, 2 materials. Max 4 influences, 0 unweighted vertices, all
-normalised. All 15 clips pass the arm and foot interpenetration check: `Think` 28.0 mm against its 32 mm
+normalised. All 18 clips pass the arm and foot interpenetration check (`Dance`, `Jump`, `Bow` 0 mm): `Think` 28.0 mm against its 32 mm
 limit, `Listen` 2.6 mm, `Point` 0.8 mm, everything else 0 (limit 4 mm). Locomotion matches the design speed (Walk 0.491 m/s
-with 0.0 mm IK error, Hop 0.900 m/s with 1.95 mm). The closed blink is 0.136 of the open eye height.
+with 0.0 mm IK error, Hop 0.900 m/s with 1.95 mm). In `contacts`, `Jump` clears the floor by 0.199 m and `Dance` and
+`Bow` keep the feet on their targets (0.0/0.1 mm); `Stretch`, `Surprised`, `Shrug` and `Wave` raise the hips past the
+legs' reach and lift the feet 6–13 mm, as on Nubi. The closed blink is 0.136 of the open eye height.
 
 The merged body has holes where the arms join, so arms are tested against a hidden, closed, arm-less copy of
 the torso skinned to the body chain (`TorsoProxy`, not exported), with nearest-face candidates confirmed by

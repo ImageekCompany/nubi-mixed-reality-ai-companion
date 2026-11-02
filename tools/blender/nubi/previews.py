@@ -25,7 +25,7 @@ SHEET_COLUMNS = 3
 FACE_COLUMNS = 8
 ANIM_AZIMUTH = 30
 # Right-arm clips are shown from Nubi's right; the gaits from the side so the stride reads.
-ANIM_AZIMUTH_OVERRIDE = {"Wave": -30, "Point": -80, "Think": -15, "Walk": 65, "Hop": 65}
+ANIM_AZIMUTH_OVERRIDE = {"Wave": -30, "Point": -80, "Think": -15, "Walk": 65, "Hop": 65, "Dance": 10, "Bow": 50}
 ANIM_ELEVATION = 8
 
 

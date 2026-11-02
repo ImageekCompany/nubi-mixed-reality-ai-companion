@@ -32,7 +32,8 @@ checks every point marked ✔.
 
 **Canonical clips** (`CharacterClips`). Required: `Idle`, `Walk`, `Hop`, `Sad`, `Talk`, `Listen`, `Think`, `Wave`,
 `Nod`, `ShakeHead`, `Shrug`, `Point`, `Happy`, `Stretch`. Optional: `Surprised`. Loops: `Idle`, `Walk`, `Hop`, `Talk`,
-`Listen`, `Think`, `Sad`. `Walk` and `Hop` are in place; measure the ground speed each one matches at 1× and put it in
+`Listen`, `Think`, `Sad`. Nubi and Jolly also carry the action takes `Dance` (loop), `Jump` and `Bow` (in place, 30 fps;
+`Jump` lifts the hips and feet itself). `Walk` and `Hop` are in place; measure the ground speed each one matches at 1× and put it in
 `tuning.locomotion.walkClipSpeed` / `hopClipSpeed`.
 
 **Canonical face channels** (`FaceChannels.ShapeNames`): visemes `sil`, `A`, `I`, `U`, `E`, `O`; expressions `Smile`,

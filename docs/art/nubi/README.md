@@ -30,7 +30,7 @@ Source: `tools/blender/build_nubi.py` is the entry point. The `tools/blender/nub
 - `geometry`, `rig`, `shapes`, `texture`
 - `faces` for the per-clip face presets (drives the clip previews and the JSON above)
 - `posing` for character-space FK, two-bone IK and channel conversion
-- `clips` for the 13 animations as functions of frame
+- `clips` for the 18 animations as functions of frame
 - `animation`, `validate`, `export`, `render`, `previews`
 
 ## Design rationale
@@ -75,7 +75,7 @@ derived from the Jolly mesh. Meta's name and logo are not used as branding.
 | Bones (22) | `Root, Hips, Spine, Chest, Neck, Head, Sprout_1, Sprout_2, Eye_L/R, UpperArm/LowerArm/Hand_L/R, UpperLeg/LowerLeg/Foot_L/R` |
 | Skinning | Analytic per-part weights (each part blends only along its own chain). 0 unweighted verts, ≤ 4 influences, all normalised |
 | Shape keys | Visemes `sil, A, I, U, E, O`; expressions `Smile, Frown`; eyes `Blink_L, Blink_R, Happy_Eyes, Wide_Eyes, Sad_Eyes` |
-| Clips (30 fps) | Loops: `Idle` (100 f), `Walk` (20 f, in place, 0.49 m/s), `Hop` (16 f, in place, 0.90 m/s), `Talk` (60), `Listen` (90), `Think` (90), `Sad` (90). One-shots: `Wave` (60), `Point` (45, ends holding the point), `Happy` (36, hop), `Nod` (30), `ShakeHead` (36), `Surprised` (40), `Shrug` (40), `Stretch` (60, a yawn; idle wake-up) |
+| Clips (30 fps) | Loops: `Idle` (100 f), `Walk` (20 f, in place, 0.49 m/s), `Hop` (16 f, in place, 0.90 m/s), `Talk` (60), `Listen` (90), `Think` (90), `Sad` (90). One-shots: `Wave` (60), `Point` (45, ends holding the point), `Happy` (36, hop), `Nod` (30), `ShakeHead` (36), `Surprised` (40), `Shrug` (40), `Stretch` (60, a yawn; idle wake-up). Actions (played on request): `Dance` (120, loops), `Jump` (40), `Bow` (60) |
 
 FBX facts, checked by re-import and by dumping the FBX tree:
 
@@ -110,6 +110,15 @@ Animation principles in `clips.py`:
   is authored in Head space (`PoseSpec.hand_ik_space`) so the contact holds through the head drift
   and the two taps, and the elbow pole drops forward/down (`hand_ik_pole`) so the forearm rises
   along the face instead of stabbing in from the side. Eye bones look up and away (−7° pitch, +9° yaw)
+- `Dance` is two bars at 120 bpm (4 s loop): the hips shift 2.2 cm onto the stance foot and bounce into every
+  downbeat while the free foot toe-taps; the blob leans into the step and the head tilts back a beat late. Bar one
+  pumps a goalpost fist per beat, alternating; bar two has both arms up, swaying with the step. The head leans
+  with the raised arms (against them, the arm crossing over hits it)
+- `Jump` is one jump in place: crouch with the arms swung back (8 f), snap up onto the toes into a stretch, a
+  ballistic arc whose feet peak 0.20 m off the floor with the knees tucked, a squash on landing with the arms
+  out for balance, settle. Hips carry the height (root motion stays off)
+- `Bow` rises a little, folds ~40° forward from the hips down the chain while sitting back 2.2 cm, the right
+  mitten comes to the belly and the left arm sweeps out and back, holds ~0.6 s, rises with a small overshoot
 
 ## Validation (from `build_report.json`, regenerated every build)
 
@@ -120,6 +129,12 @@ Animation principles in `clips.py`:
   front of the shoulder, so the upper arm runs inside the side of the blob and the forearm emerges
   from it like a stub limb (checked from front, 3/4 and side). No mitten or tip pokes through the face.
   All clips pass.
+- **Contacts** (`contacts` in the report): per clip, the worst gap between a foot target and the solved
+  ankle, how high both feet are off the floor together, and for loops the bone-head jump across the seam
+  (0 for every loop: the last frame re-samples frame 0). `Jump` clears the floor by 0.199 m with 0.1 mm IK
+  error; `Dance` and `Bow` keep 0.0/0.1 mm. Older one-shots that raise the hips past the straight legs' reach
+  fail the 3 mm limit and lift the feet by that much: `Stretch` 12.7 mm, `Surprised` 12.5 mm, `Shrug` 6.1 mm,
+  `Wave` 4.1 mm, `Think` 3.9 mm (not re-authored here).
 - **Locomotion** (`locomotion` in the report): the planted foot slides back at exactly the design
   speed (Walk 0.491 m/s, Hop 0.900 m/s) and the leg IK hits every foot target (Walk 0.0 mm error,
   Hop 1.95 mm at the apex while airborne). Out-of-reach targets would show up here as foot sliding.
@@ -146,7 +161,7 @@ Animation principles in `clips.py`:
     chibi proportions retarget poorly.
   - Enable **Bake Axis Conversion**. Otherwise the `Nubi_Rig` child keeps a −90° X rotation that
     the Root bone compensates (visually correct either way).
-  - Set **Loop Time** on Idle, Walk, Hop, Talk, Listen, Think and Sad.
+  - Set **Loop Time** on Idle, Walk, Hop, Talk, Listen, Think, Sad and Dance.
   - All of the above is set in code by `CharacterModelPostprocessor` (`Editor/Character`, assembly `Jolly.Editor.Character`), for any FBX with a sibling `<Model>_FacePresets.json` (`docs/characters.md`). Loop
     Time comes from `loopingClips` in `Nubi_FacePresets.json`, which this build writes from `clips.py`.
   - After a Blender rebuild, regenerate the derived assets (materials, `Nubi.controller`, `Nubi.prefab`):
@@ -167,6 +182,8 @@ Animation principles in `clips.py`:
   | Think | U 0.6 | Sad | Frown 1, Sad_Eyes 1 |
   | Wave | Smile 0.8 | Surprised | O 1, Wide_Eyes 1 |
   | Shrug | Smile 0.25, Wide_Eyes 0.35 | Stretch | O 0.7, Happy_Eyes 1 |
+  | Dance | Smile 1, Happy_Eyes 0.7 | Jump | Smile 0.7, Wide_Eyes 0.4 |
+  | Bow | Smile 0.5, Happy_Eyes 1 | | |
 
   The clip contact sheets render with these presets applied, so they show the intended result.
 - **Grounding:** in passthrough Nubi floats without a contact shadow. Add a blob-shadow decal under

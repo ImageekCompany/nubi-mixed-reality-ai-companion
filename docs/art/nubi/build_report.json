@@ -41,7 +41,10 @@
     "Sad",
     "Surprised",
     "Shrug",
-    "Stretch"
+    "Stretch",
+    "Dance",
+    "Jump",
+    "Bow"
   ],
   "uv_coverage": 0.56,
   "blink_closed_ratio": {
@@ -153,6 +156,27 @@
       "worst_frame": 0,
       "worst_arm": null,
       "ok": true
+    },
+    "Dance": {
+      "arms_in_body": 0.0,
+      "feet_overlap": 0.0,
+      "worst_frame": 0,
+      "worst_arm": null,
+      "ok": true
+    },
+    "Jump": {
+      "arms_in_body": 0.0,
+      "feet_overlap": 0.0,
+      "worst_frame": 0,
+      "worst_arm": null,
+      "ok": true
+    },
+    "Bow": {
+      "arms_in_body": 0.0,
+      "feet_overlap": 0.0,
+      "worst_frame": 0,
+      "worst_arm": null,
+      "ok": true
     }
   },
   "locomotion": {
@@ -166,6 +190,116 @@
       "design_speed_mps": 0.9,
       "planted_foot_speed_mps": 0.9,
       "max_foot_ik_error_mm": 1.95,
+      "ok": true
+    }
+  },
+  "contacts": {
+    "Idle": {
+      "max_foot_ik_error_mm": 1.18,
+      "airborne_m": 0.0,
+      "loop_seam_mm": 0.0,
+      "ok": true
+    },
+    "Walk": {
+      "max_foot_ik_error_mm": 0.0,
+      "airborne_m": 0.001,
+      "loop_seam_mm": 0.0,
+      "ok": true
+    },
+    "Hop": {
+      "max_foot_ik_error_mm": 1.95,
+      "airborne_m": 0.092,
+      "loop_seam_mm": 0.0,
+      "ok": true
+    },
+    "Talk": {
+      "max_foot_ik_error_mm": 0.0,
+      "airborne_m": 0.0,
+      "loop_seam_mm": 0.0,
+      "ok": true
+    },
+    "Listen": {
+      "max_foot_ik_error_mm": 0.0,
+      "airborne_m": 0.0,
+      "loop_seam_mm": 0.0,
+      "ok": true
+    },
+    "Think": {
+      "max_foot_ik_error_mm": 3.93,
+      "airborne_m": 0.0,
+      "loop_seam_mm": 0.0,
+      "ok": false
+    },
+    "Wave": {
+      "max_foot_ik_error_mm": 4.1,
+      "airborne_m": 0.004,
+      "loop_seam_mm": null,
+      "ok": false
+    },
+    "Point": {
+      "max_foot_ik_error_mm": 0.1,
+      "airborne_m": 0.0,
+      "loop_seam_mm": null,
+      "ok": true
+    },
+    "Happy": {
+      "max_foot_ik_error_mm": 0.1,
+      "airborne_m": 0.08,
+      "loop_seam_mm": null,
+      "ok": true
+    },
+    "Nod": {
+      "max_foot_ik_error_mm": 0.1,
+      "airborne_m": 0.0,
+      "loop_seam_mm": null,
+      "ok": true
+    },
+    "ShakeHead": {
+      "max_foot_ik_error_mm": 0.4,
+      "airborne_m": 0.0,
+      "loop_seam_mm": null,
+      "ok": true
+    },
+    "Sad": {
+      "max_foot_ik_error_mm": 0.0,
+      "airborne_m": 0.0,
+      "loop_seam_mm": 0.0,
+      "ok": true
+    },
+    "Surprised": {
+      "max_foot_ik_error_mm": 12.54,
+      "airborne_m": 0.023,
+      "loop_seam_mm": null,
+      "ok": false
+    },
+    "Shrug": {
+      "max_foot_ik_error_mm": 6.1,
+      "airborne_m": 0.006,
+      "loop_seam_mm": null,
+      "ok": false
+    },
+    "Stretch": {
+      "max_foot_ik_error_mm": 12.7,
+      "airborne_m": 0.013,
+      "loop_seam_mm": null,
+      "ok": false
+    },
+    "Dance": {
+      "max_foot_ik_error_mm": 0.0,
+      "airborne_m": 0.0,
+      "loop_seam_mm": 0.0,
+      "ok": true
+    },
+    "Jump": {
+      "max_foot_ik_error_mm": 0.1,
+      "airborne_m": 0.199,
+      "loop_seam_mm": null,
+      "ok": true
+    },
+    "Bow": {
+      "max_foot_ik_error_mm": 0.1,
+      "airborne_m": 0.0,
+      "loop_seam_mm": null,
       "ok": true
     }
   },

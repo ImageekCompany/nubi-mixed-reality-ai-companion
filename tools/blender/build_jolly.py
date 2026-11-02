@@ -14,7 +14,7 @@ Outputs (all git-ignored):
     JollyXR/Assets/Jolly/Local/Characters/Jolly/Textures/T_Jolly_{Albedo,Normal,Fur,FurFlow,FurNoise}.png
     tools/blender/out/jolly/Jolly.blend (with the shell-fur preview rig) and v3/*.png renders
 
-Drop-in contract: the same 22 bones, 13 shape keys and 15 clips as Nubi (docs/art/nubi/build_report.json).
+Drop-in contract: the same 22 bones, 13 shape keys and 18 clips as Nubi (docs/art/nubi/build_report.json).
 The Nubi package is reused as is. Its modules read their design constants from module globals at call
 time, so `apply_profile` swaps in Jolly's values (and Jolly's clip functions) before anything is built;
 the Nubi build never runs in the same process, so nothing leaks back.
@@ -297,7 +297,8 @@ V2_DISTANCE = 2.25
 SHEET_CELL = 256
 SHEET_FRAMES = 4
 SHEET_AZIMUTH = 25
-SHEET_AZIMUTH_OVERRIDE = {"Wave": 30, "Point": -60, "Think": -25, "Walk": 60, "Hop": 60, "Happy": 15}
+SHEET_AZIMUTH_OVERRIDE = {"Wave": 30, "Point": -60, "Think": -25, "Walk": 60, "Hop": 60, "Happy": 15, "Dance": 5,
+                          "Bow": 45}
 WAVE_POSE_FRAME = 22
 
 
@@ -1517,6 +1518,16 @@ def jolly_happy(f):
     return s
 
 
+def jolly_bow(f):
+    """Nubi's bow with the arms kept close: Jolly's long paddle arms swept out to the side read as a stick, so
+    the right paw comes forward to the belly and the left hangs at the side (swung back, it cuts into the body)."""
+    s = clips.bow(f)
+    a = track(f, [(0, 0.0), (4, -0.1), (16, 1.0), (42, 1.0), (54, 0.0), (60, 0.0)], lag=1.0)
+    arms(s, "R", upper=(-22.0 * a, 0.0, 0.0), lower=(-50.0 * a, 0.0, 20.0 * a), hand=(-10.0 * a, 0.0, 0.0))
+    arms(s, "L", upper=(-6.0 * a, -5.0 * a, 0.0), lower=(-16.0 * a, 0.0, 0.0), hand=(-6.0 * a, 0.0, 0.0))
+    return s
+
+
 def _no_inward_arms(fn):
     """Nubi's clips were authored for an A-pose with room between arm and body; Jolly's arms hang close,
     so their inward swings (+Y on the left arm, mirrored on the right) are clamped to ARM_MAX_INWARD.
@@ -1534,7 +1545,8 @@ def _no_inward_arms(fn):
 
 
 JOLLY_CLIPS = {"Idle": (IDLE_LENGTH, jolly_idle), "Walk": (WALK_LENGTH, jolly_walk), "Hop": (HOP_LENGTH, jolly_hop),
-               "Talk": (60, jolly_talk), "Wave": (60, jolly_wave), "Happy": (36, jolly_happy)}
+               "Talk": (60, jolly_talk), "Wave": (60, jolly_wave), "Happy": (36, jolly_happy),
+               "Bow": (clips.BOW_LENGTH, jolly_bow)}
 
 
 def apply_clips():
@@ -1868,6 +1880,7 @@ def main():
     report["blink_closed_ratio"] = validate.blink_report(mesh)
     report["penetration"] = penetration_report(mesh, arm, proxy)
     report["locomotion"] = validate.locomotion_report(arm)
+    report["contacts"] = validate.contact_report(arm)
     report["fur"] = {
         "shells_recommended": FUR_SHELLS,
         "length_m": FUR_LENGTH,

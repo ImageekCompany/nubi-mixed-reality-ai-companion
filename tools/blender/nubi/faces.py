@@ -24,6 +24,9 @@ FACE_PRESETS = {
     "Surprised": {"O": 1.0, "Wide_Eyes": 1.0},
     "Shrug": {"Smile": 0.25, "Wide_Eyes": 0.35},
     "Stretch": {"O": 0.7, "Happy_Eyes": 1.0},      # a yawn
+    "Dance": {"Smile": 1.0, "Happy_Eyes": 0.7},
+    "Jump": {"Smile": 0.7, "Wide_Eyes": 0.4},
+    "Bow": {"Smile": 0.5, "Happy_Eyes": 1.0},
 }
 
 

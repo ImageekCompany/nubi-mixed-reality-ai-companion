@@ -7,7 +7,8 @@
     "Talk",
     "Listen",
     "Think",
-    "Sad"
+    "Sad",
+    "Dance"
   ],
   "presets": [
     {
@@ -152,6 +153,45 @@
         {
           "shape": "O",
           "weight": 0.7
+        },
+        {
+          "shape": "Happy_Eyes",
+          "weight": 1.0
+        }
+      ]
+    },
+    {
+      "clip": "Dance",
+      "weights": [
+        {
+          "shape": "Smile",
+          "weight": 1.0
+        },
+        {
+          "shape": "Happy_Eyes",
+          "weight": 0.7
+        }
+      ]
+    },
+    {
+      "clip": "Jump",
+      "weights": [
+        {
+          "shape": "Smile",
+          "weight": 0.7
+        },
+        {
+          "shape": "Wide_Eyes",
+          "weight": 0.4
+        }
+      ]
+    },
+    {
+      "clip": "Bow",
+      "weights": [
+        {
+          "shape": "Smile",
+          "weight": 0.5
         },
         {
           "shape": "Happy_Eyes",

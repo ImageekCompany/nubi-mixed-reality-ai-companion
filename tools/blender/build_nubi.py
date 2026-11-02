@@ -122,6 +122,7 @@ def main():
     report["blink_closed_ratio"] = validate.blink_report(mesh)
     report["penetration"] = validate.penetration_report(mesh, arm)
     report["locomotion"] = validate.locomotion_report(arm)
+    report["contacts"] = validate.contact_report(arm)
     report["outputs"] = {"fbx": str(FBX_PATH.relative_to(REPO)),
                          "face_presets": str(FACE_PRESETS_PATH.relative_to(REPO)), "texture": str(TEXTURE_PATH.relative_to(REPO)),
                          "blend": str(BLEND_PATH.relative_to(REPO))}

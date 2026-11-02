@@ -7,7 +7,7 @@ from mathutils.bvhtree import BVHTree
 
 from . import config as C
 from .animation import solo, unsolo
-from .clips import CLIPS, HOP_SPEED_MPS, WALK_SPEED_MPS
+from .clips import CLIPS, HOP_SPEED_MPS, WALK_SPEED_MPS, ZERO
 from .geometry import AUX_ATTR, PART_ATTR
 
 TRI_BUDGET = (15000, 30000)
@@ -20,6 +20,8 @@ PENETRATION_TOLERANCE = 0.004   # metres; shading-level contact is fine, visible
 # side, the forearm emerges from the blob like a stub limb; no mitten or tip pokes through the face.
 PENETRATION_TOLERANCE_BY_CLIP = {"Think": 0.032}
 LOCOMOTION = {"Walk": WALK_SPEED_MPS, "Hop": HOP_SPEED_MPS}
+FOOT_IK_TOLERANCE = 0.003
+LOOP_SEAM_TOLERANCE = 0.0005
 
 
 def _face_parts(mesh):
@@ -133,6 +135,38 @@ def blink_report(obj):
         open_h = np.ptp([keys["Basis"].data[i].co.z for i in idx])
         closed_h = np.ptp([keys[name].data[i].co.z for i in idx])
         out[name] = round(float(closed_h / open_h), 3)
+    return out
+
+
+def contact_report(arm_obj):
+    """Per clip: worst gap between a foot target and the solved ankle (> a few mm = the legs cannot reach it,
+    which shows as a sliding or sinking foot), the highest both feet are off the floor together (a jump has
+    to clear it), and for loops the largest bone-head jump across the seam."""
+    scene = bpy.context.scene
+    feet = [arm_obj.pose.bones[f"Foot_{side}"] for side in "LR"]
+    out = {}
+    for clip in CLIPS:
+        start = solo(arm_obj, clip.name)
+        ik_err = airborne = 0.0
+        for f in range(clip.length + 1):
+            scene.frame_set(start + f)
+            spec = clip.pose(float(f))
+            lifts = []
+            for side, pb in zip("LR", feet):
+                off = spec.foot.get(side, (ZERO, ZERO))[0]
+                ik_err = max(ik_err, (pb.head - (pb.bone.head_local + Vector(off))).length)
+                lifts.append(pb.head.z - pb.bone.head_local.z)
+            airborne = max(airborne, min(lifts))
+        seam = 0.0
+        if clip.loop:
+            scene.frame_set(start)
+            first = [pb.head.copy() for pb in arm_obj.pose.bones]
+            scene.frame_set(start + clip.length)
+            seam = max((pb.head - p).length for pb, p in zip(arm_obj.pose.bones, first))
+        out[clip.name] = {"max_foot_ik_error_mm": round(ik_err * 1000.0, 2), "airborne_m": round(airborne, 3),
+                          "loop_seam_mm": round(seam * 1000.0, 3) if clip.loop else None,
+                          "ok": ik_err <= FOOT_IK_TOLERANCE and seam <= LOOP_SEAM_TOLERANCE}
+    unsolo(arm_obj)
     return out
 
 

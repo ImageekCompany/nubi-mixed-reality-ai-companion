@@ -470,6 +470,152 @@ def stretch(f):
     return s
 
 
+# ------------------------------------------------------------ actions ----
+# Played on request ("show me how to dance", "jump", "take a bow"), so they are bigger than the ambient gestures.
+
+DANCE_LENGTH = 120
+DANCE_BEAT = 15      # 120 bpm: two bars of four per loop
+DANCE_SWAY = 0.022   # hip shift over the stance foot
+DANCE_TAP = 0.018    # free foot's toe-tap lift
+# Four beats of alternating arm pumps, then four with both arms up swaying, crossfaded across the bar line
+# and again across the loop seam.
+DANCE_ARMS_UP = [(0, 0.0), (52, 0.0), (62, 1.0), (110, 1.0), (120, 0.0)]
+
+
+def _dance_sway(f):
+    """+1 = weight on the left foot (beats 0, 2, 4, 6), -1 = on the right; a snappy square-ish sine."""
+    c = cos(TAU * f / (2 * DANCE_BEAT))
+    return (abs(c) ** 0.6) * (1.0 if c >= 0.0 else -1.0)
+
+
+def _dance_down(f):
+    """1 on every beat: the bounce sinks into the downbeat."""
+    return (0.5 + 0.5 * cos(TAU * f / DANCE_BEAT)) ** 2
+
+
+def _dance_pump(f, side):
+    """The left fist punches up on the left-weight beats, the right on the others."""
+    c = cos(TAU * (f - 2.0) / (2 * DANCE_BEAT))
+    return max(0.0, c if side == "L" else -c) ** 1.5
+
+
+def dance(f):
+    s = PoseSpec()
+    sway, down = _dance_sway(f), _dance_down(f)
+    up = track(f, DANCE_ARMS_UP)
+    for side, sign in (("L", -1.0), ("R", 1.0)):
+        free = max(0.0, sign * _dance_sway(f + 1.0))         # the foot opposite the weight taps
+        s.foot[side] = ((0.0, 0.0, DANCE_TAP * free ** 2), (-14.0 * free, 0.0, 0.0))
+    s.loc["Hips"] = (DANCE_SWAY * sway, 0.0, -0.012 - 0.010 * down)
+    # The blob leans into the step and the head tilts back the other way, a beat late; with the arms up the
+    # head leans with them instead, or the arm crossing over would hit it.
+    yaw = 9.0 * _dance_sway(f - 3.0)
+    tilt = (2.0 * up - 1.0) * _dance_sway(f - 4.0)
+    s.rot["Hips"] = (3.0, 7.0 * sway, 0.4 * yaw)
+    s.rot["Spine"] = (1.0 + 2.0 * _dance_down(f - 1.0), -2.0 * _dance_sway(f - 2.0), 0.3 * yaw)
+    s.rot["Chest"] = (1.0 + 2.0 * _dance_down(f - 2.0), -3.0 * _dance_sway(f - 3.0), 0.4 * yaw)
+    s.rot["Head"] = (-3.0 + 7.0 * _dance_down(f - 3.0), 7.0 * tilt, -0.5 * yaw)
+    for side, sign in (("L", 1.0), ("R", -1.0)):
+        # Pumps: a goalpost fist (upper arm out, forearm straight up) on its beat, a bent arm at the waist off it.
+        p = _dance_pump(f, side)
+        pump_upper = (-20.0 + 12.0 * p, -30.0 - 45.0 * p, 0.0)
+        pump_lower = (-50.0 + 50.0 * p, -75.0 * p, 0.0)
+        # Arms up: both lean with the sway (the left arm's +Y tilts it to Nubi's left, mirrored for the right).
+        lean = sign * 28.0 * _dance_sway(f - 3.0)
+        up_upper = (-18.0, -100.0, 0.0)
+        up_lower = (-14.0, lean, 0.0)
+        arms(s, side, upper=tuple(a + (b - a) * up for a, b in zip(pump_upper, up_upper)),
+             lower=tuple(a + (b - a) * up for a, b in zip(pump_lower, up_lower)),
+             hand=(0.0, -12.0 * _dance_pump(f - 2.0, side) * (1.0 - up) + 0.6 * lean * up, 0.0))
+    sprout_follow(s, f, lambda x: (-8.0 * _dance_down(x), 12.0 * _dance_sway(x), 0.0), lag1=2.0, lag2=4.0)
+    return s
+
+
+JUMP_LENGTH = 40
+JUMP_HEIGHT = 0.20       # peak lift of the feet off the floor
+JUMP_TAKEOFF = 12
+JUMP_LANDING = 26
+JUMP_TUCK = 0.040        # knees pull the feet this much towards the body at the apex
+JUMP_TIPTOE = 0.044      # ankle rise as the feet roll onto the toes at take-off
+JUMP_CROUCH = 0.040
+JUMP_LAUNCH = 0.030       # hips height as the feet leave the floor
+
+
+def _ballistic(f):
+    """Feet height in the air: a parabola from the take-off tiptoe through JUMP_HEIGHT to the floor."""
+    apex = JUMP_TAKEOFF + (JUMP_LANDING - JUMP_TAKEOFF) * 0.46
+    if f <= apex:
+        q = (apex - f) / (apex - JUMP_TAKEOFF)
+        return JUMP_HEIGHT - (JUMP_HEIGHT - JUMP_TIPTOE) * q * q
+    q = (f - apex) / (JUMP_LANDING - apex)
+    return JUMP_HEIGHT * (1.0 - q * q)
+
+
+def jump(f):
+    """One jump in place: crouch and swing the arms back, snap up into a stretch, tuck at the apex,
+    land in a squash with the arms out for balance, settle."""
+    s = PoseSpec()
+    if f <= 8:
+        lift, hz = 0.0, track(f, [(0, 0.0), (8, -JUMP_CROUCH)])
+    elif f <= JUMP_TAKEOFF:
+        u = (f - 8) / (JUMP_TAKEOFF - 8)
+        lift = JUMP_TIPTOE * u * u
+        hz = -JUMP_CROUCH + (JUMP_CROUCH + JUMP_LAUNCH) * u * u  # accelerates into the take-off
+    elif f <= JUMP_LANDING:
+        lift = _ballistic(f)
+        # The legs straighten out of the tiptoe over three frames while the knees start to tuck.
+        hz = lift - (JUMP_TIPTOE - JUMP_LAUNCH) * max(0.0, 1.0 - (f - JUMP_TAKEOFF) / 3.0)
+        hz -= JUMP_TUCK * sin(pi * (f - JUMP_TAKEOFF) / (JUMP_LANDING - JUMP_TAKEOFF))
+    elif f <= JUMP_LANDING + 4:
+        lift, hz = 0.0, -0.046 * sin(0.5 * pi * (f - JUMP_LANDING) / 4.0)  # carries the fall into the squash
+    else:
+        lift, hz = 0.0, track(f, [(JUMP_LANDING + 4, -0.046), (35, -0.004), (40, 0.0)])
+    pitch = track(f, [(0, 0.0), (8, 0.0), (12, -20.0), (15, -16.0), (20, -4.0), (24, 4.0), (26, 0.0), (40, 0.0)])
+    for side in "LR":
+        s.foot[side] = ((0.0, 0.0, lift), (pitch, 0.0, 0.0))
+    s.loc["Hips"] = (0.0, 0.0, hz)
+    s.scl["Spine"] = squash(track(f, [(0, 0.0), (8, 0.10), (11, -0.06), (14, -0.10), (20, -0.02), (25, -0.06),
+                                      (28, 0.07), (30, 0.12), (34, -0.03), (37, 0.01), (40, 0.0)]))
+    lean = [(0, 0.0), (8, 10.0), (12, -4.0), (19, -2.0), (26, 0.0), (30, 8.0), (36, -1.0), (40, 0.0)]
+    s.rot["Hips"] = (track(f, lean), 0.0, 0.0)
+    s.rot["Spine"] = (0.4 * track(f, lean, lag=1.0), 0.0, 0.0)
+    s.rot["Chest"] = (0.4 * track(f, lean, lag=2.0), 0.0, 0.0)
+    head = [(0, ZERO), (8, (6.0, 0, 0)), (13, (-12.0, 0, 0)), (20, (-6.0, 0, 0)), (27, (4.0, 0, 0)),
+            (31, (10.0, 0, 0)), (36, (-2.0, 0, 0)), (40, ZERO)]
+    s.rot["Head"] = track(f, head, lag=2.0)
+    # Arms swing back in the crouch, throw up through the take-off, open out to the sides for the landing.
+    arm = [(0, ZERO), (8, (30.0, -10.0, 0.0)), (13, (-30.0, -92.0, 0.0)), (19, (-20.0, -104.0, 0.0)),
+           (26, (-8.0, -58.0, 0.0)), (30, (4.0, -34.0, 0.0)), (36, (0.0, -4.0, 0.0)), (40, ZERO)]
+    for side in "LR":
+        arms(s, side, upper=track(f, arm, lag=1.0), lower=(-10.0 + 0.2 * track(f, arm, lag=3.0)[1], 0.0, 0.0),
+             hand=scale(track(f, arm, lag=4.0), 0.15))
+    bounce = [(0, ZERO), (8, (-12.0, 0, 0)), (13, (20.0, 0, 0)), (19, (8.0, 0, 0)), (26, (-26.0, 0, 0)),
+              (31, (14.0, 0, 0)), (35, (-5.0, 0, 0)), (40, ZERO)]
+    sprout_follow(s, f, lambda x: track(x, bounce), lag1=1.0, lag2=3.0)
+    return s
+
+
+BOW_LENGTH = 60
+
+
+def bow(f):
+    """A polite bow: a small rise, fold forward from the hips with the right mitten in front of the belly and
+    the left arm swept out to the side, hold, then come up with a little overshoot."""
+    s = PoseSpec()
+    keys = [(0, 0.0), (6, -0.12), (20, 1.05), (24, 1.0), (40, 1.0), (52, -0.06), (60, 0.0)]
+    b = track(f, keys)
+    s.rot["Hips"] = (18.0 * b, 0.0, 0.0)
+    s.rot["Spine"] = (7.0 * track(f, keys, lag=1.0), 0.0, 0.0)
+    s.rot["Chest"] = (7.0 * track(f, keys, lag=2.0), 0.0, 0.0)
+    s.rot["Head"] = (8.0 * track(f, keys, lag=3.0), 0.0, 0.0)
+    s.loc["Hips"] = (0.0, 0.022 * max(0.0, b), -0.008 * max(0.0, b))   # sit back to balance the fold
+    a = track(f, [(0, 0.0), (4, -0.1), (16, 1.0), (42, 1.0), (54, 0.0), (60, 0.0)], lag=1.0)
+    arms(s, "R", upper=(-4.0 * a, 2.0 * a, 0.0), lower=(-58.0 * a, 0.0, 26.0 * a), hand=(-10.0 * a, 0.0, 0.0))
+    arms(s, "L", upper=(30.0 * a, -34.0 * a, 0.0), lower=(-6.0 * a, -10.0 * a, 0.0), hand=(0.0, -16.0 * a, 0.0))
+    sprout_follow(s, f, lambda x: (-18.0 * track(x, keys), 0.0, 0.0), lag1=2.0, lag2=4.0)
+    return s
+
+
 CLIPS = (
     Clip("Idle", 100, True, idle),
     Clip("Walk", WALK_LENGTH, True, walk),
@@ -486,4 +632,7 @@ CLIPS = (
     Clip("Surprised", 40, False, surprised),
     Clip("Shrug", 40, False, shrug),
     Clip("Stretch", 60, False, stretch),
+    Clip("Dance", DANCE_LENGTH, True, dance),
+    Clip("Jump", JUMP_LENGTH, False, jump),
+    Clip("Bow", BOW_LENGTH, False, bow),
 )
