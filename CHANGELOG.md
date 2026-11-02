@@ -257,5 +257,11 @@ Each work package appends bullets under its own heading only (`docs/scope.md` §
 - `TapHoldClassifier` (a pinch with no ring talks at once, so barge-in keeps 150 ms), `PreRollCapture` (the microphone starts at the pinch; a hold hands its audio to the turn, a tap drops it unheard: no ASR session, no model request, no spend), `MoveTargetResolver`, `PointerTargeting`, `PointToMove` (`evt=move.request`, `evt=move.arrived`), `XrPointer`, `MoveReticleView` with the `Jolly/MoveReticle` shader, `TouchBindings` shared with `ControllerPushToTalk`.
 - Self-test scenario `tap_to_move`: a scripted floor ray and a 100 ms pinch must walk the character there with no conversation state change and no spend.
 
+### Shell fur (ADR-0045)
+- `Jolly/Character/ShellFur`: an opaque base layer and alpha-tested shells (normal push, gravity droop, comb flow, inertia swing, idle sway; per-vertex colour and light, one noise read per shell fragment), environment-depth occlusion and alpha = visibility like NubiSkin, SRP Batcher and single-pass instanced stereo.
+- `ShellFur` appends the shells as extra materials on a renderer whose last submesh is fur, so they reuse the vertices skinned once; three shell counts by the user's distance (`ShellFurLod`, 0.15 m band) and a spring on the root bone for the tips (`FurInertia`). `NubiCharacterController` attaches it at `Construct` and ticks it in `LateUpdate`.
+- `build_jolly.py` puts the gloss slot and faces first, so the local Jolly skin's fur is its last submesh.
+- `tools/device/selftest.sh` without `--apk` installs the newer of `JollyXR/Builds/Android/Nubi.apk` and `artifacts/Nubi.apk` and says which.
+
 ### Docs
 - Demo script: mandatory problem voice-over, cost as a beat-5 overlay, a longer beat 2, reboot and greeting warm-up before beat 1, beat 1 as the guard walk with a canned line (ADR-0037, ADR-0040). README "A day with Nubi", "Living with it", current status and test counts; release checklist verification block for `36778c1`; device self-test reports for every change above (`docs/perf/selftest-report.md`).

@@ -69,7 +69,7 @@ Use the development APK.
 |---|---|
 | CPU main thread p95 ≤ 11 ms | CPU Usage module, main thread. Note p95 across the captured frames per phase |
 | Draw calls ≤ 200, SetPass ≤ 60 | Rendering module; confirm with **Window → Analysis → Frame Debugger** connected to the same player |
-| Triangles ≤ 300k scene, Nubi ≤ 30k | Rendering module. Nubi is 25,248 triangles by construction (`docs/art/nubi/README.md`) |
+| Triangles ≤ 300k scene, Nubi ≤ 30k | Rendering module. Nubi is 25,248 triangles by construction (`docs/art/nubi/README.md`). A shell-fur character draws its fur submesh once per shell (ADR-0045): the local Jolly skin near is 436k in `perf_idle`, and its cost is fill, so judge it by GPU time (VrApi `App=`, `GPU%`) rather than this row |
 | GC alloc: 0 B/frame idle, ≤ 4 KB/frame during a turn, no GC spike > 2 ms | CPU module, *GC Alloc* column in Hierarchy view; `GC.Collect` markers in the timeline |
 
 5. Save the capture (`.data`) to `artifacts/perf/` and copy the numbers into `report.md`.

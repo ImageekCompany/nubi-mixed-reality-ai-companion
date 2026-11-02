@@ -43,6 +43,7 @@
 | [0042](0042-settings-on-demand.md) | Settings on demand: hidden at launch; wrist button, left menu button or "open settings"; placed once in front, world-locked; closes on X, talk, 20 s idle; side views pulled into the recorded frame | accepted |
 | [0043](0043-name-as-heard-in-local-guards.md) | Local guards take one unknown word set apart by punctuation as the name as heard; `voice_come_here` plays the selected character's own line | accepted |
 | [0044](0044-point-and-tap-to-move.md) | Point and tap to move: a ring on walkable floor under the hand or controller ray; with it showing a pinch under 0.25 s moves (no ASR, no model), longer talks with the microphone pre-rolled from the pinch; the trigger moves | accepted |
+| [0045](0045-shell-fur.md) | Shell fur: `Jolly/Character/ShellFur` shells appended as extra materials on the skinned renderer's last submesh (skinned once), alpha-tested with alpha = visibility, 3 distance levels, spring inertia | accepted |
 
 Numbers 0027–0029 are unused and were not reserved on a dropped branch: no commit on any branch (`git log --all`) adds or mentions an ADR with those numbers.
 
