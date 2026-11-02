@@ -5,6 +5,7 @@ using Cysharp.Threading.Tasks;
 using Jolly.Contracts;
 using Jolly.Core.Config;
 using Jolly.Core.Conversation;
+using Jolly.Core.Personas;
 using Jolly.Core.Tools;
 using Jolly.Testing;
 using Jolly.Testing.Conversation;
@@ -119,7 +120,6 @@ namespace Jolly.Tests.EditMode.Core.Conversation
         [TestCase("Dance.", ToolNames.Actions.Dance, "{}")]
         [TestCase("show me how to dance", ToolNames.Actions.Dance, "{}")]
         [TestCase("Show me how to dance!", ToolNames.Actions.Dance, "{}")]
-        [TestCase("Jelly, dance for me!", ToolNames.Actions.Dance, "{}")]
         [TestCase("let's dance", ToolNames.Actions.Dance, "{}")]
         [TestCase("Spin around.", ToolNames.Actions.Spin, "{}")]
         [TestCase("Take a bow.", ToolNames.Actions.Bow, "{}")]
@@ -176,6 +176,128 @@ namespace Jolly.Tests.EditMode.Core.Conversation
 
             // Assert
             Assert.That(matched, Is.False, name);
+        }
+
+        [TestCase("Dance. Go behind me.")]
+        [TestCase("Spin around. Bow.")]
+        [TestCase("Take a bow. Jump.")]
+        [TestCase("Jump. Wave at me.")]
+        [TestCase("Dance. Jump up.")]
+        [TestCase("Nope. Dance.")]
+        [TestCase("Nah, jump.")]
+        [TestCase("Cancel. Jump.")]
+        [TestCase("Sorry, jump.")]
+        [TestCase("Sing, dance.")]
+        [TestCase("Shrug. Jump.")]
+        [TestCase("Suicidal. Dance.")]
+        [TestCase("Jelly, dance for me!")]
+        public void ActionGuard_AWordItDoesNotKnowInItsOwnClause_LeftToTheModel(string transcript)
+        {
+            // Arrange
+            var guard = new ActionGuard(new FakeLocalizer());
+
+            // Act
+            var matched = guard.TryMatch(transcript, out var name, out _);
+
+            // Assert
+            Assert.That(matched, Is.False, name);
+        }
+
+        [TestCase("Przestan, tancz.")]
+        [TestCase("Przestań, tańcz.")]
+        [TestCase("Zatańcz. Skocz.")]
+        [TestCase("Nie, skocz.")]
+        public void ActionGuard_Polish_AWordItDoesNotKnowInItsOwnClause_LeftToTheModel(string transcript)
+        {
+            // Arrange
+            var guard = new ActionGuard(new FakeLocalizer("pl"));
+
+            // Act
+            var matched = guard.TryMatch(transcript, out var name, out _);
+
+            // Assert
+            Assert.That(matched, Is.False, name);
+        }
+
+        static ActionGuard GuardNamed(string name, string languageTag, string fillers)
+        {
+            var table = new FakeLocalizer(languageTag).With(languageTag, GuardTables.Table, GuardTables.ActionFillers, fillers);
+            return new ActionGuard(new CharacterNamedLocalizer(table, name));
+        }
+
+        [TestCase("Jolly, jump", ToolNames.Actions.Jump)]
+        [TestCase("Jolly dance", ToolNames.Actions.Dance)]
+        [TestCase("Hi Jolly, take a bow.", ToolNames.Actions.Bow)]
+        [TestCase("Spin around, Jolly!", ToolNames.Actions.Spin)]
+        public void ActionGuard_TheCharactersRealName_NamesTheAction(string transcript, string tool)
+        {
+            // Arrange
+            var guard = GuardNamed("Jolly", "en", "{name}|please|hi|hey|hello|ok|okay|now|again|for me");
+
+            // Act
+            var matched = guard.TryMatch(transcript, out var name, out _);
+
+            // Assert
+            Assert.That(matched, Is.True);
+            Assert.That(name, Is.EqualTo(tool));
+        }
+
+        [TestCase("Jelly, dance for me!", ToolNames.Actions.Dance)]
+        [TestCase("Jolie jump", ToolNames.Actions.Jump)]
+        [TestCase("Hi Jolley, go behind me.", ToolNames.Actions.MoveRelative)]
+        public void ActionGuard_AKnownMishearing_NamesTheActionOnceTheAliasesRanAsTheyDoOnTheFinal(string transcript, string tool)
+        {
+            // Arrange
+            var guard = GuardNamed("Jolly", "en", "{name}|please|hi|hey|hello|ok|okay|now|again|for me");
+            var aliases = TranscriptAliases.ForName("Jolly", new[] { "Jolie", "Jelly", "Jolley" });
+
+            // Act
+            var matched = guard.TryMatch(aliases.Apply(transcript), out var name, out _);
+
+            // Assert
+            Assert.That(matched, Is.True);
+            Assert.That(name, Is.EqualTo(tool));
+        }
+
+        [Test]
+        public void ActionGuard_Polish_TheCharactersRealName_NamesTheAction()
+        {
+            // Arrange
+            var guard = GuardNamed("Dżoli", "pl", "{name}|proszę|cześć|hej|ok|okej|teraz|jeszcze raz|dla mnie");
+
+            // Act
+            var matched = guard.TryMatch("Dżoli, skocz!", out var name, out _);
+
+            // Assert
+            Assert.That(matched, Is.True);
+            Assert.That(name, Is.EqualTo(ToolNames.Actions.Jump));
+        }
+
+        [TestCase("Holly, dance.")]
+        [TestCase("Jump, Holly.")]
+        public void ActionGuard_ANameItCannotKnow_LeftToTheModel(string transcript)
+        {
+            // Arrange
+            var guard = GuardNamed("Jolly", "en", "{name}|please|hi|hey|hello|ok|okay|now|again|for me");
+
+            // Act
+            var matched = guard.TryMatch(transcript, out var name, out _);
+
+            // Assert
+            Assert.That(matched, Is.False, name);
+        }
+
+        [Test]
+        public void ComeGuard_ACommandInItsOwnClause_IsStillTakenAsTheName()
+        {
+            // Arrange: the name-as-heard rule stays on for come (ADR-0043), so the dance is dropped here (ADR-0047).
+            var guard = new ComeGuard(new FakeLocalizer());
+
+            // Act
+            var matched = guard.Matches("Come here. Dance.");
+
+            // Assert
+            Assert.That(matched, Is.True);
         }
 
         [TestCase("Skocz!", ToolNames.Actions.Jump)]

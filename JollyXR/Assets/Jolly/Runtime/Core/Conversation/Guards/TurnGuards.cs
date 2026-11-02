@@ -109,8 +109,7 @@ namespace Jolly.Core.Conversation
 
         /// <summary>
         /// The action a short body command asks for, when the persona is offered it: its allow-list and the character's
-        /// clips decide, as for the model's calls. The pipeline asks only when no crisis keyword matched, which the
-        /// name-as-heard rule would otherwise swallow ("Suicidal. Dance.").
+        /// clips decide, as for the model's calls. The pipeline asks only when no crisis keyword matched.
         /// </summary>
         public bool TryMatchAction(string transcript, out GuardedAction action)
         {

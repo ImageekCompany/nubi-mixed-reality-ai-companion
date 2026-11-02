@@ -6,14 +6,16 @@ namespace Jolly.Core.Conversation
 {
     /// <summary>
     /// A short spoken body command ("dance", "jump!", "go behind me", ADR-0047): a final made only of one command's
-    /// phrases and fillers (<see cref="ShortCommand"/>) names the action to run before the model is called. A question
-    /// mark or a negation word sends it to the model whatever the words: "Dance?" asks, and the name-as-heard rule would
-    /// read "Never. Jump." as someone called Never being told to jump. Two commands in one final ("Jump. Spin.") are the
-    /// model's to order, since each reads the other as the name.
+    /// phrases and fillers (<see cref="ShortCommand"/>) names the action to run before the model is called. The real name
+    /// is a filler (<c>{name}</c>) and a known mishearing is the name by now (<see cref="TranscriptAliases"/>), but unlike
+    /// the other guards this one takes no name as heard (ADR-0043): a word alone in its clause was as often a second
+    /// command or a refusal, and "Dance. Go behind me." ran one move and dropped the other, "Nope. Dance." danced. Any such
+    /// word goes to the model, which also orders two commands. A question mark or a negation word sends it to the model
+    /// whatever the words and the tables: "Dance?" asks.
     /// </summary>
     public sealed class ActionGuard
     {
-        const int MaxWords = 7;
+        public const int MaxWords = 7;
 
         sealed class Command
         {
@@ -31,7 +33,7 @@ namespace Jolly.Core.Conversation
             _negations = new LocalizedPhrases(localizer, GuardTables.ActionNegations);
             Command Of(string key, string tool, string direction = null) => new()
             {
-                Phrases = new ShortCommand(localizer, key, GuardTables.ActionFillers, MaxWords),
+                Phrases = new ShortCommand(localizer, key, GuardTables.ActionFillers, MaxWords, nameAsHeard: false),
                 Tool = tool,
                 ArgumentsJson = direction == null ? "{}" : "{\"direction\":\"" + direction + "\"}",
             };
