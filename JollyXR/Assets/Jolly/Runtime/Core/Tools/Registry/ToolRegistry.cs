@@ -22,6 +22,33 @@ namespace Jolly.Core.Tools
 
         readonly List<Entry> _ordered = new();
         readonly Dictionary<string, Entry> _byName = new(StringComparer.Ordinal);
+        readonly List<ToolNamespace> _namespaces = new();
+
+        public void RegisterNamespace(ToolNamespace toolNamespace)
+        {
+            if (toolNamespace?.Name == null || toolNamespace.Name.Contains('.') || !NamePattern.IsMatch(toolNamespace.Name))
+                throw new ArgumentException($"invalid tool namespace '{toolNamespace?.Name}'");
+            if (FindNamespace(toolNamespace.Name) != null)
+                throw new InvalidOperationException($"tool namespace '{toolNamespace.Name}' is already registered");
+            _namespaces.Add(toolNamespace);
+        }
+
+        public IReadOnlyList<ToolNamespace> NamespacesOf(IReadOnlyList<ToolDefinition> tools)
+        {
+            var used = new List<ToolNamespace>();
+            foreach (var ns in _namespaces)
+            {
+                foreach (var tool in tools)
+                {
+                    if (NamespaceName(tool.Name) == ns.Name)
+                    {
+                        used.Add(ns);
+                        break;
+                    }
+                }
+            }
+            return used;
+        }
 
         public void Register(ITool tool)
         {
@@ -30,6 +57,9 @@ namespace Jolly.Core.Tools
                 throw new ArgumentException($"invalid tool name '{definition.Name}'");
             if (_byName.ContainsKey(definition.Name))
                 throw new InvalidOperationException($"tool '{definition.Name}' is already registered");
+            var ns = NamespaceName(definition.Name);
+            if (ns != null && FindNamespace(ns) == null)
+                throw new InvalidOperationException($"tool '{definition.Name}' needs namespace '{ns}' registered first");
 
             var entry = new Entry(tool, JsonSchemaSubset.Parse(definition.ParametersJsonSchema));
             _ordered.Add(entry);
@@ -66,6 +96,23 @@ namespace Jolly.Core.Tools
             var ok = JsonSchemaSubset.Validate(entry.Schema, argumentsJson, out var parsed, out error);
             args = parsed;
             return ok;
+        }
+
+        /// <summary>"ns" for "ns.fn"; null for a top-level name.</summary>
+        static string NamespaceName(string toolName)
+        {
+            var dot = toolName.IndexOf('.');
+            return dot < 0 ? null : toolName.Substring(0, dot);
+        }
+
+        ToolNamespace FindNamespace(string name)
+        {
+            foreach (var ns in _namespaces)
+            {
+                if (ns.Name == name)
+                    return ns;
+            }
+            return null;
         }
 
         static bool IsAllowed(IReadOnlyList<string> allowed, string name)

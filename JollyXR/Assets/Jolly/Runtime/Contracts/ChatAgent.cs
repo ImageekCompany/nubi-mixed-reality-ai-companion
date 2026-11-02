@@ -39,9 +39,27 @@ namespace Jolly.Contracts
         public string Instructions { get; set; }
         public IReadOnlyList<ConversationItem> Input { get; set; }
         public IReadOnlyList<ToolDefinition> Tools { get; set; } = Array.Empty<ToolDefinition>();
+        /// <summary>The namespaces of the dotted names in <see cref="Tools"/> (ADR-0047).</summary>
+        public IReadOnlyList<ToolNamespace> Namespaces { get; set; } = Array.Empty<ToolNamespace>();
+        /// <summary>Null: no web search. Otherwise the provider's built-in, server-side web search is offered (ADR-0048).</summary>
+        public WebSearchOptions WebSearch { get; set; }
         public ReasoningEffort Effort { get; set; } = ReasoningEffort.Minimal;
         public int MaxOutputTokens { get; set; } = 1024;  // includes reasoning tokens; do not cap tightly
         public string SafetyIdentifier { get; set; }
+    }
+
+    /// <summary>
+    /// The provider's built-in web search (ADR-0048). The location only biases results towards the user's area; every
+    /// field is optional and none is ever more precise than a city.
+    /// </summary>
+    public sealed class WebSearchOptions
+    {
+        /// <summary>ISO 3166-1 alpha-2, e.g. "GB".</summary>
+        public string Country { get; set; }
+        public string Region { get; set; }
+        public string City { get; set; }
+        /// <summary>IANA, e.g. "Europe/London".</summary>
+        public string Timezone { get; set; }
     }
 
     public sealed class ToolCallRequest

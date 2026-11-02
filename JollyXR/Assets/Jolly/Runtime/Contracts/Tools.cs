@@ -97,9 +97,26 @@ namespace Jolly.Contracts
         UniTask<ToolResult> Execute(IToolArguments args, ToolContext context, CancellationToken ct);
     }
 
+    /// <summary>
+    /// A group of tools the model sees under one name and description (ADR-0047). A member tool is named
+    /// "<c>namespace.function</c>": the model calls it by that name, and the request sends it inside the namespace as
+    /// "function". Namespace names hold no dot.
+    /// </summary>
+    public sealed class ToolNamespace
+    {
+        public ToolNamespace(string name, string description) { Name = name; Description = description; }
+        public string Name { get; }
+        /// <summary>Model-facing, English: what the group is for, so the model knows when to reach into it.</summary>
+        public string Description { get; }
+    }
+
     public interface IToolRegistry
     {
         void Register(ITool tool);                                     // throws on a duplicate name
+        /// <summary>Throws on a duplicate. A tool named "ns.fn" needs namespace ns registered first.</summary>
+        void RegisterNamespace(ToolNamespace toolNamespace);
+        /// <summary>The namespaces at least one of <paramref name="tools"/> belongs to, in registration order.</summary>
+        IReadOnlyList<ToolNamespace> NamespacesOf(IReadOnlyList<ToolDefinition> tools);
         bool TryGet(string name, out ITool tool);
         /// <summary>Filtered by persona.AllowedTools; in seated mode walk_to, go_to_surface and follow_user are removed (come_here stays).</summary>
         IReadOnlyList<ToolDefinition> DefinitionsFor(PersonaProfile persona, IUserPreferences preferences);

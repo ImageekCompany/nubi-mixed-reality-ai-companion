@@ -19,6 +19,36 @@ namespace Jolly.Tests.EditMode.Core.Tools
         }
 
         [Test]
+        public void Register_DottedNameWithoutItsNamespace_Throws()
+        {
+            Assert.Throws<InvalidOperationException>(() => new ToolRegistry().Register(new ScriptedTool("actions.jump")));
+        }
+
+        [TestCase("with.dot")]
+        [TestCase("has space")]
+        public void RegisterNamespace_InvalidName_Throws(string name)
+        {
+            Assert.Throws<ArgumentException>(() => new ToolRegistry().RegisterNamespace(new ToolNamespace(name, "d")));
+        }
+
+        [Test]
+        public void NamespacesOf_ReturnsOnlyTheNamespacesOfTheGivenTools()
+        {
+            // Arrange
+            var registry = new ToolRegistry();
+            registry.RegisterNamespace(new ToolNamespace("actions", "body actions"));
+            registry.RegisterNamespace(new ToolNamespace("unused", "nothing in it is offered"));
+            registry.Register(new ScriptedTool("actions.jump"));
+            registry.Register(new ScriptedTool("stop"));
+
+            // Act
+            var namespaces = registry.NamespacesOf(registry.DefinitionsFor(null, null));
+
+            // Assert
+            Assert.That(namespaces.Select(n => n.Name), Is.EqualTo(new[] { "actions" }));
+        }
+
+        [Test]
         public void Register_DuplicateName_Throws()
         {
             var registry = WithTools("stop");
