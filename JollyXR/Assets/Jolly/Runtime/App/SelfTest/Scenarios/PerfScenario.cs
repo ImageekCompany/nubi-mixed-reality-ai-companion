@@ -10,7 +10,8 @@ namespace Jolly.App.SelfTest.Scenarios
     /// <summary>
     /// 30 s with Nubi idle (idle animations on, no conversation): frame rate, frame-time tail, render load (DoD §4),
     /// GC allocation and memory. "GC Allocated In Frame" is only recorded in development players; release builds report
-    /// GC collections instead. A counter a player does not record reads NaN and is not checked.
+    /// GC collections instead. A counter a player does not record reads NaN and is not checked. The render load only means
+    /// something with the character on screen, which a headset lying on a desk may not have, so it is reported and degraded.
     /// </summary>
     public static class PerfScenario
     {
@@ -34,6 +35,9 @@ namespace Jolly.App.SelfTest.Scenarios
             using var setPassCalls = ProfilerRecorder.StartNew(ProfilerCategory.Render, "SetPass Calls Count");
             using var triangles = ProfilerRecorder.StartNew(ProfilerCategory.Render, "Triangles Count");
             long maxDrawCalls = 0, maxSetPassCalls = 0, maxTriangles = 0;
+            var nubi = c.Graph.Scene.nubi;
+            var body = nubi.GetComponentInChildren<SkinnedMeshRenderer>();
+            var framesInView = 0;
             var collections = GC.CollectionCount(0);
             double allocated = 0;
             var end = c.Clock.Now + SampleSeconds;
@@ -41,6 +45,8 @@ namespace Jolly.App.SelfTest.Scenarios
             {
                 await UniTask.Yield(PlayerLoopTiming.Update, ct);
                 frames.Add(Time.unscaledDeltaTime);
+                if (body != null && body.isVisible)
+                    framesInView++;
                 if (gcAlloc.Valid)
                     allocated += gcAlloc.LastValue;
                 maxDrawCalls = Math.Max(maxDrawCalls, drawCalls.Valid ? drawCalls.LastValue : 0);
@@ -48,6 +54,7 @@ namespace Jolly.App.SelfTest.Scenarios
                 maxTriangles = Math.Max(maxTriangles, triangles.Valid ? triangles.LastValue : 0);
             }
 
+            var head = c.Graph.Xr.User.Head;
             var total = 0.0;
             foreach (var dt in frames)
                 total += dt;
@@ -59,6 +66,10 @@ namespace Jolly.App.SelfTest.Scenarios
              .Metric("draw_calls_max", drawCalls.Valid ? maxDrawCalls : double.NaN)
              .Metric("setpass_calls_max", setPassCalls.Valid ? maxSetPassCalls : double.NaN)
              .Metric("triangles_max", triangles.Valid ? maxTriangles : double.NaN)
+             .Metric("character_in_view", (double)framesInView / Math.Max(frames.Count, 1))
+             .Metric("head_pitch_deg", Vector3.SignedAngle(Vector3.ProjectOnPlane(head.forward, Vector3.up), head.forward,
+                                                           Vector3.Cross(Vector3.up, head.forward)))
+             .Metric("character_distance_m", Vector3.Distance(head.position, nubi.Position))
              .Metric("gc_alloc_bytes_per_frame", allocPerFrame)
              .Metric("gc_collections", GC.CollectionCount(0) - collections)
              .Metric("system_memory_mb", systemMemory.Valid ? systemMemory.LastValue / Mb : double.NaN)
@@ -69,6 +80,8 @@ namespace Jolly.App.SelfTest.Scenarios
             r.Check(!(allocPerFrame > MaxAllocBytesPerFrame), "more than 4 KB GC allocation per frame while idle");
             if (allocPerFrame > 0)
                 r.Degrade("idle allocates (target 0 B/frame)");
+            if (framesInView * 2 < frames.Count)
+                r.Degrade("the character was out of view: draw calls, triangles and GPU load are not the character's");
             return r;
         }
 
