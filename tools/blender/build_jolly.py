@@ -1319,6 +1319,31 @@ def noise_tiling(obj):
     return float(metres_per_uv / (NOISE_CELLS * STRAND_SPACING)), float(metres_per_uv)
 
 
+def put_fur_last(mesh_obj):
+    """Gloss in slot 0, fur in the last slot: Unity's shell fur redraws only a renderer's last submesh (ADR-0045)."""
+    me = mesh_obj.data
+    skin, gloss = me.materials[0], me.materials[1]
+    idx = np.empty(len(me.polygons), dtype=np.int32)
+    me.polygons.foreach_get("material_index", idx)
+    me.materials.clear()
+    me.materials.append(gloss)
+    me.materials.append(skin)
+    me.polygons.foreach_set("material_index", 1 - idx)
+    # Unity numbers the submeshes in the order their first face appears, not by slot: the gloss faces go first too.
+    order = np.argsort(1 - idx, kind="stable")
+    bm = bmesh.new()
+    bm.from_mesh(me)
+    bm.faces.ensure_lookup_table()
+    rank = np.empty_like(order)
+    rank[order] = np.arange(len(order))
+    for face in bm.faces:
+        face.index = int(rank[face.index])
+    bm.faces.sort()
+    bm.to_mesh(me)
+    bm.free()
+    me.update()
+
+
 def add_normal_map(material, image):
     nodes, links = material.node_tree.nodes, material.node_tree.links
     tex = nodes.new("ShaderNodeTexImage")
@@ -1690,8 +1715,9 @@ def add_fur_preview(mesh_obj, arm_obj, albedo, fur, noise, tiling):
     ids = {item.name: item.identifier for item in group.interface.items_tree
            if item.item_type == "SOCKET" and item.in_out == "INPUT"}
     base = _base_material(albedo, fur)
-    mesh_obj.material_slots[0].link = "OBJECT"
-    mesh_obj.material_slots[0].material = base
+    skin = next(s for s in mesh_obj.material_slots if s.material and s.material.name == C.MATERIAL_SKIN)
+    skin.link = "OBJECT"
+    skin.material = base
     shells = []
     for i in range(1, FUR_SHELLS + 1):
         h = i / FUR_SHELLS
@@ -1827,6 +1853,7 @@ def main():
     noise = bake_noise_tile(str(tex_dir))
     tiling, metres_per_uv = noise_tiling(mesh)
     add_normal_map(mesh.data.materials[0], maps[NORMAL_TEXTURE])
+    put_fur_last(mesh)
 
     report = validate.static_report(mesh, arm)
     report["source"] = Path(args.src).name

@@ -91,6 +91,8 @@ Shader recipe (the Blender preview, `Jolly.blend`, does exactly this; numbers ar
   pass (`h = 0`) is opaque: `albedo * lerp(1, 0.70, length) * AO`. A soft rim/Fresnel term on the outer shells
   sells the fluff in passthrough.
 - Eyes stay on `M_Jolly_Gloss` (no shells).
+- Slot order: gloss first, fur last (`put_fur_last`). Unity's shell fur redraws only a renderer's last submesh
+  (ADR-0045), and Unity numbers submeshes by the first face of each material, so the gloss faces are sorted first too.
 
 ## 2. Unity
 
@@ -99,14 +101,19 @@ Shader recipe (the Blender preview, `Jolly.blend`, does exactly this; numbers ar
 - Generic rig, avatar created from this model, Bake Axis Conversion on, Optimize Game Objects off,
   blend shapes on, no cameras, lights or visibility, not readable, Optimal compression.
 - Loop Time on the `loopingClips` from `Jolly_FacePresets.json`: Idle, Walk, Hop, Talk, Listen, Think and Sad.
-- The material remaps `M_Jolly_Fur` and `M_Jolly_Gloss` point to materials on `Jolly/Character/NubiSkin`:
-  - Fur: rim 0.22, spec 0.03/12.
-  - Gloss: rim 0, spec 0.7/96, the same as Nubi's eyes.
-  - `T_Jolly_Normal` is imported as a normal map. NubiSkin ignores it; it is there for a Lit or fur shader.
+- The material remaps `M_Jolly_Gloss` and `M_Jolly_Fur` point to:
+  - Gloss on `Jolly/Character/NubiSkin`: rim 0, spec 0.7/96, the same as Nubi's eyes.
+  - Fur on `Jolly/Character/ShellFur` (ADR-0045) with `T_Jolly_{Albedo,Fur,FurFlow,FurNoise}`: 16 / 10 / 6 shells
+    from 1.6 / 3.2 m, length 0.038 m (longer than the recipe's 0.024: the reference's pile is a long, soft plush),
+    droop 0.4, comb 0.6, strand tiling 22, bald below length 0.12, root shade 0.72, tip 1.15, tip lightening 0.3,
+    wrap 0.5, rim 0.35 / power 2.5. `NubiCharacterController` adds the shells at `Construct`.
+  - Import: `T_Jolly_Fur`, `T_Jolly_FurFlow`, `T_Jolly_FurNoise` with sRGB off, mipmaps on; the noise wraps Repeat,
+    the others Clamp. `T_Jolly_Normal` is imported as a normal map and unused.
 
 Unity assets:
 
-- The materials were made once by hand on `Jolly/Character/NubiSkin`; the FBX's material remaps point at them.
+- The materials were made once by hand (gloss on NubiSkin, fur on ShellFur, values above); the FBX's material remaps
+  point at them. Unity stills of the fur under the app's own lighting: `tools/blender/out/jolly/unity_v5/`.
 - `JollyCharacter.asset` is a `CharacterDefinition` (docs/characters.md) copied from Nubi's (same rig, face
   channels, look-at bones, feet and tuning) with Jolly's identity, model and body:
 
