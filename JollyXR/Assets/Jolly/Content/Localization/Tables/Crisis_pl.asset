@@ -110,6 +110,10 @@ MonoBehaviour:
     m_Localized: "odsu\u0144 si\u0119|cofnij si\u0119|odejd\u017A troch\u0119|zr\u00F3b krok w ty\u0142"
     m_Metadata:
       m_Items: []
+  - m_Id: 657448960
+    m_Localized: i|potem|a potem
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

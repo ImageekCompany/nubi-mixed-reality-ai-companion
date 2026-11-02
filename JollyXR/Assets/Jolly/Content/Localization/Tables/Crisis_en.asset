@@ -110,6 +110,10 @@ MonoBehaviour:
     m_Localized: back off|back up|step back|move back|move away|step away
     m_Metadata:
       m_Items: []
+  - m_Id: 657448960
+    m_Localized: and|then
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

@@ -33,6 +33,7 @@ namespace Jolly.Core.Agent
         readonly AgentSettings _settings;
         readonly PromptBuilder _prompt;
         readonly WebSearchPolicy _webSearch;
+        readonly ShortRequest _shortRequest;
 
         /// <param name="room">The room line of the context block; null leaves it out.</param>
         /// <param name="webSearch">Null: no web search and no local time or home line in the context block.</param>
@@ -53,6 +54,7 @@ namespace Jolly.Core.Agent
             _events = events;
             _settings = settings;
             _webSearch = webSearch;
+            _shortRequest = new ShortRequest(localizer);
             _prompt = new PromptBuilder(localizer, preferences, memory, scene, room, settings, webSearch?.Location);
         }
 
@@ -135,7 +137,10 @@ namespace Jolly.Core.Agent
                     var result = await StreamRound(turn.TurnId, round, request, open, events, ct);
                     await open.WhenAll();
                     transcript.AddRound(result.OutputItems, open);
-                    var finished = open.Count == 0 || open.EndsTurn || (open.EndsSpokenTurn && Spoke(result));
+                    // PromptBuilder has the model say only a neutral phrase before a call, so words before a move do not
+                    // mean it answered "Dance and then tell me a joke": only a turn that asked for one thing ends with the move.
+                    var finished = open.Count == 0 || open.EndsTurn
+                                   || (open.EndsSpokenTurn && Spoke(result) && _shortRequest.Matches(turn.Text));
                     open = null;
                     if (finished)
                         break;

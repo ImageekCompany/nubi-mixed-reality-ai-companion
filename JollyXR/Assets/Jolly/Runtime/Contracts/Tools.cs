@@ -47,9 +47,10 @@ namespace Jolly.Contracts
         public string SpokenText { get; }
         /// <summary>If every result in a round has EndsTurn, the agent skips the next model round (saves ~1–1.5 s).</summary>
         public bool EndsTurn { get; }
-        /// <summary>The call itself was the answer (a finished whole-body move, ADR-0047): if every result in a round has it
-        /// and the round's text said something, the agent skips the closing round. With no text the round still runs,
-        /// so the turn is not left wordless.</summary>
+        /// <summary>The call itself was the answer (a finished whole-body move, ADR-0047): if every result in a round has it,
+        /// the round's text said something and the user's turn is one short clause with no connector, the agent skips the
+        /// closing round. With no text the round still runs, so the turn is not left wordless; with a longer turn it runs
+        /// for the rest of the request.</summary>
         public bool EndsSpokenTurn { get; }
 
         public static ToolResult Success(string outputJson, string spokenText = null, bool endsTurn = false, bool endsSpokenTurn = false)

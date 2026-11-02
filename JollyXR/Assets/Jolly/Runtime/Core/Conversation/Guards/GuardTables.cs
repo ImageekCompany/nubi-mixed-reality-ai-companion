@@ -28,6 +28,7 @@ namespace Jolly.Core.Conversation
         public const string ActionRight = "action.right";
         public const string ActionCloser = "action.closer";
         public const string ActionAway = "action.away";
+        public const string ActionConnectors = "action.connectors";
         public const string SettingsOpen = "settings.open";
         public const string SettingsClose = "settings.close";
         public const string SettingsFillers = "settings.fillers";
@@ -77,6 +78,8 @@ namespace Jolly.Core.Conversation
             (ActionCloser, _) => "come closer|move closer|get closer|step closer|closer",
             (ActionAway, "pl") => "odsuń się|cofnij się|odejdź trochę|zrób krok w tył",
             (ActionAway, _) => "back off|back up|step back|move back|move away|step away",
+            (ActionConnectors, "pl") => "i|potem|a potem",
+            (ActionConnectors, _) => "and|then",
             (SettingsOpen, "pl") => "otwórz ustawienia|pokaż ustawienia|ustawienia|otwórz menu|pokaż menu",
             (SettingsOpen, _) => "open settings|show settings|open the settings|show the settings|show me the settings|settings|open menu|show menu|open the menu|show the menu",
             (SettingsClose, "pl") => "zamknij ustawienia|ukryj ustawienia|zamknij menu|ukryj menu",

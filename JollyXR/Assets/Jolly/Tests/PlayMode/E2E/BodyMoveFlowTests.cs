@@ -26,6 +26,8 @@ namespace Jolly.Tests.PlayMode.E2E
         const double MaxFadeMs = 300;
         const float IdleToleranceMeters = 0.04f;
         const string ModelPhrasing = "Nubi, would you do that move for me today?";
+        /// <summary>Outside the guard's tables, and one short clause, so a move with words before it ends the turn.</summary>
+        const string ShortModelPhrasing = "Would you do that move?";
 
         static async UniTask<AppHarness> Ready()
         {
@@ -165,7 +167,7 @@ namespace Jolly.Tests.PlayMode.E2E
                 // Arrange
                 var animator = app.Graph.Scene.nubi.Animator;
                 var layer = animator.GetLayerIndex(P.ActionLayer);
-                app.Asr.Will(ModelPhrasing);
+                app.Asr.Will(ShortModelPhrasing);
                 app.Http.Enqueue(Kind.Chat, new ResponsesScript().Say("Let me try.").Call(ToolNames.Actions.Jump, "{}").Complete());
 
                 // Act

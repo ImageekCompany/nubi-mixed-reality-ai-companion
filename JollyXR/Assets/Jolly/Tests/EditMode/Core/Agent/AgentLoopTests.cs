@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using Jolly.Contracts;
+using Jolly.Core.Conversation;
 using Jolly.Core.Tools;
 using Jolly.Testing.Conversation;
 using NUnit.Framework;
@@ -225,6 +226,88 @@ namespace Jolly.Tests.EditMode.Core.Agent
             AgentFixture.Completed(run);
             Assert.That(_f.Model.Requests.Count, Is.EqualTo(1), "the turn ends when the move ends");
             Assert.That(_f.MemoryKinds(), Does.Contain("AssistantText").And.Contain("ToolResult"));
+        }
+
+        [TestCase("Dance.")]
+        [TestCase("Show me how to dance!")]
+        [TestCase("Can you jump?")]
+        [TestCase("I want to see you dance")]
+        [TestCase("Do a little dance for me now")]
+        public void EndsSpokenTurn_TheTurnIsOneShortClause_SkipsTheClosingRound(string said)
+        {
+            // Arrange
+            _f.Tool("dance", ToolConcurrency.Exclusive).Result = Move;
+            _f.Model.Enqueue().Text("Let me try.").Call("c1", "dance");
+
+            // Act
+            AgentFixture.Completed(_f.Run(said));
+
+            // Assert
+            Assert.That(_f.Model.Requests.Count, Is.EqualTo(1));
+        }
+
+        [TestCase("Dance and then tell me a joke")]
+        [TestCase("Dance and tell me a joke")]
+        [TestCase("Dance then tell me a joke")]
+        [TestCase("Can you jump? And what's the capital of France?")]
+        [TestCase("Jump. What's the capital of France?")]
+        [TestCase("Could you do a little dance for my friends?")]
+        [TestCase("Jump." + TurnGuards.CrisisNote)]
+        public void EndsSpokenTurn_TheTurnAsksForMore_TheModelGetsTheRestOfIt(string said)
+        {
+            // Arrange
+            _f.Tool("dance", ToolConcurrency.Exclusive).Result = Move;
+            _f.Model.Enqueue().Text("Let me try.").Call("c1", "dance");
+            _f.Model.Enqueue().Text("Paris.");
+
+            // Act
+            var run = _f.Run(said);
+
+            // Assert
+            AgentFixture.Completed(run);
+            Assert.That(_f.Model.Requests.Count, Is.EqualTo(2));
+            Assert.That(AgentFixture.Describe(run.Items), Does.Contain("say:Paris."));
+        }
+
+        [Test]
+        public void EndsSpokenTurn_SecondMoveInASecondRound_StillRuns()
+        {
+            // Arrange
+            var spin = _f.Tool("spin", ToolConcurrency.Exclusive);
+            spin.Result = Move;
+            _f.Tool("jump", ToolConcurrency.Exclusive).Result = Move;
+            _f.Model.Enqueue().Text("Let me try.").Call("c1", "jump");
+            _f.Model.Enqueue().Text("And now.").Call("c2", "spin");
+            _f.Model.Enqueue().Text("Done.");
+
+            // Act
+            AgentFixture.Completed(_f.Run("Jump, then spin"));
+
+            // Assert
+            Assert.That(spin.Started, Is.EqualTo(1));
+        }
+
+        [TestCase("Zatańcz.", 1)]
+        [TestCase("Pokaż mi jak tańczysz!", 1)]
+        [TestCase("Czy umiesz skakać?", 1)]
+        [TestCase("Zatańcz i opowiedz dowcip", 2)]
+        [TestCase("Zatańcz potem opowiedz dowcip", 2)]
+        [TestCase("Skocz, a potem się obróć", 2)]
+        [TestCase("Skocz a potem się obróć", 2)]
+        [TestCase("Skocz. Jaka jest stolica Francji?", 2)]
+        public void EndsSpokenTurn_Polish_OnlyOneShortClauseSkipsTheClosingRound(string said, int rounds)
+        {
+            // Arrange
+            _f.Localizer.SetLanguage("pl", CancellationToken.None).Forget();
+            _f.Tool("dance", ToolConcurrency.Exclusive).Result = Move;
+            _f.Model.Enqueue().Text("Spróbuję.").Call("c1", "dance");
+            _f.Model.Enqueue().Text("Paryż.");
+
+            // Act
+            _f.Run(said);
+
+            // Assert
+            Assert.That(_f.Model.Requests.Count, Is.EqualTo(rounds));
         }
 
         [Test]
