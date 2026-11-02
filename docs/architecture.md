@@ -282,8 +282,8 @@ stateDiagram-v2
 
 ```mermaid
 graph LR
-  Tools[walk_to / go_to_surface / come_here / follow_user / look_at / play_gesture / stop] --> CC[ICharacterController]
-  Actions[actions.* from CharacterActionCatalog: jump / dance / bow / spin / celebrate / move_relative] --> CC
+  Tools[walk_to / go_to_surface / come_here / follow_user / look_at / stop] --> CC[ICharacterController]
+  Actions[actions.* from CharacterActionCatalog: jump / dance / bow / spin / celebrate / move_relative / wave / nod / shake_head / shrug / think / bounce / stretch / look_around] --> CC
   Conv[ConversationState] --> CC
   Lip[ILipSyncDriver.Current] --> Mouth[MouthSmoother → FaceMixer → FaceRenderer: mouth blendshapes A/I/U/E/O]
   CC --> Agent[NavMeshAgent on runtime-baked floor]
@@ -319,11 +319,13 @@ graph LR
   - `go_to_surface(label)`: the nearest surface with that label; Nubi stops 0.25 m outside the footprint edge nearest to it and looks at the centre of the top, so it ends facing the furniture. `room_not_scanned` / `no_surface` otherwise. No perching: box tops never bake as walkable and the rig has no climb or sit clips.
   - Unreachable target: point toward it and return `unreachable`.
   - Seated mode (`IUserPreferences.Seated`): `walk_to`, `go_to_surface`, `follow_user` and `actions.move_relative` are not offered to the model, and the instructions say the user is seated.
-- **Character actions (ADR-0047).** The active character's body actions are tools in the `actions` namespace, built once by `CharacterActionCatalog` in `ToolCatalog` after the character is chosen. An action is offered only when `ICharacterController.CanPlay` is true for every gesture it needs (read from the character's Animator states), and the namespace description lists exactly the offered actions; when it is offered, the instructions add that the character must call an action instead of only saying it did it.
+- **Character actions (ADR-0047).** The active character's body actions are tools in the `actions` namespace, built once by `CharacterActionCatalog` in `ToolCatalog` after the character is chosen. An action is offered only when `ICharacterController.CanPlay` is true for every gesture it needs (read from the character's Animator states). The namespace is the character's whole repertoire (there is no `play_gesture`); its description names no action, since seated mode and a persona's list can withhold some, and asks the model to pick an action itself for "surprise me" or "do a trick". When it is offered, the instructions add that the character must call an action instead of only saying it did it.
   - `actions.jump`, `actions.bow`, `actions.celebrate` (Jump then Happy): clip gestures, awaited to the end.
-  - `actions.dance {duration_s?}`: the looping Dance clip, held for at least `duration_s` (default 4, 2–12) and ended where a loop ends (`GestureHold`).
+  - `actions.dance {duration_s?}`: the looping Dance clip until the first loop end at or after `duration_s` (default 4, 2–12; the default is one 4 s loop). `GestureHold` keeps it looping and is released as the last wanted loop begins.
+  - Jump, bow, celebrate, dance and spin stop a walk in progress (or following) first: the user asked for it now. `actions.wave`, `nod`, `shake_head`, `shrug`, `think`, `bounce`, `stretch` and `look_around` are upper-body gestures (Parallel) and never stop a walk.
+  - The Gesture (upper body) and Action (full body) layers are independent: a gesture supersedes only the one on its own layer, so a nod during a dance leaves the dance running.
   - `actions.spin {turns?, direction?}`: procedural (`SpinMotion`: 1.2 s per turn, smoothstep) with a Happy bounce; attention is off while spinning and faces the user again after.
-  - `actions.move_relative {direction, distance_m?}`: front, behind, left or right of the user's head yaw at `distance_m` (default 1), closer (0.7 m from the user) or away (backs off along the user → character line). Snaps to walkable floor within 0.5 m, never nearer the user than 0.5 m, otherwise `unreachable`; a Locomotion tool like `come_here`.
+  - `actions.move_relative {direction, distance_m?}`: front, behind, left or right of the user's head yaw at `distance_m` (default 1), closer (0.7 m from the user) or away (backs off along the user → character line). Snaps to walkable floor within 0.5 m, never nearer the user than 0.5 m, otherwise `unreachable`; a Locomotion tool like `come_here`. A straight line that passes within 0.6 m of the user (behind them from in front) walks round them instead: first to a point 1 m beside them on the character's side, then on to the target once there.
   - Full-body clips (Dance, Jump, Bow) play on the unmasked **Action** layer above Gesture; on the upper-body layer the hips and legs, and so the jump, would not move. They are optional clips: a character without one is still valid and is not offered the actions it backs.
 - **Animator parameters** (hashed once with `Animator.StringToHash`):
   - `Speed` (float, m/s; the clip playback rate is a separate `LocomotionRate`, clamped 0.7–1.5×)
@@ -404,7 +406,7 @@ Verified live on 2026-11-01 and 2026-11-02 (`api-spend.md`).
 | `response.output_text.delta` | Becomes SpeechDelta |
 | `response.function_call_arguments.delta` / `.done` | Arguments are accumulated |
 | `response.output_item.done` | For a `function_call` item, this emits the complete ToolCall; a `web_search_call` item ends the search badge; `web_search_call` and `tool_search_*` items are kept Opaque for replay |
-| `response.web_search_call.in_progress` | WebSearchStarted: the "Web search" badge (ADR-0048) |
+| `response.web_search_call.in_progress` | WebSearchStarted (ADR-0048). The agent turns it into a ToolStarted event, so the pipeline moves to Acting, the "Web search" badge runs and `SearchThinkGesture` plays Think until the matching ToolCompleted (`ok` only for status `completed`) |
 | `response.completed` | `usage.input_tokens`, `input_tokens_details.cached_tokens`, `output_tokens`, `output_tokens_details.reasoning_tokens` |
 | `response.failed`, `error` | Mapped to `ProviderException` |
 | `response.incomplete` | A normal `Completed` with `FinishReason.Length` (or `Incomplete`); the partial text may already have been spoken (ADR-0017) |
@@ -497,7 +499,7 @@ Psychologist (shown to users as **Listener**; the id stays `psychologist`):
 |---|---|
 | LLM first event | 4 s live voice turn (1 attempt, hedged at 2.5 s), 10 s background (3 attempts) |
 | Hold line (no first event yet) | 2 s, again 4 s later |
-| LLM inter-event idle | 10 s |
+| LLM inter-event idle | 10 s; 15 s for a request that offers web search (`llmSearchIdleSeconds`) |
 | SAM total | 5 s |
 | Vision total | 8 s (then the "hold it closer" line) |
 | `capture_and_identify` tool | 12 s |

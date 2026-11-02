@@ -5,7 +5,7 @@ Does the model pick the right tool for a spoken request? Device runs at f311081 
 ## Method
 
 - `Jolly.Tests.PlayMode.Eval.ToolSelectionEval` (`[Explicit]`, category `LiveEval`, so `tools/ci/test.sh` never runs it) sends each utterance of `ToolSelectionCase.All` as one text-only turn: the real `PromptBuilder` instructions for the default persona (`companion`, resolved through `UnityLocalizer` and `PersonaRepository` with Nubi's name), the 13 tool definitions in `ToolCatalog` order, and the app's `ResponsesChatModel` (`muse-spark-1.3`, `prompt_cache_key`, voice-turn timeouts). One utterance has a `white mug` in scene memory, so the real context block lists it, as after the device's identify turn.
-- It records the tools called in the first round. A case passes when one of its expected tools is called (other calls such as `play_gesture` are allowed); a greeting or small-talk case passes when no movement tool (`come_here`, `walk_to`, `follow_user`, `go_to_surface`) is called.
+- It records the tools called in the first round. A case passes when one of its expected tools is called (other calls such as a gesture, `play_gesture` before ADR-0047's review and `actions.wave` since, are allowed); a greeting or small-talk case passes when no movement tool (`come_here`, `walk_to`, `follow_user`, `go_to_surface`) is called.
 - Run: `tools/eval/tool-selection.sh [minimal|low] [tags]` (tags select a subset, e.g. `greeting,come_here,find_object`). It reads `META_API_KEY` from the repository `.env` and writes `artifacts/tool-selection-<effort>.md`. Cost is metered with the app's price table.
 - One pass per utterance: the model is not deterministic, so a single run shows misses, not rates. Treat a row as one sample.
 
@@ -85,6 +85,22 @@ The catalog now sends the `actions` namespace, and four action cases were added 
 
 The other greeting and come-here cases of the run passed (11 / 12). "Can you jump?" was answered in words; after the namespace description added "or asks whether you can … to show them", a re-run of that one case called `actions.jump` (one sample).
 
+## Review of ADR-0047/0048: `cfad01b+dirty`, effort `minimal`
+
+The eval now sends `AgentLoop.LiveRequest`, exactly what a live turn sends: web search with this machine's location, the matching instructions and the context block with the local time. `play_gesture` is gone (the gesture actions replace it); "Take a bow!", "Stand on my left" and "Do a little show: jump, spin and take a bow" were added and "can you come over here?", "where did I put my keys" and "what's your favourite colour?" dropped to stay within the 24-case cap (`artifacts/tool-selection-review-run1.md`, `-run2.md`).
+
+| Utterance | Expected | Called | Result |
+|---|---|---|---|
+| Show me how to dance! | `actions.dance` | `actions.dance` | PASS |
+| Can you jump? | `actions.jump` or `actions.celebrate` | (none) | **FAIL** |
+| Take a bow! | `actions.bow` | `actions.bow` | PASS |
+| Spin around for me | `actions.spin` | `actions.spin` | PASS |
+| Do a little show: jump, spin and take a bow | any of `actions.jump`, `actions.spin`, `actions.bow` | `actions.jump`, `actions.spin`, `actions.bow` | PASS |
+| Go stand behind me | `actions.move_relative` | `actions.move_relative` | PASS |
+| Stand on my left | `actions.move_relative` | `actions.move_relative` | PASS |
+
+6 / 7. "Can you jump?" was answered in words again; with "or asks whether you can, call it in this turn to show them" added to the instructions' action rule, a re-run of the `actions.jump` tag still answered it in words (the show passed again), so that wording was not kept. Over all runs it has passed 1 of 4 samples.
+
 ## Runs
 
 | Date (UTC) | Commit | Effort | Cases | Passed | Metered USD |
@@ -93,5 +109,7 @@ The other greeting and come-here cases of the run passed (11 / 12). "Can you jum
 | 2026-11-01 | `c52b250` | minimal | 12 (greeting, come_here, find_object) | 9 | 0.0221 |
 | 2026-11-02 | `290385a+dirty` | minimal | 12 (greeting, come_here, 4 action tags) | 11 | 0.0263 |
 | 2026-11-02 | `290385a+dirty` | minimal | 1 (actions.jump) | 1 | 0.0052 |
+| 2026-11-02 | `cfad01b+dirty` | minimal | 7 (5 action tags) | 6 | 0.0159 |
+| 2026-11-02 | `cfad01b+dirty` | minimal | 2 (actions.jump, with an instruction tweak not kept) | 1 | 0.0082 |
 
 Total **$0.0528**, $0.003 over the batch's $0.05 eval cap: the second run was sized from the first run's cost per call, and its output (~300 tokens per call, mostly reasoning even at `minimal`) is what a run costs (output is 71 % of its metered cost). The baseline ran the harness of `7e6ccc9` before it was committed, on the `88047fe` runtime.

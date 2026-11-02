@@ -226,17 +226,20 @@ namespace Jolly.Contracts
     }
 
     /// <summary>WebSearchStarted / WebSearchCompleted: the provider's built-in web search (ADR-0048) began or ended;
-    /// both carry the search's item id in Text. Neither is a ToolCall: the server runs it.</summary>
+    /// both carry the search's item id in Text, and WebSearchCompleted whether it succeeded in Ok. Neither is a ToolCall:
+    /// the server runs it.</summary>
     public enum ModelEventKind { Started, TextDelta, ToolCall, Completed, TextDone, WebSearchStarted, WebSearchCompleted }
 
     public readonly struct ModelEvent
     {
-        public ModelEvent(ModelEventKind kind, string text = null, ToolCallRequest toolCall = null, ModelTurnResult result = null)
-        { Kind = kind; Text = text; ToolCall = toolCall; Result = result; }
+        public ModelEvent(ModelEventKind kind, string text = null, ToolCallRequest toolCall = null, ModelTurnResult result = null,
+                          bool ok = true)
+        { Kind = kind; Text = text; ToolCall = toolCall; Result = result; Ok = ok; }
         public ModelEventKind Kind { get; }
         public string Text { get; }                 // TextDelta; TextDone: none, the text item ended (a call may follow); WebSearch*: item id
         public ToolCallRequest ToolCall { get; }    // ToolCall: emitted once its arguments are complete
         public ModelTurnResult Result { get; }      // Completed: always the last event
+        public bool Ok { get; }                     // WebSearchCompleted: the search's status was "completed"
     }
 
     public interface IChatModel
@@ -427,7 +430,7 @@ Nothing nested. That covers the whole catalogue and keeps the validator at about
 
 ### 4.2 Tool catalogue
 
-Wire format is the Responses flat function tool: `{"type":"function","name":…,"description":…,"parameters":<schema>}` (verified live). A tool named `ns.fn` goes inside `{"type":"namespace","name":"ns","description":…,"tools":[…]}` as `fn`, eagerly (no `defer_loading`), and the model calls it as `ns.fn` (live 2026-11-02, ADR-0047). With web search on, `{"type":"web_search","search_context_size":"low","user_location":{…}}` comes last and the body sets `max_tool_calls: 2`, which counts built-in tools only (ADR-0048). Parameter schemas:
+Wire format is the Responses flat function tool: `{"type":"function","name":…,"description":…,"parameters":<schema>}` (verified live). A tool named `ns.fn` goes inside `{"type":"namespace","name":"ns","description":…,"tools":[…]}` as `fn`, eagerly (no `defer_loading`), and the model calls it as `ns.fn` (live 2026-11-02, ADR-0047). The `actions` namespace description names no action (`CharacterActionCatalog.Description`), so it is true for every request whatever seated mode or the persona withhold. With web search on, `{"type":"web_search","search_context_size":"low","user_location":{…}}` comes last and the body sets `max_tool_calls: 2`, which counts built-in tools only (ADR-0048). Parameter schemas:
 
 | name | description (model-facing) | parameters | timeout | concurrency | result `output` JSON |
 |---|---|---|---|---|---|
@@ -440,17 +443,17 @@ Wire format is the Responses flat function tool: `{"type":"function","name":…,
 | `highlight_part` (*should*) | Highlight a part of an object seen this session, e.g. 'handle' of obj_3. Use it when the user asks which part or button to use. | `{"type":"object","properties":{"object_id":{"type":"string","maxLength":16},"part":{"type":"string","maxLength":40,"description":"part noun phrase, e.g. 'mug handle'"}},"required":["part"],"additionalProperties":false}` | 6 s (SAM 5 s) | Exclusive | `{"status":"highlighted","part":"mug handle"}` or error `no_match`, `no_frame`. SAM text prompt on the last capture kept in RAM (a `too_dark` capture never replaces it) (part phrases verified live: "mug handle" → one box, c≈0.97). Nubi looks at it. |
 | `remember_place` | Remember a location under a name, e.g. 'sofa', so Nubi can walk there later. | `{"type":"object","properties":{"name":{"type":"string","maxLength":32}},"required":["name"],"additionalProperties":false}` | 5 s | Parallel | `{"status":"saved","name":"sofa","anchored":true}` |
 | `stop` | Stop walking, following and talking immediately. | `{"type":"object","properties":{},"additionalProperties":false}` | 1 s | Parallel | `{"status":"stopped"}` (`EndsTurn=true`). Usually pre-empted by the local `StopGuard` (§9), which halts locomotion on the final transcript before any model call. |
-| `play_gesture` | Play an expressive body gesture when it fits, e.g. wave hello or nod. | `{"type":"object","properties":{"name":{"type":"string","enum":["wave","nod","shake_head","shrug","point","happy_bounce","think"]}},"required":["name"],"additionalProperties":false}` | 4 s | Parallel | `{"status":"played"}` |
 | `set_persona` (*should*) | Switch Nubi's personality when the user asks for another mode. | `{"type":"object","properties":{"id":{"type":"string","enum":["companion","mentor","guru"]}},"required":["id"],"additionalProperties":false}` | 1 s | Exclusive | `{"status":"switching","id":"guru"}`, `EndsTurn=true`. The tool only calls `IPersonaProvider.RequestSwitch(id)`; the controller applies it once the turn is Idle and the new persona greets in its own voice. The enum is generated from `IPersonaProvider.AvailableIds` minus `psychologist`, which can only be chosen in Settings. |
 | `go_to_surface` (ADR-0025) | Walk Nubi to a piece of the user's real furniture from the room scan, e.g. the couch or the table, and stop beside it facing it. | `{"type":"object","properties":{"label":{"type":"string","enum":["couch","table","desk","bed","chair","storage","screen"],"description":"Furniture from the room scan"}},"required":["label"],"additionalProperties":false}` | 3 s | Locomotion | `{"status":"walking"\|"unreachable","label":"table","eta_s":3}` (`desk` is reported as `table`); errors `room_not_scanned`, `no_surface`. Withheld in seated mode. |
 | `set_home_location` (ADR-0048) | Remember the city the user lives in when they tell you, e.g. "I live in Krakow", so searches for weather or opening hours are about their home. Do not call it for places they only visit or ask about. | `{"type":"object","properties":{"city":{"type":"string","maxLength":64,"description":"City or town only, never a street or address."},"country":{"type":"string","maxLength":2,"description":"ISO 3166-1 alpha-2 code, e.g. GB, if known."}},"required":["city"],"additionalProperties":false}` | 1 s | Parallel | `{"status":"saved","city":"Kraków","country":"PL"}`; error `invalid_arguments`. Stored with the user preferences (`IUserPreferences.SetHomeLocation`); the city is sanitised like other context text. |
 | `request_room_scan` (ADR-0025) | Open the headset's Space Setup so the user can scan the room; afterwards Nubi can walk around the room and to the furniture. Call it only after the user agrees to scan. The app pauses until they finish. | `{"type":"object","properties":{},"additionalProperties":false}` | 2 s | Exclusive | `{"status":"opening"}`, `EndsTurn=true`, `SpokenText` = the `room.scan_opening` line; Space Setup opens once Nubi is idle and silent. Error `scan_unavailable` off Meta's runtime. |
-| `actions.jump` (ADR-0047) | Jump on the spot, e.g. 'jump!', 'can you jump?'. | `{"type":"object","properties":{},"additionalProperties":false}` | 4 s | Exclusive | `{"status":"done"}` once the clip has ended |
+| `actions.jump` (ADR-0047) | Jump on the spot, e.g. 'jump!', 'can you jump?'. | `{"type":"object","properties":{},"additionalProperties":false}` | 4 s | Exclusive | `{"status":"done"}` once the clip has ended; a walk in progress (or following) is stopped first, as for dance, bow, spin and celebrate |
 | `actions.dance` (ADR-0047) | Dance for the user, e.g. 'show me how to dance', 'dance for me', 'let's dance'. | `{"type":"object","properties":{"duration_s":{"type":"number","minimum":2,"maximum":12,"description":"Roughly how long to dance, seconds; default 4"}},"additionalProperties":false}` | 18 s | Exclusive | `{"status":"done"}` once the dance has ended |
 | `actions.bow` (ADR-0047) | Take a bow, e.g. 'take a bow', or when the user applauds you. | `{"type":"object","properties":{},"additionalProperties":false}` | 4 s | Exclusive | `{"status":"done"}` |
 | `actions.spin` (ADR-0047) | Spin around on the spot, e.g. 'spin around', 'do a twirl', 'turn around'. | `{"type":"object","properties":{"turns":{"type":"number","minimum":1,"maximum":3,"description":"Full turns; default 1"},"direction":{"type":"string","enum":["left","right"],"description":"Which way to turn; default right"}},"additionalProperties":false}` | 6 s | Exclusive | `{"status":"done"}` |
 | `actions.celebrate` (ADR-0047) | Jump for joy when the user asks you to celebrate, e.g. 'let's celebrate!'. | `{"type":"object","properties":{},"additionalProperties":false}` | 8 s | Exclusive | `{"status":"done"}` after Jump then Happy |
-| `actions.move_relative` (ADR-0047) | Go and stand somewhere relative to the user: in front of them, behind them, on their left or right, closer, or further away. Call it whenever they ask, e.g. 'go behind me', 'stand on my left', 'back off a bit'. | `{"type":"object","properties":{"direction":{"type":"string","enum":["front","behind","left","right","closer","away"],"description":"…"},"distance_m":{"type":"number","minimum":0.5,"maximum":3,"description":"…"}},"required":["direction"],"additionalProperties":false}` | 3 s | Locomotion | `{"direction":"behind","status":"walking","eta_s":3}`, `"unreachable"` or `"already_close"`; withheld when seated |
+| `actions.move_relative` (ADR-0047) | Go and stand somewhere relative to the user: in front of them, behind them, on their left or right, closer, or further away. Call it whenever they ask, e.g. 'go behind me', 'stand on my left', 'back off a bit'. | `{"type":"object","properties":{"direction":{"type":"string","enum":["front","behind","left","right","closer","away"],"description":"…"},"distance_m":{"type":"number","minimum":0.5,"maximum":3,"description":"…"}},"required":["direction"],"additionalProperties":false}` | 3 s | Locomotion | `{"direction":"behind","status":"walking","eta_s":3}`, `"unreachable"` or `"already_close"`; withheld when seated. A straight line passing within 0.6 m of the user becomes two legs round them (1 m beside them, the character's side first); `eta_s` covers both |
+| `actions.wave`, `actions.nod`, `actions.shake_head`, `actions.shrug`, `actions.think`, `actions.bounce`, `actions.stretch`, `actions.look_around` (ADR-0047) | One line each, e.g. "Wave at the user: hello, goodbye, or when they ask you to wave." | `{"type":"object","properties":{},"additionalProperties":false}` | 4 s | Parallel | `{"status":"done"}` once the gesture has ended; upper body only, so it never stops a walk. They replace `play_gesture` |
 
 Locomotion tools never await arrival under `turnCts`: a barge-in cancels the turn, not the walk (`ICharacterController.MoveTo`, §7). Results are fast, so a locomotion call never holds the next model round or an `EndsTurn` round.
 
@@ -898,8 +901,9 @@ namespace Jolly.Contracts
         /// following, or when near (ADR-0041). A new Listening state drops a held point.</summary>
         void LookAt(LookTarget target);
         UniTask PlayGesture(GestureId gesture, CancellationToken ct);
-        /// <summary>Plays a looping gesture (Dance) for at least <paramref name="seconds"/>, ending where a loop ends; a
-        /// one-shot gesture plays once. Completes when the gesture has ended; cancelling fades it out.</summary>
+        /// <summary>Plays a looping gesture (Dance) until the first loop end at or after <paramref name="seconds"/>; a
+        /// one-shot gesture plays once. Completes when the gesture has ended; cancelling fades it out. An upper-body gesture
+        /// played meanwhile leaves it running.</summary>
         UniTask PlayLooped(GestureId gesture, float seconds, CancellationToken ct);
         /// <summary>Whether this character has the gesture's clip (ADR-0047). PlayGesture of one it lacks throws.</summary>
         bool CanPlay(GestureId gesture);

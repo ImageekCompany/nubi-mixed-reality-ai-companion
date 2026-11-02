@@ -69,4 +69,6 @@ Rows before 2026-11-01 02:00 (research phase, `docs/research/*.md`) were not ite
 
 | 2026-11-02 | character action catalog (ADR-0047): tool-selection eval, 12 cases (greeting, come_here, 4 action tags) + 1 re-run of "Can you jump?"; Wit `/synthesize` for `dance.wav` and `move_behind.wav` (free) | muse-spark-1.3 (+ Wit, free) | 13 Spark calls | in 40,165 (33,627 cached) / out 4,293 | 0.032 |
 
-Running total (est.): **≤ $2.24** (sum of the rows: 2.243)
+| 2026-11-02 | review of ADR-0047/0048: tool-selection eval with the live turn's request (web search on), 7 action cases + a 2-case re-run of the `actions.jump` tag | muse-spark-1.3 | 9 Spark calls, no web search | in 36,225 (27,671 cached) / out 2,185 | 0.024 |
+
+Running total (est.): **≤ $2.27** (sum of the rows: 2.267)
