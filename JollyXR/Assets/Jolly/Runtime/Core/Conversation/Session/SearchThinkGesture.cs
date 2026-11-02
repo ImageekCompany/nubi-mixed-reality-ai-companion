@@ -8,14 +8,18 @@ namespace Jolly.Core.Conversation
 {
     /// <summary>
     /// While the provider searches the web (ADR-0048) the character strikes its Think gesture, so the pause before the
-    /// answer reads as working, not stalled. The gesture fades out when the search ends or the turn is interrupted
-    /// (Listening) or over (Idle); the Thinking pose of the next state takes over from there.
+    /// answer reads as working, not stalled. A search that ends in Acting leads to Thinking, whose pose is the same clip:
+    /// the gesture keeps playing over it until Thinking ends. Fading it out at the search's end, while the pose was still
+    /// fading in below, dropped the hands 10 cm of their 23 cm for a moment. A search that ends while the character
+    /// speaks ends the gesture there, and any other state does at once.
     /// </summary>
     public sealed class SearchThinkGesture : IDisposable
     {
         readonly IConversationEvents _events;
         readonly ICharacterController _character;
         CancellationTokenSource _gesture;
+        ConversationState _state;
+        bool _searching;
 
         public SearchThinkGesture(IConversationEvents events, ICharacterController character)
         {
@@ -39,24 +43,31 @@ namespace Jolly.Core.Conversation
             if (name != ToolNames.WebSearch || !_character.CanPlay(GestureId.Think))
                 return;
             End();
+            _searching = true;
             _gesture = new CancellationTokenSource();
             _character.PlayGesture(GestureId.Think, _gesture.Token).SuppressCancellationThrow().Forget();
         }
 
         void OnToolCompleted(string callId, string name, bool ok)
         {
-            if (name == ToolNames.WebSearch)
+            if (name != ToolNames.WebSearch)
+                return;
+            _searching = false;
+            if (_state != ConversationState.Acting)
                 End();
         }
 
         void OnStateChanged(ConversationState from, ConversationState to)
         {
-            if (to is ConversationState.Listening or ConversationState.Idle)
+            _state = to;
+            if (to is ConversationState.Listening or ConversationState.Idle
+                || (to == ConversationState.Speaking && !_searching))
                 End();
         }
 
         void End()
         {
+            _searching = false;
             if (_gesture == null)
                 return;
             _gesture.Cancel();

@@ -75,6 +75,41 @@ namespace Jolly.Tests.EditMode.Core.Conversation
         }
 
         [Test]
+        public void SearchEndsInActing_KeepsPlayingIntoThinkingUntilThinkingEnds()
+        {
+            // Arrange
+            _events.RaiseStateChanged(ConversationState.Thinking, ConversationState.Acting);
+            _events.RaiseToolStarted("ws_1", ToolNames.WebSearch);
+
+            // Act
+            _events.RaiseToolCompleted("ws_1", ToolNames.WebSearch, true);
+            _events.RaiseStateChanged(ConversationState.Acting, ConversationState.Thinking);
+
+            // Assert
+            Assert.That(_character.GestureTokens[0].IsCancellationRequested, Is.False, "the same pose is fading in below");
+
+            // Act
+            _events.RaiseStateChanged(ConversationState.Thinking, ConversationState.Speaking);
+
+            // Assert
+            Assert.That(_character.GestureTokens[0].IsCancellationRequested, Is.True);
+        }
+
+        [Test]
+        public void SearchEndsWhileSpeaking_StopsThink()
+        {
+            // Arrange
+            _events.RaiseStateChanged(ConversationState.Thinking, ConversationState.Speaking);
+            _events.RaiseToolStarted("ws_1", ToolNames.WebSearch);
+
+            // Act
+            _events.RaiseToolCompleted("ws_1", ToolNames.WebSearch, true);
+
+            // Assert
+            Assert.That(_character.GestureTokens[0].IsCancellationRequested, Is.True);
+        }
+
+        [Test]
         public void OtherTool_PlaysNothing()
         {
             // Act
