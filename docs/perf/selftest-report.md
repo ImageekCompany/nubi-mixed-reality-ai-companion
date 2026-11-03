@@ -1,16 +1,16 @@
 # Device self-test report
 
-Latest: 2026-11-03, 21:01 UTC, one default (Nubi) release run of `d06e13b`; section below. Reports up to 2026-11-01 follow it, newest first; later device rows in between ran the Jolly build and are in the ADRs and `docs/api-spend.md`.
+Latest: 2026-11-03, 21:01 UTC, one default (Nubi) release run of `04dc7e2`; section below. Reports up to 2026-11-01 follow it, newest first; later device rows in between ran the Jolly build and are in the ADRs and `docs/api-spend.md`.
 Device: Quest 3, Horizon OS v209. Build: `tools/ci/build.sh` (IL2CPP ARM64 release, 58 MB APK).
 Nobody wore the headset. The room was dim (camera mean luma 23–45 of 255) and had no Space Setup. Command: `tools/device/selftest.sh` (headless: `prox_close`, `guardian_pause 1`, 16 MiB logcat buffer; all restored afterwards).
 Raw outputs (`selftest_results.json`, `logcat.txt`, `vrapi.txt`) are under `artifacts/selftest/`, which is git-ignored.
 
 
-## Final review (d06e13b, 2026-11-03)
+## Final review (04dc7e2, 2026-11-03)
 
 Two default release runs of the final runtime code, with nobody wearing the headset and a dark room (mean luma 7.6, so vision used the bundled still). `tools/ci/test.sh` on the same code: EditMode 1578/1578, PlayMode 576/577 (one explicit live eval skipped), pure logic coverage 93.6 %.
 
-| Scenario | Before the reboot (44 h uptime, build `e9e4aea`) | After the reboot (10 min uptime, `d06e13b`) |
+| Scenario | Before the reboot (44 h uptime, build `9b80432`) | After the reboot (10 min uptime, `04dc7e2`) |
 |---|---|---|
 | `offline_greeting` | PASS | PASS, caption 27 ms |
 | `voice_greeting` | DEGRADED, 3.5 s | **FAIL**: both first-event legs stalled, spoken error line |
@@ -18,7 +18,7 @@ Two default release runs of the final runtime code, with nobody wearing the head
 | `tap_to_move` | PASS | PASS |
 | `vision_capture_and_identify` | DEGRADED, 2.7 s | **FAIL**, 4.7 s; right tool |
 | `vision_highlight_part` | DEGRADED, 4.0 s, mask 473 ms | **FAIL**, 4.8 s, mask 431 ms; right tool |
-| `vision_find_object` | DEGRADED: **the model called `show_place`** | DEGRADED, 2.8 s, mask 431 ms, found 1: fixed in `d06e13b` |
+| `vision_find_object` | DEGRADED: **the model called `show_place`** | DEGRADED, 2.8 s, mask 431 ms, found 1: fixed in `04dc7e2` |
 | `voice_web_search` | DEGRADED, 2.7 s | **FAIL**, 4.6 s; right tool |
 | `action_dance` | PASS, guard | PASS, guard |
 | `action_through_model` | **FAIL**, 4.3 s | **FAIL**, 6.0 s; right tool |
@@ -34,9 +34,9 @@ Each FAIL is the scenario's 4 s no-audio limit, in model time; the turn then com
 
 **Desktop probes minutes later,** with a similar request shape (about 40 lines of instructions, 14 function tools, a 14-tool `actions` namespace, `web_search`, effort minimal): first text median 1.3 s on a one-line prompt, 1.7 s with search offered on a greeting, 2.4 s on a tool-worthy question, whether search was offered or not. No stall in 44 requests. So web search is not the main cost, and the device's stalls are unexplained: it could be the headset's Wi-Fi, the app's real prompt and memory, or server load. **Open: repeat with the app's exact request from the headset before the live final.**
 
-## Point and tap to move (7124bc7)
+## Point and tap to move (359dc3f)
 
-`main` at `7124bc7` (ADR-0044: `TapHoldClassifier`, `PreRollCapture`, `MoveTargetResolver`, `PointToMove`, `XrPointer`, the floor ring, the `tap_to_move` scenario). `tools/ci/test.sh` (EditMode 1198/1198, PlayMode 437/437 + 1 skipped, pure logic 92.9 % ≥ 91.6 %, 0 `warning CS`), `tools/device/build.sh --character jolly` (IL2CPP ARM64 release, 65 MB, `QuestBuild` 0 errors / 5 warnings, SHA-256 `64a5319dbfdc…`), `adb install -r`, `selftest.sh --skip-install`. Headset not rebooted, dark room (mean luma 0.79, vision used the bundled still), no Space Setup (`navmesh=fallback`).
+`main` at `359dc3f` (ADR-0044: `TapHoldClassifier`, `PreRollCapture`, `MoveTargetResolver`, `PointToMove`, `XrPointer`, the floor ring, the `tap_to_move` scenario). `tools/ci/test.sh` (EditMode 1198/1198, PlayMode 437/437 + 1 skipped, pure logic 92.9 % ≥ 91.6 %, 0 `warning CS`), `tools/device/build.sh --character jolly` (IL2CPP ARM64 release, 65 MB, `QuestBuild` 0 errors / 5 warnings, SHA-256 `64a5319dbfdc…`), `adb install -r`, `selftest.sh --skip-install`. Headset not rebooted, dark room (mean luma 0.79, vision used the bundled still), no Space Setup (`navmesh=fallback`).
 
 | Scenario | Result |
 |---|---|
@@ -52,9 +52,9 @@ Each FAIL is the scenario's 4 s no-audio limit, in model time; the turn then com
 
 Overall DEGRADED (as in the previous runs: dark room, model-time first audio). Spend $0.0252, none of it from `tap_to_move`. Compositor 4.75 % stale over the run (headset not rebooted, ADR-0034). The tap went through the real scene raycast (the fallback floor's collider), NavMesh and walk, with a scripted ray and pinch; no one wore the headset, so the ring's look, the tap time and the hand ray's steadiness are still unjudged.
 
-## Acknowledgement only for questions (0f2cef4)
+## Acknowledgement only for questions (a7dcbe9)
 
-`main` at `0f2cef4` (ADR-0040: `QuestionCue`, the acknowledgement plays at the final and only for a question no guard handled). `tools/ci/test.sh EditMode` (1134/1134), `tools/ci/build.sh` (IL2CPP ARM64 release, 60 MB, `QuestBuild` 0 errors / 5 warnings, SHA-256 `0456a4de7a91…`, installed and left installed). Headset not rebooted, same dark room (mean luma 0.84, vision used the bundled still), no Space Setup (`navmesh=fallback`). `selftest.sh` restored the proximity sensor and Guardian.
+`main` at `a7dcbe9` (ADR-0040: `QuestionCue`, the acknowledgement plays at the final and only for a question no guard handled). `tools/ci/test.sh EditMode` (1134/1134), `tools/ci/build.sh` (IL2CPP ARM64 release, 60 MB, `QuestBuild` 0 errors / 5 warnings, SHA-256 `0456a4de7a91…`, installed and left installed). Headset not rebooted, same dark room (mean luma 0.84, vision used the bundled still), no Space Setup (`navmesh=fallback`). `selftest.sh` restored the proximity sensor and Guardian.
 
 | Scenario | Result |
 |---|---|
@@ -70,9 +70,9 @@ Overall DEGRADED (as in the previous runs: dark room, model-time first audio). S
 
 Spend: 1 run, $0.0218; `api-spend.md` has the row.
 
-## Dark-room vision guard (4fecc17)
+## Dark-room vision guard (b9b74e4)
 
-`main` at `4fecc17` (ADR-0039: `FrameLuma`, `too_dark` in `capture_and_identify` and `find_object` below mean luma 25, `evt=vision.too_dark`). `tools/ci/test.sh` (EditMode 1110/1110, PlayMode 379/379 + 1 explicit eval skipped, pure logic 92.7 % ≥ 91.6 %, 0 `warning CS`), `tools/ci/build.sh` (IL2CPP ARM64 release, 60 MB, `QuestBuild` 0 errors / 5 warnings, SHA-256 `ae77f50c10f7…`, installed and left installed), `tools/device/build.sh` (0 errors / 2 warnings). Same dark room, no Space Setup. `guardian_pause` read back 0; the proximity sensor was restored.
+`main` at `b9b74e4` (ADR-0039: `FrameLuma`, `too_dark` in `capture_and_identify` and `find_object` below mean luma 25, `evt=vision.too_dark`). `tools/ci/test.sh` (EditMode 1110/1110, PlayMode 379/379 + 1 explicit eval skipped, pure logic 92.7 % ≥ 91.6 %, 0 `warning CS`), `tools/ci/build.sh` (IL2CPP ARM64 release, 60 MB, `QuestBuild` 0 errors / 5 warnings, SHA-256 `ae77f50c10f7…`, installed and left installed), `tools/device/build.sh` (0 errors / 2 warnings). Same dark room, no Space Setup. `guardian_pause` read back 0; the proximity sensor was restored.
 
 | Scenario | Result |
 |---|---|
@@ -86,11 +86,11 @@ Spend: 1 run, $0.0218; `api-spend.md` has the row.
 
 Spend: 1 run, $0.0236; `api-spend.md` has the row.
 
-## Hedged first event (ee9b05c, b96a062)
+## Hedged first event (3241225, bd6366a)
 
-`main` at `ee9b05c` (ADR-0038: `FirstEventHedge`, `voiceAttempts` 1, `voiceHedgeSeconds` 2.5, `evt=llm.hedge`, `evt=llm.first_event`), then `b96a062` (first-event timeouts say whether a byte arrived). `tools/ci/test.sh` on `b96a062` (EditMode 1097/1097, PlayMode 379/379 + 1 explicit eval skipped, pure logic 92.6 % ≥ 91.6 %, 0 `warning CS`), `tools/ci/build.sh` (IL2CPP ARM64 release, 60 MB, `QuestBuild` 0 errors / 5 warnings), `tools/device/build.sh` (0 errors / 2 warnings; `b96a062` SHA-256 `7f57ee919a7c…`, installed and left installed). `adb reboot` first (ADR-0034); the first launch ~1 min after boot stopped at `APP_CMD_PAUSE` with the headset asleep and made no API call, then runs 1–3 of `ee9b05c` back to back (uptime 7–12 min) and run 4 of `b96a062` (uptime 19 min). Same dim room (vision used the bundled still), no Space Setup (`navmesh=fallback`). `guardian_pause` read back 0 and the proximity sensor was restored after each run.
+`main` at `3241225` (ADR-0038: `FirstEventHedge`, `voiceAttempts` 1, `voiceHedgeSeconds` 2.5, `evt=llm.hedge`, `evt=llm.first_event`), then `bd6366a` (first-event timeouts say whether a byte arrived). `tools/ci/test.sh` on `bd6366a` (EditMode 1097/1097, PlayMode 379/379 + 1 explicit eval skipped, pure logic 92.6 % ≥ 91.6 %, 0 `warning CS`), `tools/ci/build.sh` (IL2CPP ARM64 release, 60 MB, `QuestBuild` 0 errors / 5 warnings), `tools/device/build.sh` (0 errors / 2 warnings; `bd6366a` SHA-256 `7f57ee919a7c…`, installed and left installed). `adb reboot` first (ADR-0034); the first launch ~1 min after boot stopped at `APP_CMD_PAUSE` with the headset asleep and made no API call, then runs 1–3 of `3241225` back to back (uptime 7–12 min) and run 4 of `bd6366a` (uptime 19 min). Same dim room (vision used the bundled still), no Space Setup (`navmesh=fallback`). `guardian_pause` read back 0 and the proximity sensor was restored after each run.
 
-| | Run 1 (`ee9b05c`) | Run 2 (`ee9b05c`) | Run 3 (`ee9b05c`) | Run 4 (`b96a062`) |
+| | Run 1 (`3241225`) | Run 2 (`3241225`) | Run 3 (`3241225`) | Run 4 (`bd6366a`) |
 |---|---|---|---|---|
 | Overall | **FAIL** | **FAIL** | DEGRADED | DEGRADED |
 | Release → first audio, greeting / come / identify / part / find (ms) | 4,301 / 1,068 / 2,362 / 1,250 / 2,058 | 4,247 / 1,097 / — / 2,659 / 1,768 | 2,111 / 930 / 2,279 / 2,014 / 1,944 | 2,968 / 611 / 2,790 / 1,876 / 2,540 |
@@ -104,7 +104,7 @@ Release → first audio over all 19 measured turns: p50 2,058 ms; model turns on
 
 Findings:
 
-- **One stall in 39 voice model calls, and it hit both legs.** Run 2, `vision_capture_and_identify`: the hold line played at 2.0 s, the hedge was sent at 2,512 ms, and neither request had an event at the 4 s deadline (`both_timeout elapsed_ms=4029`). The turn failed at 4.0 s, where the old 4 s × 2 policy would have failed at ~8 s; it still had no spoken reply beyond the hold line and the error line. The next scenario's model then called `capture_and_identify` instead of `highlight_part` (FAIL), as after the network error in the last report. That stall was on `ee9b05c`, before the timeout text said whether a byte arrived; run 4 (`b96a062`) had no stall, so the "no byte / first byte at" text is unverified on the device.
+- **One stall in 39 voice model calls, and it hit both legs.** Run 2, `vision_capture_and_identify`: the hold line played at 2.0 s, the hedge was sent at 2,512 ms, and neither request had an event at the 4 s deadline (`both_timeout elapsed_ms=4029`). The turn failed at 4.0 s, where the old 4 s × 2 policy would have failed at ~8 s; it still had no spoken reply beyond the hold line and the error line. The next scenario's model then called `capture_and_identify` instead of `highlight_part` (FAIL), as after the network error in the last report. That stall was on `3241225`, before the timeout text said whether a byte arrived; run 4 (`bd6366a`) had no stall, so the "no byte / first byte at" text is unverified on the device.
 - **The first byte is the first event.** On all 38 opened calls `ttfe_ms − ttfb_ms` was 9–26 ms (median 11): nothing arrives before `response.created`, so a late or missing first event is the server not responding, not a slow stream or a slow parser. TTFB was 419–1,704 ms (median 1,064).
 - **No hedge fired on a healthy call.** The slowest opened first event was 1,715 ms, under the 2.5 s hedge point, so no turn paid for a second request.
 - **Both FAILs of run 1 and run 2's greeting are model time, not a stall.** `voice_greeting` "no reply audio within 4 s" at 4,301 / 4,247 ms: first event at 1.3 / 1.2 s, then 2.6 s of reasoning to the first text (run 2: `LlmFirstEvent` 3,902 → `LlmFirstText` 6,554 ms after press), and run 1 also took a `play_gesture` round. Greetings were 2.4–4.7 s in earlier reports.
@@ -112,11 +112,11 @@ Findings:
 
 Spend: 4 runs ($0.0244 + $0.0226 + $0.0203 + $0.0228 = $0.0901); `api-spend.md` has the row.
 
-## Guard walk without a model round, find_object gaze result (8bd9560)
+## Guard walk without a model round, find_object gaze result (b37e4c3)
 
-`main` at `8bd9560` (ADR-0037). `tools/ci/test.sh` (EditMode 1086/1086, PlayMode 379/379 + 1 explicit eval skipped, pure logic 92.7 % ≥ 91.6 %, 0 `warning CS`), `tools/ci/build.sh` (IL2CPP ARM64 release, 60 MB, `QuestBuild` 0 errors / 5 warnings), `tools/device/build.sh` (0 errors / 2 warnings, SHA-256 `a8923da92c62…`, installed and left installed). Two default self-tests back to back (headset uptime 1 h 48 min, not rebooted), same dim room (vision used the bundled still), no Space Setup (`navmesh=fallback`). `guardian_pause` read back 0 and the proximity sensor was restored after each run.
+`main` at `b37e4c3` (ADR-0037). `tools/ci/test.sh` (EditMode 1086/1086, PlayMode 379/379 + 1 explicit eval skipped, pure logic 92.7 % ≥ 91.6 %, 0 `warning CS`), `tools/ci/build.sh` (IL2CPP ARM64 release, 60 MB, `QuestBuild` 0 errors / 5 warnings), `tools/device/build.sh` (0 errors / 2 warnings, SHA-256 `a8923da92c62…`, installed and left installed). Two default self-tests back to back (headset uptime 1 h 48 min, not rebooted), same dim room (vision used the bundled still), no Space Setup (`navmesh=fallback`). `guardian_pause` read back 0 and the proximity sensor was restored after each run.
 
-| | Run 1 (15:52) | Run 2 (15:54) | Last report (`36778c1`) |
+| | Run 1 (15:52) | Run 2 (15:54) | Last report (`33e69b5`) |
 |---|---|---|---|
 | `voice_come_here` | DEGRADED: first audio 1,054 ms (> 600 ms) | DEGRADED: first audio 611 ms (> 600 ms) | DEGRADED / FAIL / DEGRADED (2,235 / — / 2,138 ms) |
 | Come-here model request (`llm_request`) | none | none | 1 round per run (2 timeouts in run 2) |
@@ -138,11 +138,11 @@ Findings:
 
 Spend: 2 runs ($0.0228 + $0.0214); `api-spend.md` has the row. The ComingOver clips came from Wit `/synthesize` (free).
 
-## Local come-here guard and reply log (36778c1)
+## Local come-here guard and reply log (33e69b5)
 
-`main` at `36778c1` (ADR-0036: `ComeGuard`, `evt=llm.reply` in self-test runs, `voice_come_here` now says "Hi Nubi, come here."). `tools/ci/test.sh` (EditMode 1081/1081, PlayMode 379/379 + 1 explicit eval skipped, pure logic 92.7 % ≥ 91.6 %, 0 `warning CS`), `tools/ci/build.sh` (IL2CPP ARM64 release, 60 MB, `QuestBuild` 0 errors / 5 warnings, SHA-256 `41cc3cc076c5…`). Three default self-tests back to back (headset uptime 1 h 14 min, not rebooted; battery 32 °C), same dim room (vision used the bundled still), no Space Setup (`navmesh=fallback`). `guardian_pause` read back 0 after each run.
+`main` at `33e69b5` (ADR-0036: `ComeGuard`, `evt=llm.reply` in self-test runs, `voice_come_here` now says "Hi Nubi, come here."). `tools/ci/test.sh` (EditMode 1081/1081, PlayMode 379/379 + 1 explicit eval skipped, pure logic 92.7 % ≥ 91.6 %, 0 `warning CS`), `tools/ci/build.sh` (IL2CPP ARM64 release, 60 MB, `QuestBuild` 0 errors / 5 warnings, SHA-256 `41cc3cc076c5…`). Three default self-tests back to back (headset uptime 1 h 14 min, not rebooted; battery 32 °C), same dim room (vision used the bundled still), no Space Setup (`navmesh=fallback`). `guardian_pause` read back 0 after each run.
 
-| | Run 1 (15:22) | Run 2 (15:24) | Run 3 (15:26) | Last report (`f311081`) |
+| | Run 1 (15:22) | Run 2 (15:24) | Run 3 (15:26) | Last report (`2ebf855`) |
 |---|---|---|---|---|
 | `voice_come_here` | DEGRADED (first audio 2,235 ms) | **FAIL** (model timed out, no reply audio) | DEGRADED (first audio 2,138 ms) | PASS / FAIL / FAIL |
 | Walk started by (`come_source`), walk outcome | guard, arrived | guard, arrived | guard, arrived | model 1 of 3 |
@@ -165,11 +165,11 @@ Findings:
 
 Spend: 3 runs ($0.0277 + $0.0261 + $0.0247); `api-spend.md` has the row. The new self-test clip came from Wit `/synthesize` (free).
 
-## Round 1 verification of main (f311081)
+## Round 1 verification of main (2ebf855)
 
-`main` at `f311081` (no code change since `751acba`; the commits after it are docs). `tools/ci/test.sh` (EditMode 1056/1056, PlayMode 360/360, pure logic 92.7 % ≥ 91.6 %, 0 `warning CS`), `tools/ci/build.sh` (IL2CPP ARM64 release, 59 MB, `QuestBuild` 0 errors / 2 warnings, SHA-256 `155eff54bd37…`). Three default self-tests back to back on the same headset (uptime 39 min at the start, battery 35 °C), same dim room (mean luma 0.7, vision used the bundled still), no Space Setup. `guardian_pause` read back 0 after each run.
+`main` at `2ebf855` (no code change since `2d0266d`; the commits after it are docs). `tools/ci/test.sh` (EditMode 1056/1056, PlayMode 360/360, pure logic 92.7 % ≥ 91.6 %, 0 `warning CS`), `tools/ci/build.sh` (IL2CPP ARM64 release, 59 MB, `QuestBuild` 0 errors / 2 warnings, SHA-256 `155eff54bd37…`). Three default self-tests back to back on the same headset (uptime 39 min at the start, battery 35 °C), same dim room (mean luma 0.7, vision used the bundled still), no Space Setup. `guardian_pause` read back 0 after each run.
 
-| | Run 1 (14:47) | Run 2 (14:49) | Run 3 (14:51) | Last report (B / C, `751acba`) |
+| | Run 1 (14:47) | Run 2 (14:49) | Run 3 (14:51) | Last report (B / C, `2d0266d`) |
 |---|---|---|---|---|
 | Release → first audio, the 5 voice scenarios (ms) | 3,277 / 2,376 / 1,928 / 1,166 / 1,709 | 3,292 / 1,513 / 3,472 / 1,112 / 1,903 | 2,956 / 2,179 / 1,792 / 960 / 1,929 | — |
 | Release → first audio p50 | 1,928 | 1,903 | 1,929 | C: 1,804 (n=20) |
@@ -190,9 +190,9 @@ Findings:
 
 Spend: 3 runs ($0.0259 + $0.0248 + $0.0189); `api-spend.md` has the row.
 
-## Stale frames are device state, not the build or heat; 20-turn latency (751acba)
+## Stale frames are device state, not the build or heat; 20-turn latency (2d0266d)
 
-`main` at `751acba` (`selftest.sh --turns N`, ADR-0034). `tools/ci/test.sh` (EditMode 1056/1056, PlayMode 360/360, pure logic 92.7 %, 0 `warning CS`), `tools/device/build.sh` (IL2CPP ARM64 release, 59 MB, `QuestBuild` 0 errors / 5 warnings, SHA-256 `1c07e305f44e…`). OVR Metrics Tool (`com.oculus.ovrmonitormetricsservice`) CSV capture was on for every run. Temperatures: `dumpsys battery` (live); `dumpsys thermalservice` returned the same cached sensor values while the headset slept, so its readings are not used here, and its thermal status was 0 (none) throughout. Same dim room (mean luma 0.5–15, vision used the bundled still), no Space Setup.
+`main` at `2d0266d` (`selftest.sh --turns N`, ADR-0034). `tools/ci/test.sh` (EditMode 1056/1056, PlayMode 360/360, pure logic 92.7 %, 0 `warning CS`), `tools/device/build.sh` (IL2CPP ARM64 release, 59 MB, `QuestBuild` 0 errors / 5 warnings, SHA-256 `1c07e305f44e…`). OVR Metrics Tool (`com.oculus.ovrmonitormetricsservice`) CSV capture was on for every run. Temperatures: `dumpsys battery` (live); `dumpsys thermalservice` returned the same cached sensor values while the headset slept, so its readings are not used here, and its thermal status was 0 (none) throughout. Same dim room (mean luma 0.5–15, vision used the bundled still), no Space Setup.
 
 Sequence: headset idle 20+ min, default self-test (A, 14:05); `adb reboot` after 4 days 14 h of uptime; idle 20 min; default self-test (B, 14:28); `--turns 20` (C, 14:30); then six launch-only runs (below). The default build was reinstalled at the end (installed APK SHA-256 matches) and `guardian_pause` read back 0.
 
@@ -227,11 +227,11 @@ Findings:
 
   The scene's first frame is not under the OS loading screen: the Unity splash is drawn at 66–72 fps for ~3 s before `Start`, so the stall still freezes a visible frame. The app's own worst frame "improved" only because the stall moved before `FrameSpikeLog` starts. The compositor lost the same ~36 frames, now as one ~0.5 s freeze instead of two shorter ones, so the change was reverted. The "worst launch frame 280 ms" figure of earlier reports undercounts the launch: the compositor sees ~36 frames lost around scene start.
 
-Spend: 3 runs (A $0.0241, B $0.0276, C $0.0845) plus one run whose flag the app could not read (it hung at boot, no paid call; fixed in `751acba`), launch-only runs free; `api-spend.md` has the row.
+Spend: 3 runs (A $0.0241, B $0.0276, C $0.0845) plus one run whose flag the app could not read (it hung at boot, no paid call; fixed in `2d0266d`), launch-only runs free; `api-spend.md` has the row.
 
-## SAM text-prompt tools under the self-test, hand debounce (6f0383c)
+## SAM text-prompt tools under the self-test, hand debounce (31bfbea)
 
-`main` with `8d34dba` (hand meshes follow a 200 ms debounced tracked state) and `6f0383c` (`vision_highlight_part`, `vision_find_object`; ADR-0033). `tools/ci/test.sh` (EditMode 1050/1050, PlayMode 351/351, pure logic 92.6 %, 0 `warning CS`), `tools/device/build.sh` (IL2CPP ARM64 release, 59 MB, `QuestBuild` 0 errors / 5 warnings, SHA-256 `843ed2100a3a…`), then one `tools/device/selftest.sh` (13:03 UTC). That build stays installed (installed APK SHA-256 matches) and `guardian_pause` read back 0. Dark room (mean luma 7), no Space Setup.
+`main` with `568ab92` (hand meshes follow a 200 ms debounced tracked state) and `31bfbea` (`vision_highlight_part`, `vision_find_object`; ADR-0033). `tools/ci/test.sh` (EditMode 1050/1050, PlayMode 351/351, pure logic 92.6 %, 0 `warning CS`), `tools/device/build.sh` (IL2CPP ARM64 release, 59 MB, `QuestBuild` 0 errors / 5 warnings, SHA-256 `843ed2100a3a…`), then one `tools/device/selftest.sh` (13:03 UTC). That build stays installed (installed APK SHA-256 matches) and `guardian_pause` read back 0. Dark room (mean luma 7), no Space Setup.
 
 | Scenario | Result |
 |---|---|
@@ -245,7 +245,7 @@ Spend: 3 runs (A $0.0241, B $0.0276, C $0.0845) plus one run whose flag the app 
 | `perf_idle` | PASS, 72.0 fps, p95 13.9 ms, 15 draw / 13 SetPass, 33,536 tris, 546 MB |
 | Overall, spend | DEGRADED, $0.0255 |
 
-| Metric | Before (4d228c8, 4 runs) | This run |
+| Metric | Before (6179cfc, 4 runs) | This run |
 |---|---|---|
 | `evt=hands.tracked` lines per run (nobody wearing the headset) | 38–56 (each flip toggled the hand mesh) | **3**: the launch state, then one phantom left hand that stayed tracked for 320 ms (14:04:56.938 → 57.258) and so passed the 200 ms hold |
 | `evt=hands.visual` changes after launch | one per flip | 2 (that one phantom) |
@@ -255,11 +255,11 @@ Findings:
 - **`highlight_part` works on the headset.** The part mask arrived 514 ms after the tool started, on the same `EncodedImage` the identify turn captured, and the spoken answer 1.3 s after the tool start, inside the 2.5 s DoD budget. This is the second half of the demo's vision beat, now with device evidence.
 - **`find_object` was not exercised.** With the mug already in scene memory from the identify turn, the model answered "where is my mug?" with `look_at` on the remembered object instead of a fresh search. The scenario reports DEGRADED with the tool name, as designed. speculation: asking for an object the session has not seen yet, or running the scenario before the identify turn, would make `find_object` the obvious choice; the ordering stays as is for now because the remembered-object answer is reasonable behaviour.
 - **Phantom hand flicker: 38–56 → 1 event.** The 200 ms hold dropped every blip but one that lasted 320 ms. A longer hold would drop that too, at the cost of a later real hand; the release-checklist hands item (with a wearer) decides.
-- **Compositor stale frames 3.73 % over the whole run** (288 of 7,723), against 2.79–3.24 % in the 3e99cb5 runs. The run is about 20 s longer (two more turns). Not split into launch / turns / idle for this single run. speculation: the same compositor-side rise as in the 3e99cb5 section; the per-frame hand read is two property reads per frame.
+- **Compositor stale frames 3.73 % over the whole run** (288 of 7,723), against 2.79–3.24 % in the 0c70e5e runs. The run is about 20 s longer (two more turns). Not split into launch / turns / idle for this single run. speculation: the same compositor-side rise as in the 0c70e5e section; the per-frame hand read is two property reads per frame.
 
-## Cartoon voice merged, character voices, device-regression fixes (3e99cb5)
+## Cartoon voice merged, character voices, device-regression fixes (0c70e5e)
 
-`main` after the `feat/cartoon-voice` merge (`1b50bca`), the voice on `CharacterDefinition` (`1ad725f`), the greeting fix (`b87028a`), the text-done speech break (`5fee08e`) and the launch changes (`b504f60`, `3e99cb5`). `tools/ci/test.sh` (EditMode 1050/1050, PlayMode 332/332, pure logic 92.6 %, 0 `warning CS`), `tools/ci/build.sh` (IL2CPP ARM64 release, 59 MB, `QuestBuild` 0 errors, SHA-256 `91be93a11668…`), then `tools/device/selftest.sh` three times (13:30, 13:32, 13:34 UTC). Then `tools/device/build.sh --character jolly` (64 MB, `[CharacterSceneProcessor] … character=jolly local=1`) and one self-test (13:37 UTC). The default build was reinstalled afterwards (installed APK SHA-256 matches) and `guardian_pause` read back 0. Same dim room (mean luma 16–19, vision used the bundled still), no Space Setup. Before these, one development run re-recorded the pipeline collection and three release runs of `b504f60` (managers staggered, camera still on the graph's frame) are listed as "b504f60".
+`main` after the `feat/cartoon-voice` merge (`470eb44`), the voice on `CharacterDefinition` (`6db1460`), the greeting fix (`64d8521`), the text-done speech break (`9e76920`) and the launch changes (`89414dd`, `0c70e5e`). `tools/ci/test.sh` (EditMode 1050/1050, PlayMode 332/332, pure logic 92.6 %, 0 `warning CS`), `tools/ci/build.sh` (IL2CPP ARM64 release, 59 MB, `QuestBuild` 0 errors, SHA-256 `91be93a11668…`), then `tools/device/selftest.sh` three times (13:30, 13:32, 13:34 UTC). Then `tools/device/build.sh --character jolly` (64 MB, `[CharacterSceneProcessor] … character=jolly local=1`) and one self-test (13:37 UTC). The default build was reinstalled afterwards (installed APK SHA-256 matches) and `guardian_pause` read back 0. Same dim room (mean luma 16–19, vision used the bundled still), no Space Setup. Before these, one development run re-recorded the pipeline collection and three release runs of `89414dd` (managers staggered, camera still on the graph's frame) are listed as "89414dd".
 
 | Scenario | Run 1 | Run 2 | Run 3 | Jolly |
 |---|---|---|---|---|
@@ -271,7 +271,7 @@ Findings:
 | `perf_idle` | PASS, 72.0 fps, p95 13.9 ms, 17 draw / 15 SetPass, 33,744 tris, 545 MB | PASS, 72.0 fps, 17 / 15, 33,744, 543 MB | PASS, 72.0 fps, 17 / 15, 33,744, 546 MB | PASS, 72.0 fps, 17 / 15, 33,432, 567 MB |
 | Overall, spend | FAIL, $0.0168 | DEGRADED, $0.0109 | DEGRADED, $0.0121 | DEGRADED, $0.0138 |
 
-| Metric | Target | 3e99cb5 (3 runs) | b504f60 (3 runs) | 4d228c8 (3 runs) |
+| Metric | Target | 0c70e5e (3 runs) | 89414dd (3 runs) | 6179cfc (3 runs) |
 |---|---|---|---|---|
 | Release → first audio, online turns | p50 ≤ 2.0 s | p50 **1,776**, 1,282–2,971 ms (n=12) | p50 1,998, 942–3,578 (n=12) | p50 2,090, 1,459–3,971 (n=12) |
 | Request → first event / first event → first text | — | 402–1,470 (p50 968) / 0–930 (p50 368) ms | 388–1,847 / 26–1,527 ms | 429–1,220 / 195–1,943 ms |
@@ -285,16 +285,16 @@ Findings:
 
 Findings:
 
-- **The greeting no longer walks.** "Hi Nubi, who are you?" called no tool in 7 of 7 runs on the new prompt (development, b504f60 ×3, 3e99cb5 ×3) and in the Jolly run, against 4 of 7 before. The static rules say to move only when asked, `come_here` / `follow_user` say they need the user's request, and the companion prompt offers movement "when the person asks". `voice_come_here` still calls `come_here` in every run. The self-test now degrades a greeting that starts a movement tool (`TurnChecks.StayedPut`).
+- **The greeting no longer walks.** "Hi Nubi, who are you?" called no tool in 7 of 7 runs on the new prompt (development, 89414dd ×3, 0c70e5e ×3) and in the Jolly run, against 4 of 7 before. The static rules say to move only when asked, `come_here` / `follow_user` say they need the user's request, and the companion prompt offers movement "when the person asks". `voice_come_here` still calls `come_here` in every run. The self-test now degrades a greeting that starts a movement tool (`TurnChecks.StayedPut`).
 - **Release → first audio p50 1,776 ms (n=12) on the final build, 1,991 ms over all 24 turns of both builds.** The measured client-side win is first text → sentence queued: p50 112 → 0 ms (max 235 → 68 ms), from speaking a preamble when the Responses message item ends (`TextDone` → `SpeechBreak`) instead of after the tool call's arguments, and the greeting losing its tool round. The rest is model time (request → first event + reasoning before the first text, 0.4–2.4 s) and varies run to run; the p50 sits right at the budget, so n=12 does not prove it stays under it. Prompt caching already works: the first turn of a launch is cached except right after a prompt change (`cached=0` on the first run of a new build, 1,777 of 1,813 tokens otherwise), and request size grew only with the context block and history, which come after the cached prefix. No request trimming was done: cached tokens are not where the time goes.
 - **Launch worst frame 410 → 282–285 ms; the ~100 ms target is not reached.** Cause, from the frame-spike lines and the log lines inside the spike (development run 13:15:48): one frame held the app-graph build, the AR camera manager start (Meta's `AndroidCameraManager` finding and opening both Camera2 streams, 130 ms, plus ~150 ms before its first log line), every scene manager start including the occlusion manager, and the depth texture creation. `PermissionGate` now starts the camera one frame after the graph is built and each scene manager on its own frame; the old pipeline collection predated the hand rig and occlusion (no hand, depth-occluder or depth-preprocessing pipelines), so it was re-recorded (15 variants / 14 states, was 10 / 9). What remains is the camera manager's own start, one synchronous call into the Meta OpenXR provider that also creates the passthrough layer, so it cannot be deferred or split from app code. The launch window still has ~90 stale frames (the launch is spread over more, shorter frames).
-- **Stale frames rose during this session in turns and idle, not only at launch** (idle 0.04–0.22 % in the 4d228c8 runs, 0.25–0.49 % in b504f60, 0.92–1.30 % here, 2.21 % in the Jolly run, which was last). The app's main thread had no frame over 28 ms during `perf_idle` in any of these runs, and app GPU time in idle rose run by run in the same session (4.4 → 4.7 → 5.0 ms, GPU 0.39 → 0.43) at the same clock levels, with nothing drawn differently. speculation: compositor-side (passthrough, headset warm after ~12 back-to-back runs, 37–38 °C); a run on a cooled headset would separate it from the build.
-- **Vision call network failure (run 1).** The Spark vision request failed with `kind=Network status=0` after SAM had returned (784 ms); the scenario FAILs as it should since 6cd06e6, and the agent still answered 2.1 s after the tool start. No other run saw it. speculation: transient Wi-Fi or server reset.
+- **Stale frames rose during this session in turns and idle, not only at launch** (idle 0.04–0.22 % in the 6179cfc runs, 0.25–0.49 % in 89414dd, 0.92–1.30 % here, 2.21 % in the Jolly run, which was last). The app's main thread had no frame over 28 ms during `perf_idle` in any of these runs, and app GPU time in idle rose run by run in the same session (4.4 → 4.7 → 5.0 ms, GPU 0.39 → 0.43) at the same clock levels, with nothing drawn differently. speculation: compositor-side (passthrough, headset warm after ~12 back-to-back runs, 37–38 °C); a run on a cooled headset would separate it from the build.
+- **Vision call network failure (run 1).** The Spark vision request failed with `kind=Network status=0` after SAM had returned (784 ms); the scenario FAILs as it should since 672c8fb, and the agent still answered 2.1 s after the tool start. No other run saw it. speculation: transient Wi-Fi or server reset.
 - **Jolly speaks with its own voice.** `--character jolly` selects Jolly (`evt=character.selected id=jolly`), the offline greeting is its own clip, and all live speech uses its `VoiceProfile` (Wit Railey, pitch 112, speed 105) through `PersonaRepository`, including the launch Wit warm-up (`warmup.tts status=200`, 452 ms). First sentence → audio was 291–319 ms in that run (n=4), against p50 205 ms for Nubi; speculation: Railey's first chunk, too few turns to tell.
 
-Spend: 8 runs (development, 3 × b504f60, 3 × 3e99cb5, Jolly), app meter $0.104; `api-spend.md` has the row.
+Spend: 8 runs (development, 3 × 89414dd, 3 × 0c70e5e, Jolly), app meter $0.104; `api-spend.md` has the row.
 
-## Final verification of main (4d228c8)
+## Final verification of main (6179cfc)
 
 `tools/ci/test.sh` (EditMode 1030/1030, PlayMode 312/312, pure logic 92.6 %, 0 `warning CS`), `tools/ci/build.sh` (IL2CPP ARM64 release, 59 MB, `QuestBuild` 0 errors / 2 warnings, SHA-256 `b6dd6e49…`), installed, `push-secrets.sh`, then `tools/device/selftest.sh` three times (11:43, 11:45, 11:46 UTC). Then `tools/device/build.sh --character jolly` (63 MB, `[CharacterSceneProcessor] … character=jolly local=1`) and one self-test (11:49 UTC). The default build was reinstalled afterwards (installed APK SHA-256 matches) and `guardian_pause` read back 0. Same dim room (mean luma 16–19, vision used the bundled still), no Space Setup.
 
@@ -310,7 +310,7 @@ Spend: 8 runs (development, 3 × b504f60, 3 × 3e99cb5, Jolly), app meter $0.104
 
 No scenario FAILed, no Responses first-event timeout, no hold line (request → first event 429–1,220 ms in all 16 rounds).
 
-| Metric | Target | Default build, 3 runs | dd14847 (3 runs) |
+| Metric | Target | Default build, 3 runs | f6d8db3 (3 runs) |
 |---|---|---|---|
 | Release → first audio, online turns | p50 ≤ 2.0 s | p50 **2,090**, 1,459–3,971 ms (n=12) | p50 1,833 (n=11) |
 | Request → first event / first event → first text | — | 429–1,220 / 195–1,943 ms | 830–1,163 / 539–1,040 (first turns) |
@@ -333,11 +333,11 @@ Findings:
 
 Spend: 4 runs, app meter $0.0505; `api-spend.md` has the row.
 
-## Device-finding fixes: late Responses, self-test verdicts, cold Wit (3f35f7f, 6cd06e6, 4e298d8)
+## Device-finding fixes: late Responses, self-test verdicts, cold Wit (3bd9078, 672c8fb, cb2a5a9)
 
-`tools/device/build.sh` (IL2CPP ARM64 release, 0 `Assets/Jolly` diagnostics), `push-secrets.sh`, `selftest.sh` headless; `guardian_pause` read back 0. "Before" is `6cd06e6` (fixes 1 and 2), "after" adds the Wit warm-up. The dim room (mean luma 18–19) switched vision to the bundled still in every run.
+`tools/device/build.sh` (IL2CPP ARM64 release, 0 `Assets/Jolly` diagnostics), `push-secrets.sh`, `selftest.sh` headless; `guardian_pause` read back 0. "Before" is `672c8fb` (fixes 1 and 2), "after" adds the Wit warm-up. The dim room (mean luma 18–19) switched vision to the bundled still in every run.
 
-| Metric | Before (1 run) | After (5 runs) | dd14847 (3 runs) |
+| Metric | Before (1 run) | After (5 runs) | f6d8db3 (3 runs) |
 |---|---|---|---|
 | First sentence queued → first audio, first turn | 417 ms | 417, 140, 180, 222, 402 ms (p50 222) | 472, 166, 543 ms |
 | Same, later turns | 122–266 ms | 109–527 ms (p50 167) | 99–278 ms |
@@ -349,13 +349,13 @@ Spend: 4 runs, app meter $0.0505; `api-spend.md` has the row.
 
 What was found and done:
 
-- **Late Responses first event (3f35f7f).** Request → first event was 0.3–1.4 s in all 52 first rounds logged on the device, but three calls in the dd14847 runs got nothing for 6 s; with 2 attempts that was 12 s of silence after the release acknowledgement before the error line. A round with no first event after 2 s now raises `AgentEventKind.Delayed` and Nubi says a canned Acknowledge line ("One moment."), once more 4 s later during the retry; the first-event timeout is 4 s (a double stall ends in the Error line after ~8 s, and the vision retry now fits its 8 s budget). Config: `voiceFirstEventSeconds`, `holdLineSeconds`, `holdLineRepeatSeconds`. No stall happened in these six runs, so the path is covered by EditMode tests only (late first event, timeout then retry success, timeout then retry failure, with the real `ResponsesChatModel` over `FakeHttpTransport`). UnityWebRequest has no per-request connection control, so the retry cannot ask for a fresh connection; the aborted attempt's connection is not reused.
-- **Self-test false pass (6cd06e6).** `capture_and_identify:failed` counted as completed and latency budgets were notes. `TurnChecks`: a failed key tool FAILs, another failed tool and release → first audio > 2.0 s or tool → answer audio > 2.5 s DEGRADE with the reason, no answer after the tool FAILs. The first voice turn is now DEGRADED in every run, which is what it is.
-- **Cold first sentence (4e298d8).** The connection was kept: from the dev Mac (Python, one kept-alive connection, 13 trials, 2 s and 10 s idle gaps) the first `/synthesize` after `/voices` took p50 143 ms, after a synthesized "Hi." 88 ms, later requests 83 ms; the reused connection only skipped TLS. The synthesis path itself was cold. The warm-up now synthesizes "Hi." in the persona's voice through the normal streaming request. On the Quest the first-turn p50 halved, but 2 of 5 runs were still ~400 ms. speculation: per-request Wit variance and Quest Wi-Fi power saving after ~10 s idle; later turns also reach 348–527 ms now and then. Whether UnityWebRequest uses HTTP/2 to api.wit.ai cannot be read from the player logs.
+- **Late Responses first event (3bd9078).** Request → first event was 0.3–1.4 s in all 52 first rounds logged on the device, but three calls in the f6d8db3 runs got nothing for 6 s; with 2 attempts that was 12 s of silence after the release acknowledgement before the error line. A round with no first event after 2 s now raises `AgentEventKind.Delayed` and Nubi says a canned Acknowledge line ("One moment."), once more 4 s later during the retry; the first-event timeout is 4 s (a double stall ends in the Error line after ~8 s, and the vision retry now fits its 8 s budget). Config: `voiceFirstEventSeconds`, `holdLineSeconds`, `holdLineRepeatSeconds`. No stall happened in these six runs, so the path is covered by EditMode tests only (late first event, timeout then retry success, timeout then retry failure, with the real `ResponsesChatModel` over `FakeHttpTransport`). UnityWebRequest has no per-request connection control, so the retry cannot ask for a fresh connection; the aborted attempt's connection is not reused.
+- **Self-test false pass (672c8fb).** `capture_and_identify:failed` counted as completed and latency budgets were notes. `TurnChecks`: a failed key tool FAILs, another failed tool and release → first audio > 2.0 s or tool → answer audio > 2.5 s DEGRADE with the reason, no answer after the tool FAILs. The first voice turn is now DEGRADED in every run, which is what it is.
+- **Cold first sentence (cb2a5a9).** The connection was kept: from the dev Mac (Python, one kept-alive connection, 13 trials, 2 s and 10 s idle gaps) the first `/synthesize` after `/voices` took p50 143 ms, after a synthesized "Hi." 88 ms, later requests 83 ms; the reused connection only skipped TLS. The synthesis path itself was cold. The warm-up now synthesizes "Hi." in the persona's voice through the normal streaming request. On the Quest the first-turn p50 halved, but 2 of 5 runs were still ~400 ms. speculation: per-request Wit variance and Quest Wi-Fi power saving after ~10 s idle; later turns also reach 348–527 ms now and then. Whether UnityWebRequest uses HTTP/2 to api.wit.ai cannot be read from the player logs.
 
 Spend: 6 runs, app meter $0.0764; `api-spend.md` has the row.
 
-## Release runs of main after the merges (dd14847)
+## Release runs of main after the merges (f6d8db3)
 
 `tools/device/build.sh` (IL2CPP ARM64 release, 58 MB, `QuestBuild` 0 errors / 2 warnings), installed APK verified by SHA-256, `push-secrets.sh`, then `tools/device/selftest.sh` three times (09:39, 09:41, 09:43 UTC). `guardian_pause` read back as 0 afterwards. Release players do not log GC per frame (`gc_bytes_per_frame=NaN`); the turn GC numbers stay those of the development runs below.
 
@@ -388,7 +388,7 @@ Findings (no code changed):
 
 ## Turn GC and the cold first turn (fix/turn-gc)
 
-Development IL2CPP players (`NUBI_DEVELOPMENT=1`), `tools/device/selftest.sh`; "before" is `main` `f19b36e` plus the profiling switch (inert without `--profile`). GC is `evt=selftest.frames gc_bytes_per_frame` per turn scenario (`offline_greeting`, `voice_greeting`, `voice_come_here`, `vision_capture_and_identify`, `barge_in`), all threads. Stale frames: VrApi, turns phase (first scenario + 2 s to `perf_idle`) and whole run (includes the ~350 ms launch frame).
+Development IL2CPP players (`NUBI_DEVELOPMENT=1`), `tools/device/selftest.sh`; "before" is `main` `0813319` plus the profiling switch (inert without `--profile`). GC is `evt=selftest.frames gc_bytes_per_frame` per turn scenario (`offline_greeting`, `voice_greeting`, `voice_come_here`, `vision_capture_and_identify`, `barge_in`), all threads. Stale frames: VrApi, turns phase (first scenario + 2 s to `perf_idle`) and whole run (includes the ~350 ms launch frame).
 
 | Metric | Target | Before (3 runs) | After (3 runs) |
 |---|---|---|---|
@@ -512,7 +512,7 @@ The DoD target is < 1 % over 10 minutes of conversation. Turns are just over it,
 - Hand-tracking pinch, poke and gaze triggers, and whether the phantom pinch appears with a wearer.
 - GC allocation per frame in release players: "GC Allocated In Frame" is recorded only in development players; the release run reports collections (0 in 30 s). The turn numbers above are from development players.
 - `capture_and_identify` start → mask visible and → answer audio (DoD §5) come from `evt=vision.timing` and the self-test's `tool_to_mask_ms` / `tool_to_answer_audio_ms`; all of them on the bundled still image, not a live frame of a lit room.
-- DoD §4 rows that need OVR Metrics or the Profiler (CPU main thread p95, `app_rss_MB`, 10-minute stale frames, thermal, battery), and §5's 20 consecutive turns with a wearer (the no-wearer run is in the `751acba` section). See the coverage table below.
+- DoD §4 rows that need OVR Metrics or the Profiler (CPU main thread p95, `app_rss_MB`, 10-minute stale frames, thermal, battery), and §5's 20 consecutive turns with a wearer (the no-wearer run is in the `2d0266d` section). See the coverage table below.
 
 ## DoD §4–§5 coverage
 
@@ -521,20 +521,20 @@ DoD §4 asks for deviations to be recorded in `docs/perf/report.md`; until a 10-
 | DoD row | Target | Measured (release player, runs above) | Status |
 |---|---|---|---|
 | Frame rate | ≥ 72 fps | 72.0 fps idle, p95 13.9 ms | Met at idle |
-| Stale frames | < 1 % over 10 min | After a reboot (`751acba`): turns 0.49–0.60 %, idle 0.23–0.32 %, whole run 0.93 % (20 turns, 242 s) and 1.77 % (default run, 106 s). Without one (`36778c1`, 1 h 14 min uptime): whole run 2.06–2.68 %. Launch: the compositor loses ~36 frames around scene start; worst app frame 274–290 ms (`f311081`, `751acba`, `36778c1`) | Met in turns and idle on a freshly rebooted headset (≤ 4 min samples); not at launch; 10 min unmeasured |
+| Stale frames | < 1 % over 10 min | After a reboot (`2d0266d`): turns 0.49–0.60 %, idle 0.23–0.32 %, whole run 0.93 % (20 turns, 242 s) and 1.77 % (default run, 106 s). Without one (`33e69b5`, 1 h 14 min uptime): whole run 2.06–2.68 %. Launch: the compositor loses ~36 frames around scene start; worst app frame 274–290 ms (`2ebf855`, `2d0266d`, `33e69b5`) | Met in turns and idle on a freshly rebooted headset (≤ 4 min samples); not at launch; 10 min unmeasured |
 | CPU main thread | p95 ≤ 11 ms | — | **Unmeasured** (Profiler) |
-| Draw calls / SetPass | ≤ 200 / ≤ 60 | 17 / 15 max, idle (`3e99cb5`, `751acba`) | Met at idle; turns unmeasured |
-| Triangles | ≤ 300k; Nubi ≤ 30k | 33,744 max, idle (`3e99cb5`); Nubi 25,248 | Met |
+| Draw calls / SetPass | ≤ 200 / ≤ 60 | 17 / 15 max, idle (`0c70e5e`, `2d0266d`) | Met at idle; turns unmeasured |
+| Triangles | ≤ 300k; Nubi ≤ 30k | 33,744 max, idle (`0c70e5e`); Nubi 25,248 | Met |
 | GC alloc | 0 B/frame idle; ≤ 4 KB/frame in a turn | release: 0 collections in 30 s; development player (fix/turn-gc, 3 runs): ~385 B/frame idle (XRI ray gradient), turns p50 3.9 KB/frame, max 6.4 (`barge_in`) | **Met at p50; not in `barge_in` (5.9–6.4 KB) and one `voice_come_here` (4.6 KB)**; idle met in the release player and in `NoGcAllocInSteadyStateIdle` |
-| Memory | `app_rss_MB` ≤ 1,500 MB | `app_rss_MB` peak 642–643 MB (OVR Metrics, `751acba`); system used memory 556–559 MB idle (`36778c1`) | Met |
+| Memory | `app_rss_MB` ≤ 1,500 MB | `app_rss_MB` peak 642–643 MB (OVR Metrics, `2d0266d`); system used memory 556–559 MB idle (`33e69b5`) | Met |
 | Thermal, battery | 30 min / ≤ 20 % | — | **Unmeasured** |
-| Release → ASR final | p50 ≤ 300 ms | p50 265 ms, p90 278 ms, max 293 ms (n=20, `751acba`) | Met on n=20 |
-| ASR final → first text | p50 ≤ 1,300 ms | request → first text p50 1,277 ms, p90 2,068 ms, max 2,445 ms; ASR final → request ≤ 5 ms (n=20, `751acba`) | Met at p50 on n=20; p90 over |
-| **Release → first answer audio** | **p50 ≤ 2,000 ms** | p50 1,804 ms, p90 2,577 ms, max 2,737 ms (n=20 consecutive, `751acba`, no wearer); greetings p50 2,362 ms, 6 of 7 over | Met at p50 on n=20 without a wearer; p90 over |
-| Pinch → silence | p50 ≤ 150 ms | 28–55 ms (`751acba`, `f311081`, `36778c1`) | Met |
-| Tool start → mask visible | p50 ≤ 2,000 ms | 614–1,349 ms (`evt=vision.timing`, 4 runs of `3e99cb5`); `highlight_part` part mask 514 ms (`6f0383c`) | Met |
-| Tool start → answer audio | p50 ≤ 2,500 ms | `capture_and_identify` 1,608–2,055 ms (4 runs of `3e99cb5`, bundled still); `highlight_part` 1,332 ms (`6f0383c`); `find_object` 3.0–4.9 s when the model adds a `look_at` round (`36778c1`) | Met for `capture_and_identify` and `highlight_part`; `find_object` over when it takes a second round |
-| Network loss → offline line | ≤ 2,000 ms | Offline in < 1 s, caption 13–28 ms after the press (`3e99cb5`, `6f0383c`) | Met |
+| Release → ASR final | p50 ≤ 300 ms | p50 265 ms, p90 278 ms, max 293 ms (n=20, `2d0266d`) | Met on n=20 |
+| ASR final → first text | p50 ≤ 1,300 ms | request → first text p50 1,277 ms, p90 2,068 ms, max 2,445 ms; ASR final → request ≤ 5 ms (n=20, `2d0266d`) | Met at p50 on n=20; p90 over |
+| **Release → first answer audio** | **p50 ≤ 2,000 ms** | p50 1,804 ms, p90 2,577 ms, max 2,737 ms (n=20 consecutive, `2d0266d`, no wearer); greetings p50 2,362 ms, 6 of 7 over | Met at p50 on n=20 without a wearer; p90 over |
+| Pinch → silence | p50 ≤ 150 ms | 28–55 ms (`2d0266d`, `2ebf855`, `33e69b5`) | Met |
+| Tool start → mask visible | p50 ≤ 2,000 ms | 614–1,349 ms (`evt=vision.timing`, 4 runs of `0c70e5e`); `highlight_part` part mask 514 ms (`31bfbea`) | Met |
+| Tool start → answer audio | p50 ≤ 2,500 ms | `capture_and_identify` 1,608–2,055 ms (4 runs of `0c70e5e`, bundled still); `highlight_part` 1,332 ms (`31bfbea`); `find_object` 3.0–4.9 s when the model adds a `look_at` round (`33e69b5`) | Met for `capture_and_identify` and `highlight_part`; `find_object` over when it takes a second round |
+| Network loss → offline line | ≤ 2,000 ms | Offline in < 1 s, caption 13–28 ms after the press (`0c70e5e`, `31bfbea`) | Met |
 
 ## How to run
 

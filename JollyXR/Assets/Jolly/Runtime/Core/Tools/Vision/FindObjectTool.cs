@@ -13,7 +13,7 @@ namespace Jolly.Core.Tools
     {
         /// <summary>
         /// The model added a look_at round after a found result in 2 of 3 device runs (3.0-4.9 s tool → answer,
-        /// selftest-report 36778c1) although Nubi was already looking; the result now says so (ADR-0037).
+        /// selftest-report 33e69b5) although Nubi was already looking; the result now says so (ADR-0037).
         /// </summary>
         public const string NextStep = "you are already looking at it; answer in words, no other tool is needed";
 

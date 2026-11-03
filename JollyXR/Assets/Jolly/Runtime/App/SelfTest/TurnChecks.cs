@@ -10,7 +10,7 @@ namespace Jolly.App.SelfTest
     /// <summary>
     /// The verdict rules the turn scenarios share. A blown latency budget degrades a scenario and a failed key tool fails
     /// it: a release run passed a vision turn whose tool had failed, with the answer 8.3 s after the tool start, because
-    /// budgets were only notes and a failed completion counted as completed (selftest-report.md, dd14847 run 3).
+    /// budgets were only notes and a failed completion counted as completed (selftest-report.md, f6d8db3 run 3).
     /// </summary>
     public static class TurnChecks
     {
@@ -73,7 +73,7 @@ namespace Jolly.App.SelfTest
 
         /// <summary>
         /// A turn that asked for no movement must not walk: the greeting called come_here in 4 of 7 release runs
-        /// (selftest-report.md, 4d228c8). Degrades, because the reply itself was fine.
+        /// (selftest-report.md, 6179cfc). Degrades, because the reply itself was fine.
         /// </summary>
         public static void StayedPut(ScenarioResult r, IReadOnlyList<string> started)
         {

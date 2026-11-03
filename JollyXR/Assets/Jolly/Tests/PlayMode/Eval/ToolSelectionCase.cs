@@ -57,7 +57,7 @@ namespace Jolly.Tests.PlayMode.Eval
         public bool Passes(IReadOnlyCollection<string> called) =>
             Expected.Count == 0 ? !called.Any(Movement.Contains) : called.Any(Expected.Contains);
 
-        // The device misses at f311081 (selftest-report.md): "come here" answered in words, "where is my mug?" with the
+        // The device misses at 2ebf855 (selftest-report.md): "come here" answered in words, "where is my mug?" with the
         // mug already seen routed to look_at.
         public static readonly IReadOnlyList<ToolSelectionCase> All = new[]
         {

@@ -122,7 +122,7 @@ namespace Jolly.Tests.PlayMode.XR
         [UnityTest]
         public IEnumerator Run_SceneGranted_StartsTheCameraAndEachSceneManagerOnItsOwnFrame() => UniTask.ToCoroutine(async () =>
         {
-            // Arrange: on the Quest these starts together made one 410-436 ms launch frame (selftest-report.md, 4d228c8).
+            // Arrange: on the Quest these starts together made one 410-436 ms launch frame (selftest-report.md, 6179cfc).
             var boxes = _root.AddComponent<StartCounter>();
             boxes.enabled = false;
             _gate.Construct(_permissions, _camera, new Behaviour[] { _planes, null, boxes });

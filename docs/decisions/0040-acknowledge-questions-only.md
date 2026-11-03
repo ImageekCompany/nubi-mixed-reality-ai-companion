@@ -5,7 +5,7 @@
 
 ## Context
 - The acknowledgement (`LineCategory.Acknowledge`: "Hmm!", "Let me see.", "Okay!", "One moment.", "Good question.") was queued at PTT release on every online turn, before the ASR final existed, so it could not know what had been said.
-- On the demo's opening line it played before the guard walk's ComingOver line: in the `8bd9560` device runs Nubi said "Good question. On my way!" and "Okay! Coming right over!" (`docs/perf/selftest-report.md`). "Good question." answers nothing, and two fillers back to back sound scripted. It also delayed the ComingOver line by the ack's length (0.6–1.2 s clips), which is why `voice_come_here` missed its 600 ms target.
+- On the demo's opening line it played before the guard walk's ComingOver line: in the `b37e4c3` device runs Nubi said "Good question. On my way!" and "Okay! Coming right over!" (`docs/perf/selftest-report.md`). "Good question." answers nothing, and two fillers back to back sound scripted. It also delayed the ComingOver line by the ack's length (0.6–1.2 s clips), which is why `voice_come_here` missed its 600 ms target.
 - A judge panel flagged the same thing: an acknowledgement before a command ("Nubi, come here.", "Find my keys.") reads as a mistake.
 
 ## Decision
@@ -22,6 +22,6 @@
 - A late model on a command can still say "Good question." as its hold line (1 in 5 picks, on the rare stalled turn).
 
 ## Alternatives
-- **Hold the release ack until the final or ~350 ms, whichever comes first** (the speculation in the `8bd9560` report). Rejected: on a slow final the ack would still play before a command, and the timeout adds a second clock to reason about.
+- **Hold the release ack until the final or ~350 ms, whichever comes first** (the speculation in the `b37e4c3` report). Rejected: on a slow final the ack would still play before a command, and the timeout adds a second clock to reason about.
 - **Cut the ack when the guard walks.** Rejected in ADR-0037 for being audible as a clipped word; deciding at the final avoids starting it at all.
 - **A separate hold-line category without "Good question."** Not done: it needs new clips baked for every character's voice for a case seen once in 39 device calls.

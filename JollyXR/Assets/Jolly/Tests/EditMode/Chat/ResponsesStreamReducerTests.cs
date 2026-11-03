@@ -67,7 +67,7 @@ namespace Jolly.Tests.EditMode.Chat
         public void MessageDone_EndsTheTextBeforeTheCallArgumentsStream()
         {
             // The preamble has no trailing whitespace, so without this it waited for the whole call (235 ms on the
-            // Quest for a vision call, selftest-report.md 4d228c8).
+            // Quest for a vision call, selftest-report.md 6179cfc).
             var kinds = Reduce("responses_commentary_tool").Select(e => e.Kind).ToList();
 
             Assert.That(kinds.Count(k => k == ModelEventKind.TextDone), Is.EqualTo(1));

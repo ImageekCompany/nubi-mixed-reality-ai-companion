@@ -138,8 +138,8 @@ namespace Jolly.Tests.EditMode.Core.Tools
         [Test]
         public void MovementTools_DescriptionsSayTheyNeedTheUsersRequest()
         {
-            // A greeting ("Hi Nubi, who are you?") called come_here in 4 of 7 device runs (selftest-report.md, 4d228c8);
-            // with only that exclusion, "Nubi, come here" got no call in 2 of 3 runs at f311081 (ADR-0035).
+            // A greeting ("Hi Nubi, who are you?") called come_here in 4 of 7 device runs (selftest-report.md, 6179cfc);
+            // with only that exclusion, "Nubi, come here" got no call in 2 of 3 runs at 2ebf855 (ADR-0035).
             var come = new ComeHereTool(_character, _user, _world, _settings).Definition.Description;
             var follow = new FollowUserTool(_character, _settings).Definition.Description;
 

@@ -4,7 +4,7 @@
 - Date: 2026-11-01
 
 ## Context
-- Round 1 device runs at f311081 (`docs/perf/selftest-report.md`): "Nubi, come here" got no tool call in 2 of 3 runs, and "Nubi, where is my mug? Show me." called `look_at` instead of `find_object` once.
+- Round 1 device runs at 2ebf855 (`docs/perf/selftest-report.md`): "Nubi, come here" got no tool call in 2 of 3 runs, and "Nubi, where is my mug? Show me." called `look_at` instead of `find_object` once.
 - ADR-0032 stopped greetings from walking by writing the movement guidance in the negative: `come_here` was "only when the user asks you to come to them or closer; never for a greeting, an introduction or small talk", and the tool rules said "Move only when the user asks you to go somewhere". `look_at` said "Use it when you talk about something in the room", which also covers an object the user is looking for.
 - Every live turn runs at `ReasoningEffort.Minimal` and sends no `tool_choice`. Nothing measured tool routing except three-run device self-tests, which cost ~$0.025 each and mix in ASR and vision.
 

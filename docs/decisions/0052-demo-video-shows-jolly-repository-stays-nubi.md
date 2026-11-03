@@ -11,7 +11,7 @@
 ## Decision
 - **The video shows Jolly, and only the video does.** The repository, the default build and every public artefact are Nubi.
 - **Say so first.** The README's first screen says who is in the video, why the repository differs and that it is the same code. A reader must not have to discover it.
-- **The mesh, textures, materials, renders and baked lines stay out**, in the tree and in history: `docs/research/samples/jolly_*.png`, committed by mistake and removed in `3fd1335`, were rewritten out of history before the first push.
+- **The mesh, textures, materials, renders and baked lines stay out**, in the tree and in history: `docs/research/samples/jolly_*.png`, committed by mistake and removed in `e50732d`, were rewritten out of history before the first push.
 - **What stays committed about Jolly is what reproducing the video needs and contains no art:** `tools/blender/build_jolly.py` (reads the body from a file you supply; a few landmark constants were measured on it), `docs/art/jolly-demo.md`, the `--character` build flag, and one self-test voice clip saying the name. These are disclosed in `THIRD_PARTY.md` §7.
 - **Video working files left the tree after recording** (plan, shot checklist, voice-over, cards, captions). They remain in git history.
 

@@ -243,7 +243,7 @@ First public release, submitted to the Meta AI Developer Hackathon 2026 (Indie t
 - Hand meshes show only after 200 ms of steady tracking: `HandTrackingMonitor` drives each hand renderer from `TrackingDebounce` instead of `XRHandMeshController`'s own show/hide; `evt=hands.tracked` logs the debounced state (38–56 flips per headless run → 3).
 
 ### Latency turns and stale frames (ADR-0034)
-- `selftest.sh --turns N` pushes `{"turns":N}`; the app runs `LatencyTurnsScenario` (greeting, come here, vision, repeated) and `perf_idle` and reports n / p50 / p90 / max for release → first audio and each stage (`LatencySeries`). The flag is `adb push`ed; an unreadable flag runs the default list. Device: 20 turns p50 1,804 / p90 2,577 / max 2,737 ms (`751acba`).
+- `selftest.sh --turns N` pushes `{"turns":N}`; the app runs `LatencyTurnsScenario` (greeting, come here, vision, repeated) and `perf_idle` and reports n / p50 / p90 / max for release → first audio and each stage (`LatencySeries`). The flag is `adb push`ed; an unreadable flag runs the default list. Device: 20 turns p50 1,804 / p90 2,577 / max 2,737 ms (`2d0266d`).
 - Stale frames follow headset uptime, not the build: reboot before a demo (demo script, release checklist). Starting the camera manager on the scene's first frame was measured and reverted.
 
 ### Tool descriptions and the tool-selection eval (ADR-0035)
@@ -326,5 +326,5 @@ First public release, submitted to the Meta AI Developer Hackathon 2026 (Indie t
 - `ToolSelectionEval` cases for the model's side of the place phrases.
 
 ### Docs
-- Demo script: mandatory problem voice-over, cost as a beat-5 overlay, a longer beat 2, reboot and greeting warm-up before beat 1, beat 1 as the guard walk with a canned line (ADR-0037, ADR-0040). README "A day with Nubi", "Living with it", current status and test counts; release checklist verification block for `36778c1`; device self-test reports for every change above (`docs/perf/selftest-report.md`).
+- Demo script: mandatory problem voice-over, cost as a beat-5 overlay, a longer beat 2, reboot and greeting warm-up before beat 1, beat 1 as the guard walk with a canned line (ADR-0037, ADR-0040). README "A day with Nubi", "Living with it", current status and test counts; release checklist verification block for `33e69b5`; device self-test reports for every change above (`docs/perf/selftest-report.md`).
 - ADR-0050; demo script, scope and try-it updated for the hidden latency HUD and the measured recording window.

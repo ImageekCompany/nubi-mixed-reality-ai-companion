@@ -216,7 +216,7 @@ namespace Jolly.Tests.EditMode.Core.Conversation
             _f.Talk("Nubi, come here.");
 
             Assert.That(_f.Offline.Categories, Is.EqualTo(new[] { LineCategory.ComingOver }),
-                "\"Good question. On my way!\" on the demo's hero line (8bd9560 device run 1)");
+                "\"Good question. On my way!\" on the demo's hero line (b37e4c3 device run 1)");
         }
 
         [Test]

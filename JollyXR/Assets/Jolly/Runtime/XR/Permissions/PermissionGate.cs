@@ -15,7 +15,7 @@ namespace Jolly.XR.Permissions
     /// - Scene managers start only with USE_SCENE, otherwise their subsystems latch permission errors.
     /// - At launch the camera and each scene manager start on their own frame, none on the frame that called Run (the
     ///   one that built the app graph): together they made one 410-436 ms main-thread frame on the Quest
-    ///   (selftest-report.md, 4d228c8); the camera start alone is ~130 ms of it.
+    ///   (selftest-report.md, 6179cfc); the camera start alone is ~130 ms of it.
     /// Permission state is read with the Android API: ARCameraManager.permissionGranted reports false while frames
     /// flow on Quest (device-spike.md §2.2).
     /// </summary>

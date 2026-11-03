@@ -4,7 +4,7 @@ Date: 2026-11-01, 01:10–01:40 CET. Device: Quest 3, Horizon OS v209 (`ro.vros.
 Nobody wore the headset. Everything below is measured from logcat, from `spike_results.json` pulled with adb, and from `aapt dump` of the APK.
 Raw outputs (camera frames, mic audio, results JSON) are in `docs/research/samples/device/run{1,2}/`. That folder is **git-ignored**, because it holds captures from the developer's home.
 
-Spike code: `JollyXR/Assets/Spikes/` (asmdef `Jolly.Spikes`), deleted once WP5 landed and last present in commit `91710e6`. Both spike asmdefs are define-constrained to `JOLLY_SPIKES`, so the spike code is not compiled into normal builds; add the symbol to the Android scripting defines for a spike build and remove it afterwards. The runner is `DeviceSpike.cs`. It needs no input and writes `persistentDataPath/spike_results.json`.
+Spike code: `JollyXR/Assets/Spikes/` (asmdef `Jolly.Spikes`), deleted once WP5 landed and last present in commit `f0f7369`. Both spike asmdefs are define-constrained to `JOLLY_SPIKES`, so the spike code is not compiled into normal builds; add the symbol to the Android scripting defines for a spike build and remove it afterwards. The runner is `DeviceSpike.cs`. It needs no input and writes `persistentDataPath/spike_results.json`.
 Build tooling that stays: `JollyXR/Assets/Jolly/Editor/Build/` (`QuestProjectSetup.Apply`, `QuestBuild.BuildApk`, `NubiManifestRequirements`) plus `tools/device/*.sh`.
 
 ## 1. Results

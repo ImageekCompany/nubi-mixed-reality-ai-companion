@@ -141,7 +141,7 @@ awk '/FPS=/ { split(substr($0, index($0, "FPS=") + 4), f, "/"); frames += f[1]
      END { if (frames > 0) printf "[selftest] compositor: %d of %d frames stale (%.2f%%, target < 1%%)\n", stale, frames, 100 * stale / frames }' \
   "$OUT/vrapi.txt"
 
-# Phantom hand tracking with nobody wearing the headset (selftest-report.md, 4d228c8: 38-56 lines per run).
+# Phantom hand tracking with nobody wearing the headset (selftest-report.md, 6179cfc: 38-56 lines per run).
 echo "[selftest] hand tracking: $(grep -c 'evt=hands.tracked' "$OUT/logcat.txt" || true) evt=hands.tracked lines"
 
 # Passthrough is a composition layer the compositor reports every 2 s; screencap can't show it and the app can't see

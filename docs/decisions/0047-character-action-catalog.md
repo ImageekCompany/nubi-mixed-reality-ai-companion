@@ -5,8 +5,8 @@
 
 ## Context
 - Asked "show me how to dance", "jump!" or "go stand behind me", Jolly could only answer in words or reach for `play_gesture`, whose seven upper-body gestures are expressive punctuation, not things the user asks for. A model told nothing about a body also claims moves it never made: in the namespace probe (ADR-0048) it answered "Go stand behind me" with "I'm behind you now" and no call.
-- Characters are swappable (ADR-0026) and each comes with its own clips. The clips agent's `66cd24d` added `Dance` (4 s loop), `Jump` (1.33 s, feet 0.20 m off the floor) and `Bow` (2 s) to Nubi and the local Jolly; a future character may not have them.
-- The Responses API groups tools in a `{"type":"namespace"}`; eager namespaces cost about 0.1 s and were chosen reliably, the call comes back as `actions.dance` (live probe 2026-11-02, ADR-0048). The contracts for namespaces (`ToolNamespace`, `IToolRegistry.RegisterNamespace`, `ModelRequest.Namespaces`) were committed in `04af35c`.
+- Characters are swappable (ADR-0026) and each comes with its own clips. The clips agent's `fd40973` added `Dance` (4 s loop), `Jump` (1.33 s, feet 0.20 m off the floor) and `Bow` (2 s) to Nubi and the local Jolly; a future character may not have them.
+- The Responses API groups tools in a `{"type":"namespace"}`; eager namespaces cost about 0.1 s and were chosen reliably, the call comes back as `actions.dance` (live probe 2026-11-02, ADR-0048). The contracts for namespaces (`ToolNamespace`, `IToolRegistry.RegisterNamespace`, `ModelRequest.Namespaces`) were committed in `7f69ce8`.
 - The Gesture layer is masked to the upper body (`bones.upperBody`, `Spine` and below). Played there, a jump keeps its legs on the floor and a dance loses its hips and foot taps.
 
 ## Decision

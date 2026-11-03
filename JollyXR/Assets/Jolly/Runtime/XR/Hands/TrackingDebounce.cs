@@ -3,7 +3,7 @@ namespace Jolly.XR.Hands
     /// <summary>
     /// One hand's tracked flag that changes only once the raw flag has held its new value for the hold time. With nobody
     /// wearing the headset the subsystem reported a hand for a moment about once a second (38–56 times per self-test run,
-    /// selftest-report.md 4d228c8), and each blip showed and hid the hand mesh. The first sample is taken at once.
+    /// selftest-report.md 6179cfc), and each blip showed and hid the hand mesh. The first sample is taken at once.
     /// </summary>
     public sealed class TrackingDebounce
     {

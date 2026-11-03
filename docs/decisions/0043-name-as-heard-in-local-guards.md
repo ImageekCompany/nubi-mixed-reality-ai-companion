@@ -4,7 +4,7 @@
 - Date: 2026-11-01
 
 ## Context
-- The last `--character jolly` device run (`f27ea04`, 23:18 UTC+1) sent "come here" to the model: `voice_come_here` DEGRADED, `come_source=model`, release → first audio 2,334 ms instead of a guard walk under 600 ms.
+- The last `--character jolly` device run (`dcad2c7`, 23:18 UTC+1) sent "come here" to the model: `voice_come_here` DEGRADED, `come_source=model`, release → first audio 2,334 ms instead of a guard walk under 600 ms.
 - Cause, from the run's `selftest_results.json`: the self-test plays the Nubi clip "Hi Nubi, come here." for every character, and live ASR returned `Hi, newbie. newbie. Come here.`. With Jolly selected, the transcript aliases are Jolly's (Jolie, Jollie), so "newbie" stayed as it was, and the come fillers hold Jolly's name (`{name}`), not Nubi's. Two words the guard did not know meant "the person said more than the command", so the model decided.
 - The same happens to a person: ASR turns a name it does not know into whatever word it knows ("newbie", "Nobi", and for Jolly plausibly "jelly", "Holly" or "Charlie"). Each character's alias list only fixes the mishearings someone has already seen.
 

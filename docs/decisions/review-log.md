@@ -95,14 +95,14 @@ Deviations reported by the work packages are accepted in ADR-0017; the architect
 
 # Post-merge audit, 2026-11-01
 
-Three audits (Unity architecture, security/privacy, code quality) over `main` at `a078010`. Fixed on `fix/audit`; decisions in ADR-0022.
+Three audits (Unity architecture, security/privacy, code quality) over `main` at `d18420c`. Fixed on `fix/audit`; decisions in ADR-0022.
 
 | Finding | Decision | Where |
 |---|---|---|
 | Usage save throws out of `OnDestroy`, skipping teardown | Fixed: logged, retried on next flush | `ApiUsageMeter.Flush` |
 | Interaction line's `finally` touches a destroyed character on teardown | Fixed: no hand-back once the app token is cancelled | `InteractionLinePlayer` |
 | Jolly mascot renders committed | Fixed in the tree; the history rewrite before the first push is left to the owner (destructive) | `docs/research/samples/` |
-| macOS `say` clips reachable from history | Not rewritten here (destructive); same pre-push rewrite, objects from `304fff6` | git history |
+| macOS `say` clips reachable from history | Not rewritten here (destructive); same pre-push rewrite, objects from `e280be6` | git history |
 | Persisted anchors never erased | Fixed: `ISpatialAnchors.Erase` | `SceneMemory`, `ArSpatialAnchors` |
 | Spike assembly in release APKs | Fixed: `JOLLY_SPIKES` define constraint | `Assets/Spikes/*.asmdef` |
 | Self-test uses the user's memory | Fixed: scratch memory directory | `SelfTestSession`, `AppPaths` |

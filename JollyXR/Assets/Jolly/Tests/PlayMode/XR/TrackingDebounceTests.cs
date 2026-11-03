@@ -22,7 +22,7 @@ namespace Jolly.Tests.PlayMode.XR
         [Test]
         public void Acquired_ShorterThanTheHold_IsIgnored()
         {
-            // The 4d228c8 headless runs: the subsystem reported a hand for a moment about once a second.
+            // The 6179cfc headless runs: the subsystem reported a hand for a moment about once a second.
             var debounce = new TrackingDebounce(Hold);
             debounce.Update(false, 0.0);
 

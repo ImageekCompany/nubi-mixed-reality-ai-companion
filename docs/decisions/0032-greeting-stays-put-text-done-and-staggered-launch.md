@@ -4,7 +4,7 @@
 - Date: 2026-11-01
 
 ## Context
-The final verification of `main` 4d228c8 (`docs/perf/selftest-report.md`) found three regressions on the Quest:
+The final verification of `main` 6179cfc (`docs/perf/selftest-report.md`) found three regressions on the Quest:
 - "Hi Nubi, who are you?" called `come_here` in 4 of 7 release runs. The companion prompt said "you can walk around, come over, follow the person", and `come_here` was described only as "Walk to the user and face them."
 - One ~410 ms launch frame between `evt=hands.subsystem state=running` and `evt=occlusion.mode mode=depth`. The log lines inside it show the app-graph build, the AR camera manager start (Meta's `AndroidCameraManager` opening both Camera2 streams), every scene manager start including the occlusion manager, and the depth texture creation in the same main-thread frame. The pipeline collection warmed at boot (ADR-0019) was recorded before the hand rig (ADR-0030) and occlusion (ADR-0024), so their pipelines compiled at first draw.
 - Release → first audio p50 2,090 ms against 2,000 ms. First text → first sentence queued was up to 235 ms on tool turns: a preamble such as "Let me check." has no trailing whitespace, so `SentenceSplitter` held it until the tool call's arguments had streamed and `ToolStarted` flushed it.

@@ -4,7 +4,7 @@
 - Date: 2026-11-01
 
 ## Context
-- ADR-0036's `ComeGuard` starts the walk about 250 ms after release on "Hi Nubi, come here.", the demo's opening line, then still sends the turn to the model with a note. In the three device runs at `36778c1` (`docs/perf/selftest-report.md`) the guard walked 3 of 3 times, but `voice_come_here` never passed: first audio was 2,235 and 2,138 ms (over the 2.0 s budget, all of it model time), and in one run the Responses request got no first event twice in a row, so Nubi walked in silence and the turn ended in the error line.
+- ADR-0036's `ComeGuard` starts the walk about 250 ms after release on "Hi Nubi, come here.", the demo's opening line, then still sends the turn to the model with a note. In the three device runs at `33e69b5` (`docs/perf/selftest-report.md`) the guard walked 3 of 3 times, but `voice_come_here` never passed: first audio was 2,235 and 2,138 ms (over the 2.0 s budget, all of it model time), and in one run the Responses request got no first event twice in a row, so Nubi walked in silence and the turn ended in the error line.
 - The model added nothing on that turn: with the note it said a short line ("On my way!") and no tool, which a baked clip says as well.
 - `find_object` already turns Nubi's head to the nearest instance (`ICharacterController.LookAt(LookTarget.At(...))`, the call `look_at` makes for a seen object), but its result did not say so. In 2 of the 3 runs the model added a `look_at` round after a found result, so tool start → answer audio was 3.0–4.9 s against the 2.5 s budget.
 

@@ -203,7 +203,7 @@ namespace Jolly.Tests.PlayMode.App
         [Test]
         public void TheReleaseRunVisionTurn_NowFailsInsteadOfPassing()
         {
-            // dd14847 run 3: tools=capture_and_identify:failed, first audio 1,969 ms, tool → answer audio 8,332 ms.
+            // f6d8db3 run 3: tools=capture_and_identify:failed, first audio 1,969 ms, tool → answer audio 8,332 ms.
             var r = new ScenarioResult("vision_capture_and_identify");
 
             TurnChecks.FirstAudio(r, 1968.7);

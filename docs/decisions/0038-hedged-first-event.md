@@ -4,7 +4,7 @@
 - Date: 2026-11-01
 
 ## Context
-- Meta Responses sometimes sends nothing at all for a request. Every other call's first event came in 0.4–1.7 s (38 device calls below, 0.3–1.4 s in the 52 before), but in the `dd14847` runs three calls got nothing for 6 s, and in run 2 of `36778c1` the come-here turn timed out twice in a row, so Nubi walked in silence and the turn ended in the error line (`docs/perf/selftest-report.md`).
+- Meta Responses sometimes sends nothing at all for a request. Every other call's first event came in 0.4–1.7 s (38 device calls below, 0.3–1.4 s in the 52 before), but in the `f6d8db3` runs three calls got nothing for 6 s, and in run 2 of `33e69b5` the come-here turn timed out twice in a row, so Nubi walked in silence and the turn ended in the error line (`docs/perf/selftest-report.md`).
 - The voice route waited 4 s for a first event, then retried once (`voiceAttempts = 2`, `RetryPolicy` in `MetaSseClient.Open`). A stuck request cost ~4 s before the retry was even sent, and a double stall ~8 s of silence before the error line.
 - A stall is per request, not per minute: the call before and the call after answer normally. A second, identical request sent while the first is still silent is therefore likely to answer at the usual speed.
 
@@ -19,13 +19,13 @@
 
 ## Consequences
 - A single stall costs about 2.5 s plus the hedge's normal first event (~1 s) instead of 4 s plus a retry. A stall that hits both legs now fails at 4 s instead of ~8 s.
-- In the first device run of this change (`ee9b05c`, run 2) a stall did hit both legs: the hedge started at 2,512 ms and both timed out at 4,029 ms. The hedge alone does not cover that case; `b96a062` adds the first-byte text so the next occurrence says why.
+- In the first device run of this change (`3241225`, run 2) a stall did hit both legs: the hedge started at 2,512 ms and both timed out at 4,029 ms. The hedge alone does not cover that case; `bd6366a` adds the first-byte text so the next occurrence says why.
 - A hedged turn costs up to two requests' input. At ~1,900 input tokens (mostly cached) that is about $0.0003–0.0025 extra per hedge, only on turns that were already late.
 - `ttfe − ttfb` was 9–26 ms on all 38 opened requests: the first byte is the first event (`response.created`), so a late first event is a late response from the server, not a slow stream.
 - `ResponsesChatModel` takes an `IClock`; `ResponsesChatOptions` has `HedgeAfter`, and `VoiceTurn()` is now the hedged production policy (4 s, 1 attempt, 2.5 s). Tests of the sequential retry path build their options explicitly.
 
 ## Alternatives
 - **Shorter first-event timeout, keep the sequential retry (e.g. 2.5 s × 2).** Rejected: the retry still waits for the full timeout of a request that may be about to answer (first events up to 1.7 s were seen), and a healthy-but-slow request is aborted instead of raced.
-- **Hedge with a fresh connection.** UnityWebRequest has no per-request connection control (`selftest-report.md`, 3f35f7f finding), so the hedge cannot force one.
+- **Hedge with a fresh connection.** UnityWebRequest has no per-request connection control (`selftest-report.md`, 3bd9078 finding), so the hedge cannot force one.
 - **Hedge every request from the start.** Rejected: doubles the cost of every turn to save time on a few per run.
 - **Release the loser's reservation at zero.** Rejected: under-counts spend when the aborted request was billed; the estimate errs on the conservative side like every other abort.

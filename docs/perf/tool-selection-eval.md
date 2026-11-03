@@ -1,6 +1,6 @@
 # Tool-selection eval
 
-Does the model pick the right tool for a spoken request? Device runs at f311081 answered "Nubi, come here" in words in 2 of 3 runs and routed "Nubi, where is my mug? Show me." to `look_at` (`selftest-report.md`). This eval measures routing without a headset.
+Does the model pick the right tool for a spoken request? Device runs at 2ebf855 answered "Nubi, come here" in words in 2 of 3 runs and routed "Nubi, where is my mug? Show me." to `look_at` (`selftest-report.md`). This eval measures routing without a headset.
 
 ## Method
 
@@ -9,7 +9,7 @@ Does the model pick the right tool for a spoken request? Device runs at f311081 
 - Run: `tools/eval/tool-selection.sh [minimal|low] [tags]` (tags select a subset, e.g. `greeting,come_here,find_object`). It reads `META_API_KEY` from the repository `.env` and writes `artifacts/tool-selection-<effort>.md`. Cost is metered with the app's price table.
 - One pass per utterance: the model is not deterministic, so a single run shows misses, not rates. Treat a row as one sample.
 
-## Baseline: `88047fe`, effort `minimal`, all 20 cases
+## Baseline: `e7d58a8`, effort `minimal`, all 20 cases
 
 | Utterance | Expected | Called | Response ms | Result |
 |---|---|---|---|---|
@@ -36,7 +36,7 @@ Does the model pick the right tool for a spoken request? Device runs at f311081 
 
 Pass rate: **16 / 20 (80 %)**. Metered cost $0.0307 (token counts were not recorded in this first run).
 
-## After ADR-0035 descriptions: `c52b250`, effort `minimal`, greeting + come_here + find_object cases
+## After ADR-0035 descriptions: `ca4b9c1`, effort `minimal`, greeting + come_here + find_object cases
 
 The budget for this batch ($0.05) did not cover a second full run, so the re-run is the 12 cases the change targets.
 
@@ -59,7 +59,7 @@ Pass rate: **9 / 12 (75 %)**; the same 12 cases in the baseline: 9 / 12. Metered
 
 ## Results
 
-| Group (same cases) | Baseline `88047fe` | After `c52b250` |
+| Group (same cases) | Baseline `e7d58a8` | After `ca4b9c1` |
 |---|---|---|
 | Greetings stay put | 3 / 3 | 3 / 3 (two with `play_gesture`) |
 | Come-here variants → `come_here` | 2 / 5 | 2 / 5 |
@@ -71,7 +71,7 @@ Pass rate: **9 / 12 (75 %)**; the same 12 cases in the baseline: 9 / 12. Metered
 - `stop` with nothing moving got no call in the baseline; not targeted here.
 - **`low` effort was not run**: the two runs used the batch's eval budget. Effort stays `minimal` (ADR-0035).
 
-## Character actions (ADR-0047): `290385a+dirty`, effort `minimal`
+## Character actions (ADR-0047): `da9d50e+dirty`, effort `minimal`
 
 The catalog now sends the `actions` namespace, and four action cases were added ("come closer" also accepts `actions.move_relative`).
 
@@ -85,7 +85,7 @@ The catalog now sends the `actions` namespace, and four action cases were added 
 
 The other greeting and come-here cases of the run passed (11 / 12). "Can you jump?" was answered in words; after the namespace description added "or asks whether you can … to show them", a re-run of that one case called `actions.jump` (one sample).
 
-## Review of ADR-0047/0048: `cfad01b+dirty`, effort `minimal`
+## Review of ADR-0047/0048: `b8859bb+dirty`, effort `minimal`
 
 The eval now sends `AgentLoop.LiveRequest`, exactly what a live turn sends: web search with this machine's location, the matching instructions and the context block with the local time. `play_gesture` is gone (the gesture actions replace it); "Take a bow!", "Stand on my left" and "Do a little show: jump, spin and take a bow" were added and "can you come over here?", "where did I put my keys" and "what's your favourite colour?" dropped to stay within the 24-case cap (`artifacts/tool-selection-review-run1.md`, `-run2.md`).
 
@@ -101,7 +101,7 @@ The eval now sends `AgentLoop.LiveRequest`, exactly what a live turn sends: web 
 
 6 / 7. "Can you jump?" was answered in words again; with "or asks whether you can, call it in this turn to show them" added to the instructions' action rule, a re-run of the `actions.jump` tag still answered it in words (the show passed again), so that wording was not kept. Over all runs it has passed 1 of 4 samples.
 
-## Ability questions as requests to demonstrate: `ef949c1+dirty`, effort `minimal`
+## Ability questions as requests to demonstrate: `4deba21+dirty`, effort `minimal`
 
 The instructions' action rule gained "asking whether you can do one ('can you jump?') asks to see it, so do it" (a question about an offered action is read as a request to show it, rather than another "or asks whether you can" alongside "asks you to"). The `actions.jump` tag ran three times, then `greeting,small_talk` once to check the rule did not pull actions into chat.
 
@@ -117,22 +117,22 @@ The instructions' action rule gained "asking whether you can do one ('can you ju
 
 | Date (UTC) | Commit | Effort | Cases | Passed | Metered USD |
 |---|---|---|---|---|---|
-| 2026-11-01 | `88047fe` | minimal | all 20 | 16 | 0.0307 |
-| 2026-11-01 | `c52b250` | minimal | 12 (greeting, come_here, find_object) | 9 | 0.0221 |
-| 2026-11-02 | `290385a+dirty` | minimal | 12 (greeting, come_here, 4 action tags) | 11 | 0.0263 |
-| 2026-11-02 | `290385a+dirty` | minimal | 1 (actions.jump) | 1 | 0.0052 |
-| 2026-11-02 | `cfad01b+dirty` | minimal | 7 (5 action tags) | 6 | 0.0159 |
-| 2026-11-02 | `cfad01b+dirty` | minimal | 2 (actions.jump, with an instruction tweak not kept) | 1 | 0.0082 |
-| 2026-11-02 | `ef949c1+dirty` | minimal | 2 (actions.jump), run 1 of 3 | 1 | 0.0087 |
-| 2026-11-02 | `ef949c1+dirty` | minimal | 2 (actions.jump), run 2 of 3 | 2 | 0.0045 |
-| 2026-11-02 | `ef949c1+dirty` | minimal | 2 (actions.jump), run 3 of 3 | 2 | 0.0043 |
-| 2026-11-02 | `ef949c1+dirty` | minimal | 6 (greeting, small_talk) | 6 | 0.0062 |
+| 2026-11-01 | `e7d58a8` | minimal | all 20 | 16 | 0.0307 |
+| 2026-11-01 | `ca4b9c1` | minimal | 12 (greeting, come_here, find_object) | 9 | 0.0221 |
+| 2026-11-02 | `da9d50e+dirty` | minimal | 12 (greeting, come_here, 4 action tags) | 11 | 0.0263 |
+| 2026-11-02 | `da9d50e+dirty` | minimal | 1 (actions.jump) | 1 | 0.0052 |
+| 2026-11-02 | `b8859bb+dirty` | minimal | 7 (5 action tags) | 6 | 0.0159 |
+| 2026-11-02 | `b8859bb+dirty` | minimal | 2 (actions.jump, with an instruction tweak not kept) | 1 | 0.0082 |
+| 2026-11-02 | `4deba21+dirty` | minimal | 2 (actions.jump), run 1 of 3 | 1 | 0.0087 |
+| 2026-11-02 | `4deba21+dirty` | minimal | 2 (actions.jump), run 2 of 3 | 2 | 0.0045 |
+| 2026-11-02 | `4deba21+dirty` | minimal | 2 (actions.jump), run 3 of 3 | 2 | 0.0043 |
+| 2026-11-02 | `4deba21+dirty` | minimal | 6 (greeting, small_talk) | 6 | 0.0062 |
 
-Total **$0.0528**, $0.003 over the batch's $0.05 eval cap: the second run was sized from the first run's cost per call, and its output (~300 tokens per call, mostly reasoning even at `minimal`) is what a run costs (output is 71 % of its metered cost). The baseline ran the harness of `7e6ccc9` before it was committed, on the `88047fe` runtime.
+Total **$0.0528**, $0.003 over the batch's $0.05 eval cap: the second run was sized from the first run's cost per call, and its output (~300 tokens per call, mostly reasoning even at `minimal`) is what a run costs (output is 71 % of its metered cost). The baseline ran the harness of `aea9a38` before it was committed, on the `e7d58a8` runtime.
 
 ## ADR-0047 `action_through_model`, effort `minimal`, 2026-11-02
 
-The new phrase replaces "Show me how to dance!" as this eval's dance case, since that one now takes the guard and never reaches the model on a live turn. Five live samples of the first round, `a19c70f` plus this change's uncommitted work, whose prompt and tools are those of `a19c70f`.
+The new phrase replaces "Show me how to dance!" as this eval's dance case, since that one now takes the guard and never reaches the model on a live turn. Five live samples of the first round, `b1ebac4` plus this change's uncommitted work, whose prompt and tools are those of `b1ebac4`.
 
 | Utterance | Called | Result |
 |---|---|---|

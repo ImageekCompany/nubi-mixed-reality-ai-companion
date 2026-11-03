@@ -78,7 +78,7 @@ namespace Jolly.Tests.PlayMode.XR
         [UnityTest]
         public IEnumerator PhantomBlip_NeitherShowsTheHandNorLogs()
         {
-            // The 4d228c8 headless runs: a hand "tracked" for a moment about once a second, with nobody wearing the headset.
+            // The 6179cfc headless runs: a hand "tracked" for a moment about once a second, with nobody wearing the headset.
             var left = false;
             _monitor.ReadTrackingFrom(side => side == Handedness.Left && left);
             yield return null;

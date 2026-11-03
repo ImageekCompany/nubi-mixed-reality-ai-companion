@@ -20,7 +20,7 @@
 - **Telemetry.** `LookTelemetry` logs `evt=look.user body_yaw_off head_yaw_off attending user_dist user_h` at each turn's first Speaking (first audio). Voice self-test scenarios record it as `look` and degrade past 25° body or 15° head unless a tool's point is held; `voice_come_here` checks facing after arrival instead (`look_after_arrival`), as its first audio plays while it starts walking.
 
 ## Consequences
-- Device run of `f27ea04` with `--character jolly` (`evt=character.selected id=jolly`), headless: 7 turns, body 0.1–4.9°, head 1.6–6.9° off the user's head; `look_after_arrival` body 0.4°, head 1.7°. The headset did not move, so the run checks steady facing, not turning to a moving user; the PlayMode tests cover turning (70°, 35°, 90° while Thinking, after a held point, after a look-around and after a walk), Jolly included when the local definition is present.
+- Device run of `dcad2c7` with `--character jolly` (`evt=character.selected id=jolly`), headless: 7 turns, body 0.1–4.9°, head 1.6–6.9° off the user's head; `look_after_arrival` body 0.4°, head 1.7°. The headset did not move, so the run checks steady facing, not turning to a moving user; the PlayMode tests cover turning (70°, 35°, 90° while Thinking, after a held point, after a look-around and after a walk), Jolly included when the local definition is present.
 - Idle and within 3 m the character now turns to face the user as they move around, past 15°. A user farther away gets the old idle behaviour (glances only).
 - A vision answer looks at the object for 2.5 s, then back at the user, even if the sentence about the object is longer.
 
