@@ -105,6 +105,7 @@ namespace Jolly.Testing.Conversation
 
         public string Label { get; set; } = "TV remote";
         public string NounPhrase { get; set; } = "remote";
+        public string Place { get; set; }
         public string[] Answer { get; set; } = { "It is a TV remote. ", "Press the CC button." };
         public bool Gate { get; set; }
         public ProviderException Failure { get; set; }
@@ -117,7 +118,7 @@ namespace Jolly.Testing.Conversation
             LastRequest = request;
             return UniTaskAsyncEnumerable.Create<IdentificationEvent>(async (writer, _) =>
             {
-                await writer.YieldAsync(new IdentificationEvent(IdentificationEventKind.Header, Label, NounPhrase));
+                await writer.YieldAsync(new IdentificationEvent(IdentificationEventKind.Header, Label, NounPhrase, place: Place));
                 if (Gate)
                     await _gate.Task.AttachExternalCancellation(ct);
                 if (Failure != null)

@@ -37,6 +37,9 @@ namespace Jolly.Core.Agent
 
         /// <param name="room">The room line of the context block; null leaves it out.</param>
         /// <param name="webSearch">Null: no web search and no local time or home line in the context block.</param>
+        /// <summary>For a tool a local guard runs with no model round (ADR-0051): the same words as <see cref="ToolContext.PersonaInstructions"/> here.</summary>
+        public string PersonaInstructions(PersonaProfile persona) => _prompt.PersonaInstructions(persona);
+
         public AgentLoop(IChatModel model, IToolRegistry registry, IConversationMemory memory, ISceneMemory scene,
                          RoomContext room, IPersonaProvider personas, ILocalizer localizer, IUserPreferences preferences, ILog log,
                          IClock clock, ILatencyTracker latency, ConversationEvents events, AgentSettings settings,

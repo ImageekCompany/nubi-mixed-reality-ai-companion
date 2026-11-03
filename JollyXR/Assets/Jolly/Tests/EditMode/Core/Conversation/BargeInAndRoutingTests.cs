@@ -268,6 +268,79 @@ namespace Jolly.Tests.EditMode.Core.Conversation
         }
 
         [Test]
+        public void ShowingAPlace_ThenAskingAfterIt_RunsWithNoModelRound_AndLeadsThere()
+        {
+            // Act: the demo's teaching and asking lines (ADR-0051).
+            _f.Talk("That over there is the kitchen.");
+            _f.Queue.Drain();
+            var taught = _f.Scene.TryGetPlace("kitchen", out _);
+            _f.Talk("Where is the kitchen?");
+            _f.Queue.Drain();
+
+            // Assert
+            Assert.That(taught, Is.True);
+            Assert.That(_f.Agent.Turns, Is.Empty, "no model round");
+            Assert.That(_f.Queue.Enqueued.Select(e => e.sentence), Is.EqualTo(new[] { "Got it, the kitchen!", "There!" }));
+            Assert.That(_f.Character.Gestures, Is.EqualTo(new[] { GestureId.Point }));
+            Assert.That(_f.Machine.State, Is.EqualTo(ConversationState.Idle));
+        }
+
+        const string QuestionSchema =
+            "{\"type\":\"object\",\"properties\":{\"question\":{\"type\":\"string\"}},\"required\":[\"question\"],\"additionalProperties\":false}";
+
+        ScriptedTool LookTool()
+        {
+            var tool = new ScriptedTool(ToolNames.CaptureAndIdentify, ToolConcurrency.Exclusive, QuestionSchema);
+            _f.Tools.Register(tool);
+            return tool;
+        }
+
+        [Test]
+        public void WhereDoTheseGo_WithAPlaceRemembered_LooksWithNoModelRound_AndSpeaksAfterTheAnswer()
+        {
+            // Arrange
+            var look = LookTool();
+            look.OnExecute = (args, context) => context.Speech.Append("Those are dishes. ");
+            look.Result = new ToolResult(true, "{\"place\":\"kitchen\"}", "There!", endsTurn: true);
+            _f.Scene.RememberPlace(new PlaceRecord { Name = "kitchen" });
+
+            // Act
+            _f.Talk("Where can I put these things?");
+            _f.Queue.Drain();
+
+            // Assert
+            Assert.That(look.Started, Is.EqualTo(1));
+            Assert.That(look.LastContext.Turn.Text, Is.EqualTo("Where can I put these things?"));
+            Assert.That(_f.Agent.Turns, Is.Empty, "no model round");
+            Assert.That(_f.Queue.Enqueued.Select(e => e.sentence), Is.EqualTo(new[] { "Those are dishes.", "There!" }));
+            Assert.That(_f.Machine.State, Is.EqualTo(ConversationState.Idle));
+        }
+
+        [Test]
+        public void WhereDoTheseGo_LookFailsWithNoWords_GoesToTheModelToExplain()
+        {
+            var look = LookTool();
+            look.Result = ToolResult.Failure("too_dark");
+            _f.Scene.RememberPlace(new PlaceRecord { Name = "kitchen" });
+
+            _f.Talk("Where can I put these things?");
+
+            Assert.That(look.Started, Is.EqualTo(1));
+            Assert.That(_f.Agent.Turns.Single().Text, Is.EqualTo("Where can I put these things?"));
+        }
+
+        [Test]
+        public void WhereDoTheseGo_NoPlaceRemembered_IsAnOrdinaryModelTurn()
+        {
+            var look = LookTool();
+
+            _f.Talk("Where can I put these things?");
+
+            Assert.That(look.Started, Is.Zero);
+            Assert.That(_f.Agent.Turns.Single().Text, Is.EqualTo("Where can I put these things?"));
+        }
+
+        [Test]
         public void GuardedAction_RunsWithNoModelRoundAndNoWords()
         {
             // Act

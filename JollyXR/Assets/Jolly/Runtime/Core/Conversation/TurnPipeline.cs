@@ -16,6 +16,7 @@ namespace Jolly.Core.Conversation
     {
         readonly TurnListener _listener;
         readonly TurnGuards _guards;
+        readonly ISpokenTextSink _speechSink;
         readonly TurnSpeech _speech;
         readonly IAgentLoop _agent;
         readonly IOfflineResponder _offline;
@@ -36,6 +37,7 @@ namespace Jolly.Core.Conversation
                             ConversationStateMachine machine, ConversationEvents events, ILatencyTracker latency,
                             ILocalizer localizer, ILog log, ConversationTimings timings)
         {
+            _speechSink = new SpeechSink(speech);
             _listener = listener;
             _guards = guards;
             _speech = speech;
@@ -87,10 +89,13 @@ namespace Jolly.Core.Conversation
             var text = await ApplyGuards(turnId, heard.Text, turnCt);
             if (text == null)
                 return;
-            await RunAgent(new UserTurn
+            var turn = new UserTurn
             {
                 TurnId = turnId, Text = text, LanguageTag = _localizer.LanguageTag, PreCaptured = heard.PreCaptured,
-            }, turnCt);
+            };
+            if (await RunWhereItGoes(turn, turnCt))
+                return;
+            await RunAgent(turn, turnCt);
         }
 
         /// <summary>The OfflinePttPressed path: one canned line, then Idle.</summary>
@@ -224,12 +229,73 @@ namespace Jolly.Core.Conversation
                 _machine.Fire(ConversationTrigger.ToolsDone);
                 return false;
             }
+            if (action.Reply != null)
+            {
+                _memory.CommitTurn(new[]
+                {
+                    ConversationItem.User(text), call, ConversationItem.Result(action.CallId, output),
+                    ConversationItem.Assistant(action.Reply),
+                });
+                _machine.Fire(ConversationTrigger.ToolsDone);
+                BeginSpeech(turnId, ct);
+                _speech.Append(action.Reply);
+                await FinishSpeaking(turnId, ct);
+                return true;
+            }
             _memory.CommitTurn(new[] { ConversationItem.User(text), call, ConversationItem.Result(action.CallId, output) });
             // In this order Acting goes straight to Idle, with no Thinking pose between the move and rest.
             _machine.Fire(ConversationTrigger.TurnCompleted);
             _machine.Fire(ConversationTrigger.ToolsDone);
             _latency.Mark(turnId, LatencyMark.TurnCompleted);
             return true;
+        }
+
+        /// <summary>
+        /// "Where do these go?" with a place remembered: look without a model round first (ADR-0051). The tool speaks the
+        /// answer, walks and points; a failure it has no words for (too dark, no camera) goes to the model to explain.
+        /// </summary>
+        async UniTask<bool> RunWhereItGoes(UserTurn turn, CancellationToken ct)
+        {
+            if (!_guards.TryMatchWhereItGoes(turn.Text, out var action))
+                return false;
+            var user = ConversationItem.User(turn.Text);
+            var call = ConversationItem.Call(action.CallId, action.Name, action.ArgumentsJson);
+            BeginSpeech(turn.TurnId, ct);
+            _machine.Fire(ConversationTrigger.ToolStarted);
+            ToolResult result;
+            try
+            {
+                result = await _guards.RunLook(action, turn, _speechSink, ct);
+            }
+            catch (OperationCanceledException)
+            {
+                _memory.CommitTurn(new[]
+                {
+                    user, call, ConversationItem.Result(action.CallId, ToolResult.InterruptedOutput),
+                    ConversationItem.Assistant("[interrupted]"),
+                });
+                throw;
+            }
+            _machine.Fire(ConversationTrigger.ToolsDone);
+            if (!result.Ok && !result.EndsTurn)
+                return false;
+
+            _memory.CommitTurn(new[] { user, call, ConversationItem.Result(action.CallId, result.OutputJson) });
+            if (result.SpokenText != null)
+            {
+                // Held by the splitter otherwise, and glued to the answer's last sentence.
+                _speech.Finish();
+                _speech.Append(result.SpokenText);
+            }
+            await FinishSpeaking(turn.TurnId, ct);
+            return true;
+        }
+
+        sealed class SpeechSink : ISpokenTextSink
+        {
+            readonly TurnSpeech _speech;
+            public SpeechSink(TurnSpeech speech) => _speech = speech;
+            public void Append(string text) => _speech.Append(text);
         }
 
         async UniTask RunAgent(UserTurn turn, CancellationToken ct)

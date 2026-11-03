@@ -29,10 +29,12 @@ namespace Jolly.App.Composition
             registry.Register(new FollowUserTool(character, locomotion));
             registry.Register(new ComeHereTool(character, xr.User, xr.World, locomotion));
             registry.Register(new LookAtTool(character, xr.User, xr.World, scene, locomotion));
-            registry.Register(new CaptureAndIdentifyTool(kit, cloud.Identifier, character, scene, localizer));
+            var pointer = new PointToPlace(character, xr.World, locomotion, f.Log);
+            registry.Register(new CaptureAndIdentifyTool(kit, cloud.Identifier, character, scene, localizer, pointer));
             registry.Register(new FindObjectTool(kit, character, scene, xr.User));
             registry.Register(new HighlightPartTool(kit, character, scene));
-            registry.Register(new RememberPlaceTool(scene, xr.Anchors, xr.User, character, f.Clock, f.Log));
+            registry.Register(new RememberPlaceTool(scene, xr.Anchors, xr.User, character, f.Clock, f.Log, xr.World, locomotion));
+            registry.Register(new ShowPlaceTool(character, scene, xr.World, localizer, pointer));
             registry.Register(new StopTool(character));
             registry.Register(new SetPersonaTool(personas));
             registry.Register(new GoToSurfaceTool(character, xr.World, room, locomotion));

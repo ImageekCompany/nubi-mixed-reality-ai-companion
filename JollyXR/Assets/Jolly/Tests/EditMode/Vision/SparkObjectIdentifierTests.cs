@@ -66,6 +66,20 @@ namespace Jolly.Tests.EditMode.Vision
         });
 
         [UnityTest]
+        public IEnumerator Identify_ListsPlacesAndTheThirdField_OnlyWhenThereArePlaces() => UniTask.ToCoroutine(async () =>
+        {
+            var chat = ScriptedVisionChatModel.Replying("pen|pen\nA pen.");
+            var image = VisionFixtures.Jpeg(640, 428);
+
+            await Collect(Identifier(chat).Identify(image, new IdentifyRequest { Question = "What is this?" }, CancellationToken.None));
+            Assert.That(chat.LastRequest.Instructions, Does.Not.Contain("PLACE"));
+
+            await Collect(Identifier(chat).Identify(image,
+                new IdentifyRequest { Question = "Where do these go?", Places = new[] { "kitchen", "garage" } }, CancellationToken.None));
+            Assert.That(chat.LastRequest.Instructions, Does.Contain("LABEL|NOUN_PHRASE|PLACE").And.Contain("kitchen, garage"));
+        });
+
+        [UnityTest]
         public IEnumerator Identify_StreamsTheHeaderThenSpeakableAnswerDeltas() => UniTask.ToCoroutine(async () =>
         {
             var chat = ScriptedVisionChatModel.Replying("ballpoint pen|p", "en\nThis is a ", "pen.");

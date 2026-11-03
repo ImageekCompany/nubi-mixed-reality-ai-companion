@@ -14,17 +14,18 @@ namespace Jolly.Tests.PlayMode.Eval
     {
         static readonly string[] Movement =
         {
-            ToolNames.ComeHere, ToolNames.WalkTo, ToolNames.FollowUser, ToolNames.GoToSurface, ToolNames.Actions.MoveRelative,
+            ToolNames.ComeHere, ToolNames.WalkTo, ToolNames.FollowUser, ToolNames.GoToSurface, ToolNames.ShowPlace, ToolNames.Actions.MoveRelative,
         };
 
         public const string Greeting = "greeting";
         public const string SmallTalk = "small_talk";
 
-        ToolSelectionCase(string utterance, string[] expected, string seenLabel, string tag)
+        ToolSelectionCase(string utterance, string[] expected, string seenLabel, string tag, string place = null)
         {
             Utterance = utterance;
             Expected = expected;
             SeenLabel = seenLabel;
+            Place = place;
             Tag = tag;
         }
 
@@ -34,10 +35,14 @@ namespace Jolly.Tests.PlayMode.Eval
         public IReadOnlyList<string> Expected { get; }
         /// <summary>An object already in scene memory for this turn, as after an identify turn on device; null for none.</summary>
         public string SeenLabel { get; }
+        /// <summary>A place the user already showed, in scene memory for this turn; null for none.</summary>
+        public string Place { get; }
 
         public static ToolSelectionCase Calls(string utterance, params string[] anyOf) => new(utterance, anyOf, null, anyOf[0]);
         public static ToolSelectionCase CallsWithSeen(string utterance, string seenLabel, params string[] anyOf) =>
             new(utterance, anyOf, seenLabel, anyOf[0]);
+        public static ToolSelectionCase CallsWithPlace(string utterance, string place, params string[] anyOf) =>
+            new(utterance, anyOf, null, anyOf[0], place);
         public static ToolSelectionCase StaysPut(string utterance, string tag = SmallTalk) =>
             new(utterance, Array.Empty<string>(), null, tag);
 
@@ -56,6 +61,13 @@ namespace Jolly.Tests.PlayMode.Eval
         // mug already seen routed to look_at.
         public static readonly IReadOnlyList<ToolSelectionCase> All = new[]
         {
+            // ADR-0051: the model's side of the place phrases. PlaceGuard runs the plain ones locally on a live turn; these are its fallback.
+            Calls("This is my kitchen.", ToolNames.RememberPlace),
+            Calls("That over there is the kitchen.", ToolNames.RememberPlace),
+            CallsWithPlace("Where can I put these things?", "kitchen", ToolNames.CaptureAndIdentify),
+            CallsWithPlace("Where do these go?", "kitchen", ToolNames.CaptureAndIdentify),
+            CallsWithPlace("Where is the kitchen?", "kitchen", ToolNames.ShowPlace),
+            CallsWithPlace("Show me the kitchen.", "kitchen", ToolNames.ShowPlace),
             StaysPut("Hi Nubi", Greeting),
             StaysPut("Hello, who are you?", Greeting),
             StaysPut("Good morning Nubi, how are you today?", Greeting),

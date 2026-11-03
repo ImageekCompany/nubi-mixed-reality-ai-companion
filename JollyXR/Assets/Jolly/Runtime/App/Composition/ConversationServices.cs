@@ -52,7 +52,8 @@ namespace Jolly.App.Composition
             var listener = new TurnListener(microphone, cloud.SpeechToText, frames, aliases,
                 localizer, f.Events, f.Latency, f.Log, timings);
             var guards = new TurnGuards(new StopGuard(localizer), new ComeGuard(localizer), new ActionGuard(localizer), new SettingsGuard(localizer),
-                new CrisisGuard(localizer), new QuestionCue(localizer), character, tools, personas, preferences, f.Events, f.Log, f.Clock);
+                new CrisisGuard(localizer), new QuestionCue(localizer), character, tools, personas, preferences, f.Events, f.Log, f.Clock,
+                new PlaceGuard(localizer, scene), localizer, agent.PersonaInstructions);
             var turnSpeech = disposables.Add(new TurnSpeech(speech.Queue, speech.Splitter, speech.Output, f.Machine,
                 f.Events, f.Latency, f.Clock));
             var pipeline = new TurnPipeline(listener, guards, turnSpeech, agent, speech.Offline, conversation, personas,

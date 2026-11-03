@@ -93,6 +93,8 @@ namespace Jolly.Tests.PlayMode.Eval
                     var scene = new SceneMemory("unused", new FakeSpatialAnchors(), new FakeClock(), new MemoryLimits(), log);
                     if (c.SeenLabel != null)
                         scene.AddObject(c.SeenLabel, new Vector3(0.6f, 0.8f, 1.2f), $"a {c.SeenLabel} on the table");
+                    if (c.Place != null)
+                        scene.RememberPlace(new PlaceRecord { Name = c.Place, Pose = new Pose(new Vector3(3f, 1f, 4f), Quaternion.identity) });
                     var memory = new ConversationMemory(Path.GetTempPath(), personas, new MemoryLimits(), log);
                     var prompt = new PromptBuilder(text, preferences, memory, scene, null, settings, location);
                     var request = AgentLoop.LiveRequest(prompt, registry, personas.Current, preferences, webSearch, settings,
@@ -148,10 +150,11 @@ namespace Jolly.Tests.PlayMode.Eval
             registry.Register(new FollowUserTool(null, locomotion));
             registry.Register(new ComeHereTool(null, null, null, locomotion));
             registry.Register(new LookAtTool(null, null, null, null, locomotion));
-            registry.Register(new CaptureAndIdentifyTool(null, null, null, null, null));
+            registry.Register(new CaptureAndIdentifyTool(null, null, null, null, null, null));
             registry.Register(new FindObjectTool(null, null, null, null));
             registry.Register(new HighlightPartTool(null, null, null));
-            registry.Register(new RememberPlaceTool(null, null, null, null, null, null));
+            registry.Register(new RememberPlaceTool(null, null, null, null, null, null, null, locomotion));
+            registry.Register(new ShowPlaceTool(null, null, null, null, null));
             registry.Register(new StopTool(null));
             registry.Register(new SetPersonaTool(personas));
             registry.Register(new GoToSurfaceTool(null, null, null, locomotion));

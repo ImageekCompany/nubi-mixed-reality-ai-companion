@@ -15,7 +15,7 @@ Hero user: an older adult living alone (`hackathon.md` §2). Demo objects serve 
 | Must (if R1 passes) | Hand-ray point → SAM point prompt, with hand-joint **negative** points; noun-phrase retry when the mask is implausible | high | med | Same `CameraMath` as the overlay, run in reverse. Falls back to centre point + hint if R1 fails |
 | Must | `come_here` / `follow_user` / `look_at` / `stop` on a runtime NavMesh of the scanned floor; local `StopGuard` | high | med | |
 | Must | Pinch barge-in (cancel tree, UWR abort, flush) | med | low | |
-| Must | Tool badges + latency HUD | med | low | How judges see the Meta tooling in the video |
+| Must | Tool badges + latency HUD | med | low | Badges show judges the Meta tooling in the video; the HUD is off unless latency stats are on (ADR-0050) |
 | Must | Offline/degraded mode: health probe, canned lines, idle scheduler | med | low | |
 | Must | Personas as ScriptableObjects (Companion, Mentor, Guru) | med | low | |
 | Must | Usage meter with a hard cap; secrets via file; `store:false`; LiveUser → standard model | — | low | |

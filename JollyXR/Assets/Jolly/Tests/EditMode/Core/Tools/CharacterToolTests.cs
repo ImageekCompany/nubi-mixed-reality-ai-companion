@@ -99,9 +99,9 @@ namespace Jolly.Tests.EditMode.Core.Tools
         public void RememberPlace_SavesTheUsersFloorPositionWithAnAnchor()
         {
             _user.Head = new Pose(new Vector3(2, 1.6f, -1), Quaternion.Euler(0, 90, 0));
-            var tool = new RememberPlaceTool(_scene, _anchors, _user, _character, _clock, _log);
+            var tool = new RememberPlaceTool(_scene, _anchors, _user, _character, _clock, _log, _world, new LocomotionSettings());
 
-            var result = ToolHarness.Run(tool, "{\"name\":\" Sofa \"}");
+            var result = ToolHarness.Run(tool, "{\"name\":\" Sofa \",\"where\":\"here\"}");
 
             Assert.That(result.OutputJson, Is.EqualTo("{\"status\":\"saved\",\"name\":\"sofa\",\"anchored\":true}"));
             Assert.That(_scene.TryGetPlace("sofa", out var place), Is.True);
@@ -113,9 +113,9 @@ namespace Jolly.Tests.EditMode.Core.Tools
         public void RememberPlace_WithoutAnchorPersistence_StillRemembersThePose()
         {
             _anchors.Supported = false;
-            var tool = new RememberPlaceTool(_scene, _anchors, _user, _character, _clock, _log);
+            var tool = new RememberPlaceTool(_scene, _anchors, _user, _character, _clock, _log, _world, new LocomotionSettings());
 
-            var result = ToolHarness.Run(tool, "{\"name\":\"desk\"}");
+            var result = ToolHarness.Run(tool, "{\"name\":\"desk\",\"where\":\"here\"}");
 
             Assert.That((bool)ToolHarness.Output(result)["anchored"], Is.False);
             Assert.That(_scene.TryGetPlace("desk", out _), Is.True);
@@ -125,8 +125,8 @@ namespace Jolly.Tests.EditMode.Core.Tools
         public void RememberPlace_AnchorSaveSlowerThanItsTimeout_RemembersThePlaceUnanchoredInsideTheToolTimeout()
         {
             _anchors.Hang = true;
-            var tool = new RememberPlaceTool(_scene, _anchors, _user, _character, _clock, _log);
-            var run = ToolHarness.Start(tool, "{\"name\":\"desk\"}").Preserve();
+            var tool = new RememberPlaceTool(_scene, _anchors, _user, _character, _clock, _log, _world, new LocomotionSettings());
+            var run = ToolHarness.Start(tool, "{\"name\":\"desk\",\"where\":\"here\"}").Preserve();
 
             _clock.Advance(TimeSpan.FromSeconds(3));
 
@@ -142,8 +142,8 @@ namespace Jolly.Tests.EditMode.Core.Tools
         {
             _anchors.Hang = true;
             using var cts = new CancellationTokenSource();
-            var tool = new RememberPlaceTool(_scene, _anchors, _user, _character, _clock, _log);
-            var run = ToolHarness.Start(tool, "{\"name\":\"desk\"}", ct: cts.Token).Preserve();
+            var tool = new RememberPlaceTool(_scene, _anchors, _user, _character, _clock, _log, _world, new LocomotionSettings());
+            var run = ToolHarness.Start(tool, "{\"name\":\"desk\",\"where\":\"here\"}", ct: cts.Token).Preserve();
 
             cts.Cancel();
 
@@ -186,7 +186,7 @@ namespace Jolly.Tests.EditMode.Core.Tools
         public void Timeouts_MatchTheCatalogue()
         {
             Assert.That(LookAt().Definition.Timeout, Is.EqualTo(TimeSpan.FromSeconds(1)));
-            Assert.That(new RememberPlaceTool(_scene, _anchors, _user, _character, _clock, _log).Definition.Timeout,
+            Assert.That(new RememberPlaceTool(_scene, _anchors, _user, _character, _clock, _log, _world, new LocomotionSettings()).Definition.Timeout,
                 Is.EqualTo(TimeSpan.FromSeconds(5)));
         }
     }

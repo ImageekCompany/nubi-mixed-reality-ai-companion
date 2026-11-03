@@ -96,7 +96,7 @@ namespace Jolly.Tests.PlayMode.Eval
             var utterances = ToolSelectionCase.All.Select(c => c.Utterance).ToArray();
 
             Assert.That(utterances, Is.Unique);
-            Assert.That(utterances.Length, Is.InRange(18, 24));
+            Assert.That(utterances.Length, Is.InRange(18, 30));
             Assert.That(ToolSelectionCase.All.Count(c => c.Expected.Contains(ToolNames.ComeHere)), Is.GreaterThanOrEqualTo(4));
             Assert.That(ToolSelectionCase.All.Count(c => c.Expected.Contains(ToolNames.FindObject)), Is.GreaterThanOrEqualTo(3));
         }

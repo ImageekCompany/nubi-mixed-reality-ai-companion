@@ -84,9 +84,11 @@ namespace Jolly.Tests.EditMode.Core.Conversation
             Tools.Register(new ComeHereTool(Character, new FakeUserPoseProvider(), World, new LocomotionSettings()));
             Actions = CharacterActionCatalog.For(Character, new FakeUserPoseProvider(), World, new LocomotionSettings(), Log);
             Actions.RegisterInto(Tools);
+            Tools.Register(new RememberPlaceTool(Scene, new FakeSpatialAnchors(), new FakeUserPoseProvider(), Character, Clock, Log, World, new LocomotionSettings()));
+            Tools.Register(new ShowPlaceTool(Character, Scene, World, Localizer, new PointToPlace(Character, World, new LocomotionSettings(), Log)));
             Guards = new TurnGuards(new StopGuard(Localizer), new ComeGuard(Localizer), new ActionGuard(Localizer), new SettingsGuard(Localizer),
                 new CrisisGuard(Localizer), new QuestionCue(Localizer), Character, Tools, Personas, new FakeUserPreferences(),
-                Events, Log, Clock);
+                Events, Log, Clock, new PlaceGuard(Localizer, Scene), Localizer);
             var speech = new TurnSpeech(Queue, new FakeSentenceSplitter(), Output, Machine, Events, latency, Clock);
             var pipeline = new TurnPipeline(listener, Guards, speech, agentLoop, Offline, Memory, Personas, Machine, Events,
                 latency, Localizer, Log, Timings);

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Text;
 using System.Threading;
 using Cysharp.Threading.Tasks;
@@ -10,13 +11,15 @@ namespace Jolly.Core.Tools
     public readonly struct VisionAnswer
     {
         public VisionAnswer(string label, string nounPhrase, string text, bool timedOut, ProviderException error,
-                            double headerAt, double firstTextAt)
+                            double headerAt, double firstTextAt, string place = null)
         {
             Label = label; NounPhrase = nounPhrase; Text = text; TimedOut = timedOut; Error = error;
-            HeaderAt = headerAt; FirstTextAt = firstTextAt;
+            HeaderAt = headerAt; FirstTextAt = firstTextAt; Place = place;
         }
         public string Label { get; }
         public string NounPhrase { get; }
+        /// <summary>The place the model says the thing belongs in, unchecked against memory; null for none.</summary>
+        public string Place { get; }
         public string Text { get; }
         public bool TimedOut { get; }
         public ProviderException Error { get; }
@@ -43,13 +46,15 @@ namespace Jolly.Core.Tools
         }
 
         public async UniTask<VisionAnswer> Run(EncodedImage image, string question, ToolContext context,
-                                               UniTaskCompletionSource<string> nounPhrase, CancellationToken ct)
+                                               UniTaskCompletionSource<string> nounPhrase, CancellationToken ct,
+                                               IReadOnlyList<string> places = null)
         {
             var request = new IdentifyRequest
             {
                 Question = question, PersonaInstructions = context.PersonaInstructions, LanguageTag = context.Turn?.LanguageTag,
+                Places = places,
             };
-            string label = null, phrase = null, full = null;
+            string label = null, phrase = null, full = null, place = null;
             double headerAt = double.NaN, firstTextAt = double.NaN;
             var spoken = new StringBuilder();
             var started = _clock.Now;
@@ -63,6 +68,7 @@ namespace Jolly.Core.Tools
                         case IdentificationEventKind.Header:
                             label = e.Label;
                             phrase = e.NounPhrase;
+                            place = e.Place;
                             headerAt = _clock.Now;
                             nounPhrase.TrySetResult(phrase);
                             break;
@@ -78,7 +84,7 @@ namespace Jolly.Core.Tools
                     }
                 }
                 _kit.ReportModelCall(ModelCallIds.Vision(_kit.Settings.VisionModel), started);
-                return new VisionAnswer(label, phrase, full ?? spoken.ToString(), false, null, headerAt, firstTextAt);
+                return new VisionAnswer(label, phrase, full ?? spoken.ToString(), false, null, headerAt, firstTextAt, place);
             }
             catch (OperationCanceledException) when (scope.TimedOut && !ct.IsCancellationRequested)
             {

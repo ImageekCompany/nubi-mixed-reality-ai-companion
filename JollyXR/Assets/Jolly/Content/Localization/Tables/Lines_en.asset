@@ -170,6 +170,14 @@ MonoBehaviour:
     m_Localized: "Coming right over!"
     m_Metadata:
       m_Items: []
+  - m_Id: 154132518
+    m_Localized: There!
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132519
+    m_Localized: "Got it, the {name}!"
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

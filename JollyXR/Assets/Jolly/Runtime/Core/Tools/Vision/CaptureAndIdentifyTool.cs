@@ -10,7 +10,9 @@ namespace Jolly.Core.Tools
 {
     /// <summary>
     /// "What is this?" (architecture §5.3): SAM and the streamed vision answer run in parallel on the pre-captured frame.
-    /// The answer is spoken as it streams; the mask is shown as soon as SAM (or its noun-phrase retry) returns.
+    /// The answer is spoken as it streams; the mask is shown as soon as SAM (or its noun-phrase retry) returns. Asked
+    /// where the thing goes, the answer can name a place the user showed earlier, and the tool then leads the way there
+    /// and points (ADR-0051), so its timeout covers the walk and the vision part keeps its own.
     /// </summary>
     public sealed class CaptureAndIdentifyTool : ITool
     {
@@ -22,13 +24,17 @@ namespace Jolly.Core.Tools
 
         readonly VisionToolkit _kit;
         readonly IObjectIdentifier _identifier;
+        static readonly TimeSpan VisionBudget = TimeSpan.FromSeconds(12);
+
         readonly ICharacterController _character;
         readonly ISceneMemory _scene;
         readonly ILocalizer _localizer;
+        readonly PointToPlace _pointer;
 
         public CaptureAndIdentifyTool(VisionToolkit kit, IObjectIdentifier identifier, ICharacterController character,
-                                      ISceneMemory scene, ILocalizer localizer)
+                                      ISceneMemory scene, ILocalizer localizer, PointToPlace pointer)
         {
+            _pointer = pointer;
             _kit = kit;
             _identifier = identifier;
             _character = character;
@@ -39,47 +45,91 @@ namespace Jolly.Core.Tools
         public ToolDefinition Definition { get; } = new(ToolNames.CaptureAndIdentify,
             "Look through the headset camera at what the user is showing or pointing at, highlight it, " +
             "and answer the question about it. Use it whenever the user asks what something is, how to use it, " +
-            "or says 'look at this'.",
-            Schema, TimeSpan.FromSeconds(12), ToolConcurrency.Exclusive);
+            "where to put or store what they are showing, or says 'look at this'. " +
+            "If they ask where it goes and a listed place fits, you walk there and point by yourself.",
+            Schema, VisionBudget + PointToPlace.WalkBudget, ToolConcurrency.Exclusive);
 
         public async UniTask<ToolResult> Execute(IToolArguments args, ToolContext context, CancellationToken ct)
         {
             args.TryGetString("question", out var question);
             args.TryGetString("object_hint", out var hint);
 
+            using var budget = new TimeoutScope(_kit.Clock, VisionBudget, ct);
+            VisionAnswer answer;
+            Vector3? mask;
+            try
+            {
+                var outcome = await Identify(question, hint, context, budget.Token);
+                if (outcome.Failure.HasValue)
+                    return outcome.Failure.Value;
+                (answer, mask) = (outcome.Answer, outcome.Mask);
+            }
+            catch (OperationCanceledException) when (budget.TimedOut && !ct.IsCancellationRequested)
+            {
+                return ToolResult.Failure("timeout");
+            }
+
+            var label = answer.Label ?? hint ?? "object";
+            var objectId = mask.HasValue ? _scene.AddObject(label, mask.Value, "identified on camera").Id : null;
+            var output = new ToolJson().Add("object_id", objectId).Add("label", label).Add("answer", answer.Text)
+                                       .Add("masked", mask.HasValue);
+
+            if (answer.Place == null || !_scene.TryGetPlace(answer.Place, out var place))
+                return ToolResult.Success(output.ToString(), endsTurn: true);
+            output.Add("place", place.Name);
+            var pointed = await _pointer.Run(place.Pose.position, ct);
+            return new ToolResult(true, output.Add("shown", pointed).ToString(),
+                pointed ? CoreLines.Get(_localizer, CoreLines.PlaceThere) : null, endsTurn: true);
+        }
+
+        readonly struct Identified
+        {
+            public Identified(ToolResult failure) { Failure = failure; Answer = default; Mask = null; }
+            public Identified(in VisionAnswer answer, Vector3? mask) { Failure = null; Answer = answer; Mask = mask; }
+            public ToolResult? Failure { get; }
+            public VisionAnswer Answer { get; }
+            public Vector3? Mask { get; }
+        }
+
+        async UniTask<Identified> Identify(string question, string hint, ToolContext context, CancellationToken ct)
+        {
             var started = _kit.Clock.Now;
             var preCaptured = _kit.Frames.IsFresh(context.Turn?.PreCaptured);
             var image = preCaptured ? context.Turn.PreCaptured : await _kit.TryCapture(ct);
             if (image == null)
-                return ToolResult.Failure("camera_unavailable");
+                return new Identified(ToolResult.Failure("camera_unavailable"));
             if (_kit.IsTooDark(image))
-                return VisionToolkit.TooDark;
+                return new Identified(VisionToolkit.TooDark);
             _scene.LastCapture = image;
 
             var header = new UniTaskCompletionSource<string>();
-            var identify = new VisionAnswerStream(_identifier, _kit).Run(image, question, context, header, ct);
+            var identify = new VisionAnswerStream(_identifier, _kit).Run(image, question, context, header, ct, PlaceNames());
             var maskShownAt = double.NaN;
             var (answer, mask) = await UniTask.WhenAll(identify, Mask(image, hint, header.Task, at => maskShownAt = at, ct));
             LogTiming(started, preCaptured, answer, maskShownAt);
 
             if (answer.TimedOut)
-                return new ToolResult(false, ToolResult.Failure("vision_timeout").OutputJson,
-                    CoreLines.Get(_localizer, CoreLines.HoldCloser), endsTurn: true);
+                return new Identified(new ToolResult(false, ToolResult.Failure("vision_timeout").OutputJson,
+                    CoreLines.Get(_localizer, CoreLines.HoldCloser), endsTurn: true));
             if (answer.Error != null)
-                return ToolResult.Failure("vision_error", answer.Error.Kind.ToString());
+                return new Identified(ToolResult.Failure("vision_error", answer.Error.Kind.ToString()));
             // Seen on the headset with a dim live frame: the stream completed with nothing to say, and the turn ended
             // silently right after the preamble.
             if (string.IsNullOrWhiteSpace(answer.Text))
-                return new ToolResult(false, ToolResult.Failure("vision_empty").OutputJson,
-                    CoreLines.Get(_localizer, CoreLines.HoldCloser), endsTurn: true);
+                return new Identified(new ToolResult(false, ToolResult.Failure("vision_empty").OutputJson,
+                    CoreLines.Get(_localizer, CoreLines.HoldCloser), endsTurn: true));
+            return new Identified(answer, mask);
+        }
 
-            var label = answer.Label ?? hint ?? "object";
-            string objectId = null;
-            if (mask.HasValue)
-                objectId = _scene.AddObject(label, mask.Value, "identified on camera").Id;
-            var output = new ToolJson().Add("object_id", objectId).Add("label", label).Add("answer", answer.Text)
-                                       .Add("masked", mask.HasValue);
-            return ToolResult.Success(output.ToString(), endsTurn: true);
+        string[] PlaceNames()
+        {
+            var places = _scene.Places;
+            if (places.Count == 0)
+                return null;
+            var names = new string[places.Count];
+            for (var i = 0; i < names.Length; i++)
+                names[i] = places[i].Name;
+            return names;
         }
 
         /// <summary>SAM with the planned prompt; one noun-phrase retry once the vision header names the object.</summary>

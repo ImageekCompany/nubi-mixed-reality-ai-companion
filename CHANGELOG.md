@@ -293,5 +293,20 @@ Each work package appends bullets under its own heading only (`docs/scope.md` §
 - Self-test: `action_through_model` covers the model's path to the body with a new Wit clip; `action_source` reports `guard+model` and keeps the reply, first-audio and facing checks there; `tap_to_move` degrades on blocked rays only when the headset is not worn.
 - `BodyMoveFlowTests` and `BehaviourHandoverTests`: barge-in during a dance, jump, bow and spin through the shipped scene, and the hand-overs between moves, poses and walks.
 
+### Demo layout (ADR-0050)
+- Head-following views re-placed in the window measured on two recordings (13.6° above, 24.1° below, 32.6° left and 30.1° right of head-forward; ADR-0042's centred ±18° was wrong): captions y = +0.08 m, status pill y = +0.29 m, badges x = +0.48 m, HUD x = −0.44 m. `ViewLayoutTests` holds the new limits and four no-overlap pairs; `SceneViewSizeTests` catches a scene root that overrides its prefab.
+- Captions use a new TMP Overlay material (`ZTest Always`, queue 3000, thicker outline, underlay) and draw over the character instead of losing words to its fur. Amends ADR-0024 for captions and tool badges, and costs stereo comfort up close.
+- Tool badges draw over the character too (TMP Overlay material, new `Jolly/UI/Overlay` plate shader, queue 3000): their new place is in Jolly's body band, where a nearer Jolly would hide a chip for its whole 4 s. They are one line (title and detail) with darker state colours, and `tool.go_to_surface` and `tool.request_room_scan` have labels instead of raw keys.
+- Settings has a Latency stats row, off by default (`UserPreferencesSnapshot.ShowLatencyStats`); `LatencyHud` hides its canvas and keeps recording. The panel root grew to 988 so Close does not cover a row.
+
+### Shown places (ADR-0051)
+- `remember_place` takes `where`: `there` remembers where the pointing ray or gaze lands, `here` the user's floor position. `walk_to` samples the floor below a remembered point.
+- `PointToPlace` and the `show_place` tool: walk toward a place, as far as the floor allows, stop 1 m short, turn the arm onto it, point and say "There!". The aim is measured on the played clip, for Nubi and Jolly.
+- `capture_and_identify` lists remembered places to the vision model, whose header can name one (`LABEL|NOUN_PHRASE|PLACE`); the tool then leads the way and points. With no places the prompt is unchanged.
+- `PlaceGuard`: naming a room while showing it, asking after a remembered place, and "where do these go?" with a place remembered all run their tool with no model round.
+- New strings, en and pl: `tool.show_place`, `place.there`, `place.remembered`.
+- `ToolSelectionEval` cases for the model's side of the place phrases.
+
 ### Docs
 - Demo script: mandatory problem voice-over, cost as a beat-5 overlay, a longer beat 2, reboot and greeting warm-up before beat 1, beat 1 as the guard walk with a canned line (ADR-0037, ADR-0040). README "A day with Nubi", "Living with it", current status and test counts; release checklist verification block for `36778c1`; device self-test reports for every change above (`docs/perf/selftest-report.md`).
+- ADR-0050; demo script, production plan, cards, scope, try-it and capture checklist updated for the hidden latency HUD and the measured recording window.

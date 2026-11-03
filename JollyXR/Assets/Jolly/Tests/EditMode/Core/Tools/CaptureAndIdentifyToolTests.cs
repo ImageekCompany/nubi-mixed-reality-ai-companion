@@ -278,5 +278,69 @@ namespace Jolly.Tests.EditMode.Core.Tools
             Assert.That(result.OutputJson, Is.EqualTo("{\"error\":\"vision_error\",\"detail\":\"RateLimited\"}"));
             Assert.That(result.EndsTurn, Is.False);
         }
+
+        void TeachKitchen() => _f.Scene.RememberPlace(new PlaceRecord
+            { Name = "kitchen", Pose = new Pose(new Vector3(0f, 1f, 6f), Quaternion.identity) });
+
+        [Test]
+        public void Places_AreOfferedToTheVisionModel_OnlyWhenThereAreAny()
+        {
+            ToolHarness.Run(_f.Capture(), "{\"question\":\"what is this?\"}", ContextWith(_f.PreCapture()));
+            Assert.That(_f.Identifier.LastRequest.Places, Is.Null);
+
+            TeachKitchen();
+            ToolHarness.Run(_f.Capture(), "{\"question\":\"what is this?\"}", ContextWith(_f.PreCapture()));
+            Assert.That(_f.Identifier.LastRequest.Places, Is.EqualTo(new[] { "kitchen" }));
+        }
+
+        [Test]
+        public void AnswerNamesARememberedPlace_LeadsThereAndPoints_AfterTheAnswer()
+        {
+            // Arrange
+            TeachKitchen();
+            _f.Identifier.Place = "Kitchen";
+            var context = ContextWith(_f.PreCapture());
+
+            // Act
+            var result = ToolHarness.Run(_f.Capture(), "{\"question\":\"where can I put these?\"}", context);
+
+            // Assert
+            Assert.That(_f.Character.MoveTarget, Is.EqualTo(new Vector3(0f, 0f, 5f)));
+            Assert.That(_f.Character.Gestures, Is.EqualTo(new[] { GestureId.Point }));
+            Assert.That(_f.Character.LastLook?.Point, Is.EqualTo(new Vector3(0f, 1f, 6f)));
+            Assert.That(((RecordingSpeechSink)context.Speech).Text.ToString(), Does.Contain("TV remote"), "the answer still streams");
+            Assert.That(result.SpokenText, Is.EqualTo("There!"));
+            Assert.That(result.EndsTurn, Is.True);
+            Assert.That(result.OutputJson, Does.Contain("\"place\":\"kitchen\"").And.Contain("\"shown\":true"));
+        }
+
+        [Test]
+        public void AnswerNamesAPlaceNeverShown_StaysPut()
+        {
+            TeachKitchen();
+            _f.Identifier.Place = "garage";
+
+            var result = ToolHarness.Run(_f.Capture(), "{\"question\":\"where can I put these?\"}", ContextWith(_f.PreCapture()));
+
+            Assert.That(_f.Character.MoveTarget, Is.Null);
+            Assert.That(_f.Character.Gestures, Is.Empty);
+            Assert.That(result.SpokenText, Is.Null);
+            Assert.That(result.EndsTurn, Is.True);
+        }
+
+        [Test]
+        public void VisionTimeoutStillAppliesWithTheLongerToolTimeout()
+        {
+            // The tool's own timeout now covers a walk, so a hung identify must end at the vision budget.
+            TeachKitchen();
+            _f.Identifier.Gate = true;
+
+            var running = ToolHarness.Start(_f.Capture(), "{\"question\":\"where can I put these?\"}", ContextWith(_f.PreCapture()));
+            _f.Clock.Advance(System.TimeSpan.FromSeconds(13));
+            var result = Sync.Run(running);
+
+            Assert.That(result.Ok, Is.False);
+            Assert.That(_f.Character.MoveTarget, Is.Null);
+        }
     }
 }

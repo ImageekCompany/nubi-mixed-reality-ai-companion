@@ -13,6 +13,7 @@ namespace Jolly.Core.Tools
         public const string FindObject = "find_object";
         public const string HighlightPart = "highlight_part";
         public const string RememberPlace = "remember_place";
+        public const string ShowPlace = "show_place";
         public const string Stop = "stop";
         public const string SetPersona = "set_persona";
         public const string GoToSurface = "go_to_surface";

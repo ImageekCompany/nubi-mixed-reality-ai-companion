@@ -32,12 +32,24 @@ namespace Jolly.Core.Conversation
         public const string SettingsOpen = "settings.open";
         public const string SettingsClose = "settings.close";
         public const string SettingsFillers = "settings.fillers";
+        public const string PlaceRooms = "place.rooms";
+        public const string PlaceShows = "place.shows";
+        public const string PlaceAsks = "place.asks";
+        public const string PlaceWhereItGoes = "place.where_it_goes";
         public const string QuestionOpeners = "question.openers";
         public const string QuestionRequests = "question.requests";
         public const string QuestionFillers = "question.fillers";
 
         internal static string Fallback(string key, string languageTag) => (key, languageTag) switch
         {
+            (PlaceRooms, "pl") => "kuchnia|salon|sypialnia|łazienka|jadalnia|biuro|garaż|korytarz|spiżarnia|balkon|ogród",
+            (PlaceRooms, _) => "living room|dining room|laundry room|kitchen|bedroom|bathroom|office|garage|hallway|pantry|balcony|garden",
+            (PlaceShows, "pl") => "to jest|tam jest|tu jest|tutaj jest|oto",
+            (PlaceShows, _) => "this is|this s|that is|that s|here is|here s|over there|over here|is there|is here",
+            (PlaceAsks, "pl") => "gdzie jest|pokaż mi|pokaż|zaprowadź mnie",
+            (PlaceAsks, _) => "where is|where s|show me|take me to|lead me to|which way is|point to|point at",
+            (PlaceWhereItGoes, "pl") => "gdzie mogę|gdzie to|gdzie położyć|gdzie odłożyć|gdzie to odłożyć",
+            (PlaceWhereItGoes, _) => "where can i put|where should i put|where do i put|where do these|where do they|where does this|where does it|where to put|where can these|where should these",
             (CrisisKeywords, "pl") => "zabić się|zabiję się|samobójstwo|samobójcze|nie chcę żyć|chcę umrzeć|skrzywdzić się|odebrać sobie życie",
             (CrisisKeywords, _) => "kill myself|killing myself|suicide|suicidal|end my life|want to die|hurt myself|self harm|don't want to live|no reason to live",
             (StopTriggers, "pl") => "stop|stój|czekaj|zaczekaj|zostań|przestań",

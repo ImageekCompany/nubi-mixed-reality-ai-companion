@@ -5,8 +5,8 @@ using Jolly.Contracts;
 namespace Jolly.Providers.MetaApi.Vision
 {
     /// <summary>
-    /// Turns streamed model text into <see cref="IdentificationEvent"/>s: the first line <c>LABEL|NOUN_PHRASE</c>
-    /// becomes one Header, everything after it streams as AnswerDelta, and <see cref="Complete"/> adds Completed with the
+    /// Turns streamed model text into <see cref="IdentificationEvent"/>s: the first line <c>LABEL|NOUN_PHRASE</c>,
+    /// with a third <c>|PLACE</c> field when the request listed places, becomes one Header, everything after it streams as AnswerDelta, and <see cref="Complete"/> adds Completed with the
     /// whole answer. A first line without '|' (or longer than any sane header) yields an empty Header and is kept as
     /// answer text, so speech never waits on a malformed reply. Exactly one Header is always emitted.
     /// </summary>
@@ -71,8 +71,9 @@ namespace Jolly.Providers.MetaApi.Vision
                 EmitAnswer(whole);
                 return;
             }
-            _ready.Enqueue(new IdentificationEvent(IdentificationEventKind.Header,
-                label: Field(firstLine.Substring(0, bar)), nounPhrase: Field(firstLine.Substring(bar + 1))));
+            var fields = firstLine.Split('|', 3);
+            _ready.Enqueue(new IdentificationEvent(IdentificationEventKind.Header, label: Field(fields[0]),
+                nounPhrase: Field(fields[1]), place: fields.Length > 2 ? PlaceField(fields[2]) : null));
             EmitAnswer(rest);
         }
 
@@ -82,6 +83,12 @@ namespace Jolly.Providers.MetaApi.Vision
                 return;
             _answer.Append(text);
             _ready.Enqueue(new IdentificationEvent(IdentificationEventKind.AnswerDelta, text: text));
+        }
+
+        static string PlaceField(string raw)
+        {
+            var place = Field(raw);
+            return string.Equals(place, "none", System.StringComparison.OrdinalIgnoreCase) ? null : place;
         }
 
         static string Field(string raw)

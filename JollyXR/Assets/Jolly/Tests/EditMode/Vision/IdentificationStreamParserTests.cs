@@ -115,6 +115,31 @@ namespace Jolly.Tests.EditMode.Vision
             Assert.That(parser.TryTake(out _), Is.False);
         }
 
+        [Test]
+        public void Header_WithAPlaceField_ParsesAllThree()
+        {
+            var parser = new IdentificationStreamParser();
+            parser.Append("Dirty dishes|dishes|kitchen\nThose go in the kitchen.");
+
+            Assert.That(parser.TryTake(out var header), Is.True);
+            Assert.That(header.Label, Is.EqualTo("Dirty dishes"));
+            Assert.That(header.NounPhrase, Is.EqualTo("dishes"));
+            Assert.That(header.Place, Is.EqualTo("kitchen"));
+        }
+
+        [TestCase("Mug|mug|none\nIt is a mug.")]
+        [TestCase("Mug|mug|None\nIt is a mug.")]
+        [TestCase("Mug|mug\nIt is a mug.")]
+        public void Header_NoPlaceNamed_HasNullPlace(string text)
+        {
+            var parser = new IdentificationStreamParser();
+            parser.Append(text);
+
+            Assert.That(parser.TryTake(out var header), Is.True);
+            Assert.That(header.NounPhrase, Is.EqualTo("mug"));
+            Assert.That(header.Place, Is.Null);
+        }
+
         static List<string> Run(params string[] deltas)
         {
             var parser = new IdentificationStreamParser();

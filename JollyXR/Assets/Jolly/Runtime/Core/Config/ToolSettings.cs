@@ -12,6 +12,22 @@ namespace Jolly.Core.Config
         public float FollowMinDistance { get; set; } = 1.0f;
         public float FollowMaxDistance { get; set; } = 1.5f;
         public float LookRayMaxDistance { get; set; } = 5f;
+        /// <summary>How far a place the user shows can be: another room's doorway is further than anything looked at.</summary>
+        public float ShownPlaceRayMaxDistance { get; set; } = 10f;
+        /// <summary>Where a shown place lands when the ray hits nothing: depth and the room scan end at the scanned room.</summary>
+        public float ShownPlaceFallbackDistance { get; set; } = 3f;
+        /// <summary>show_place stops this far short of the place, so the arm still points at something ahead, m.</summary>
+        public float ShowStandOff { get; set; } = 1f;
+        /// <summary>show_place stays put when this much closer than <see cref="ShowStandOff"/> would make the walk a shuffle, m.</summary>
+        public float ShowMinWalk { get; set; } = 0.3f;
+        /// <summary>The Point clip's arm, degrees to the character's right of its body, measured on the played clip
+        /// (PointToPlaceTests): POINT_DIR_R in clips.py alone says 12.5, before the torso's part.</summary>
+        public float PointArmYaw { get; set; } = 21f;
+        /// <summary>The pointing shoulder's distance to the right of the body's axis, m: at the stand-off the arm's line
+        /// misses by about 13 degrees if the body is aimed as if the arm started at its centre.</summary>
+        public float PointShoulderOffset { get; set; } = 0.23f;
+        /// <summary>A turn smaller than this before pointing would read as a twitch, degrees.</summary>
+        public float PointMinTurn { get; set; } = 5f;
         /// <summary>Gap between a furniture footprint and where Nubi stops beside it: the 0.15 m NavMesh agent radius
         /// plus a margin, since the scanned box edge is only as exact as Space Setup.</summary>
         public float SurfaceClearance { get; set; } = 0.25f;

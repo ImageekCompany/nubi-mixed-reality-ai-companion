@@ -87,4 +87,6 @@ Rows before 2026-11-01 02:00 (research phase, `docs/research/*.md`) were not ite
 
 | 2026-11-02 | device self-tests after the short-command and flow fixes: 2 runs of `--character jolly` release builds (app meter about 0.043 each) | muse-spark-1.3, sam-3.1, muse-voice-transcribe-1.0 (+ Wit, free) | ~22 Spark calls, 4 SAM, 2 web searches, ~24 ASR sessions | 4 images; ~45 s audio | 0.086 |
 
-Running total (est.): **≤ $2.67** (sum of the rows: 2.668)
+| 2026-11-03 | ADR-0051 shown places: tool-selection eval, 6 runs on the place tags (metered 0.0201 + 0.0133 + 0.0156 + 0.0071 + 0.0081 + 0.0083), and 5 vision calls on `mug_640.jpg` for the `PLACE` header (3,829 tokens, ≤ 0.01) | muse-spark-1.3 | about 35 | see metered costs | 0.083 |
+
+Running total (est.): **≤ $2.75** (sum of the rows: 2.751)

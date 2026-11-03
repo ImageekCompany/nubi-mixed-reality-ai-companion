@@ -128,6 +128,9 @@ namespace Jolly.Contracts
         public string PersonaInstructions { get; set; }
         public string LanguageTag { get; set; }
         public ReasoningEffort Effort { get; set; } = ReasoningEffort.Minimal;
+        /// <summary>Names of the places the user has shown; the header can name one when the question is where the thing
+        /// goes (ADR-0051). Null or empty leaves the request as it was.</summary>
+        public IReadOnlyList<string> Places { get; set; }
     }
 
     public enum IdentificationEventKind { Header, AnswerDelta, Completed }
@@ -138,11 +141,13 @@ namespace Jolly.Contracts
     /// </summary>
     public readonly struct IdentificationEvent
     {
-        public IdentificationEvent(IdentificationEventKind kind, string label = null, string nounPhrase = null, string text = null)
-        { Kind = kind; Label = label; NounPhrase = nounPhrase; Text = text; }
+        public IdentificationEvent(IdentificationEventKind kind, string label = null, string nounPhrase = null, string text = null,
+                                   string place = null)
+        { Kind = kind; Label = label; NounPhrase = nounPhrase; Text = text; Place = place; }
         public IdentificationEventKind Kind { get; }
         public string Label { get; }        // Header: "ballpoint pen"
         public string NounPhrase { get; }   // Header: SAM-ready concept, e.g. "pen"
+        public string Place { get; }        // Header: the remembered place the thing belongs in, or null
         public string Text { get; }         // AnswerDelta; Completed carries the full answer
     }
 

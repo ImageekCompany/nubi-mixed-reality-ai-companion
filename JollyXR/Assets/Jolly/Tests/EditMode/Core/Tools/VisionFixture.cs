@@ -40,7 +40,8 @@ namespace Jolly.Tests.EditMode.Core.Tools
             Events.ModelCallCompleted += (model, ms) => ModelCalls.Add((model, ms));
         }
 
-        public CaptureAndIdentifyTool Capture() => new(Kit, Identifier, Character, Scene, Localizer);
+        public CaptureAndIdentifyTool Capture() =>
+            new(Kit, Identifier, Character, Scene, Localizer, new PointToPlace(Character, World, new LocomotionSettings(), Log));
         public FindObjectTool Find() => new(Kit, Character, Scene, User);
         public HighlightPartTool Highlight() => new(Kit, Character, Scene);
 

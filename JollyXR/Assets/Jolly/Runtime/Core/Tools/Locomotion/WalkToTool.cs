@@ -48,7 +48,9 @@ namespace Jolly.Core.Tools
             bool walking;
             if (_scene.TryGetPlace(place, out var taught))
             {
-                walking = TryWalk(taught.Pose.position, _settings.WalkStopDistance, out eta);
+                // A place the user showed from afar is where their gaze landed, often up a wall (ADR-0051).
+                var position = taught.Pose.position;
+                walking = TryWalk(new Vector3(position.x, _character.Position.y, position.z), _settings.WalkStopDistance, out eta);
             }
             else if (TryFindSurface(place, out var surface))
             {

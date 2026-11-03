@@ -113,7 +113,7 @@ namespace Jolly.App.Composition
             var f = Foundation;
             scene.captions.Construct(f.Events, Preferences, f.Clock, Text);
             scene.toolBadges.Construct(f.Events, Text, f.Clock);
-            scene.latencyHud.Construct(f.Events, f.Latency, Text);
+            scene.latencyHud.Construct(f.Events, f.Latency, Preferences, Text);
             scene.maskOverlay.Construct(f.Clock, f.Events);
             scene.status.Construct(Text);
             scene.settingsWindow.Construct(f.Clock, scene.head, f.Log);

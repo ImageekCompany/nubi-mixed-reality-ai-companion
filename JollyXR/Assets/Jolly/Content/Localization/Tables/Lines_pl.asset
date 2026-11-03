@@ -170,6 +170,14 @@ MonoBehaviour:
     m_Localized: "Ju\u017C do ciebie id\u0119!"
     m_Metadata:
       m_Items: []
+  - m_Id: 154132518
+    m_Localized: Tam!
+    m_Metadata:
+      m_Items: []
+  - m_Id: 154132519
+    m_Localized: "Zapami\u0119tane: {name}!"
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []
