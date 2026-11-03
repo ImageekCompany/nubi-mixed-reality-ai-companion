@@ -1,10 +1,10 @@
 # Device spike: Quest 3, IL2CPP, critic risks R1 / R2 / R4 (transport) / R5 (mic)
 
-Date: 2026-11-01, 01:10–01:40 CET. Device: Quest 3 `2G0YC1ZF7P090N`, Horizon OS v209 (`ro.vros.build.version=209`, Android 14 / API 34). Editor 6000.6.6f1, IL2CPP ARM64, Vulkan.
+Date: 2026-11-01, 01:10–01:40 CET. Device: Quest 3, Horizon OS v209 (`ro.vros.build.version=209`, Android 14 / API 34). Editor 6000.6.6f1, IL2CPP ARM64, Vulkan.
 Nobody wore the headset. Everything below is measured from logcat, from `spike_results.json` pulled with adb, and from `aapt dump` of the APK.
 Raw outputs (camera frames, mic audio, results JSON) are in `docs/research/samples/device/run{1,2}/`. That folder is **git-ignored**, because it holds captures from the developer's home.
 
-Spike code: `JollyXR/Assets/Spikes/` (asmdef `Jolly.Spikes`, to be deleted later). Both spike asmdefs are define-constrained to `JOLLY_SPIKES`, so the spike code is not compiled into normal builds; add the symbol to the Android scripting defines for a spike build and remove it afterwards. The runner is `DeviceSpike.cs`. It needs no input and writes `persistentDataPath/spike_results.json`.
+Spike code: `JollyXR/Assets/Spikes/` (asmdef `Jolly.Spikes`), deleted once WP5 landed and last present in commit `91710e6`. Both spike asmdefs are define-constrained to `JOLLY_SPIKES`, so the spike code is not compiled into normal builds; add the symbol to the Android scripting defines for a spike build and remove it afterwards. The runner is `DeviceSpike.cs`. It needs no input and writes `persistentDataPath/spike_results.json`.
 Build tooling that stays: `JollyXR/Assets/Jolly/Editor/Build/` (`QuestProjectSetup.Apply`, `QuestBuild.BuildApk`, `NubiManifestRequirements`) plus `tools/device/*.sh`.
 
 ## 1. Results
@@ -55,10 +55,8 @@ Build tooling that stays: `JollyXR/Assets/Jolly/Editor/Build/` (`QuestProjectSet
 
 ```bash
 tools/device/build.sh                       # setup (session 1) → [NUBI_PRE_BUILD_METHOD] → BuildApk (session 2); logs in JollyXR/Logs/
-NUBI_PRE_BUILD_METHOD=Jolly.Spikes.Editor.DeviceSpikeSceneBuilder.Build tools/device/build.sh   # regenerate the spike scene first
 TMPDIR=<scratch> tools/device/push-secrets.sh  # .env → secrets.json (META_API_KEY, WIT_AI_CLIENT_TOKEN, WIT_AI_APP_ID) → /sdcard/Android/data/com.nubi.companion/files/
 NUBI_HEADLESS=1 tools/device/install-run.sh # install -r -g, pm grant ×3, wake + prox_close + guardian_pause, launch
-NUBI_PAID=1 NUBI_HEADLESS=1 NUBI_SKIP_INSTALL=1 tools/device/install-run.sh   # arm one vision+SAM run (~$0.01)
 tools/device/logcat.sh NubiSpike --dump     # or follow; sets a 16 MiB buffer
 tools/device/install-run.sh --restore-headset   # automation_disable + guardian_pause 0
 adb pull /sdcard/Android/data/com.nubi.companion/files/spike_results.json

@@ -6,6 +6,24 @@ Each work package appends bullets under its own heading only (`docs/scope.md` §
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-11-03
+
+First public release, submitted to the Meta AI Developer Hackathon 2026 (Indie track).
+
+### Submission readiness (ADR-0052)
+- README rewritten for a judge's first read, with two architecture diagrams and an exact map of how each Meta model is used. The detail moved to `docs/deep-dive.md`.
+- The demo video's Jolly skin is disclosed up front; mascot renders and early macOS `say` clips rewritten out of history before the first push.
+- MIT license names both creators, Andrei Urbanovich and Eugene Basalai. `THIRD_PARTY.md` corrected: self-test clips, Nubi's own lines, what is committed about Jolly.
+- `tools/ci/gates.sh` runs the static gates without an editor, and GitHub Actions runs it on every push. The `Task` gate now really catches `System.Threading.Tasks`.
+- Finished device spike (`Assets/Spikes`) and video working files removed from the tree; `requirements.md` moved to `docs/original-brief.md`.
+
+### Fixes from the final review
+- `capture_and_identify` speaks the answer's last sentence before it walks, not on arrival.
+- `PlaceGuard` no longer treats "this is my office chair" as naming a room, or "where does it hurt?" as a where-does-it-go question.
+- `show_place` no longer takes "where is my mug?" from `find_object`.
+- `PointToPlaceTests` checks the worst arm error across the whole hold.
+- `build.sh` no longer exits 1 after a successful build with a relative output path.
+
 ### WP0
 - Packages: `com.unity.animation.rigging` 6.6.0, uLipSync pinned to `ece3272` (git URL, ADR-0007) and `com.unity.timeline` 6.6.0, which uLipSync needs but does not declare. Existing pins unchanged.
 - Every assembly of architecture §2 as an asmdef with a `-warnaserror+` `csc.rsp` (proved honoured on 6000.6.6f1: a deliberate CS0219 failed compilation), plus a `link.xml` stub per runtime assembly.
@@ -309,4 +327,4 @@ Each work package appends bullets under its own heading only (`docs/scope.md` §
 
 ### Docs
 - Demo script: mandatory problem voice-over, cost as a beat-5 overlay, a longer beat 2, reboot and greeting warm-up before beat 1, beat 1 as the guard walk with a canned line (ADR-0037, ADR-0040). README "A day with Nubi", "Living with it", current status and test counts; release checklist verification block for `36778c1`; device self-test reports for every change above (`docs/perf/selftest-report.md`).
-- ADR-0050; demo script, production plan, cards, scope, try-it and capture checklist updated for the hidden latency HUD and the measured recording window.
+- ADR-0050; demo script, scope and try-it updated for the hidden latency HUD and the measured recording window.

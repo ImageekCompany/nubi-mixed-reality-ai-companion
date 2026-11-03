@@ -1,12 +1,12 @@
 # Research critic: contradictions, blocking gaps, coverage, top risks
 
-Date: 2026-11-01. Inputs: `requirements.md` and every file in `docs/research/*.md` (`meta-model-api.md`, `xr-stack.md`, `voice.md`, `character.md`, `licenses.md`, `hackathon.md`).
+Date: 2026-11-01. Inputs: `docs/original-brief.md` and every file in `docs/research/*.md` (`meta-model-api.md`, `xr-stack.md`, `voice.md`, `character.md`, `licenses.md`, `hackathon.md`).
 Notation:
 - **[NEW]** marks a fact this pass resolved, with its source.
 - **UNVERIFIED** means no primary source was found.
 - `speculation:` marks my own inference.
 
-Scratch scripts are in `/private/tmp/claude-503/-Users-andrewurbanovich-Git-Projects-MetaCompetitionClaude/f031d2aa-adea-490e-8975-c2c648901da4/scratchpad/`. The API key was loaded from `.env` and never printed.
+Scratch scripts are in a throwaway scratch directory. The API key was loaded from `.env` and never printed.
 
 ---
 

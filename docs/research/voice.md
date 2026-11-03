@@ -1,10 +1,10 @@
 # Voice loop research: wake word / PTT, STT, LLM, TTS, lipsync, barge-in
 
-Date: 2026-11-01. Scope: requirements.md items 14, 18, 23, 25, plus 5, 10 and 12 where they affect voice.
+Date: 2026-11-01. Scope: docs/original-brief.md items 14, 18, 23, 25, plus 5, 10 and 12 where they affect voice.
 Sources are cited inline. "Ran:" means a command I ran. **UNVERIFIED** means I could not confirm it from a primary source.
 
 Scratch evidence (not in the repo): Voice SDK tarball extracted at
-`/private/tmp/claude-503/-Users-andrewurbanovich-Git-Projects-MetaCompetitionClaude/f031d2aa-adea-490e-8975-c2c648901da4/scratchpad/voice/pkg/package`.
+a throwaway scratch directory.
 
 ---
 

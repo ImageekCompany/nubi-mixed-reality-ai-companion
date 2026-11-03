@@ -1,5 +1,7 @@
 # Architecture: Nubi MR companion (project codename JollyXR)
 
+The design record, written before the build and revised as it landed. Later decisions in `docs/decisions/` extend it; where they differ, the ADR and the code win.
+
 Status: accepted blueprint, 2026-11-01, revised the same day after the feasibility, quality and judge reviews (`docs/decisions/review-log.md`). Interfaces are in `docs/contracts.md`; decisions and their reasons are in `docs/decisions/`; scope and work packages are in `docs/scope.md`.
 Every Unity or package API named here was checked against package source (editor-bundled tarballs under `/Applications/Unity/Hub/Editor/6000.6.6f1/Unity.app/Contents/Resources/PackageManager/{Editor,BuiltInPackages}`) or against a live call. Anything not checked is marked **UNVERIFIED**.
 
@@ -15,8 +17,6 @@ Every Unity or package API named here was checked against package source (editor
 
 Root: `JollyXR/Assets/Jolly/`. All runtime asmdefs set `autoReferenced: false`. The arrows show the only references allowed: a missing arrow is a review failure.
 
-| asmdef | Path | May reference | Holds |
-|---|---|---|---|
 `UniTask` below means **both** `UniTask` and `UniTask.Linq` for every assembly except Contracts (which needs only core `UniTask`): `UniTaskAsyncEnumerable.Create/Merge/Select` live in `UniTask.Linq` (`Runtime/Linq/UniTask.Linq.asmdef`, verified), and `autoReferenced` does not reach asmdefs.
 
 | asmdef | Path | May reference | Holds |
@@ -41,18 +41,18 @@ Root: `JollyXR/Assets/Jolly/`. All runtime asmdefs set `autoReferenced: false`. 
 | `Jolly.Tests.EditMode` | `Tests/EditMode` (Editor only) | Contracts, Core, Net, Providers.*, Audio, Testing, `UnityEngine.TestRunner`, `UnityEditor.TestRunner`, `nunit.framework.dll` | Pure logic and parser tests, `CameraMath`, the asmdef-graph test. |
 | `Jolly.Tests.PlayMode` | `Tests/PlayMode` | the above plus App, Character, Editor.Character, Presentation, Localization, XR, Integrations.ULipSync, `uLipSync.Runtime`, `Unity.InputSystem.TestFramework` (`InputTestFixture`), `Unity.XR.OpenXR` (device layouts) | Scene tests and `E2E/` (Main.unity with doubles only at the provider edges). |
 
-The asmdef names above (`Unity.XR.MetaOpenXR`, `Unity.XR.ARFoundation`, `Unity.XR.ARSubsystems`, `Unity.XR.Hands`, `Unity.XR.Interaction.Toolkit`, `Unity.Localization`, `Unity.Animation.Rigging`, `Unity.TextMeshPro`, `UnityEngine.UI`, `UnityEngine.TestRunner`, `UnityEditor.TestRunner`, `uLipSync.Runtime`, `UniTask`, `UniTask.Linq`, `UniTask.Addressables`) were read from the package asmdefs. `Unity.XR.CoreUtils`, `Unity.InputSystem` and `Unity.ResourceManager` were read from `JollyXR/Library/PackageCache`. `Newtonsoft.Json.dll` has `isExplicitlyReferenced: 0`, so asmdefs with `overrideReferences:false` get it automatically. The existing throwaway `Jolly.Spikes*` assemblies (`Assets/Spikes`) are deleted once WP5 lands.
+The asmdef names above (`Unity.XR.MetaOpenXR`, `Unity.XR.ARFoundation`, `Unity.XR.ARSubsystems`, `Unity.XR.Hands`, `Unity.XR.Interaction.Toolkit`, `Unity.Localization`, `Unity.Animation.Rigging`, `Unity.TextMeshPro`, `UnityEngine.UI`, `UnityEngine.TestRunner`, `UnityEditor.TestRunner`, `uLipSync.Runtime`, `UniTask`, `UniTask.Linq`, `UniTask.Addressables`) were read from the package asmdefs. `Unity.XR.CoreUtils`, `Unity.InputSystem` and `Unity.ResourceManager` were read from `JollyXR/Library/PackageCache`. `Newtonsoft.Json.dll` has `isExplicitlyReferenced: 0`, so asmdefs with `overrideReferences:false` get it automatically.
 
 Each `Jolly.*` asmdef folder has its own `csc.rsp` (`-warnaserror+`) and, where it holds reflection-reached DTOs, its own `link.xml` (Unity merges every `link.xml` in the project). A `csc.rsp` in a folder without an asmdef is ignored.
 
 ```mermaid
 graph TD
-  App --> Presentation & Character & XRMQ[XR.MetaQuest] & XR & Audio & ULip[Integrations.ULipSync] & Meta[Providers.MetaApi] & Wit[Providers.Wit] & Loc[Localization] & Core
+  App --> Presentation & Character & XRMQ[XR.MetaQuest] & XR & Audio & ULip[Integrations.ULipSync] & Meta[Providers.MetaApi] & Wit[Providers.Wit] & Loc[Localization] & Core & Net & Contracts
   XRMQ --> XR
   Meta --> Net
   Wit --> Net
   Core --> Contracts
-  Net & Audio & ULip & XR & Character & Loc & Presentation --> Contracts
+  Net & Audio & ULip & XR & XRMQ & Character & Loc & Presentation & Meta & Wit --> Contracts
 ```
 
 **Testability rule.** EditMode tests reference no XR, Character or Presentation assembly. Everything in Core, Net, Providers and Audio (except the MonoBehaviour shells) must be constructible with `new` and fakes.

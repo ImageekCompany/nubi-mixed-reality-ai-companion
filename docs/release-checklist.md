@@ -1,10 +1,18 @@
 # Release checklist
 
-Audit of [`definition-of-done.md`](definition-of-done.md). The per-item tables below were written on `main` at `3f35562` (2026-11-01, 09:00–09:35 local, UTC+1); the dated blocks above them re-verify later commits, newest first, and the latest is `main` at `36778c1` (tests re-run on `678887c`, which changes only docs since). Where a table cell cites an older number, it says which block supersedes it. Raw outputs are in `artifacts/` (git-ignored).
+Audit of [`definition-of-done.md`](definition-of-done.md). **The current state is the block just below.** Older blocks and the per-item tables are the record of how it got there, written on the commits they name; where they disagree with the current block, the current block wins. Raw outputs are in `artifacts/` (git-ignored).
+
+## Current state: `0.1.0` submission, 2026-11-03
+
+- **Tests:** on `d06e13b`, EditMode 1578/1578, PlayMode 576/577 (one `[Explicit]` live eval skipped), pure logic coverage 93.6 %, no compiler warnings.
+- **Clean checkout:** a fresh clone with no `Library`, `.env` or local skin builds a 60 MB IL2CPP release APK with 0 errors, restores the hand sample by itself and passes the same tests (14 PlayMode skips for the absent skin). Re-verified after the history rewrite.
+- **Headset:** self-test overall FAIL on model latency only; the right tool ran in every scenario and all on-device checks passed ([report](perf/selftest-report.md#final-review-d06e13b-2026-11-03)).
+- **History:** mascot renders and the macOS `say` clips rewritten out before the first push; no secret values in history or tree.
+- **Open, for a person:** see [Human actions remaining](#human-actions-remaining).
 
 Legend: ✅ met, with evidence · ⚠️ partial · ❌ not met · 🧑 needs a human (headset wearer, video, portal, or an owner decision).
 
-**Totals (recounted after the `36778c1` block): 24 DoD items: 16 ✅, 5 ⚠️, 3 ❌/🧑. Release-audit extras: 4 ✅, 1 🧑.**
+**Totals below were recounted at `36778c1` and are kept as a record.**
 
 ## Verification of `main` at `36778c1` (2026-11-01, 15:22–15:28 UTC)
 
@@ -34,7 +42,7 @@ After the cartoon-voice merge, the character voice on `CharacterDefinition`, the
 
 - **1.1 / 1.2 / 2.1:** `tools/ci/test.sh` → EditMode 1050/1050, PlayMode 332/332, content validation passed, pure logic coverage 92.6 % (threshold 91.6 %), no `warning CS` in any log.
 - **3.1:** `tools/ci/build.sh` → succeeded, `QuestBuild` 0 errors, 59 MB. `tools/device/build.sh --character jolly` → succeeded, `local=1`, 64 MB.
-- **3.2 / 3.3:** installed and launched on `2G0YC1ZF7P090N`; `offline_greeting` PASS in 4 of 4 runs.
+- **3.2 / 3.3:** installed and launched on; `offline_greeting` PASS in 4 of 4 runs.
 - **4.1:** 72.0 fps idle, p95 13.9 ms, 17 draw / 15 SetPass, 33.7k triangles, 543–546 MB (Jolly 567 MB). Worst launch frame **282–285 ms** (was ~410), still over the ~100 ms target: one synchronous call into the Meta OpenXR provider that starts the camera and the passthrough layer. Stale frames **over the < 1 % target**: turns 1.48–2.07 %, idle 0.92–1.30 % (2.21 % in the Jolly run), whole run 2.79–3.24 %. Idle rose run by run in the same session with no app frame over 28 ms, so the cause is not known and there is no mitigation yet (speculation in the report: compositor or a warm headset after ~12 back-to-back runs; a run on a cooled headset would separate it). ⚠️ 🧑
 - **5.1:** release → first audio p50 **1,776 ms** (1,282–2,971 ms) over 12 online turns, under the 2.0 s target but close to it; n=12 does not show it stays under. The 20-consecutive-turn run with a wearer is still pending. Tool → answer audio 1,608–2,055 ms; mask 614–1,349 ms. ⚠️ 🧑
 - **Greeting:** "Hi Nubi, who are you?" called no tool in 7 of 7 runs on the new prompt (development, 3 × `b504f60`, 3 × `3e99cb5`) and in the Jolly run; `voice_come_here` still calls `come_here` in every run.
@@ -47,7 +55,7 @@ After the occlusion, room-awareness, character-swap, Jolly pipeline and device-f
 
 - **1.1 / 1.2 / 2.1:** `tools/ci/test.sh` → EditMode 1030/1030, PlayMode 312/312, content validation passed, pure logic coverage 92.6 % (threshold 91.6 %), no `warning CS` in any log.
 - **3.1:** `tools/ci/build.sh` → `Result=Succeeded errors=0 warnings=2`, 59 MB. `tools/device/build.sh --character jolly` → succeeded, `local=1`, 63 MB, 0 `Assets/Jolly` diagnostics.
-- **3.2 / 3.3:** installed and launched on `2G0YC1ZF7P090N`; `loc.ready` for all four tables; `offline_greeting` PASS in 4 of 4 runs.
+- **3.2 / 3.3:** installed and launched on; `loc.ready` for all four tables; `offline_greeting` PASS in 4 of 4 runs.
 - **4.1:** 72.0 fps idle, p95 13.9 ms, 17 draw / 15 SetPass, 33.7k triangles, 540–543 MB (Jolly 561 MB). Stale frames: turns 0.67–0.79 %, idle ≤ 0.22 %, **whole run 1.95–2.22 %** (was 0.98–1.66 %): the launch hitch grew to ~100 stale frames and a ~410 ms frame when hand tracking and environment depth start. ⚠️
 - **5.1:** release → first audio p50 **2,090 ms** over 12 online turns (was 1,833), over the 2.0 s target; tool → answer audio 1,525–1,626 ms; mask 1.1–1.8 s. ⚠️
 - **Room:** `voice_come_here` walks on the fallback floor (`navmesh=fallback walk=Arrived`) in 4 of 4 runs.
@@ -78,7 +86,7 @@ After the occlusion, room-awareness, character-swap, Jolly pipeline and device-f
 | # | Item | State | Evidence |
 |---|---|---|---|
 | 3.1 | Exit 0, APK exists, no `error CS`, no `Jolly.*` warnings | ✅ | *Superseded by the `36778c1` block: 60 MB, 0 errors / 5 warnings.* `tools/ci/build.sh` → `[QuestBuild] Result=Succeeded errors=0 warnings=2`, `artifacts/Nubi.apk` 58 MB, `[build] OK`, 53 s. `error CS` count in `build.log`: 0. The 2 report warnings are not from `Jolly.*` (no `Assets/Jolly` diagnostics). |
-| 3.2 | `adb install -r` on Quest 3 succeeds; app launches into passthrough | ⚠️ 🧑 | `selftest.sh` installed and launched it on `2G0YC1ZF7P090N` (Horizon OS v209); the live camera frame was read (`frame=live`, `mean_luma=26.4`). That passthrough is actually *displayed* needs someone to look through the headset. |
+| 3.2 | `adb install -r` on Quest 3 succeeds; app launches into passthrough | ⚠️ 🧑 | `selftest.sh` installed and launched it on (Horizon OS v209); the live camera frame was read (`frame=live`, `mean_luma=26.4`). That passthrough is actually *displayed* needs someone to look through the headset. |
 | 3.3 | Localized string and a `LineClips` clip resolve in the player | ✅ | Device logcat: `evt=loc.ready table=Lines lang=en entries=33` (also UI 50, Personas 13, Crisis 3); `offline_greeting` PASS plays a canned clip (`caption_ms=13.8`). |
 | 3.4 | Permission flow on a fresh install (prompts once; deny camera → passthrough + `camera_unavailable`; deny scene → `unreachable`) | ❌ 🧑 | Not run: the self-test grants all three with `pm grant`. Needs a wearer to answer the system prompts after `adb uninstall com.nubi.companion`. |
 | 3.5 | Without `secrets.json` the app runs offline and shows "API key missing" | ⚠️ 🧑 | Device: `secrets.json` moved aside, app launched, ran 20 s with no exception (`evt=warmup.done`), file restored. The label is only on screen; no log line states the status. The label itself is PlayMode-tested (`LatencyHudAndStatusTests`, `StatusKind.ApiKeyMissing`). A wearer must see it once. |
@@ -120,19 +128,19 @@ After the occlusion, room-awareness, character-swap, Jolly pipeline and device-f
 | B | No `Meta+Muse+Jolly*` file tracked, now or ever | ✅ | `git ls-files` and `git log --all --diff-filter=A --name-only`: none. The `.glb`/`.stl` sit untracked at the repo root, matched by `.gitignore:29`. |
 | C | No device capture tracked, now or ever | ✅ | `docs/research/samples/device/` never appears in history; tracked samples are the CC pen/mug images and SAM masks. `QuestVulkan.graphicsstate` is a PSO list, not camera or mic data. |
 | D | README relative links resolve | ✅ | 42 relative links (incl. `#anchors` and `<img src>`): 0 broken, every target tracked. |
-| E | History free of non-redistributable content before the first push | 🧑 | ADR-0022: the removed Jolly mascot renders (`docs/research/samples/jolly_*.png`) and the macOS `say` clips (from `304fff6`) are still in history. No remote is configured yet; the rewrite is destructive and left to the owner. |
+| E | History free of non-redistributable content before the first push | ✅ (done 2026-11-03; the note is from when it was open) | ADR-0022: the removed Jolly mascot renders (`docs/research/samples/jolly_*.png`) and the macOS `say` clips (from `304fff6`) are still in history. No remote is configured yet; the rewrite is destructive and left to the owner. |
 
 ## Human actions remaining
 
-1. **Rewrite history before the first push** (owner): drop `docs/research/samples/jolly_*.png` and the `say` clips from `304fff6` (e.g. `git filter-repo`), then add the remote.
+1. **Done:** history rewritten before the first push.
 2. **Fresh-install permission flow** (wearer): uninstall, launch, answer camera/scene/mic prompts once; repeat with camera denied (passthrough still shows, `capture_and_identify` → `camera_unavailable`) and scene denied (`unreachable`).
 3. **Visual checks** (wearer): passthrough is displayed at launch; "API key missing" appears without `secrets.json`.
 4. **Space Setup + walking** (wearer, lit room): `come_here`, follow/stop, and the camera extrinsics marker test (≤ 3 cm at 1 m, ADR-0003 R1).
 5. **Perf capture** (wearer): OVR Metrics CSV for 10-min stale frames, `app_rss_MB`, a 30-min thermal/battery session, and a Profiler session for CPU main-thread p95 and per-turn GC; summarise in `perf/selftest-report.md`.
 6. **20 consecutive LiveUser turns** on Wi-Fi with a wearer; record p50/p90 or put the gap in an ADR.
-7. **10 consecutive clean demo rehearsals**, logged in `demo-script.md`.
-8. **Record and upload the demo video** (≤ 2:45), link it in the README, and submit on the portal.
-9. **Cut `0.1.0`** in `CHANGELOG.md` at submission.
+7. **10 consecutive clean demo rehearsals** for the live final, logged in `demo-script.md`, after repeating the first-event stall check from the headset.
+8. **Upload the demo video** (recorded), link it in the README, list both team members and submit on the portal.
+9. **Done:** `0.1.0` cut in `CHANGELOG.md`.
 10. **Mixed-reality occlusion and grounding** (wearer, lit room with Space Setup; ADR-0024). Nothing below has been seen on a headset; `tools/ci` only covers the fallback and the wiring.
     - **Depth starts:** after granting `USE_SCENE`, logcat shows `evt=occlusion.mode mode=depth` within ~1 s and no `Occlusion subsystem failed to start` / "To use occlusion, your app must first be granted XR_FB_scene permission" errors.
     - **Furniture:** Nubi walking behind a couch or table is cut along the real edge, with no vertical mirroring, no sideways offset and no lag while turning the head (if mirrored, the depth `uv.y` needs a flip in `EnvironmentOcclusion.hlsl`). Compare soft and hard (`JollyConfig.occlusion.softEdges`).

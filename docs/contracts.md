@@ -438,7 +438,7 @@ Nothing nested. That covers the whole catalogue and keeps the validator at about
 
 ### 4.2 Tool catalogue
 
-Wire format is the Responses flat function tool: `{"type":"function","name":…,"description":…,"parameters":<schema>}` (verified live). A tool named `ns.fn` goes inside `{"type":"namespace","name":"ns","description":…,"tools":[…]}` as `fn`, eagerly (no `defer_loading`), and the model calls it as `ns.fn` (live 2026-11-02, ADR-0047). The `actions` namespace description names no action (`CharacterActionCatalog.Description`), so it is true for every request whatever seated mode or the persona withhold. With web search on, `{"type":"web_search","search_context_size":"low","user_location":{…}}` comes last and the body sets `max_tool_calls: 2`, which counts built-in tools only (ADR-0048). Parameter schemas:
+Wire format is the Responses function tool: `{"type":"function","name":…,"description":…,"parameters":<schema>}` (verified live). A tool named `ns.fn` goes inside `{"type":"namespace","name":"ns","description":…,"tools":[…]}` as `fn`, eagerly (no `defer_loading`), and the model calls it as `ns.fn` (live 2026-11-02, ADR-0047). The `actions` namespace description names no action (`CharacterActionCatalog.Description`), so it is true for every request whatever seated mode or the persona withhold. With web search on, `{"type":"web_search","search_context_size":"low","user_location":{…}}` comes last and the body sets `max_tool_calls: 2`, which counts built-in tools only (ADR-0048). Parameter schemas:
 
 | name | description (model-facing) | parameters | timeout | concurrency | result `output` JSON |
 |---|---|---|---|---|---|
@@ -446,11 +446,11 @@ Wire format is the Responses flat function tool: `{"type":"function","name":…,
 | `follow_user` | Start following the user around at a comfortable distance until told to stop or sent elsewhere. | `{"type":"object","properties":{},"additionalProperties":false}` | 1 s | Locomotion | `{"status":"following"}` (returns immediately; the mode persists) |
 | `come_here` | Call this whenever the user asks you to come, come here, come closer or come to them, including after a greeting ('Hi, come here'): walk to the user and face them. Not for a greeting on its own. | `{"type":"object","properties":{},"additionalProperties":false}` | 3 s | Locomotion | `{"status":"walking"\|"unreachable","eta_s":3}` (returns once a path exists). A short "come here" final is started locally by `ComeGuard` before the model call (ADR-0036); when it walks, the turn ends with a canned ComingOver line and no model call (ADR-0037). |
 | `look_at` | Turn Nubi's head and eyes toward the user, the object the user is pointing at, a seen object, or a piece of furniture from the room scan. Use it when you talk about something in the room; never for finding or locating an object the user is looking for; use find_object for that. | `{"type":"object","properties":{"target":{"type":"string","maxLength":40,"description":"'user', 'pointed', a seen object id or label (obj_3, mug), or furniture type"}},"required":["target"],"additionalProperties":false}` | 1 s | Parallel | `{"status":"looking","target":"obj_3"}`; error `no_pointing`, `unknown_object` |
-| `capture_and_identify` | Look through the headset camera at what the user is showing or pointing at, highlight it, and answer the question about it. Use it whenever the user asks what something is, how to use it, or says 'look at this'. | `{"type":"object","properties":{"question":{"type":"string","maxLength":200,"description":"The user's question about the object"},"object_hint":{"type":"string","maxLength":40,"description":"Optional short noun phrase if known, e.g. 'remote'"}},"required":["question"],"additionalProperties":false}` | 12 s (inner: SAM 5 s, vision 8 s) | Exclusive | `{"object_id":"obj_4","label":"TV remote","answer":"…","masked":true}`, `EndsTurn=true`, `SpokenText=null` (the answer was streamed through `ToolContext.Speech`); errors `camera_unavailable`, `too_dark` (frame mean luma below `JollyConfig.visionMinMeanLuma`, default 25: no SAM or Spark call; the model asks for light in one sentence, ADR-0039), `no_object`, `vision_timeout` (with the canned "hold it closer" line spoken), `timeout` |
+| `capture_and_identify` | Look through the headset camera at what the user is showing or pointing at, highlight it, and answer the question about it. Use it whenever the user asks what something is, how to use it, where to put or store what they are showing, or says 'look at this'. If they ask where it goes and a listed place fits, you walk there and point by yourself. | `{"type":"object","properties":{"question":{"type":"string","maxLength":200,"description":"The user's question about the object"},"object_hint":{"type":"string","maxLength":40,"description":"Optional short noun phrase if known, e.g. 'remote'"}},"required":["question"],"additionalProperties":false}` | 12 s (inner: SAM 5 s, vision 8 s) | Exclusive | `{"object_id":"obj_4","label":"TV remote","answer":"…","masked":true}`, `EndsTurn=true`, `SpokenText=null` (the answer was streamed through `ToolContext.Speech`); errors `camera_unavailable`, `too_dark` (frame mean luma below `JollyConfig.visionMinMeanLuma`, default 25: no SAM or Spark call; the model asks for light in one sentence, ADR-0039), `no_object`, `vision_timeout` (with the canned "hold it closer" line spoken), `timeout` |
 | `find_object` (*should*) | Locate a named object the user is searching for ('where is my X', 'find my X'), even one you have seen before: a fresh look that highlights every visible instance, e.g. 'glasses' or 'keys'. | `{"type":"object","properties":{"noun_phrase":{"type":"string","maxLength":40,"description":"1-3 word noun phrase, e.g. 'reading glasses'"}},"required":["noun_phrase"],"additionalProperties":false}` | 8 s (SAM 5 s) | Exclusive | `{"found":2,"nearest_id":"obj_7","distance_m":1.8,"looking":true,"next":"you are already looking at it; answer in words, no other tool is needed"}` or `{"found":0}`; error `camera_unavailable`, `too_dark` (as `capture_and_identify`, no SAM call). SAM text prompt on a fresh capture; the tool itself turns Nubi's head and eyes to the nearest instance, so no `look_at` round follows (ADR-0037). |
 | `highlight_part` (*should*) | Highlight a part of an object seen this session, e.g. 'handle' of obj_3. Use it when the user asks which part or button to use. | `{"type":"object","properties":{"object_id":{"type":"string","maxLength":16},"part":{"type":"string","maxLength":40,"description":"part noun phrase, e.g. 'mug handle'"}},"required":["part"],"additionalProperties":false}` | 6 s (SAM 5 s) | Exclusive | `{"status":"highlighted","part":"mug handle"}` or error `no_match`, `no_frame`. SAM text prompt on the last capture kept in RAM (a `too_dark` capture never replaces it) (part phrases verified live: "mug handle" → one box, c≈0.97). Nubi looks at it. |
 | `remember_place` | Remember a place under a name so Nubi can walk there or show it later (ADR-0051). | `{"type":"object","properties":{"name":{"type":"string","maxLength":32},"where":{"type":"string","enum":["there","here"]}},"required":["name","where"],"additionalProperties":false}` | 5 s | Parallel | `{"status":"saved","name":"sofa","anchored":true}` |
-| `show_place` (ADR-0051) | Walk toward a remembered place, a seen thing or furniture and point at it. | `{"type":"object","properties":{"place":{"type":"string","maxLength":64}},"required":["place"],"additionalProperties":false}` | 21 s | Exclusive | `{"status":"pointing","place":"kitchen"}` or `"stopped"` (`EndsTurn=true`, speaks "There!") |
+| `show_place` (ADR-0051) | Walk toward a place the user showed you earlier or a piece of furniture, and point at it. For an object they are looking for, like 'where is my mug?', use find_object instead. | `{"type":"object","properties":{"place":{"type":"string","maxLength":64}},"required":["place"],"additionalProperties":false}` | 21 s | Exclusive | `{"status":"pointing","place":"kitchen"}` or `"stopped"` (`EndsTurn=true`, speaks "There!") |
 | `stop` | Stop walking, following and talking immediately. | `{"type":"object","properties":{},"additionalProperties":false}` | 1 s | Parallel | `{"status":"stopped"}` (`EndsTurn=true`). Usually pre-empted by the local `StopGuard` (§9), which halts locomotion on the final transcript before any model call. |
 | `set_persona` (*should*) | Switch Nubi's personality when the user asks for another mode. | `{"type":"object","properties":{"id":{"type":"string","enum":["companion","mentor","guru"]}},"required":["id"],"additionalProperties":false}` | 1 s | Exclusive | `{"status":"switching","id":"guru"}`, `EndsTurn=true`. The tool only calls `IPersonaProvider.RequestSwitch(id)`; the controller applies it once the turn is Idle and the new persona greets in its own voice. The enum is generated from `IPersonaProvider.AvailableIds` minus `psychologist`, which can only be chosen in Settings. |
 | `go_to_surface` (ADR-0025) | Walk Nubi to a piece of the user's real furniture from the room scan, e.g. the couch or the table, and stop beside it facing it. | `{"type":"object","properties":{"label":{"type":"string","enum":["couch","table","desk","bed","chair","storage","screen"],"description":"Furniture from the room scan"}},"required":["label"],"additionalProperties":false}` | 3 s | Locomotion | `{"status":"walking"\|"unreachable","label":"table","eta_s":3}` (`desk` is reported as `table`); errors `room_not_scanned`, `no_surface`. Withheld in seated mode. |
@@ -751,18 +751,23 @@ namespace Jolly.Contracts
         public string PersonaInstructions { get; set; }
         public string LanguageTag { get; set; }
         public ReasoningEffort Effort { get; set; } = ReasoningEffort.Minimal;
+        /// <summary>Names of the places the user has shown; the header can name one when the question is where the thing
+        /// goes (ADR-0051). Null or empty leaves the request as it was.</summary>
+        public IReadOnlyList<string> Places { get; set; }
     }
 
     public enum IdentificationEventKind { Header, AnswerDelta, Completed }
 
     /// <summary>
     /// Wire format (verified live 2026-11-01, effort minimal: first text 1.5 s, total 1.6 s on pen_640.jpg):
-    /// first line "LABEL|NOUN_PHRASE", newline, then plain answer text that streams straight into speech.
+    /// first line "LABEL|NOUN_PHRASE", or "LABEL|NOUN_PHRASE|PLACE" when places were listed (ADR-0051), newline, then
+    /// plain answer text that streams straight into speech.
     /// </summary>
     public readonly struct IdentificationEvent
     {
-        public IdentificationEvent(IdentificationEventKind kind, string label = null, string nounPhrase = null, string text = null)
-        { Kind = kind; Label = label; NounPhrase = nounPhrase; Text = text; }
+        public IdentificationEvent(IdentificationEventKind kind, string label = null, string nounPhrase = null, string text = null,
+                                   string place = null)
+        { Kind = kind; Label = label; NounPhrase = nounPhrase; Text = text; Place = place; }
         public IdentificationEventKind Kind { get; }
         public string Label { get; }        // Header: "ballpoint pen"
         public string NounPhrase { get; }   // Header: SAM-ready concept, e.g. "pen"
@@ -932,6 +937,34 @@ namespace Jolly.Contracts
         void SetConversationState(ConversationState state);
     }
 }
+```
+
+## 7.1 Pointing (ADR-0044)
+
+```csharp
+    public enum PointerSource { Hand, Controller }
+
+    /// <summary>
+    /// The rays the user sends the character with: a hand that may pinch, else a Touch controller. A ray is free only when
+    /// it hovers no UI or interactable, misses the character, and (a hand) the palm does not face the head. Main thread.
+    /// </summary>
+    public interface IPointerInput
+    {
+        /// <summary>The ray to aim with this frame: the pinching hand while a pinch is held, else the free hand or
+        /// controller ray of the side used last. False when none is free.</summary>
+        bool TryGetAim(out Ray ray, out PointerSource source);
+        /// <summary>A controller trigger press whose ray was free, with that ray. Never raised for a hand.</summary>
+        event Action<Ray> TriggerPressed;
+    }
+
+    /// <summary>The floor ring that shows where a tap sends the character.</summary>
+    public interface IMoveMarker
+    {
+        void Show(Vector3 floorPoint);
+        void Hide();
+        /// <summary>A move was sent there: a short pulse, then hidden.</summary>
+        void Confirm(Vector3 floorPoint);
+    }
 ```
 
 ## 8. Memory, personas, localization, connectivity, canned lines
@@ -1141,6 +1174,8 @@ namespace Jolly.Contracts
     }
 }
 ```
+
+`ModelCallIds.Vision(model)` (`model + "+vision"`) names a vision call in `ConversationEvents.ModelCallCompleted`, so the badges tell it from the agent's own Spark rounds.
 
 ## 9. Core classes and their public API (not interfaces, but the shape is fixed)
 

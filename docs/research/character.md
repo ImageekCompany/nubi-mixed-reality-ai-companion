@@ -2,7 +2,7 @@
 
 Date: 2026-11-01. Tools: Blender 5.1.0 (`/Applications/Blender.app/Contents/MacOS/Blender --version`, build 2026-03-17, hash adfe2921d5f3), Unity 6000.6.6f1.
 Scripts used (scratch, not in repo): `inspect.py`, `render.py`, `apicheck.py`, `proto.py` in
-`/private/tmp/claude-503/-Users-andrewurbanovich-Git-Projects-MetaCompetitionClaude/f031d2aa-adea-490e-8975-c2c648901da4/scratchpad/`.
+a throwaway scratch directory.
 
 **Verdict:** the files are a **static 3D-print sculpt**, not a game asset. They have no rig, no UVs, no textures, no mouth and no shape keys. One flat grey material. 197,590 triangles. The asset is also **legally unusable as-is in an open-source repo** (see §3). The geometry is clean (watertight after welding), so auto-rigging is technically easy. Licensing, not tech, is the blocker.
 
@@ -73,7 +73,7 @@ Design:
 
 ### 2.2 Recommended game-ready pipeline (open-source safe)
 
-Principle: **everything is produced by a committed Blender Python script from a source mesh we are allowed to ship**. Per requirement 9 in `requirements.md`, that source should be our own "Jolly-like" re-sculpt or an original character. The script then yields a reproducible `jolly.glb`.
+Principle: **everything is produced by a committed Blender Python script from a source mesh we are allowed to ship**. Per requirement 9 in `docs/original-brief.md`, that source should be our own "Jolly-like" re-sculpt or an original character. The script then yields a reproducible `jolly.glb`.
 
 1. **Clean:** import, unparent, apply transforms, weld, scale to target height (decision needed: ~0.6–1.0 m companion size reads well in MR), feet pivot at the origin, face −Y in Blender (glTF exporter `export_yup` turns this into Unity +Z forward).
 2. **Retopo/decimate:** voxel remesh, then Decimate to about **20–30k tris** (verified to work). For cleaner deformation, `object.quadriflow_remesh` exists in 5.1 and gives quads, but I did not run it on this mesh.
@@ -126,7 +126,7 @@ Implications (honest assessment):
   - (a) Keep the GLB local only, as a "bring your own model" demo asset loaded at runtime or stripped from the repo, and ship the repo with an **original, script-generated placeholder character**.
   - (b) Re-sculpt an **original** "Jolly-inspired" companion (furry hooded blob with a face plate is generic enough if not traced from this mesh) and license it CC0/CC-BY in the repo.
   - (c) Ask Meta / the hackathon organisers whether Jolly may be used in submissions. That is the only way to legitimately show "Jolly" in the demo video.
-  - Requirement 9 in `requirements.md` already anticipates (a)/(b). Record the decision in THIRD_PARTY.
+  - Requirement 9 in `docs/original-brief.md` already anticipates (a)/(b). Record the decision in THIRD_PARTY.
 
 ---
 

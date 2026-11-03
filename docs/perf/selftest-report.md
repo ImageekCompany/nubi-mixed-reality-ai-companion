@@ -1,9 +1,38 @@
 # Device self-test report
 
-Latest: 2026-11-01, 23:31 UTC, one `--character jolly` release run of `7124bc7`: point and tap to move (ADR-0044; section below). Before that: 17:01 UTC, one default release run of `0f2cef4`: the acknowledgement plays only for questions (ADR-0040; section below). Before that: 16:46 UTC, one default release run of `4fecc17`: the dark-room vision guard (ADR-0039; section below). Before that: 16:19–16:33 UTC, three default release runs of `ee9b05c` and one of `b96a062`: a hedged request for a silent voice-turn first event (ADR-0038; section below). Before that: 15:52–15:56 UTC, two default release runs of `8bd9560`: a guard walk answers without a model round, `find_object` says Nubi is already looking (ADR-0037; section below). Before that: 15:22–15:28 UTC, three default release runs of `36778c1` with the local come-here guard and `llm.reply` (ADR-0036; section below). Before that: 14:47–14:53 UTC, three default release runs verifying `main` `f311081` after round 1 (section below). Before that: 14:05–14:37 UTC, stale-frame cause and a 20-turn latency sample on `751acba` (cooled headset, before and after a headset reboot; section below). Before that: 13:03 UTC, one release run of `6f0383c` with the `highlight_part` / `find_object` scenarios and the hand debounce (ADR-0033; section below). Before that: 11:43–11:51 UTC, final verification of `main` `4d228c8` after the occlusion, room, character, Jolly and device-fix merges: three release runs of the default build and one of `--character jolly` (section below). Before that: 11:26–11:38 UTC, six release runs for the device-finding fixes (`3f35f7f`, `6cd06e6`, `4e298d8`; section below). Before that: 09:39–09:45 UTC, three release runs of `main` `dd14847` after the turn-gc and coverage-gate merges (section below). Before that: 08:37–09:27 UTC, the turn-GC and cold-first-turn pass on `fix/turn-gc` (ADR-0023): three "before" runs of `main`, three "after" runs, development IL2CPP (the only player that reports GC per frame), four allocation-profile runs and one release verification run. Before that: 08:20–08:47 UTC, the performance and latency pass on `fix/perf-latency` (ADR-0019), release IL2CPP. Earlier: 06:38–06:50 UTC from `fix/integration-review`, 06:00–06:14 UTC from `feat/wp9-integration`.
-Device: Quest 3 `2G0YC1ZF7P090N`, Horizon OS v209. Build: `tools/ci/build.sh` (IL2CPP ARM64 release, 58 MB APK).
+Latest: 2026-11-03, 21:01 UTC, one default (Nubi) release run of `d06e13b`; section below. Reports up to 2026-11-01 follow it, newest first; later device rows in between ran the Jolly build and are in the ADRs and `docs/api-spend.md`.
+Device: Quest 3, Horizon OS v209. Build: `tools/ci/build.sh` (IL2CPP ARM64 release, 58 MB APK).
 Nobody wore the headset. The room was dim (camera mean luma 23–45 of 255) and had no Space Setup. Command: `tools/device/selftest.sh` (headless: `prox_close`, `guardian_pause 1`, 16 MiB logcat buffer; all restored afterwards).
 Raw outputs (`selftest_results.json`, `logcat.txt`, `vrapi.txt`) are under `artifacts/selftest/`, which is git-ignored.
+
+
+## Final review (d06e13b, 2026-11-03)
+
+Two default release runs of the final runtime code, with nobody wearing the headset and a dark room (mean luma 7.6, so vision used the bundled still). `tools/ci/test.sh` on the same code: EditMode 1578/1578, PlayMode 576/577 (one explicit live eval skipped), pure logic coverage 93.6 %.
+
+| Scenario | Before the reboot (44 h uptime, build `e9e4aea`) | After the reboot (10 min uptime, `d06e13b`) |
+|---|---|---|
+| `offline_greeting` | PASS | PASS, caption 27 ms |
+| `voice_greeting` | DEGRADED, 3.5 s | **FAIL**: both first-event legs stalled, spoken error line |
+| `voice_come_here` | PASS, 305 ms, guard | PASS, 445 ms, guard |
+| `tap_to_move` | PASS | PASS |
+| `vision_capture_and_identify` | DEGRADED, 2.7 s | **FAIL**, 4.7 s; right tool |
+| `vision_highlight_part` | DEGRADED, 4.0 s, mask 473 ms | **FAIL**, 4.8 s, mask 431 ms; right tool |
+| `vision_find_object` | DEGRADED: **the model called `show_place`** | DEGRADED, 2.8 s, mask 431 ms, found 1: fixed in `d06e13b` |
+| `voice_web_search` | DEGRADED, 2.7 s | **FAIL**, 4.6 s; right tool |
+| `action_dance` | PASS, guard | PASS, guard |
+| `action_through_model` | **FAIL**, 4.3 s | **FAIL**, 6.0 s; right tool |
+| `barge_in` | PASS, 32 ms | PASS, 27 ms |
+| `perf_idle` | PASS, 72 fps, 7 draws, 25.7k tris | PASS, 72 fps, p95 13.9 ms, 7 draws, 25.7k tris |
+| `action_move_behind` | PASS | PASS |
+| Stale frames, whole run | 5.89 % | 1.71 % |
+| Metered spend | $0.0425 | $0.0549 |
+
+Each FAIL is the scenario's 4 s no-audio limit, in model time; the turn then completed correctly, apart from the greeting's error line.
+
+**Where the time goes (after the reboot).** First event usually 0.75–1.6 s, but 3 of 13 requests stalled at 3 s or more; the hedge started each time, and for the greeting both legs reached the 4 s limit. First event → first text is another 1.5–3.8 s on tool turns.
+
+**Desktop probes minutes later,** with a similar request shape (about 40 lines of instructions, 14 function tools, a 14-tool `actions` namespace, `web_search`, effort minimal): first text median 1.3 s on a one-line prompt, 1.7 s with search offered on a greeting, 2.4 s on a tool-worthy question, whether search was offered or not. No stall in 44 requests. So web search is not the main cost, and the device's stalls are unexplained: it could be the headset's Wi-Fi, the app's real prompt and memory, or server load. **Open: repeat with the app's exact request from the headset before the live final.**
 
 ## Point and tap to move (7124bc7)
 
