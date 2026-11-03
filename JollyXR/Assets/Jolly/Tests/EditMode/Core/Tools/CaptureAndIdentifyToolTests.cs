@@ -1,7 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Cysharp.Threading.Tasks;
 using Jolly.Contracts;
+using Jolly.Core.Speech;
 using Jolly.Testing.Conversation;
 using NUnit.Framework;
 using UnityEngine;
@@ -312,6 +314,41 @@ namespace Jolly.Tests.EditMode.Core.Tools
             Assert.That(result.SpokenText, Is.EqualTo("There!"));
             Assert.That(result.EndsTurn, Is.True);
             Assert.That(result.OutputJson, Does.Contain("\"place\":\"kitchen\"").And.Contain("\"shown\":true"));
+        }
+
+        sealed class SentencesBeforeTheWalk : ISpokenTextSink
+        {
+            readonly SentenceSplitter _splitter = new();
+            readonly RecordingCharacterController _character;
+            public SentencesBeforeTheWalk(RecordingCharacterController character) => _character = character;
+            public List<string> Sentences { get; } = new();
+
+            public void Append(string delta)
+            {
+                _splitter.Append(delta);
+                while (_splitter.TryTake(out var sentence))
+                {
+                    if (_character.MoveTarget == null)
+                        Sentences.Add(sentence);
+                }
+            }
+        }
+
+        [Test]
+        public void AnswerNamesARememberedPlace_TheLastSentenceIsSpokenBeforeTheWalk()
+        {
+            // Arrange: the scripted answer ends with no trailing space, as a model's does, so the splitter holds it.
+            TeachKitchen();
+            _f.Identifier.Place = "kitchen";
+            var context = ContextWith(_f.PreCapture());
+            var sink = new SentencesBeforeTheWalk(_f.Character);
+            context.Speech = sink;
+
+            // Act
+            ToolHarness.Run(_f.Capture(), "{\"question\":\"where can I put these?\"}", context);
+
+            // Assert
+            Assert.That(sink.Sentences, Is.EqualTo(new[] { "It is a TV remote.", "Press the CC button." }));
         }
 
         [Test]

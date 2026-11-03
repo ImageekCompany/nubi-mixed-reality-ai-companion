@@ -77,6 +77,8 @@ namespace Jolly.Core.Tools
             if (answer.Place == null || !_scene.TryGetPlace(answer.Place, out var place))
                 return ToolResult.Success(output.ToString(), endsTurn: true);
             output.Add("place", place.Name);
+            // The splitter holds a last sentence with no trailing space, so without this break it plays only on arrival.
+            context.Speech?.Append("\n");
             var pointed = await _pointer.Run(place.Pose.position, ct);
             return new ToolResult(true, output.Add("shown", pointed).ToString(),
                 pointed ? CoreLines.Get(_localizer, CoreLines.PlaceThere) : null, endsTurn: true);
