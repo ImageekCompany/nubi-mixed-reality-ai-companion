@@ -1,12 +1,12 @@
 # Hackathon research: rules, submission, strategy
 
-Researched 2026-11-01. Each claim cites a URL, a file, or a command. Anything not confirmed from a primary source is marked **UNVERIFIED**.
+Researched 2026-11-01, when the working name was still Jolly; the repository's character became Nubi (ADR-0011, ADR-0052). Each claim cites a URL, a file, or a command. Anything not confirmed from a primary source is marked **UNVERIFIED**.
 
 Primary sources:
 - **[CV]** Event page: https://cerebralvalley.ai/e/meta-ai-developer-hackathon (and `.md`). The Official Rules and Event Waiver are embedded in this page's payload and served at https://cerebralvalley.ai/e/meta-ai-developer-hackathon/waiver. I extracted them with `curl` plus a Python text extraction of the page's JSON.
 - **[META]** Meta's event page: https://dev.meta.ai/events/global-hackathon
 - **[DOCS]** Meta Model API docs index: https://dev.meta.ai/llms.txt
-- **[SPEC]** `/Users/andrewurbanovich/Git/Projects/MetaCompetitionClaude/requirements.md`
+- **[SPEC]** [`docs/original-brief.md`](../original-brief.md)
 
 ---
 

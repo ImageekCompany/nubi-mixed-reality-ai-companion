@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Quest system recording for the demo (docs/demo/production-plan.md "Capture"). Verified on Quest 3, Horizon OS v209
+# Quest system recording for the demo (docs/demo-script.md). Verified on Quest 3, Horizon OS v209
 # (metacam 209.0.0.x) on 2026-11-01:
 #   - The recorder (com.oculus.metacam) reads debug.oculus.capture.{width,height,fps,bitrate,codec} (names found in its
 #     v209 code). setprop needs no root and is lost on reboot, so run `props` after every reboot (ADR-0034).

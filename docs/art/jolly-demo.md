@@ -7,9 +7,10 @@ the same 22 bones, 13 shape keys and 18 clips.
 
 Jolly is Meta's character (docs/research/character.md §3). The source print
 (`Meta+Muse+Jolly+v2+Whole.glb/.stl`) has no known licence. Everything built from it is local-only and
-is **never committed, pushed, published, or shipped in a build or video you distribute** without
-permission from Meta. That covers the FBX, textures, materials, definition, controller, baked lines, report,
-`.blend` and renders, plus their `.meta` files. Nubi stays the public default.
+is **never committed, pushed, or published in a build** without permission from Meta. That covers the FBX,
+textures, materials, definition, controller, baked lines, report, `.blend` and renders, plus their `.meta` files.
+Nubi stays the public default. The one public appearance is the hackathon demo video, the team's decision and
+its risk, disclosed in the README (ADR-0052).
 
 Only the generic pipeline is committed: `tools/blender/build_jolly.py`, this page and the `.gitignore`
 entries (`Assets/Jolly/Local/`, and the older `Assets/Jolly/Art/Private/`, kept ignored). The script has no

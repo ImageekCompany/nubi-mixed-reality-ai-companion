@@ -2,6 +2,8 @@
 
 Jolly is a small plush AI companion that lives in your real room on a Meta Quest 3. You talk to it, show it things, and send it around the room.
 
+This guide is for testers of the Jolly demo build (ADR-0052). In the default open-source build the character is Nubi and everything else is the same.
+
 ## Before you start
 
 - Use a Quest 3 on Wi-Fi, in a lit room with some free floor.

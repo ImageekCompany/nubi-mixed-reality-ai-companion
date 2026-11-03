@@ -1,3 +1,9 @@
+# Original brief
+
+The starting brief for the project, kept as written. Several things changed afterwards: the repository ships Nubi rather than the mascot it names (ADR-0011, ADR-0052), "contributor models" here meant cheaper coding agents, not Meta's `*-contributor` models, and the model files it mentions were never committed.
+
+---
+
 We are making a tool for Meta Global AI Developer Hackathon, Indie Developer Track
 Here are judging wieghts:
 30% - Impact (Real world potential, who benefits, and fit with a problem statement)

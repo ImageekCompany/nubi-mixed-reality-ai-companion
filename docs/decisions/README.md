@@ -50,6 +50,7 @@
 | [0048](0048-web-search-grounding.md) | Meta's built-in `web_search` (low context, `max_tool_calls` 2) for Online personas that allow `web_search`; location never finer than a city (`set_home_location` or the device locale, IANA time zone); local time in the per-turn context block; `SpokenText` strips markdown and citations; tool namespaces sent eagerly | accepted |
 | [0050](0050-demo-layout-from-the-measured-window.md) | Head-following views placed in the measured off-centre recording window (+13.6°, −24.1°); captions raised to y = +0.08 m with a `ZTest Always` material over the character, one-line tool badges the same way (amends 0024 for those two); latency HUD off unless the new Settings row is on | accepted |
 | [0051](0051-remember-a-shown-place-and-point-at-it.md) | `remember_place` takes where the user is showing; `show_place` and `capture_and_identify` lead the way and point; `PlaceGuard` runs the plain place phrases with no model round | accepted |
+| [0052](0052-demo-video-shows-jolly-repository-stays-nubi.md) | The demo video shows the local Jolly skin; the repository, its history and public builds stay Nubi, and the README says so first | accepted |
 
 Numbers 0027–0029 are unused and were not reserved on a dropped branch: no commit on any branch (`git log --all`) adds or mentions an ADR with those numbers.
 
