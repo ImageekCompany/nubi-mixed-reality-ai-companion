@@ -22,6 +22,7 @@ namespace Jolly.Presentation
         [SerializeField] SettingRow _volume;
         [SerializeField] SettingRow _seated;
         [SerializeField] SettingRow _pttHand;
+        [SerializeField] SettingRow _latencyStats;
         [SerializeField] ChoiceGroup _personas;
         [SerializeField] ChoiceGroup _languages;
         [SerializeField] Button _clearMemory;
@@ -72,6 +73,7 @@ namespace Jolly.Presentation
             _volume.Stepped += OnVolumeStepped;
             _seated.Stepped += OnSeatedStepped;
             _pttHand.Stepped += OnPttHandStepped;
+            _latencyStats.Stepped += OnLatencyStatsStepped;
             _personas.Chosen += OnPersonaChosen;
             _languages.Chosen += OnLanguageChosen;
             _clearMemory.onClick.AddListener(OnClearMemoryClicked);
@@ -85,6 +87,7 @@ namespace Jolly.Presentation
         void OnVolumeStepped(int direction) => Step(Setting.Volume, direction);
         void OnSeatedStepped(int direction) => Step(Setting.Seated, direction);
         void OnPttHandStepped(int direction) => Step(Setting.PttHand, direction);
+        void OnLatencyStatsStepped(int direction) => Step(Setting.LatencyStats, direction);
         void OnSpentChanged(decimal spent) => RenderUsage();
 
         void OnPersonaChosen(string id)
@@ -172,6 +175,7 @@ namespace Jolly.Presentation
             _volume.SetTexts(Text("settings.volume"), Mathf.RoundToInt(p.Volume * 100f).ToString(CultureInfo.InvariantCulture) + "%");
             _seated.SetTexts(Text("settings.seated"), Text(p.Seated ? "settings.on" : "settings.off"));
             _pttHand.SetTexts(Text("settings.ptt_hand"), Text(p.PttEitherHand ? "settings.ptt.either" : "settings.ptt.dominant"));
+            _latencyStats.SetTexts(Text("settings.latency_stats"), Text(p.ShowLatencyStats ? "settings.on" : "settings.off"));
         }
 
         void RenderClearMemory() =>
@@ -194,6 +198,7 @@ namespace Jolly.Presentation
             _volume.Stepped -= OnVolumeStepped;
             _seated.Stepped -= OnSeatedStepped;
             _pttHand.Stepped -= OnPttHandStepped;
+            _latencyStats.Stepped -= OnLatencyStatsStepped;
             _personas.Chosen -= OnPersonaChosen;
             _languages.Chosen -= OnLanguageChosen;
             _clearMemory.onClick.RemoveListener(OnClearMemoryClicked);

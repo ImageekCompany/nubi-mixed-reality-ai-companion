@@ -1,6 +1,6 @@
 # 0024. Real-world occlusion (environment depth, scene-mesh fallback) and a contact shadow that follows the feet
 
-- Status: accepted (pending the device checks in `docs/release-checklist.md`, human action 10)
+- Status: accepted (pending the device checks in `docs/release-checklist.md`, human action 10); the rejection of `ZTest Always` amended for captions and tool badges by [ADR-0050](0050-demo-layout-from-the-measured-window.md)
 - Date: 2026-11-01
 
 ## Context

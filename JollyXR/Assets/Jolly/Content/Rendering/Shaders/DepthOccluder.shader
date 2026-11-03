@@ -2,7 +2,8 @@
 // them and writes the clear colour (0,0,0,0) wherever it is nearer, so the passthrough underlay, i.e. the real
 // furniture, shows there. It writes no depth and comes before the Transparent queue, so world-space UI (TMP and UI
 // shaders: Queue Transparent, ZTest [unity_GUIZTestMode] = LEqual on a world-space canvas) still tests only against
-// Nubi, as with environment depth. A depth-only box in front of Nubi's queue would hide that UI too.
+// Nubi, as with environment depth. Captions and tool badges test against nothing: their Overlay materials (queue 3000,
+// ZTest Always) keep them readable when Nubi is nearer. A depth-only box in front of Nubi's queue would hide that UI too.
 Shader "Jolly/XR/DepthOccluder"
 {
     SubShader

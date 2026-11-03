@@ -25,7 +25,7 @@ Build: commit `________` · APK SHA-256 `________` · capture method: Quest syst
 - [ ] Launched; `evt=character.selected id=________` in logcat matches this session's character
 - [ ] Warm-up greeting said off camera ("Hi Nubi, who are you?" / "Hi Jolly, who are you?")
 - [ ] One capture of the remote at the hero position: no `evt=vision.too_dark`; luma written: ____
-- [ ] Settings (left palm toward you → wrist button, left ☰, or "open settings"): Clear memory · persona Companion · captions Large · panel closed again (X, or it closes itself after 20 s and on every talk pinch)
+- [ ] Settings (left palm toward you → wrist button, left ☰, or "open settings"): Clear memory · persona Companion · captions Large · latency stats off · panel closed again (X, or it closes itself after 20 s and on every talk pinch)
 - [ ] Usage meter start value: $______
 
 **Other cameras and audio**

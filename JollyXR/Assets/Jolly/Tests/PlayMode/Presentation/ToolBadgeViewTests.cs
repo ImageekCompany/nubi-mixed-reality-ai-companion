@@ -6,8 +6,10 @@ using Jolly.Contracts;
 using Jolly.Presentation;
 using Jolly.Testing;
 using NUnit.Framework;
+using TMPro;
 using UnityEngine;
 using UnityEngine.TestTools;
+using UnityEngine.UI;
 using Object = UnityEngine.Object;
 
 namespace Jolly.Tests.PlayMode.Presentation
@@ -39,6 +41,8 @@ namespace Jolly.Tests.PlayMode.Presentation
         }
 
         ToolBadge[] Visible => _view.Slots.Where(s => s.IsVisible).ToArray();
+
+        static TMP_Text Text(ToolBadge slot, string child) => slot.transform.Find(child).GetComponent<TMP_Text>();
 
         [Test]
         public void StartedTool_ShowsARunningBadgeWithItsLocalizedName()
@@ -131,6 +135,60 @@ namespace Jolly.Tests.PlayMode.Presentation
             Assert.That(Visible.Length, Is.EqualTo(_view.Slots.Length));
             Assert.That(Visible.Select(b => b.Title), Does.Contain("model_" + (_view.Slots.Length + 1)));
             Assert.That(Visible.Select(b => b.Title), Does.Not.Contain("model_0"));
+        }
+
+        [Test]
+        public void EverySlot_TitleAndDetailCannotWrap()
+        {
+            foreach (var slot in _view.Slots)
+            {
+                Assert.That(Text(slot, "Title").textWrappingMode, Is.EqualTo(TextWrappingModes.NoWrap), slot.name);
+                Assert.That(Text(slot, "Detail").textWrappingMode, Is.EqualTo(TextWrappingModes.NoWrap), slot.name);
+            }
+        }
+
+        // TMP replaces a material whose atlas is not the font's with the font's own at Awake, with no error, and that one
+        // loses the depth test to a nearer Jolly again. Plate and text share the queue so the canvas order holds.
+        [Test]
+        public void EverySlot_DrawsOverTheCharacter()
+        {
+            foreach (var slot in _view.Slots)
+            {
+                var plate = slot.GetComponent<Image>().material;
+                Assert.That(plate.shader.name, Is.EqualTo("Jolly/UI/Overlay"), slot.name);
+                Assert.That(plate.renderQueue, Is.EqualTo(3000), slot.name);
+                foreach (var line in slot.GetComponentsInChildren<TMP_Text>(true))
+                {
+                    var material = line.fontSharedMaterial;
+                    Assert.That(material.shader.name, Is.EqualTo("TextMeshPro/Mobile/Distance Field Overlay"), line.name);
+                    Assert.That(material.renderQueue, Is.EqualTo(3000), line.name);
+                    Assert.That(material.GetTexture("_MainTex") == line.font.atlasTexture, Is.True, line.name);
+                }
+            }
+        }
+
+        [TestCase("Muse Voice Transcribe")]
+        [TestCase("Muse Spark \u00B7 vision")]
+        [TestCase("Wzruszam ramionami")]
+        public void LongestLabels_FitEverySlotWithoutTruncation(string label)
+        {
+            foreach (var slot in _view.Slots)
+                slot.Show("call", label, "done", BadgeState.Succeeded, double.PositiveInfinity);
+            LayoutRebuilder.ForceRebuildLayoutImmediate((RectTransform)_view.transform);
+
+            foreach (var slot in _view.Slots)
+            {
+                var title = Text(slot, "Title");
+                title.ForceMeshUpdate(true);
+
+                var width = title.rectTransform.rect.width;
+                Assert.That(width, Is.EqualTo(224f).Within(0.01f), slot.name);
+                Assert.That(title.fontSize, Is.GreaterThanOrEqualTo(title.fontSizeMin), slot.name);
+                Assert.That(title.isTextTruncated, Is.False, slot.name);
+                Assert.That(title.textInfo.lineCount, Is.EqualTo(1), slot.name);
+                Assert.That(title.textInfo.characterCount, Is.EqualTo(label.Length), slot.name);
+                Assert.That(title.textBounds.size.x, Is.LessThanOrEqualTo(width), slot.name);
+            }
         }
 
         [UnityTest]

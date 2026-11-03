@@ -18,6 +18,7 @@ namespace Jolly.Presentation
         const string SpeechRate = "jolly.prefs.speech_rate";
         const string Volume = "jolly.prefs.volume";
         const string PttEitherHand = "jolly.prefs.ptt_either_hand";
+        const string ShowLatencyStats = "jolly.prefs.show_latency_stats";
         const string HomeCity = "jolly.prefs.home_city";
         const string HomeCountry = "jolly.prefs.home_country";
 
@@ -31,6 +32,7 @@ namespace Jolly.Presentation
                 SpeechRate = PlayerPrefs.GetFloat(SpeechRate, defaults.SpeechRate),
                 Volume = PlayerPrefs.GetFloat(Volume, defaults.Volume),
                 PttEitherHand = PlayerPrefs.GetInt(PttEitherHand, defaults.PttEitherHand ? 1 : 0) != 0,
+                ShowLatencyStats = PlayerPrefs.GetInt(ShowLatencyStats, defaults.ShowLatencyStats ? 1 : 0) != 0,
                 HomeCity = NullIfEmpty(PlayerPrefs.GetString(HomeCity, string.Empty)),
                 HomeCountry = NullIfEmpty(PlayerPrefs.GetString(HomeCountry, string.Empty)),
             };
@@ -43,6 +45,7 @@ namespace Jolly.Presentation
             PlayerPrefs.SetFloat(SpeechRate, p.SpeechRate);
             PlayerPrefs.SetFloat(Volume, p.Volume);
             PlayerPrefs.SetInt(PttEitherHand, p.PttEitherHand ? 1 : 0);
+            PlayerPrefs.SetInt(ShowLatencyStats, p.ShowLatencyStats ? 1 : 0);
             PlayerPrefs.SetString(HomeCity, p.HomeCity ?? string.Empty);
             PlayerPrefs.SetString(HomeCountry, p.HomeCountry ?? string.Empty);
             PlayerPrefs.Save();

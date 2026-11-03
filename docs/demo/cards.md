@@ -1,6 +1,6 @@
 # Cards, lower thirds and upload text
 
-Times are positions in the final cut ([`../demo-script.md`](../demo-script.md) shot list). Style: sans serif (Inter or SF Pro), white on 60 % black for lower thirds, bottom-left, never over the in-app captions or the mask outline. Every number on screen comes from the chosen take's logcat or HUD, written in the rehearsal log; `___` marks a number to fill from the take.
+Times are positions in the final cut ([`../demo-script.md`](../demo-script.md) shot list). Style: sans serif (Inter or SF Pro), white on 60 % black for lower thirds, bottom-left, never over the in-app captions or the mask outline. Every number on screen comes from the chosen take's logcat (or its latency HUD, if stats were turned on for it), written in the rehearsal log; `___` marks a number to fill from the take.
 
 ## Title card (0:17–0:23, over the first-person Meet shot: the character notices you and says hello)
 

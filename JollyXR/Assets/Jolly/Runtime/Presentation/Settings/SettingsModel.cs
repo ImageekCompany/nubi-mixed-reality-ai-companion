@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace Jolly.Presentation
 {
-    public enum Setting { CaptionSize, SpeechRate, Volume, Seated, PttHand }
+    public enum Setting { CaptionSize, SpeechRate, Volume, Seated, PttHand, LatencyStats }
 
     /// <summary>Stepper semantics of the settings panel. Every step returns a new snapshot; the old one is never mutated.</summary>
     public static class SettingsModel
@@ -32,6 +32,9 @@ namespace Jolly.Presentation
                 case Setting.PttHand:
                     next.PttEitherHand = !s.PttEitherHand;
                     break;
+                case Setting.LatencyStats:
+                    next.ShowLatencyStats = !s.ShowLatencyStats;
+                    break;
             }
             return next;
         }
@@ -54,6 +57,7 @@ namespace Jolly.Presentation
             SpeechRate = s.SpeechRate,
             Volume = s.Volume,
             PttEitherHand = s.PttEitherHand,
+            ShowLatencyStats = s.ShowLatencyStats,
             HomeCity = s.HomeCity,
             HomeCountry = s.HomeCountry,
         };

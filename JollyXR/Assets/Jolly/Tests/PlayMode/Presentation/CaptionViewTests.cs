@@ -5,6 +5,7 @@ using Jolly.Contracts;
 using Jolly.Presentation;
 using Jolly.Testing;
 using NUnit.Framework;
+using TMPro;
 using UnityEngine;
 using UnityEngine.TestTools;
 using Object = UnityEngine.Object;
@@ -139,6 +140,23 @@ namespace Jolly.Tests.PlayMode.Presentation
             _preferences.Set(new UserPreferencesSnapshot { CaptionSize = 2 });
 
             Assert.That(_view.FontSize, Is.GreaterThan(small));
+        }
+
+        // TMP replaces a material whose atlas is not the font's with the font's own at Awake, with no error, and that
+        // one loses the depth test to a nearer Nubi again.
+        [Test]
+        public void BothLines_RenderWithTheOverlayMaterialOnTheFontsAtlas()
+        {
+            var lines = _root.GetComponentsInChildren<TMP_Text>(true);
+
+            Assert.That(lines, Has.Length.EqualTo(2));
+            foreach (var line in lines)
+            {
+                var material = line.fontSharedMaterial;
+                Assert.That(material.shader.name, Is.EqualTo("TextMeshPro/Mobile/Distance Field Overlay"), line.name);
+                Assert.That(material.renderQueue, Is.EqualTo(3000), line.name);
+                Assert.That(material.GetTexture("_MainTex") == line.font.atlasTexture, Is.True, line.name);
+            }
         }
 
         [UnityTest]

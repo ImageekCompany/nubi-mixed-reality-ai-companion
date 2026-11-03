@@ -286,6 +286,22 @@ MonoBehaviour:
     m_Localized: Rozglądam się
     m_Metadata:
       m_Items: []
+  - m_Id: 380624960
+    m_Localized: Statystyki
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624961
+    m_Localized: "Id\u0119 do mebla"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624962
+    m_Localized: Skan pokoju
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624963
+    m_Localized: "Pokazuj\u0119 drog\u0119"
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

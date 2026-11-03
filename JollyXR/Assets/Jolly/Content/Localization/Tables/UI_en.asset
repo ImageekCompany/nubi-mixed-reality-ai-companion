@@ -286,6 +286,22 @@ MonoBehaviour:
     m_Localized: Look around
     m_Metadata:
       m_Items: []
+  - m_Id: 380624960
+    m_Localized: Latency stats
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624961
+    m_Localized: Go to furniture
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624962
+    m_Localized: Room scan
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624963
+    m_Localized: Showing the way
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

@@ -283,6 +283,22 @@ MonoBehaviour:
     m_Key: tool.actions.look_around
     m_Metadata:
       m_Items: []
+  - m_Id: 380624960
+    m_Key: settings.latency_stats
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624961
+    m_Key: tool.go_to_surface
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624962
+    m_Key: tool.request_room_scan
+    m_Metadata:
+      m_Items: []
+  - m_Id: 380624963
+    m_Key: tool.show_place
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:

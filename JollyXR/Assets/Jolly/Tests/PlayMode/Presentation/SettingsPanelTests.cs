@@ -122,6 +122,47 @@ namespace Jolly.Tests.PlayMode.Presentation
         }
 
         [Test]
+        public void LatencyStats_IsOffByDefault_AndTogglesOnEitherButton()
+        {
+            Assert.That(_panel.Current.ShowLatencyStats, Is.False);
+            Assert.That(Row("LatencyStats").transform.Find("Label").GetComponent<TMPro.TMP_Text>().text, Is.EqualTo("[en] settings.latency_stats"));
+            Assert.That(Row("LatencyStats").Value, Is.EqualTo("[en] settings.off"));
+
+            Row("LatencyStats").Next.onClick.Invoke();
+            Assert.That(_panel.Current.ShowLatencyStats, Is.True);
+            Assert.That(_store.Stored.ShowLatencyStats, Is.True);
+            Assert.That(Row("LatencyStats").Value, Is.EqualTo("[en] settings.on"));
+
+            Row("LatencyStats").Previous.onClick.Invoke();
+            Assert.That(_panel.Current.ShowLatencyStats, Is.False);
+            Assert.That(_store.Stored.ShowLatencyStats, Is.False);
+        }
+
+        [Test]
+        public void LatencyStats_SurvivesOtherStepsAndHomeLocation()
+        {
+            Row("LatencyStats").Next.onClick.Invoke();
+
+            Row("SpeechRate").Next.onClick.Invoke();
+            Assert.That(_panel.Current.ShowLatencyStats, Is.True, "a step on another row keeps the flag");
+
+            _panel.SetHomeLocation("Kraków", "PL");
+            Assert.That(_panel.Current.ShowLatencyStats, Is.True, "SetHomeLocation keeps the flag");
+            Assert.That(_store.Stored.ShowLatencyStats, Is.True);
+        }
+
+        [Test]
+        public void Construct_LoadsAStoredLatencyStatsFlag()
+        {
+            _store.Stored = new UserPreferencesSnapshot { ShowLatencyStats = true };
+
+            _panel.Construct(_localizer, _personas, _usage, _store, _clock);
+
+            Assert.That(_panel.Current.ShowLatencyStats, Is.True, "Sanitize keeps the flag");
+            Assert.That(Row("LatencyStats").Value, Is.EqualTo("[en] settings.on"));
+        }
+
+        [Test]
         public void PersonaButton_RequestsThatPersona_AndTheCurrentOneIsMarked()
         {
             var group = Group("Personas");

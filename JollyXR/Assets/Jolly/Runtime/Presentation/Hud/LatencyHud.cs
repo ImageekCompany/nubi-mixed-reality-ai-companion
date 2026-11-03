@@ -8,7 +8,9 @@ namespace Jolly.Presentation
 {
     /// <summary>
     /// Per-turn latency breakdown from ILatencyTracker (the same marks as the evt=turn.latency log line), refreshed when
-    /// a turn returns to Idle, plus the latest Meta model call durations.
+    /// a turn returns to Idle, plus the latest Meta model call durations. Hidden through its Canvas unless
+    /// <see cref="UserPreferencesSnapshot.ShowLatencyStats"/> is on; it keeps recording while hidden, so turning it on
+    /// shows the last turn at once.
     /// </summary>
     public sealed class LatencyHud : MonoBehaviour
     {
@@ -29,11 +31,13 @@ namespace Jolly.Presentation
         };
 
         [SerializeField] TMP_Text _text;
+        [SerializeField] Canvas _canvas;
         [SerializeField] int _modelRows = 3;
 
         readonly StringBuilder _builder = new(256);
         IConversationEvents _events;
         ILatencyTracker _tracker;
+        IUserPreferences _preferences;
         ILocalizer _localizer;
         string _title;
         string[] _labels;
@@ -42,12 +46,16 @@ namespace Jolly.Presentation
         int _modelCount;
 
         public string Text => _text.text;
+        public bool IsVisible => _canvas.enabled;
 
-        public void Construct(IConversationEvents events, ILatencyTracker tracker, ILocalizer localizer)
+        void Awake() => _canvas.enabled = false;
+
+        public void Construct(IConversationEvents events, ILatencyTracker tracker, IUserPreferences preferences, ILocalizer localizer)
         {
             Unsubscribe();
             _events = events;
             _tracker = tracker;
+            _preferences = preferences;
             _localizer = localizer;
             _models = new string[_modelRows];
             _modelMs = new double[_modelRows];
@@ -55,8 +63,12 @@ namespace Jolly.Presentation
             _events.StateChanged += OnStateChanged;
             _events.ModelCallCompleted += OnModelCallCompleted;
             _localizer.Changed += Localize;
+            _preferences.Changed += ApplyPreferences;
             Localize();
+            ApplyPreferences(_preferences.Current);
         }
+
+        void ApplyPreferences(UserPreferencesSnapshot preferences) => _canvas.enabled = preferences.ShowLatencyStats;
 
         void OnStateChanged(ConversationState from, ConversationState to)
         {
@@ -117,8 +129,11 @@ namespace Jolly.Presentation
             }
             if (_localizer != null)
                 _localizer.Changed -= Localize;
+            if (_preferences != null)
+                _preferences.Changed -= ApplyPreferences;
             _events = null;
             _localizer = null;
+            _preferences = null;
         }
     }
 }

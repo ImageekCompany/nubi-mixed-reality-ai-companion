@@ -83,7 +83,7 @@ To open the panel, use any of these:
 
 It closes with its X, when you start talking, or after 20 seconds.
 
-Inside you'll find caption size, speech speed, volume, seated mode, push-to-talk hand, personality, language, clear memory and API usage.
+Inside you'll find caption size, speech speed, volume, seated mode, push-to-talk hand, latency stats, personality, language, clear memory and API usage.
 
 **Seated mode** is for trying it from a chair: Jolly still comes to you and moves around you, but won't walk off to other places or follow you.
 

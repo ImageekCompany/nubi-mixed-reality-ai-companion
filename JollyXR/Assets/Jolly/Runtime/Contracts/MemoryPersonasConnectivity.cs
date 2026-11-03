@@ -156,6 +156,8 @@ namespace Jolly.Contracts
         public float SpeechRate { get; set; } = 1f; // 0.5..2; final Wit speed = clamp(persona speed * rate, 50, 200)
         public float Volume { get; set; } = 1f;
         public bool PttEitherHand { get; set; } = true;
+        /// <summary>Draws the latency HUD. Off by default so it never shows in a recording unasked.</summary>
+        public bool ShowLatencyStats { get; set; }
         /// <summary>Where the user said they live (set_home_location), for web search; null until they say. Never finer
         /// than a city (ADR-0048).</summary>
         public string HomeCity { get; set; }

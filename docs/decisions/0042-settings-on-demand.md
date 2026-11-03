@@ -1,6 +1,6 @@
 # 0042. Settings on demand: wrist button, menu button, voice; world-locked when open
 
-- Status: accepted
+- Status: accepted; "Side views" superseded by [ADR-0050](0050-demo-layout-from-the-measured-window.md)
 - Date: 2026-11-01
 
 ## Context
