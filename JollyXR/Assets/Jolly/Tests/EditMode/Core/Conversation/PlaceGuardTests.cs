@@ -31,6 +31,8 @@ namespace Jolly.Tests.EditMode.Core.Conversation
         [TestCase("That's the living room.", "living room")]
         [TestCase("The kitchen is over there.", "kitchen")]
         [TestCase("Here's the bathroom", "bathroom")]
+        [TestCase("The kitchen is right there.", "kitchen")]
+        [TestCase("That's the kitchen, Jolly.", "kitchen")]
         public void ShowingARoom_RemembersWhereTheUserIsLooking(string transcript, string room)
         {
             Assert.That(_guard.TryMatch(transcript, out var tool, out var json, out var named), Is.True);
@@ -46,6 +48,12 @@ namespace Jolly.Tests.EditMode.Core.Conversation
         [TestCase("That is a nice mug.")]
         [TestCase("I was in the kitchen and I saw a really big spider today, it was scary.")]
         [TestCase("Go to the kitchen.")]
+        [TestCase("This is my office chair.")]
+        [TestCase("That's the kitchen sink.")]
+        [TestCase("Go to the kitchen over there.")]
+        [TestCase("Is there a bathroom")]
+        [TestCase("This is from the garden.")]
+        [TestCase("The kitchen is dirty over there.")]
         [TestCase("")]
         public void OtherPhrases_StayWithTheModel(string transcript)
         {
@@ -79,7 +87,12 @@ namespace Jolly.Tests.EditMode.Core.Conversation
         [TestCase("Where can I put these things?", true)]
         [TestCase("Where do these go?", true)]
         [TestCase("Where does this go?", true)]
+        [TestCase("Where does it belong?", true)]
         [TestCase("What is this?", false)]
+        [TestCase("Where does it hurt?", false)]
+        [TestCase("Where do they live?", false)]
+        [TestCase("Where can I buy milk?", false)]
+        [TestCase("Where do these go if I want to keep them away from the children today?", false)]
         public void WhereItGoes_NeedsARememberedPlace(string transcript, bool expected)
         {
             Assert.That(_guard.AsksWhereItGoes(transcript), Is.False, "no place to name yet");

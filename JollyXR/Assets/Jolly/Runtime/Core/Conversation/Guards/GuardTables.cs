@@ -34,6 +34,8 @@ namespace Jolly.Core.Conversation
         public const string SettingsFillers = "settings.fillers";
         public const string PlaceRooms = "place.rooms";
         public const string PlaceShows = "place.shows";
+        public const string PlaceFillers = "place.fillers";
+        public const string PlacePlaced = "place.placed";
         public const string PlaceAsks = "place.asks";
         public const string PlaceWhereItGoes = "place.where_it_goes";
         public const string QuestionOpeners = "question.openers";
@@ -45,11 +47,15 @@ namespace Jolly.Core.Conversation
             (PlaceRooms, "pl") => "kuchnia|salon|sypialnia|łazienka|jadalnia|biuro|garaż|korytarz|spiżarnia|balkon|ogród",
             (PlaceRooms, _) => "living room|dining room|laundry room|kitchen|bedroom|bathroom|office|garage|hallway|pantry|balcony|garden",
             (PlaceShows, "pl") => "to jest|tam jest|tu jest|tutaj jest|oto",
-            (PlaceShows, _) => "this is|this s|that is|that s|here is|here s|over there|over here|is there|is here",
+            (PlaceShows, _) => "this is|this s|that is|that s|here is|here s|over there|over here",
+            (PlaceFillers, "pl") => "jest|mój|moja|moje|nasz|nasza|nasze",
+            (PlaceFillers, _) => "is|the|my|our|a|an",
+            (PlacePlaced, "pl") => "jest tam|jest tu|jest tutaj",
+            (PlacePlaced, _) => "is there|is here|is right there|is right here|is over there|is over here|is right over there",
             (PlaceAsks, "pl") => "gdzie jest|pokaż mi|pokaż|zaprowadź mnie",
             (PlaceAsks, _) => "where is|where s|show me|take me to|lead me to|which way is|point to|point at",
-            (PlaceWhereItGoes, "pl") => "gdzie mogę|gdzie to|gdzie położyć|gdzie odłożyć|gdzie to odłożyć",
-            (PlaceWhereItGoes, _) => "where can i put|where should i put|where do i put|where do these|where do they|where does this|where does it|where to put|where can these|where should these",
+            (PlaceWhereItGoes, "pl") => "gdzie mogę położyć|gdzie mogę odłożyć|gdzie mogę to położyć|gdzie mogę to odłożyć|gdzie to położyć|gdzie to odłożyć|gdzie położyć|gdzie odłożyć|gdzie to schować|gdzie schować",
+            (PlaceWhereItGoes, _) => "where can i put|where should i put|where do i put|where to put|where do i keep|where should i keep|where do these go|where do they go|where does this go|where does it go|where can these go|where should these go|where do these belong|where do they belong|where does this belong|where does it belong",
             (CrisisKeywords, "pl") => "zabić się|zabiję się|samobójstwo|samobójcze|nie chcę żyć|chcę umrzeć|skrzywdzić się|odebrać sobie życie",
             (CrisisKeywords, _) => "kill myself|killing myself|suicide|suicidal|end my life|want to die|hurt myself|self harm|don't want to live|no reason to live",
             (StopTriggers, "pl") => "stop|stój|czekaj|zaczekaj|zostań|przestań",

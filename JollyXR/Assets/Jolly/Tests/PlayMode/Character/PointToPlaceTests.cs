@@ -18,6 +18,9 @@ namespace Jolly.Tests.PlayMode.Character
     public sealed class PointToPlaceTests
     {
         const float MaxArmError = 8f;
+        // The played clip raises the arm by about 0.4 s and starts lowering it at about 1.3 s, for both characters.
+        const float HoldFrom = 0.55f;
+        const float HoldTo = 1.15f;
 
         CharacterTestRig _rig;
         LocomotionSettings _settings;
@@ -47,21 +50,25 @@ namespace Jolly.Tests.PlayMode.Character
             return null;
         }
 
-        /// <summary>Largest reach of the arm during the clip: yaw off the target when the arm is most raised.</summary>
+        /// <summary>Worst yaw off the target while the clip holds the point, so an arm that only sweeps past it fails.</summary>
         async UniTask<float> ArmErrorWhilePointing(Vector3 target)
         {
             var upper = Bone("UpperArm_R");
             var hand = Bone("Hand_R");
-            var best = float.MaxValue;
+            var started = Time.time;
+            var worst = 0f;
             await CharacterTestRig.Until(() =>
             {
-                var arm = Vector3.ProjectOnPlane(hand.position - upper.position, Vector3.up);
-                var to = Vector3.ProjectOnPlane(target - upper.position, Vector3.up);
-                if (arm.magnitude > 0.05f)
-                    best = Mathf.Min(best, Vector3.Angle(arm, to));
+                var elapsed = Time.time - started;
+                if (elapsed >= HoldFrom && elapsed <= HoldTo)
+                {
+                    var arm = Vector3.ProjectOnPlane(hand.position - upper.position, Vector3.up);
+                    var to = Vector3.ProjectOnPlane(target - upper.position, Vector3.up);
+                    worst = Mathf.Max(worst, Vector3.Angle(arm, to));
+                }
                 return false;
             }, 1.5f);
-            return best;
+            return worst;
         }
 
         [UnityTest]

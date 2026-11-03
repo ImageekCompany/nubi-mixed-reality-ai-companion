@@ -17,7 +17,7 @@
 - **`PointToPlace`:**
   - Walks along the straight line and stops 1 m short. If that spot is unreachable it tries 7/8, 6/8 … 1/8 of the way, because another room is usually past the scanned floor. With nothing reachable it points from where it stands.
   - Turns so the arm rather than the belly is on the target, then starts `Point`. The clip keeps playing after the tool returns, so the line lands while the arm is out.
-  - Measured on the played clip (`PointToPlaceTests`), the arm is 21° right of the body and starts 0.23 m right of its axis. `POINT_DIR_R` alone implies 12.5°, which missed by about 20° at the stand-off. With the correction, Jolly's arm is 3.2° off at 1.1 m and 3.9° off at 3 m.
+  - Measured on the played clip (`PointToPlaceTests`), the arm is 21° right of the body and starts 0.23 m right of its axis. `POINT_DIR_R` alone implies 12.5°, which missed by about 20° at the stand-off. With the correction, the worst yaw error while the clip holds the point (0.55–1.15 s) is 3.7° for Jolly at 1.1 m, 5.3° for Jolly at 3 m and 6.8° for Nubi at 1.1 m.
   - A stop or a newer move during the walk skips the point. Barge-in cancels the tool but not the walk, as for every walk.
 - **`show_place`** (Exclusive): resolves a name like `walk_to` (taught place, furniture, seen object), runs `PointToPlace`, says "There!" and ends the turn. It is not withheld when seated: the user stays put and the character does the walking.
 - **`capture_and_identify` can lead:**
@@ -26,9 +26,9 @@
   - The tool's timeout now covers the walk (12 s + 20 s). The vision part keeps its own 12 s and reports `timeout` itself.
   - Live on `mug_640.jpg`: "Where can I put these things?" and "Where does this go?" gave `kitchen` in 3 of 3 with other places listed, and "What is this?" gave `none`.
 - **`PlaceGuard`, no model round:**
-  - Naming a room from a closed list with a showing phrase ("this is", "that's", "over there") runs `remember_place` with `there` and says "Got it, the kitchen!".
+  - Naming a room from a closed list runs `remember_place` with `there` and says "Got it, the kitchen!". The room must follow a showing phrase with only small words between ("this is my kitchen", "that over there is the kitchen") and close its clause, or be placed right after its name ("the kitchen is over there"). So "this is my office chair", "that's the kitchen sink", "go to the kitchen over there" and "is there a bathroom" stay with the model and cannot overwrite a place.
   - Asking after a remembered place ("where is", "show me", "take me to") runs `show_place`.
-  - "Where do these go?" with a place remembered runs `capture_and_identify` directly. Which place fits stays with the vision model. A failure with no line of its own (too dark, no camera) goes to the model to explain, and with no place remembered the turn is an ordinary model turn.
+  - "Where do these go?" (phrases that say go, put, keep or belong, at most 10 words, so "where does it hurt?" stays with the model) with a place remembered runs `capture_and_identify` directly. Which place fits stays with the vision model. A failure with no line of its own (too dark, no camera) goes to the model to explain, and with no place remembered the turn is an ordinary model turn.
   - Other phrasings stay with the model, whose tool descriptions cover them.
 
 ## Consequences
