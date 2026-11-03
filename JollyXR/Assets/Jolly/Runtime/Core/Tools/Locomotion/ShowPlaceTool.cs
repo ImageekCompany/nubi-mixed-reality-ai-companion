@@ -39,9 +39,10 @@ namespace Jolly.Core.Tools
         }
 
         public ToolDefinition Definition { get; } = new(ToolNames.ShowPlace,
-            "Walk toward a place the user showed you earlier, a thing you saw, or a piece of furniture, and point at it. " +
-            "Call it when they ask where something is or to show them, e.g. 'where is the kitchen?', 'show me the desk', " +
-            "'where did I leave the remote?'. You say 'There!' by yourself on arrival.",
+            "Walk toward a place the user showed you earlier or a piece of furniture, and point at it. " +
+            "Call it when they ask where a place is or to lead them there, e.g. 'where is the kitchen?', 'show me the desk', " +
+            "'take me to the door'. For an object they are looking for, like 'where is my mug?', use find_object instead. " +
+            "You say 'There!' by yourself on arrival.",
             Schema, TimeSpan.FromSeconds(1) + PointToPlace.WalkBudget, ToolConcurrency.Exclusive);
 
         public async UniTask<ToolResult> Execute(IToolArguments args, ToolContext context, CancellationToken ct)
