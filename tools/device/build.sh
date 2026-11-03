@@ -29,6 +29,8 @@ done
 DEFAULT_APK="Nubi.apk"
 if [[ "$EMBED_SECRETS" == "1" ]]; then DEFAULT_APK="Nubi-keyed.apk"; fi
 OUT="${POSITIONAL[0]:-$PROJECT/Builds/Android/$DEFAULT_APK}"
+# Unity would resolve a relative path against the project, not the caller's directory.
+case "$OUT" in /*) ;; *) OUT="$PWD/$OUT" ;; esac
 LOGS="$PROJECT/Logs"
 mkdir -p "$LOGS"
 "$ROOT/tools/ci/restore-samples.sh"

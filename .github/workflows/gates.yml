@@ -1,0 +1,13 @@
+# The Unity test suite needs an editor licence, so it runs locally (tools/ci/test.sh); these checks need nothing.
+name: Static gates
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  gates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: tools/ci/gates.sh

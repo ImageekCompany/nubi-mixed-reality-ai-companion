@@ -12,6 +12,8 @@ UNITY="${UNITY:-/Applications/Unity/Hub/Editor/6000.6.6f1/Unity.app/Contents/Mac
 PROJECT="$ROOT/JollyXR"
 OUT_DIR="$ROOT/artifacts"
 APK="${1:-$OUT_DIR/Nubi.apk}"
+# Unity would resolve a relative path against the project, not the caller's directory.
+case "$APK" in /*) ;; *) APK="$PWD/$APK" ;; esac
 LOG="$OUT_DIR/build.log"
 mkdir -p "$OUT_DIR" "$(dirname "$APK")"
 rm -f "$APK"

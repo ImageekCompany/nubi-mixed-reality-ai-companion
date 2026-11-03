@@ -9,11 +9,10 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 UNITY="${UNITY:-/Applications/Unity/Hub/Editor/6000.6.6f1/Unity.app/Contents/MacOS/Unity}"
 PROJECT="$ROOT/JollyXR"
-SRC="$PROJECT/Assets/Jolly"
 OUT="$ROOT/artifacts"
 COVERAGE="$OUT/coverage"
 # com.unity.testtools.codecoverage 1.3.0 filter syntax (Documentation~/CoverageBatchmode.md).
-COVERAGE_ASSEMBLIES="+Jolly.*,-Jolly.Tests.*,-Jolly.Testing,-Jolly.Editor*,-Jolly.Spikes*"
+COVERAGE_ASSEMBLIES="+Jolly.*,-Jolly.Tests.*,-Jolly.Testing,-Jolly.Editor*"
 if [[ $# -gt 0 ]]; then PLATFORMS=("$@"); else PLATFORMS=(EditMode PlayMode); fi
 mkdir -p "$OUT"
 "$ROOT/tools/ci/restore-samples.sh"
@@ -23,26 +22,7 @@ failures=0
 fail() { echo "[test] FAIL: $*" >&2; failures=$((failures + 1)); }
 
 # Static gates first: they are cheap and need no editor.
-check_absent() {
-  local what="$1"; shift
-  local hits
-  if hits="$("$@")" && [[ -n "$hits" ]]; then
-    fail "$what"
-    echo "$hits" >&2
-  fi
-}
-check_absent "CancellationTokenSource.CancelAfter (use CancelAfterSlim / TimeoutController)" \
-  grep -rnE "\.CancelAfter\(" "$SRC" --include=*.cs
-check_absent "ToUniTask(cancelImmediately: true) aborts off the PlayerLoop" \
-  grep -rnE "cancelImmediately: *true" "$SRC" --include=*.cs
-check_absent "async void" \
-  grep -rnE "async +void" "$SRC" --include=*.cs
-check_absent "System.Threading.Tasks.Task in Jolly code (use UniTask)" \
-  grep -rnE "(^|[^A-Za-z0-9_.])Task(<|[[:space:]])" "$SRC" --include=*.cs
-check_absent "FindObjectOfType / FindFirstObjectByType / Resources.Load / singleton Instance" \
-  grep -rnE "FindObjectOfType|FindFirstObjectByType|FindAnyObjectByType|Resources\.Load|static[^=;(]*[[:space:]]Instance[[:space:]]*(\{|=>|=|;)" "$SRC" --include=*.cs
-check_absent "JOLLY_DEBUG_CAPTURE / JOLLY_DEBUG_LOG in committed scripting defines" \
-  grep -nE "JOLLY_DEBUG_(CAPTURE|LOG)" "$PROJECT/ProjectSettings/ProjectSettings.asset"
+"$ROOT/tools/ci/gates.sh" || fail "static gates"
 
 # Shipped content and scene wiring (Editor/Tools/Validators): personas, tables, clips, JollyBootstrap bindings.
 echo "[test] content validation (log: $OUT/content.log)"

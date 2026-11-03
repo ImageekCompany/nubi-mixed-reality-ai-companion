@@ -5,7 +5,6 @@
 #   NUBI_PACKAGE=com.nubi.companion
 #   NUBI_SKIP_INSTALL=1   relaunch only
 #   NUBI_HEADLESS=1       nobody is wearing the headset: wake it, fake proximity, pause Guardian
-#   NUBI_PAID=1           arm one paid-API spike run (the app consumes the run_paid flag file)
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -42,12 +41,6 @@ if [[ "${NUBI_HEADLESS:-0}" == "1" ]]; then
   # Without a person in the headset the Guardian setup dialog blocks app launches ("Launch is blocked because:
   # a Guardian dialog is currently showing"). Developer-mode property; restore with --restore-headset.
   adb shell setprop debug.oculus.guardian_pause 1
-fi
-
-if [[ "${NUBI_PAID:-0}" == "1" ]]; then
-  adb shell mkdir -p "/sdcard/Android/data/$PKG/files"
-  adb shell touch "/sdcard/Android/data/$PKG/files/run_paid"
-  echo "armed one paid-API run (run_paid flag)"
 fi
 
 ACTIVITY="$(adb shell cmd package resolve-activity --brief "$PKG" | tail -n 1 | tr -d '\r')"
