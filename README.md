@@ -14,7 +14,7 @@
 </p>
 
 <!-- VIDEO: replace the next line with: > ▶️ **[Watch the demo video](https://YOUR-LINK)** -->
-> ▶️ **Demo video:** link added with the submission on Nov 4.
+> ▶️ **Demo video:** https://youtu.be/cAkDgTrN9zI
 
 > **The character in the video is Jolly, the code is the same.** The video shows a look-alike of Meta's Muse mascot, which we built as a local, non-commercial demo skin for this hackathon. We found no public licence for the mascot, so its model and everything built from it stay out of this repository and its history, and no public build contains them. What you clone ships **Nubi**, our original CC0 character. Characters are data with a shared skeleton, so `tools/device/build.sh` builds Nubi and `--character jolly` picks a local skin ([ADR-0052](docs/decisions/0052-demo-video-shows-jolly-repository-stays-nubi.md)). This project is not affiliated with or endorsed by Meta.
 
